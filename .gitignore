@@ -1,0 +1,57 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/
+website/frontend/.vscode/
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Virtual Environment for Python
+website/backend/.venv/*
+
+# Python caches
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+
+# .env files
+.env.*
+.env*
+.env
+
+
+# Ignore SQL Dumps
+*.sql
+*.sqlite
+
+# Ignore Archive Files
+*.zip
+*.rar
+*.gz
+*.tar
+
+#Ignore static folder
+website/static/*
+!website/static/README.md
+
+# Ignore the coverage folders
+coverage/
+.coverage
+/coverage

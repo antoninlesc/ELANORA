@@ -1,0 +1,92 @@
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.dependencies]
+python= "^3.13"
+fastapi = {extras = ["standard"], version = "^0.115.12"}
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.41"}
+python-jose = "^3.5.0"
+asyncmy = "^0.2.10"
+passlib = "^1.7.4"
+fastapi-mail = "^1.4.2"
+python-dotenv = "^1.1.0"
+pre-commit = "^4.2.0"
+cryptography = "^45.0.2"
+ruff = "^0.12.1"
+defusedxml = "^0.7.1"
+slowapi = "^0.1.9"
+bcrypt = "^4.3.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-cov = "^6.1.1"
+mypy = "^1.16.1"
+pre-commit = "^4.2.0"
+pytest-asyncio = "^0.26.0"
+
+[tool.ruff]
+target-version = "py313"
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "docs",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+extend-select = [
+    # Style and correctness
+    "W",    # pycodestyle warnings
+    "I",    # isort (import sorting)
+    "UP",   # pyupgrade (modern Python idioms)
+    "B",    # bugbear (common bugs and design issues)
+    "C4",   # comprehensions (comprehension optimizations)
+    "SIM",  # simplify (code simplifications)
+    "TCH",  # type-checking imports
+    "TID",  # tidy imports
+    "D",    # pydocstyle (docstring conventions)
+    "N",    # pep8-naming
+    "S",    # flake8-bandit (security)
+    "A",    # flake8-builtins (avoid shadowing builtins)
+    "PL",   # pylint (selected useful checks)
+    "RUF",  # ruff-specific rules
+    "PGH",  # pygrep-hooks (misc best practices)
+]
+
+# Example: Prefer D211 (no blank line before class) and D212 (multi-line summary on first line)
+ignore = [
+    "W191", 
+    "E111", "E114", "E117",
+    "D206", "D300", "D100", "D104", "D203", "D213",  
+    "Q000", "Q001", "Q002", "Q003",
+    "COM812", "COM819",
+    "ISC002",
+]
+
+per-file-ignores = { "app/utils/gif_to_webm.py" = ["S603"], "tests/**/*.py" = ["S101"] }

@@ -1,0 +1,9 @@
+[run]
+omit =
+    */venv/*
+    */.venv/*
+    */env/*
+    */.env/*
+    */tests/*
+    */test_*.py
+    */__init__.py
