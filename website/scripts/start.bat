@@ -9,11 +9,13 @@ set "ENV=%ENV: =%"
 if /i "%ENV%"=="dev" (
     goto ask_docker
 ) else if /i "%ENV%"=="prod" (
-    cd lsfb-website\docker\MDL-Corpus-prod
+    call :check_docker_with_retry
+    cd website\docker\website-prod
     set ENV=prod && docker-compose up
     goto :eof
 ) else if /i "%ENV%"=="server" (
-    cd lsfb-website\docker\MDL-Corpus-server
+    call :check_docker_with_retry
+    cd website\docker\website-server
     set ENV=server && docker-compose up
     goto :eof
 ) else (
@@ -25,19 +27,56 @@ if /i "%ENV%"=="dev" (
 set /p USE_DOCKER="Do you want to use only Docker for development (yes/no/back)?: "
 set "USE_DOCKER=%USE_DOCKER: =%"
 if /i "%USE_DOCKER%"=="yes" (
-    cd lsfb-website\docker\MDL-Corpus-dev
+    call :check_docker_with_retry
+    cd website\docker\website-dev
     set ENV=dev.docker && docker-compose up
     goto :eof
 ) else if /i "%USE_DOCKER%"=="no" (
-    set "REPO_ROOT=%CD%\lsfb-website"
+    call :check_docker_for_db_with_retry
+    
+    set "REPO_ROOT=%CD%\website"
     wt.exe ^
-        new-tab --title "Database" cmd /k "cd /d !REPO_ROOT!\docker\MDL-Corpus-dev && set ENV=dev && docker-compose up db" ^
+        new-tab --title "Database" cmd /k "cd /d !REPO_ROOT!\docker\website-dev && set ENV=dev && docker-compose up db" ^
         ; new-tab --title "Frontend" cmd /k "cd /d !REPO_ROOT!\frontend && set ENV=dev && npm install && npm run dev" ^
-        ; new-tab --title "Backend" cmd /k "cd /d !REPO_ROOT!\backend && set ENV=dev && poetry install && poetry run fastapi dev app/main.py --port 8008"
+        ; new-tab --title "Backend" cmd /k "cd /d !REPO_ROOT!\backend && set ENV=dev && poetry install && poetry run fastapi dev app/main.py --port 8018"
     goto :eof
 ) else if /i "%USE_DOCKER%"=="back" (
     goto ask_env
 ) else (
     echo Invalid choice. Please enter 'yes', 'no', or 'back'.
     goto ask_docker
+)
+
+:check_docker_with_retry
+:docker_retry_loop
+echo Checking Docker availability...
+docker version >nul 2>&1
+if %errorlevel% equ 0 (
+    echo Docker is available.
+    goto :eof
+) else (
+    echo.
+    echo Docker is not running or not installed.
+    echo Please start Docker Desktop and wait for it to fully load.
+    echo.
+    pause
+    echo.
+    goto docker_retry_loop
+)
+
+:check_docker_for_db_with_retry
+:docker_db_retry_loop
+echo Checking Docker availability for database...
+docker version >nul 2>&1
+if %errorlevel% equ 0 (
+    echo Docker is available for database container.
+    goto :eof
+) else (
+    echo.
+    echo Docker is not running - needed for database container.
+    echo Please start Docker Desktop and wait for it to fully load.
+    echo.
+    pause
+    echo.
+    goto docker_db_retry_loop
 )

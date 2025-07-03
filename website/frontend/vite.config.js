@@ -14,10 +14,10 @@ function serveStaticFiles() {
     name: 'serve-static-files',
     configureServer(server) {
       const staticPath = inDocker 
-        ? path.resolve('/app/lsfb_static') 
-        : path.resolve('../lsfb_static');
+        ? path.resolve('/app/static') 
+        : path.resolve('../static');
       
-      server.middlewares.use('/lsfb_static', express.static(staticPath));
+      server.middlewares.use('/static', express.static(staticPath));
     }
   };
 }
@@ -72,16 +72,16 @@ export default defineConfig(({ mode }) => {
         usePolling: true,
       },
       host: '0.0.0.0',
-      port: 8888,
+      port: 8777,
       strictPort: true,
       hmr: inDocker ? false : {
-        port: 8888,
+        port: 8777,
         host: 'localhost',
-        clientPort: inDocker ? 8888 : undefined
+        clientPort: inDocker ? 8777 : undefined
       },
       proxy: {
         '/api/v1': {
-          target: inDocker ? 'http://backend:8008' : 'http://localhost:8008',
+          target: inDocker ? 'http://backend:8018' : 'http://localhost:8018',
           changeOrigin: true,
           secure: false,
           configure: (proxy, options) => {

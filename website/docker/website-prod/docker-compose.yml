@@ -1,0 +1,35 @@
+---
+services:
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: ../backend/docker/Dockerfile.prod
+    ports:
+      - '8010:8010'
+    env_file:
+      - ../../env/.env.prod
+    depends_on:
+      - db
+    container_name: elanora-website-backend-prod
+    volumes:
+      - ../../data:/app/website/data
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: ../frontend/docker/Dockerfile.prod
+    ports:
+      - '8070:70'
+    env_file:
+      - ../../env/.env.prod
+    depends_on:
+      - backend
+    container_name: elanora-website-frontend-prod
+
+  db:
+    image: mysql:latest
+    volumes:
+      - ../../database:/docker-entrypoint-initdb.d
+    env_file:
+      - ../../env/.env.prod
+    container_name: elanora-website-db-prod

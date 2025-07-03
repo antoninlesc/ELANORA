@@ -14,13 +14,13 @@ COPY pyproject.toml poetry.lock ./
 
 # Install dependencies (no venv, system-wide for Docker)
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi
+    && poetry install --no-interaction --no-ansi --only main
 
 # Copy the rest of your app
 COPY . .
 
 # Expose port
-EXPOSE 8018
+EXPOSE 8010
 
 # Start FastAPI
-CMD ["fastapi", "dev", "app/main.py", "--host", "0.0.0.0", "--port", "8018"]
+CMD ["fastapi", "run", "app/main.py", "--host", "0.0.0.0", "--port", "8010"]
