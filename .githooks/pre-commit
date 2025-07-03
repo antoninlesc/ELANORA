@@ -1,0 +1,67 @@
+#!/bin/sh
+# filepath: .githooks/pre-commit
+
+set -e
+
+# Find the repo root (works even if run from a subdirectory)
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+echo "Running pre-commit checks..."
+
+# Get list of staged files
+STAGED_FILES=$(git diff --cached --name-only)
+
+# Check if backend files are staged
+BACKEND_FILES=$(echo "$STAGED_FILES" | grep "^lsfb-website/backend/" || true)
+
+# Check if frontend files are staged  
+FRONTEND_FILES=$(echo "$STAGED_FILES" | grep "^lsfb-website/frontend/" || true)
+
+# --- Run backend pre-commit (Python) ---
+if [ -n "$BACKEND_FILES" ]; then
+    echo "Running backend pre-commit hooks..."
+    cd "$REPO_ROOT/lsfb-website/backend"
+    
+    trap 'echo "❌ Backend pre-commit hook failed. See the output above for details."; exit 1' ERR
+    
+    if command -v poetry > /dev/null && [ -f "poetry.lock" ]; then
+        # Run only on staged files, not --all-files
+        poetry run pre-commit run
+    else
+        echo '❌ Poetry not found or no poetry.lock file. Please ensure Poetry is installed and dependencies are locked.'
+        exit 1
+    fi
+    
+    trap - ERR
+    echo "✅ Backend pre-commit hooks passed"
+else
+    echo "⏭️ No backend files staged, skipping backend checks"
+fi
+
+# --- Run frontend lint-staged via Husky ---
+if [ -n "$FRONTEND_FILES" ]; then
+    echo "Running frontend pre-commit hooks..."
+    cd "$REPO_ROOT/lsfb-website/frontend"
+    
+    trap 'echo "❌ Frontend pre-commit hook failed. See the output above for details."; exit 1' ERR
+    
+    if [ -f ".husky/pre-commit" ]; then
+        sh .husky/pre-commit
+    else
+        echo "⚠️ No frontend pre-commit hook found at .husky/pre-commit"
+    fi
+    
+    trap - ERR
+    echo "✅ Frontend pre-commit hooks passed"
+else
+    echo "⏭️ No frontend files staged, skipping frontend checks"
+fi
+
+cd "$REPO_ROOT"
+
+# Check if any checks were run
+if [ -z "$BACKEND_FILES" ] && [ -z "$FRONTEND_FILES" ]; then
+    echo "ℹ️ No backend or frontend files staged - no quality checks needed"
+else
+    echo "All relevant pre-commit checks passed!"
+fi
