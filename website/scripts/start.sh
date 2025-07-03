@@ -59,10 +59,23 @@ while true; do
                 # Use Docker for database, local for frontend/backend
                 if command -v gnome-terminal &> /dev/null; then
                     echo "Using gnome-terminal with tabs"
-                    gnome-terminal \
-                        --tab --title="Database" -- bash -c "cd '$SCRIPTS_ROOT/docker/website-dev' && ENV=dev docker-compose up db; exec bash" \
-                        --tab --title="Frontend" -- bash -c "cd '$SCRIPTS_ROOT/frontend' && ENV=dev npm install && npm run dev; exec bash" \
-                        --tab --title="Backend" -- bash -c "cd '$SCRIPTS_ROOT/backend' && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash" 2>/dev/null
+                    # Method 1: Try the modern syntax first
+                    gnome-terminal --tab --title="Database" --working-directory="$SCRIPTS_ROOT/docker/website-dev" -- bash -c "ENV=dev docker-compose up db; exec bash" \
+                                   --tab --title="Frontend" --working-directory="$SCRIPTS_ROOT/frontend" -- bash -c "ENV=dev npm install && npm run dev; exec bash" \
+                                   --tab --title="Backend" --working-directory="$SCRIPTS_ROOT/backend" -- bash -c "ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash" 2>/dev/null || \
+                    # Method 2: Fallback to older syntax
+                    gnome-terminal --tab -t "Database" -e "bash -c 'cd \"$SCRIPTS_ROOT/docker/website-dev\" && ENV=dev docker-compose up db; exec bash'" \
+                                   --tab -t "Frontend" -e "bash -c 'cd \"$SCRIPTS_ROOT/frontend\" && ENV=dev npm install && npm run dev; exec bash'" \
+                                   --tab -t "Backend" -e "bash -c 'cd \"$SCRIPTS_ROOT/backend\" && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash'" 2>/dev/null || \
+                    # Method 3: Use separate windows as fallback
+                    {
+                        echo "Tab syntax not supported, opening separate windows..."
+                        gnome-terminal --title="Database" -- bash -c "cd '$SCRIPTS_ROOT/docker/website-dev' && ENV=dev docker-compose up db; exec bash" 2>/dev/null &
+                        sleep 0.5
+                        gnome-terminal --title="Frontend" -- bash -c "cd '$SCRIPTS_ROOT/frontend' && ENV=dev npm install && npm run dev; exec bash" 2>/dev/null &
+                        sleep 0.5
+                        gnome-terminal --title="Backend" -- bash -c "cd '$SCRIPTS_ROOT/backend' && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash" 2>/dev/null &
+                    }
                 elif command -v konsole &> /dev/null; then
                     echo "Using konsole with tabs"
                     konsole \
