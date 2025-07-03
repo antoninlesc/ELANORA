@@ -50,65 +50,26 @@ while true; do
                 exit 0
             elif [[ "$USE_DOCKER" == "no" ]]; then
                 check_docker_for_db_with_retry
-                
                 SCRIPTS_ROOT="$(pwd)/website"
-                
-                # Debug: Show which terminals are available
-                echo "Detecting available terminal emulators..."
-                
-                # Use Docker for database, local for frontend/backend
                 if command -v gnome-terminal &> /dev/null; then
-                    echo "Using gnome-terminal with tabs"
-                    # Launch gnome-terminal with 3 tabs, running in background so it doesn't block
                     gnome-terminal \
-                        --tab --title="Database" -- bash -c "cd '$SCRIPTS_ROOT/docker/website-dev' && ENV=dev docker-compose up db; exec bash" \
-                        --tab --title="Frontend" -- bash -c "cd '$SCRIPTS_ROOT/frontend' && ENV=dev npm install && npm run dev; exec bash" \
-                        --tab --title="Backend" -- bash -c "cd '$SCRIPTS_ROOT/backend' && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash"
+                        --tab --title="Database" -- bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && ENV=dev docker-compose up db; exec bash" \
+                        --tab --title="Frontend" -- bash -c "cd \"$SCRIPTS_ROOT/frontend\" && ENV=dev npm install && npm run dev; exec bash" \
+                        --tab --title="Backend" -- bash -c "cd \"$SCRIPTS_ROOT/backend\" && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash"
                 elif command -v konsole &> /dev/null; then
-                    echo "Using konsole with tabs"
                     konsole \
-                        --new-tab -p tabtitle="Database" -e bash -c "cd '$SCRIPTS_ROOT/docker/website-dev' && ENV=dev docker-compose up db; exec bash" \
-                        --new-tab -p tabtitle="Frontend" -e bash -c "cd '$SCRIPTS_ROOT/frontend' && ENV=dev npm install && npm run dev; exec bash" \
-                        --new-tab -p tabtitle="Backend" -e bash -c "cd '$SCRIPTS_ROOT/backend' && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash" &
-                elif command -v mate-terminal &> /dev/null; then
-                    echo "Using mate-terminal with tabs"
-                    mate-terminal \
-                        --tab --title="Database" -e "bash -c 'cd \"$SCRIPTS_ROOT/docker/website-dev\" && ENV=dev docker-compose up db; exec bash'" \
-                        --tab --title="Frontend" -e "bash -c 'cd \"$SCRIPTS_ROOT/frontend\" && ENV=dev npm install && npm run dev; exec bash'" \
-                        --tab --title="Backend" -e "bash -c 'cd \"$SCRIPTS_ROOT/backend\" && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash'" &
-                elif command -v xfce4-terminal &> /dev/null; then
-                    echo "Using xfce4-terminal with tabs"
-                    xfce4-terminal \
-                        --tab --title="Database" --command="bash -c 'cd \"$SCRIPTS_ROOT/docker/website-dev\" && ENV=dev docker-compose up db; exec bash'" \
-                        --tab --title="Frontend" --command="bash -c 'cd \"$SCRIPTS_ROOT/frontend\" && ENV=dev npm install && npm run dev; exec bash'" \
-                        --tab --title="Backend" --command="bash -c 'cd \"$SCRIPTS_ROOT/backend\" && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash'" &
-                elif command -v tilix &> /dev/null; then
-                    echo "Using tilix with panes"
-                    tilix -e "bash -c 'cd \"$SCRIPTS_ROOT/docker/website-dev\" && ENV=dev docker-compose up db; exec bash'" \
-                          -a session-add-down -e "bash -c 'cd \"$SCRIPTS_ROOT/frontend\" && ENV=dev npm install && npm run dev; exec bash'" \
-                          -a session-add-right -e "bash -c 'cd \"$SCRIPTS_ROOT/backend\" && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash'" &
-                elif command -v terminator &> /dev/null; then
-                    echo "Using terminator with splits"
-                    terminator -l elanora_dev &
-                elif [[ "$OSTYPE" == "darwin"* ]]; then
-                    echo "Using macOS Terminal with tabs"
-                    osascript <<EOF
-tell application "Terminal"
-    activate
-    do script "cd \"$SCRIPTS_ROOT/docker/website-dev\" && ENV=dev docker-compose up db"
-    do script "cd \"$SCRIPTS_ROOT/frontend\" && ENV=dev npm install && npm run dev" in (make new tab)
-    do script "cd \"$SCRIPTS_ROOT/backend\" && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018" in (make new tab)
-end tell
-EOF
+                        --new-tab -p tabtitle="Database" -e bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && ENV=dev docker-compose up db" \
+                        --new-tab -p tabtitle="Frontend" -e bash -c "cd \"$SCRIPTS_ROOT/frontend\" && ENV=dev npm install && npm run dev" \
+                        --new-tab -p tabtitle="Backend" -e bash -c "cd \"$SCRIPTS_ROOT/backend\" && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018"
+                elif command -v x-terminal-emulator &> /dev/null; then
+                    x-terminal-emulator -T "Database" -e bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && ENV=dev docker-compose up db" &
+                    x-terminal-emulator -T "Frontend" -e bash -c "cd \"$SCRIPTS_ROOT/frontend\" && ENV=dev npm install && npm run dev" &
+                    x-terminal-emulator -T "Backend" -e bash -c "cd \"$SCRIPTS_ROOT/backend\" && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018" &
                 else
-                    echo "No supported multi-tab terminal found."
-                    echo "Running all services in current terminal with background processes..."
-                    echo "Starting Database in background..."
-                    (cd website/docker/website-dev && ENV=dev docker-compose up db) &
-                    echo "Starting Frontend in background..."
-                    (cd website/frontend && ENV=dev npm install && npm run dev) &
-                    echo "Starting Backend in foreground..."
-                    (cd website/backend && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018)
+                    echo "No multi-tab terminal found. Running all services in the current terminal."
+                    (cd website/docker/website-dev && ENV=dev docker-compose up db &) 
+                    (cd website/frontend && ENV=dev npm install && npm run dev &)
+                    (cd website/backend && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8008)
                 fi
                 exit 0
             elif [[ "$USE_DOCKER" == "back" ]]; then

@@ -34,11 +34,11 @@ services:
     container_name: elanora-website-frontend-dev
 
   db:
-    image: mysql:latest
+    image: mysql:8.4
     volumes:
       - ../../database:/docker-entrypoint-initdb.d
     ports:
-      - "3318:3316"
+      - "3316:3306"
     env_file:
       - ../../env/.env.dev.docker
     container_name: elanora-website-db-dev
