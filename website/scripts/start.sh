@@ -59,10 +59,12 @@ while true; do
                 # Use Docker for database, local for frontend/backend
                 if command -v gnome-terminal &> /dev/null; then
                     echo "Using gnome-terminal"
-                    gnome-terminal \
-                        --tab --title="Database" -- bash -c "cd '$SCRIPTS_ROOT/docker/website-dev' && ENV=dev docker-compose up db; exec bash" \
-                        --tab --title="Frontend" -- bash -c "cd '$SCRIPTS_ROOT/frontend' && ENV=dev npm install && npm run dev; exec bash" \
-                        --tab --title="Backend" -- bash -c "cd '$SCRIPTS_ROOT/backend' && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash" 2>/dev/null
+                    # Use separate gnome-terminal commands for better compatibility
+                    gnome-terminal --title="Database" -- bash -c "cd '$SCRIPTS_ROOT/docker/website-dev' && ENV=dev docker-compose up db; exec bash" 2>/dev/null &
+                    sleep 0.5
+                    gnome-terminal --title="Frontend" -- bash -c "cd '$SCRIPTS_ROOT/frontend' && ENV=dev npm install && npm run dev; exec bash" 2>/dev/null &
+                    sleep 0.5
+                    gnome-terminal --title="Backend" -- bash -c "cd '$SCRIPTS_ROOT/backend' && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash" 2>/dev/null &
                 elif command -v konsole &> /dev/null; then
                     echo "Using konsole"
                     konsole \
