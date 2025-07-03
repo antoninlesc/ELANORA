@@ -59,11 +59,11 @@ while true; do
                 # Use Docker for database, local for frontend/backend
                 if command -v gnome-terminal &> /dev/null; then
                     echo "Using gnome-terminal with tabs"
-                    # Launch gnome-terminal with 3 tabs, each running independently
+                    # Launch gnome-terminal with 3 tabs, running in background so it doesn't block
                     gnome-terminal \
                         --tab --title="Database" -- bash -c "cd '$SCRIPTS_ROOT/docker/website-dev' && ENV=dev docker-compose up db; exec bash" \
                         --tab --title="Frontend" -- bash -c "cd '$SCRIPTS_ROOT/frontend' && ENV=dev npm install && npm run dev; exec bash" \
-                        --tab --title="Backend" -- bash -c "cd '$SCRIPTS_ROOT/backend' && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash" &
+                        --tab --title="Backend" -- bash -c "cd '$SCRIPTS_ROOT/backend' && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash"
                 elif command -v konsole &> /dev/null; then
                     echo "Using konsole with tabs"
                     konsole \
