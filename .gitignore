@@ -47,10 +47,6 @@ __pycache__/
 *.gz
 *.tar
 
-#Ignore static folder
-website/static/*
-!website/static/README.md
-
 # Ignore the coverage folders
 coverage/
 .coverage
