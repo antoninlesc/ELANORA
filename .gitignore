@@ -51,3 +51,6 @@ __pycache__/
 coverage/
 .coverage
 /coverage
+
+# Ignore open project ELAN files
+*.pfsx
