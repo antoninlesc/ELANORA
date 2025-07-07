@@ -1,6 +1,5 @@
-from pydantic import EmailStr
-
 from .base import CustomBaseModel
+
 
 class TokenData(CustomBaseModel):
     """TokenData schema for user authentication.

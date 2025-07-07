@@ -1,16 +1,14 @@
-import os
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from jose import ExpiredSignatureError, JWTError, jwt
-
 from schemas.token import TokenData
 
 from core.config import (
-    SECRET_KEY,
-    ALGORITHM,
     ACCESS_TOKEN_EXPIRE_MINUTES,
+    ALGORITHM,
     REFRESH_TOKEN_EXPIRE_DAYS,
+    SECRET_KEY,
 )
 
 # Token type constants for clarity and to avoid hardcoded string warnings

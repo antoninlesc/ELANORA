@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 DEV_ENV_FILE = ".env.dev"
 
+
 def load_env() -> None:
     """Load environment variables from a specific .env file based on the environment."""
     # Absolute path to the root of the repository (where `env/` is located)

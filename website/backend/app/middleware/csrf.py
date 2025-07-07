@@ -1,12 +1,11 @@
 import os
 from collections.abc import Awaitable, Callable
 
+from core.logging import get_rotating_logger
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
-
-from core.logging import get_rotating_logger
 
 # Logger for CSRF middleware exceptions
 log_dir = os.path.join(os.path.dirname(__file__), "../logs/middleware_handlers")

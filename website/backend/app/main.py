@@ -1,28 +1,20 @@
-import os
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-from core.exception_handler import (
-    rate_limit_exception_handler,
-    validation_exception_handler,
-)
-
 from core.config import (
     BACKEND_HOST,
     FRONTEND_HOST,
 )
-
-from starlette.middleware.gzip import GZipMiddleware
-from starlette.middleware.trustedhost import TrustedHostMiddleware
-
-
-from slowapi.errors import RateLimitExceeded
-from fastapi.exceptions import RequestValidationError
-
+from core.exception_handler import (
+    rate_limit_exception_handler,
+    validation_exception_handler,
+)
 from core.limiter import limiter
+from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from middleware.csrf import CSRFMiddleware
 from middleware.security_headers import SecurityHeadersMiddleware
+from slowapi.errors import RateLimitExceeded
+from starlette.middleware.gzip import GZipMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 app = FastAPI()
 app.state.limiter = limiter

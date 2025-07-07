@@ -1,5 +1,7 @@
 import os
+
 from core.load_env import load_env
+
 # Load environment variables
 load_env()
 
