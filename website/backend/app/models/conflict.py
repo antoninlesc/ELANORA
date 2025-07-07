@@ -1,0 +1,88 @@
+from datetime import datetime
+from enum import Enum
+from typing import TYPE_CHECKING, Optional
+
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .project import Project
+    from .user import User
+
+
+class ConflictType(str, Enum):
+    """Enumeration for conflict types."""
+
+    ANNOTATION_OVERLAP = "annotation_overlap"
+    TIER_MISMATCH = "tier_mismatch"
+    VALUE_DIFFERENCE = "value_difference"
+    STRUCTURAL = "structural"
+    OTHER = "other"
+
+
+class ConflictSeverity(str, Enum):
+    """Enumeration for conflict severity levels."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class ConflictStatus(str, Enum):
+    """Enumeration for conflict status."""
+
+    DETECTED = "detected"
+    IN_PROGRESS = "in_progress"
+    RESOLVED = "resolved"
+    DISMISSED = "dismissed"
+
+
+class Conflict(Base):
+    """Conflict model representing detected conflicts in projects."""
+
+    __tablename__ = "CONFLICT"
+
+    conflict_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    conflict_type: Mapped[ConflictType] = mapped_column(
+        SQLEnum(ConflictType), nullable=False
+    )
+    conflict_description: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[ConflictSeverity] = mapped_column(
+        SQLEnum(ConflictSeverity), nullable=False, default=ConflictSeverity.MEDIUM
+    )
+    status: Mapped[ConflictStatus] = mapped_column(
+        SQLEnum(ConflictStatus), nullable=False, default=ConflictStatus.DETECTED
+    )
+    detected_at: Mapped[datetime] = mapped_column(
+        DateTime, default=func.current_timestamp()
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    resolved_by: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("USER.user_id"), nullable=True
+    )
+    project_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("PROJECT.project_id"), nullable=False
+    )
+
+    # Relationships
+    project: Mapped["Project"] = relationship("Project", back_populates="conflicts")
+    resolver: Mapped[Optional["User"]] = relationship(
+        "User", foreign_keys=[resolved_by], back_populates="resolved_conflicts"
+    )
+
+    def __repr__(self) -> str:
+        """Return a string representation of the Conflict."""
+        return f"<Conflict(conflict_id='{self.conflict_id}', conflict_type='{self.conflict_type}', status='{self.status}')>"
