@@ -6,10 +6,10 @@ from app.db.database import Base
 
 from .invitation import ProjectPermission
 
-ELAN_FILE_ELANID_FK = "ELAN_FILE.elanId"
-PROJECT_PROJECTID_FK = "PROJECT.projectId"
-CONFLICT_CONFLICTID_FK = "CONFLICT.conflictId"
-COMMENT_COMMENTID_FK = "COMMENT.commentId"
+ELAN_FILE_ELANID_FK = "ELAN_FILE.elan_id"
+PROJECT_PROJECTID_FK = "PROJECT.project_id"
+CONFLICT_CONFLICTID_FK = "CONFLICT.conflict_id"
+COMMENT_COMMENTID_FK = "COMMENT.comment_id"
 
 
 class ElanFileToProject(Base):
