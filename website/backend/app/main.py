@@ -24,12 +24,6 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 # API version prefix constant
 API_V1_PREFIX = "/api/v1"
 
-# Add the CSRF middleware
-app.add_middleware(CSRFMiddleware)
-
-# Add your own security headers middleware
-app.add_middleware(SecurityHeadersMiddleware)
-
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
@@ -38,6 +32,12 @@ app.add_middleware(
     allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers (including cookies)
 )
+
+# Add the CSRF middleware
+app.add_middleware(CSRFMiddleware)
+
+# Add your own security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 # GZip middleware configuration (for compression)
 app.add_middleware(GZipMiddleware, minimum_size=500)
