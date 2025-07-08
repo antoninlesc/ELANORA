@@ -3,14 +3,20 @@ from pathlib import Path
 from typing import Dict, List, Any
 from datetime import datetime
 from fastapi import UploadFile
+from core.config import ELAN_PROJECTS_BASE_PATH
 
 
 class GitService:
     """Service for managing Git operations for ELAN projects."""
 
-    def __init__(self, base_path: str = "data/projects") -> None:
-        """Initialize the Git service."""
-        self.base_path = Path(base_path)
+    def __init__(self, base_path: str | None = None) -> None:
+        """
+        Initialize the Git service.
+
+        Args:
+            base_path: Custom base path for projects. If None, uses config value.
+        """
+        self.base_path = Path(base_path or ELAN_PROJECTS_BASE_PATH)
         self.base_path.mkdir(parents=True, exist_ok=True)
 
     def check_git_availability(self) -> Dict[str, Any]:
@@ -222,6 +228,10 @@ ELAN Collaboration Project
 ## Usage
 Upload your ELAN files through the web interface.
 All changes are automatically tracked with Git.
+
+## Project Location
+Base path: {self.base_path}
+Project path: {self.base_path / project_name}
 
 ## Created
 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}

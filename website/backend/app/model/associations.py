@@ -2,9 +2,8 @@ from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.database import Base
-
-from .invitation import ProjectPermission
+from db.database import Base
+from .enums import ProjectPermission
 
 ELAN_FILE_ELANID_FK = "ELAN_FILE.elan_id"
 PROJECT_PROJECTID_FK = "PROJECT.project_id"

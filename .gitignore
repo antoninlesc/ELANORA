@@ -54,3 +54,6 @@ coverage/
 
 # Ignore open project ELAN files
 *.pfsx
+
+# Ignore project (ELAN) specific files
+/data/projects/*

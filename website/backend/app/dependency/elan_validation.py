@@ -1,5 +1,3 @@
-"""File validation dependencies for ELAN file uploads."""
-
 import xml.etree.ElementTree as ET
 from fastapi import HTTPException, UploadFile
 from typing import List

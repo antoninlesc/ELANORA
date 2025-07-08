@@ -1,5 +1,4 @@
 from datetime import datetime
-from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -15,7 +14,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.database import Base
+from db.database import Base
+from .enums import UserRole
 
 if TYPE_CHECKING:
     from .address import Address
@@ -23,13 +23,6 @@ if TYPE_CHECKING:
     from .conflict import Conflict
     from .elan_file import ElanFile
     from .invitation import Invitation
-
-
-class UserRole(Enum):
-    """Enum for user roles."""
-
-    ADMIN = "admin"
-    PUBLIC = "public"
 
 
 class User(Base):

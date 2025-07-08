@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.database import Base
+from db.database import Base
 
 if TYPE_CHECKING:
     from .conflict import Conflict

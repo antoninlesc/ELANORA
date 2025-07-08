@@ -1,7 +1,4 @@
-from core.config import (
-    BACKEND_HOST,
-    FRONTEND_HOST,
-)
+from core.config import BACKEND_HOST, FRONTEND_HOST, ENVIRONMENT
 from core.exception_handler import (
     rate_limit_exception_handler,
     validation_exception_handler,
@@ -17,12 +14,18 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 # Import API routers
-from app.api.v1.git import router as git_router
+from api.v1.git import router as git_router
+from api.v1.user import router as user_router
+from api.v1.auth import router as auth_router
 
 app = FastAPI(
     title="ELANORA - ELAN Collaboration Platform",
     description="API for collaborative ELAN annotation projects",
     version="1.0.0",
+    # Disable documentation for production
+    docs_url="/docs" if ENVIRONMENT != "server" else None,
+    redoc_url="/redoc" if ENVIRONMENT != "server" else None,
+    openapi_url="/openapi.json" if ENVIRONMENT != "server" else None,
 )
 
 app.state.limiter = limiter
@@ -57,7 +60,9 @@ app.add_middleware(
 )
 
 # Include API routers
-app.include_router(git_router, prefix=f"{API_V1_PREFIX}/git", tags=["git"])
+app.include_router(git_router, prefix=f"{API_V1_PREFIX}/git", tags=["GIT"])
+app.include_router(user_router, prefix=f"{API_V1_PREFIX}/user", tags=["USER"])
+app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["AUTHENTICATION"])
 
 
 # Root endpoint

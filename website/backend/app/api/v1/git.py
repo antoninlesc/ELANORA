@@ -1,24 +1,28 @@
 from fastapi import APIRouter, HTTPException, UploadFile, Depends
-from services.git import GitService
-from dependencies.elan_validation import validate_elan_file
-from app.schemas.responses.git import (
+from service.git import GitService
+from dependency.elan_validation import validate_elan_file
+from schema.responses.git import (
     ProjectStatusResponse,
     GitStatusResponse,
     ProjectCreateResponse,
     CommitResponse,
     FileUploadResponse,
 )
-from app.schemas.requests.git import (
+from schema.requests.git import (
     ProjectCreateRequest,
     CommitRequest,
 )
 
+from model.user import User
+
 router = APIRouter()
 git_service = GitService()
 
+from dependency.user import get_admin_dep
+
 
 @router.get("/check", response_model=GitStatusResponse)
-async def check_git() -> GitStatusResponse:
+async def check_git(user: User = get_admin_dep) -> GitStatusResponse:
     """
     Check if Git is available on the system.
 
@@ -36,7 +40,9 @@ async def check_git() -> GitStatusResponse:
 
 
 @router.post("/projects/create", response_model=ProjectCreateResponse)
-async def create_project(project_data: ProjectCreateRequest) -> ProjectCreateResponse:
+async def create_project(
+    project_data: ProjectCreateRequest, user: User = get_admin_dep
+) -> ProjectCreateResponse:
     """
     Create a new ELAN project with Git repository.
 

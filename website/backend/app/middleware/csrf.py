@@ -25,30 +25,39 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         self.exclude_paths = exclude_paths or [
             # Authentication endpoints
             "/api/v1/auth/",
-            # API documentation
-            "/docs",
-            "/redoc",
-            "/openapi.json",
             # Health check endpoints
             "/api/v1/health",
-            "/api/v1/status",
-            "/api/v1/support",
+            "/api/v1/support/",
         ]
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         """Process incoming requests and enforce CSRF checks unless excluded."""
-        # Skip CSRF check for excluded paths or non-mutating methods
-        if request.method in ["GET", "HEAD", "OPTIONS"] or any(
-            request.url.path.startswith(path) for path in self.exclude_paths
+        # Check if request is coming from Swagger UI
+        referer = request.headers.get("referer", "")
+        is_swagger_request = (
+            "/docs" in referer
+            or "/redoc" in referer
+            or (
+                request.headers.get("sec-fetch-mode") == "cors"
+                and request.headers.get("sec-fetch-site") == "same-origin"
+                and "/docs" in referer
+            )
+        )
+
+        # Skip CSRF check for excluded paths, non-mutating methods, or Swagger requests
+        if (
+            request.method in ["GET", "HEAD", "OPTIONS"]
+            or any(request.url.path.startswith(path) for path in self.exclude_paths)
+            or is_swagger_request
         ):
             return await call_next(request)
 
         # Get the CSRF token from the header
         csrf_header = request.headers.get("X-CSRF-Token")
         # Get the CSRF token from the cookie
-        csrf_cookie = request.cookies.get("lsfb_csrf")
+        csrf_cookie = request.cookies.get("elanora_csrf")
 
         # Verify the CSRF token matches
         if not csrf_header or not csrf_cookie or csrf_header != csrf_cookie:

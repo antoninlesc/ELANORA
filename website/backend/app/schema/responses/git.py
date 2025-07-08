@@ -1,6 +1,6 @@
 from typing import List, Optional
-from app.schemas.common.base import CustomBaseModel
-from app.schemas.common.git import FileStatus
+from schema.common.base import CustomBaseModel
+from schema.common.git import FileStatus
 
 
 class GitStatusResponse(CustomBaseModel):
