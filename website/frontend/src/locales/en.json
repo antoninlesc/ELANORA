@@ -3,7 +3,73 @@
     "welcomeMessage": "Welcome to ELANORA!",
     "description": "A collaborative platform for managing and annotating linguistic corpora.",
     "instructions": "To get started, create or join a project and explore your data.",
-    "getStarted": "Get Started"
+    "getStarted": "Get Started",
+    "viewDemo": "View Demo",
+    "features": {
+      "title": "Key Features",
+      "collaborative_elan": {
+        "title": "Collaborative ELAN Annotation",
+        "description": "Work together on ELAN files with real-time synchronization."
+      },
+      "conflict_detection": {
+        "title": "Conflict Detection",
+        "description": "Automatically identify and resolve annotation conflicts."
+      },
+      "annotation_workflows": {
+        "title": "Annotation Workflows",
+        "description": "Manage complex annotation processes with structured steps."
+      },
+      "project_repositories": {
+        "title": "Project Repositories",
+        "description": "Organize your corpora into projects with versioning and history."
+      },
+      "secure_instance": {
+        "title": "Secure Instance",
+        "description": "Your data is protected with advanced security protocols."
+      },
+      "export_tools": {
+        "title": "Export Tools",
+        "description": "Export your annotations in various formats for analysis."
+      }
+    },
+    "platform_stats": "Platform Statistics",
+    "stats": {
+      "total_projects": "Total Projects",
+      "active_users": "Active Users",
+      "elan_files": "ELAN Files",
+      "institutions": "Institutions"
+    },
+    "cta": {
+      "title": "Ready to Collaborate?",
+      "description": "Join thousands of researchers using ELANORA for their linguistics projects.",
+      "get_started": "Get Started Now",
+      "contact_us": "Contact Us"
+    }
+  },
+  "navigation": {
+    "projects": "Projects",
+    "dashboard": "Dashboard",
+    "conflicts": "Conflicts",
+    "tier_management": "Tier Management",
+    "export": "Export"
+  },
+  "footer": {
+    "platform_description": "Collaborative linguistic annotation platform for ELAN corpora.",
+    "resources": "Resources",
+    "documentation": "Documentation",
+    "api_reference": "API Reference",
+    "tutorials": "Tutorials",
+    "support": "Support",
+    "community": "Community",
+    "about": "About",
+    "research": "Research",
+    "partnerships": "Partnerships",
+    "contact": "Contact",
+    "legal": "Legal",
+    "privacy_policy": "Privacy Policy",
+    "terms_of_service": "Terms of Service",
+    "cookie_policy": "Cookie Policy",
+    "all_rights_reserved": "All rights reserved."
   },
   "login": {
     "platform_subtitle": "Collaborative annotation platform for linguistics.",
@@ -42,8 +108,19 @@
     "access_request_error": "Failed to send access request.",
     "retrieving_lab_info": "Retrieving lab information..."
   },
+  "auth": {
+    "login": "Login",
+    "request_access": "Request Access",
+    "login_success": "Login successful!",
+    "login_error": "Login failed. Check your credentials.",
+    "sso_error": "SSO login failed.",
+    "access_request_sent": "Access request sent to instance for {email}.",
+    "access_request_error": "Failed to send access request.",
+    "enter_email_first": "Please enter your email first."
+  },
   "common": {
     "or": "or",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "logout": "Logout"
   }
 }
