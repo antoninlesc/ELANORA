@@ -1,8 +1,10 @@
+from core.centralized_logging import get_logger
 from core.config import (
     BACKEND_HOST,
     FRONTEND_HOST,
 )
 from core.exception_handler import (
+    add_general_exception_handler,
     rate_limit_exception_handler,
     validation_exception_handler,
 )
@@ -16,10 +18,14 @@ from slowapi.errors import RateLimitExceeded
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+# Get logger (this will automatically call setup_application_logging)
+logger = get_logger()
+
 app = FastAPI()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, add_general_exception_handler())
 
 # API version prefix constant
 API_V1_PREFIX = "/api/v1"

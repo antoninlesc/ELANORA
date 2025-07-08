@@ -24,3 +24,12 @@ ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 # Get JWT expiration times from environment variables
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+
+# Logging configuration
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+CONSOLE_LOG_LEVEL = os.getenv("CONSOLE_LOG_LEVEL", LOG_LEVEL)
+ROOT_LOG_LEVEL = os.getenv("ROOT_LOG_LEVEL", "WARNING")
+EXCEPTION_LOG_LEVEL = os.getenv("EXCEPTION_LOG_LEVEL", "WARNING")
+EXCEPTION_LOG_DIR = os.getenv("EXCEPTION_LOG_DIR", "app/logs/exceptions")
+LOG_DIR = os.getenv("LOG_DIR", "app/logs")
+APP_NAME = os.getenv("APP_NAME", "elanora")
