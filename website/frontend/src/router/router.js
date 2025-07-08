@@ -14,7 +14,12 @@ const routes = [
     name: 'homePage',
     component: () => import('@views/homePage.vue'), // Lazy load for now
   },
-  // TODO: Add other routes
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@views/login.vue'),
+    meta: { requiresGuest: true }
+  },
 ];
 
 // Function to map status codes to messages
@@ -43,7 +48,7 @@ const router = createRouter({
 function handleNotAuthenticated(eventMessageStore, to, next) {
   localStorage.setItem('redirectAfterLogin', to.fullPath);
   eventMessageStore.addMessage('http_status.401', 'warning');
-  next({ name: 'LoginPage' });
+  next({ name: 'Login' }); 
 }
 
 // Helper: handle role denied
@@ -70,7 +75,16 @@ router.beforeEach((to, from, next) => {
   const eventMessageStore = useEventMessageStore();
   const userStore = useUserStore();
 
-  // TODO: Add route guard logic
+  // Vérifie si la route nécessite d'être non authentifié
+  if (to.meta.requiresGuest && userStore.authState.isAuthenticated) {
+    next({ name: 'homePage' });
+    return;
+  }
+  // Vérifie si la route nécessite d'être authentifié
+  if (to.meta.requiresAuth && !userStore.authState.isAuthenticated) {
+    handleNotAuthenticated(eventMessageStore, to, next);
+    return;
+  }
   next();
 });
 

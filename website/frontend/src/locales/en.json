@@ -1,1 +1,49 @@
-{}
+{
+  "homePage": {
+    "welcomeMessage": "Welcome to ELANORA!",
+    "description": "A collaborative platform for managing and annotating linguistic corpora.",
+    "instructions": "To get started, create or join a project and explore your data.",
+    "getStarted": "Get Started"
+  },
+  "login": {
+    "platform_subtitle": "Collaborative annotation platform for linguistics.",
+    "connect_to_access": "Connect to access the instance: {instanceName}",
+    "email_address": "Email address",
+    "email_placeholder": "Enter your email",
+    "password": "Password",
+    "password_placeholder": "Enter your password",
+    "remember_me": "Remember me",
+    "forgot_password": "Forgot password?",
+    "logging_in": "Logging in...",
+    "login": "Login",
+    "login_with_sso": "Login with {provider}",
+    "no_account": "No account?",
+    "request_access": "Request access",
+    "have_invitation": "Have an invitation?",
+    "join_project": "Join a project",
+    "welcome_to_elanora": "Welcome to ELANORA!",
+    "features": {
+      "collaborative_elan": "Collaborative ELAN annotation",
+      "conflict_detection": "Conflict detection",
+      "annotation_workflows": "Annotation workflows",
+      "project_repositories": "Project repositories",
+      "secure_instance": "Secure instance"
+    },
+    "stats": {
+      "active_projects": "Active projects",
+      "researchers": "Researchers",
+      "elan_files": "ELAN files"
+    },
+    "enter_email_first": "Please enter your email first.",
+    "login_success": "Login successful!",
+    "login_error": "Login failed. Please check your credentials.",
+    "sso_error": "SSO login failed.",
+    "access_request_sent": "Access request sent to the instance for {email}.",
+    "access_request_error": "Failed to send access request.",
+    "retrieving_lab_info": "Retrieving lab information..."
+  },
+  "common": {
+    "or": "or",
+    "loading": "Loading..."
+  }
+}

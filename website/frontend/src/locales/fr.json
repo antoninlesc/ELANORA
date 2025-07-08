@@ -1,1 +1,49 @@
-{}
+{
+  "homePage": {
+    "welcomeMessage": "Bienvenue sur ELANORA !",
+    "description": "Une plateforme collaborative pour gérer et annoter des corpus linguistiques.",
+    "instructions": "Pour commencer, créez ou rejoignez un projet et explorez vos données.",
+    "getStarted": "Commencer"
+  },
+  "login": {
+    "platform_subtitle": "Plateforme collaborative d'annotation pour la linguistique.",
+    "connect_to_access": "Connectez-vous pour accéder à l'instance : {instanceName}",
+    "email_address": "Adresse e-mail",
+    "email_placeholder": "Entrez votre e-mail",
+    "password": "Mot de passe",
+    "password_placeholder": "Entrez votre mot de passe",
+    "remember_me": "Se souvenir de moi",
+    "forgot_password": "Mot de passe oublié ?",
+    "logging_in": "Connexion en cours...",
+    "login": "Connexion",
+    "login_with_sso": "Connexion avec {provider}",
+    "no_account": "Pas de compte ?",
+    "request_access": "Demander un accès",
+    "have_invitation": "Vous avez une invitation ?",
+    "join_project": "Rejoindre un projet",
+    "welcome_to_elanora": "Bienvenue sur ELANORA !",
+    "features": {
+      "collaborative_elan": "Annotation ELAN collaborative",
+      "conflict_detection": "Détection de conflits",
+      "annotation_workflows": "Workflows d'annotation",
+      "project_repositories": "Dépôts de projets",
+      "secure_instance": "Instance sécurisée"
+    },
+    "stats": {
+      "active_projects": "Projets actifs",
+      "researchers": "Chercheurs",
+      "elan_files": "Fichiers ELAN"
+    },
+    "enter_email_first": "Veuillez d'abord saisir votre e-mail.",
+    "login_success": "Connexion réussie !",
+    "login_error": "Échec de la connexion. Vérifiez vos identifiants.",
+    "sso_error": "Échec de la connexion SSO.",
+    "access_request_sent": "Demande d'accès envoyée à l'instance pour {email}.",
+    "access_request_error": "Échec de l'envoi de la demande d'accès.",
+    "retrieving_lab_info": "Récupération des informations du laboratoire..."
+  },
+  "common": {
+    "or": "ou",
+    "loading": "Chargement..."
+  }
+}
