@@ -2,13 +2,13 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from jose import ExpiredSignatureError, JWTError, jwt
-from schemas.token import TokenData
+from schema.common.token import TokenData
 
 from core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
-    ALGORITHM,
+    JWT_ALGORITHM,
     REFRESH_TOKEN_EXPIRE_DAYS,
-    SECRET_KEY,
+    JWT_SECRET_KEY,
 )
 
 # Token type constants for clarity and to avoid hardcoded string warnings
@@ -46,10 +46,10 @@ def create_token(
     to_encode["exp"] = expire
     to_encode["token_type"] = token_type
 
-    if not SECRET_KEY:
-        raise ValueError("SECRET_KEY is not set in the environment variables.")
+    if not JWT_SECRET_KEY:
+        raise ValueError("JWT_SECRET_KEY is not set in the environment variables.")
 
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
     return str(encoded_jwt)
 
 
@@ -68,11 +68,11 @@ def verify_token(token: str, expected_token_type: str = ACCESS_TOKEN_TYPE) -> To
 
     """
     try:
-        if not SECRET_KEY:
-            raise ValueError("SECRET_KEY is not set in the environment variables.")
+        if not JWT_SECRET_KEY:
+            raise ValueError("JWT_SECRET_KEY is not set in the environment variables.")
 
         payload = jwt.decode(
-            token, SECRET_KEY, algorithms=[ALGORITHM], options={"leeway": 10}
+            token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM], options={"leeway": 10}
         )
         sub = payload.get("sub")
         token_type = payload.get("token_type")
