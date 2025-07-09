@@ -30,6 +30,10 @@ export const useUserStore = defineStore('user', {
       this.authState.loading = false;
       this.authState.initialized = true;
     },
+    setUser(user) {
+      this.user = user;
+      this.authState.isAuthenticated = !!user;
+    },
     // TODO: Add other actions
   },
 

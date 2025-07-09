@@ -49,8 +49,7 @@
   "login": {
     "platform_subtitle": "Plateforme collaborative d'annotation pour la linguistique.",
     "connect_to_access": "Connectez-vous pour accéder à l'instance : {instanceName}",
-    "email_address": "Adresse e-mail",
-    "email_placeholder": "Entrez votre e-mail",
+    "login_placeholder": "Entrez votre identifiant",
     "password": "Mot de passe",
     "password_placeholder": "Entrez votre mot de passe",
     "remember_me": "Se souvenir de moi",

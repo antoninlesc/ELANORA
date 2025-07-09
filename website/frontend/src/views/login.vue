@@ -15,13 +15,13 @@
         
         <form class="login-form" @submit.prevent="handleLogin">
           <div class="form-group">
-            <label for="email">{{ $t('login.email_address') }}</label>
+            <label for="email">{{ $t('login.login') }}</label>
             <input 
-              type="email" 
-              id="email" 
-              v-model="loginForm.email" 
+              type="text" 
+              id="login" 
+              v-model="loginForm.login" 
               required 
-              :placeholder="$t('login.email_placeholder')"
+              :placeholder="$t('login.login_placeholder')"
               :disabled="userStore.authState.loading"
             >
           </div>
@@ -86,7 +86,7 @@
           <li>✓ {{ $t('login.features.project_repositories') }}</li>
           <li>✓ {{ $t('login.features.secure_instance') }}</li>
         </ul>
-        <!-- Statistiques masquées si non disponibles -->
+        <!-- Statistiques hidden if not available -->
         <div class="instance-stats loading">
           <div class="stat">
             <strong>-</strong> {{ $t('login.stats.active_projects') }}
@@ -107,6 +107,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import axios from 'axios';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { useUserStore } from '@stores/user';
 
@@ -116,7 +117,7 @@ const userStore = useUserStore();
 const eventMessageStore = useEventMessageStore();
 
 const loginForm = ref({
-  email: '',
+  login: '',
   password: '',
   remember: false
 });
@@ -133,16 +134,34 @@ onMounted(async () => {
 
 const handleLogin = async () => {
   try {
-    await userStore.login({
-      email: loginForm.value.email,
-      password: loginForm.value.password,
-      remember: loginForm.value.remember
-    });
-    eventMessageStore.addMessage(t('auth.login_success'), 'success');
+    const response = await axios.post(
+      '/api/v1/auth/login',
+      {
+        login: loginForm.value.login,
+        password: loginForm.value.password,
+      },
+      {
+        withCredentials: true,
+      }
+    );
+    if (response.data.needs_verification) {
+      eventMessageStore.addMessage(response.data.message || 'Vérifiez votre email avant de vous connecter.', 'warning');
+      return;
+    }
+    if (!response.data.user) {
+      eventMessageStore.addMessage('Erreur de connexion', 'error');
+      return;
+    }
+    userStore.setUser(response.data.user);
+    eventMessageStore.addMessage('Connexion réussie', 'success');
     router.push('/dashboard');
   } catch (error) {
     console.error('Login error:', error);
-    eventMessageStore.addMessage(t('auth.login_error'), 'error');
+    let msg = 'Erreur de connexion';
+    if (error.response && error.response.data && error.response.data.detail) {
+      msg = error.response.data.detail;
+    }
+    eventMessageStore.addMessage(msg, 'error');
   }
 };
 
@@ -157,18 +176,17 @@ const handleSSOLogin = async () => {
 };
 
 const requestAccess = async () => {
-  if (!loginForm.value.email) {
-    eventMessageStore.addMessage(t('auth.enter_email_first'), 'warning');
-    document.getElementById('email').focus();
+  if (!loginForm.value.login) {
+    eventMessageStore.addMessage(t('auth.enter_login_first'), 'warning');
+    document.getElementById('login').focus();
     return;
   }
   try {
     await userStore.requestAccess({
-      email: loginForm.value.email
-      // Ajoutez d'autres paramètres si besoin
+      login: loginForm.value.login
     });
     eventMessageStore.addMessage(
-      t('auth.access_request_sent', { email: loginForm.value.email }),
+      t('auth.access_request_sent', { login: loginForm.value.login }),
       'success'
     );
   } catch (error) {
