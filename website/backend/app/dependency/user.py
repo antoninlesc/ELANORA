@@ -1,11 +1,10 @@
-from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import HTTPBearer
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-
 from core.jwt import verify_access_token
 from db.database import get_db
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPBearer
 from model.user import User, UserRole
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 # Base HTTP bearer security scheme
 security = HTTPBearer(auto_error=False)

@@ -1,5 +1,4 @@
-"""
-Shared enums for the application.
+"""Shared enums for the application.
 
 This module contains all enum definitions used across models.
 """

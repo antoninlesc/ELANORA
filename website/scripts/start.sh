@@ -46,30 +46,37 @@ while true; do
             if [[ "$USE_DOCKER" == "yes" ]]; then
                 check_docker_with_retry
                 cd website/docker/website-dev
-                ENV=dev.docker docker-compose up
+                export ENVIRONMENT=dev
+                echo "Running: docker-compose up"
+                docker-compose up
+                if [ $? -ne 0 ]; then
+                    echo ""
+                    echo "ERROR: Docker compose failed!"
+                    read -p "Press Enter to exit..."
+                fi
                 exit 0
             elif [[ "$USE_DOCKER" == "no" ]]; then
                 check_docker_for_db_with_retry
                 SCRIPTS_ROOT="$(pwd)/website"
                 if command -v gnome-terminal &> /dev/null; then
                     gnome-terminal \
-                        --tab --title="Database" -- bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && ENV=dev docker-compose up db; exec bash" \
-                        --tab --title="Frontend" -- bash -c "cd \"$SCRIPTS_ROOT/frontend\" && ENV=dev npm install && npm run dev; exec bash" \
-                        --tab --title="Backend" -- bash -c "cd \"$SCRIPTS_ROOT/backend\" && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash"
+                        --tab --title="Database" -- bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && export ENVIRONMENT=dev && docker-compose up db; exec bash" \
+                        --tab --title="Frontend" -- bash -c "cd \"$SCRIPTS_ROOT/frontend\" && export ENVIRONMENT=dev && npm install && npm run dev; exec bash" \
+                        --tab --title="Backend" -- bash -c "cd \"$SCRIPTS_ROOT/backend\" && export ENVIRONMENT=dev && poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018; exec bash"
                 elif command -v konsole &> /dev/null; then
                     konsole \
-                        --new-tab -p tabtitle="Database" -e bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && ENV=dev docker-compose up db" \
-                        --new-tab -p tabtitle="Frontend" -e bash -c "cd \"$SCRIPTS_ROOT/frontend\" && ENV=dev npm install && npm run dev" \
-                        --new-tab -p tabtitle="Backend" -e bash -c "cd \"$SCRIPTS_ROOT/backend\" && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018"
+                        --new-tab -p tabtitle="Database" -e bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && export ENVIRONMENT=dev && docker-compose up db" \
+                        --new-tab -p tabtitle="Frontend" -e bash -c "cd \"$SCRIPTS_ROOT/frontend\" && export ENVIRONMENT=dev && npm install && npm run dev" \
+                        --new-tab -p tabtitle="Backend" -e bash -c "cd \"$SCRIPTS_ROOT/backend\" && export ENVIRONMENT=dev && poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018"
                 elif command -v x-terminal-emulator &> /dev/null; then
-                    x-terminal-emulator -T "Database" -e bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && ENV=dev docker-compose up db" &
-                    x-terminal-emulator -T "Frontend" -e bash -c "cd \"$SCRIPTS_ROOT/frontend\" && ENV=dev npm install && npm run dev" &
-                    x-terminal-emulator -T "Backend" -e bash -c "cd \"$SCRIPTS_ROOT/backend\" && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018" &
+                    x-terminal-emulator -T "Database" -e bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && export ENVIRONMENT=dev && docker-compose up db" &
+                    x-terminal-emulator -T "Frontend" -e bash -c "cd \"$SCRIPTS_ROOT/frontend\" && export ENVIRONMENT=dev && npm install && npm run dev" &
+                    x-terminal-emulator -T "Backend" -e bash -c "cd \"$SCRIPTS_ROOT/backend\" && export ENVIRONMENT=dev && poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018" &
                 else
                     echo "No multi-tab terminal found. Running all services in the current terminal."
-                    (cd website/docker/website-dev && ENV=dev docker-compose up db &) 
-                    (cd website/frontend && ENV=dev npm install && npm run dev &)
-                    (cd website/backend && ENV=dev poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8008)
+                    (cd website/docker/website-dev && export ENVIRONMENT=dev && docker-compose up db &) 
+                    (cd website/frontend && export ENVIRONMENT=dev && npm install && npm run dev &)
+                    (cd website/backend && export ENVIRONMENT=dev && poetry install && poetry run fastapi dev app/main.py --host 0.0.0.0 --port 8018)
                 fi
                 exit 0
             elif [[ "$USE_DOCKER" == "back" ]]; then
@@ -81,12 +88,26 @@ while true; do
     elif [[ "$ENV" == "prod" ]]; then
         check_docker_with_retry
         cd website/docker/website-prod
-        ENV=prod docker-compose up
+        export ENVIRONMENT=prod
+        echo "Running: docker-compose up"
+        docker-compose up
+        if [ $? -ne 0 ]; then
+            echo ""
+            echo "ERROR: Docker compose failed!"
+            read -p "Press Enter to exit..."
+        fi
         exit 0
     elif [[ "$ENV" == "server" ]]; then
         check_docker_with_retry
         cd website/docker/website-server
-        ENV=server docker-compose up
+        export ENVIRONMENT=server
+        echo "Running: docker-compose up"
+        docker-compose up
+        if [ $? -ne 0 ]; then
+            echo ""
+            echo "ERROR: Docker compose failed!"
+            read -p "Press Enter to exit..."
+        fi
         exit 0
     else
         echo "Invalid environment. Please enter 'dev', 'prod', or 'server'."

@@ -1,8 +1,7 @@
+from dependency.user import get_user_dep
 from fastapi import APIRouter
-
 from model.user import User
 from schema.responses.user import UserResponse
-from dependency.user import get_user_dep
 
 router = APIRouter()
 

@@ -56,4 +56,4 @@ coverage/
 *.pfsx
 
 # Ignore project (ELAN) specific files
-/data/projects/*
+projects/

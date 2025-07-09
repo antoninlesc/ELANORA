@@ -5,7 +5,7 @@ from core.load_env import load_env
 # Load environment variables
 load_env()
 
-ENVIRONMENT = os.getenv("ENV", "dev")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
 
 # Mail configuration
 MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
@@ -41,9 +41,18 @@ REFRESH_TOKEN_PATH = "/api/v1/auth/refresh"  # noqa: S105
 CSRF_TOKEN_NAME = "elanora_csrf"  # noqa: S105
 
 # ELAN Projects configuration
-ELAN_PROJECTS_BASE_PATH = os.getenv("ELAN_PROJECTS_BASE_PATH", "data/projects")
+ELAN_PROJECTS_BASE_PATH = os.getenv("ELAN_PROJECTS_BASE_PATH", "projects")
 ELAN_MAX_FILE_SIZE_MB = int(os.getenv("ELAN_MAX_FILE_SIZE_MB", "50"))
 ELAN_MAX_BATCH_SIZE_MB = int(os.getenv("ELAN_MAX_BATCH_SIZE_MB", "500"))
 
 # Vite configuration
 VITE_API_URL = os.getenv("VITE_API_URL", "http://localhost:8010/api/v1")
+
+# Logging configuration
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+CONSOLE_LOG_LEVEL = os.getenv("CONSOLE_LOG_LEVEL", LOG_LEVEL)
+ROOT_LOG_LEVEL = os.getenv("ROOT_LOG_LEVEL", "WARNING")
+EXCEPTION_LOG_LEVEL = os.getenv("EXCEPTION_LOG_LEVEL", "WARNING")
+EXCEPTION_LOG_DIR = os.getenv("EXCEPTION_LOG_DIR", "app/logs/exceptions")
+LOG_DIR = os.getenv("LOG_DIR", "app/logs")
+APP_NAME = os.getenv("APP_NAME", "elanora")

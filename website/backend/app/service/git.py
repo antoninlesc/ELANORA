@@ -1,29 +1,45 @@
 import subprocess
-from pathlib import Path
-from typing import Dict, List, Any
 from datetime import datetime
-from fastapi import UploadFile
+from pathlib import Path
+from typing import Any
+
+from core.centralized_logging import get_logger
 from core.config import ELAN_PROJECTS_BASE_PATH
+from fastapi import UploadFile
+
+logger = get_logger()
 
 
 class GitService:
     """Service for managing Git operations for ELAN projects."""
 
     def __init__(self, base_path: str | None = None) -> None:
-        """
-        Initialize the Git service.
+        """Initialize the Git service.
 
         Args:
             base_path: Custom base path for projects. If None, uses config value.
+
         """
-        self.base_path = Path(base_path or ELAN_PROJECTS_BASE_PATH)
+        if base_path is None:
+            current_file = Path(__file__)
+            website_root = current_file.parent.parent.parent.parent
+            self.base_path = website_root / ELAN_PROJECTS_BASE_PATH
+        else:
+            self.base_path = Path(base_path)
+
         self.base_path.mkdir(parents=True, exist_ok=True)
 
-    def check_git_availability(self) -> Dict[str, Any]:
+    def check_git_availability(self) -> dict[str, Any]:
         """Check if Git is available on the system."""
         try:
             result = subprocess.run(
-                ["git", "--version"], capture_output=True, text=True
+                [  # noqa: S607,
+                    "git",
+                    "--version",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
             )
             return {
                 "git_available": result.returncode == 0,
@@ -38,7 +54,7 @@ class GitService:
                 "error": "Git not installed",
             }
 
-    def create_project(self, project_name: str) -> Dict[str, Any]:
+    def create_project(self, project_name: str) -> dict[str, Any]:
         """Create a new project with Git repository."""
         project_path = self.base_path / project_name
 
@@ -50,11 +66,10 @@ class GitService:
             project_path.mkdir(parents=True, exist_ok=True)
 
             # Initialize Git repository
-            subprocess.run(["git", "init"], cwd=project_path, check=True)
+            subprocess.run(["git", "init"], cwd=project_path, check=True)  # noqa: S607
 
             # Create project structure
             (project_path / "elan_files").mkdir(exist_ok=True)
-            (project_path / "media").mkdir(exist_ok=True)
 
             # Create README
             readme_content = self._create_readme(project_name)
@@ -62,9 +77,9 @@ class GitService:
                 f.write(readme_content)
 
             # Initial commit
-            subprocess.run(["git", "add", "."], cwd=project_path, check=True)
+            subprocess.run(["git", "add", "."], cwd=project_path, check=True)  # noqa: S607
             subprocess.run(
-                ["git", "commit", "-m", "Initial project setup"],
+                ["git", "commit", "-m", "Initial project setup"],  # noqa: S607
                 cwd=project_path,
                 check=True,
             )
@@ -78,11 +93,11 @@ class GitService:
             }
 
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Git operation failed: {e}")
+            raise RuntimeError(f"Git operation failed: {e}") from e
         except Exception as e:
-            raise RuntimeError(f"Project creation failed: {e}")
+            raise RuntimeError(f"Project creation failed: {e}") from e
 
-    def get_project_status(self, project_name: str) -> Dict[str, Any]:
+    def get_project_status(self, project_name: str) -> dict[str, Any]:
         """Get Git status of a project."""
         project_path = self.base_path / project_name
 
@@ -92,7 +107,8 @@ class GitService:
         try:
             # Get Git status
             status_result = subprocess.run(
-                ["git", "status", "--porcelain"],
+                ["git", "status", "--porcelain"],  # noqa: S607
+                check=False,
                 cwd=project_path,
                 capture_output=True,
                 text=True,
@@ -116,11 +132,11 @@ class GitService:
             }
 
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Git status check failed: {e}")
+            raise RuntimeError(f"Git status check failed: {e}") from e
 
     def commit_changes(
         self, project_name: str, commit_message: str, user_name: str = "user"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Commit changes to a project."""
         project_path = self.base_path / project_name
 
@@ -130,7 +146,8 @@ class GitService:
         try:
             # Check if there are changes to commit
             status_result = subprocess.run(
-                ["git", "status", "--porcelain"],
+                ["git", "status", "--porcelain"],  # noqa: S607
+                check=False,
                 cwd=project_path,
                 capture_output=True,
                 text=True,
@@ -140,17 +157,25 @@ class GitService:
                 raise ValueError("No changes to commit")
 
             # Add all changes
-            subprocess.run(["git", "add", "."], cwd=project_path, check=True)
+            subprocess.run(["git", "add", "."], cwd=project_path, check=True)  # noqa: S607
 
             # Commit with user info
             full_message = f"{commit_message}\n\nCommitted by: {user_name}"
-            subprocess.run(
-                ["git", "commit", "-m", full_message], cwd=project_path, check=True
+            subprocess.run(  # noqa: S603
+                [  # noqa: S607,
+                    "git",
+                    "commit",
+                    "-m",
+                    full_message,
+                ],
+                cwd=project_path,
+                check=True,
             )
 
             # Get commit hash
             hash_result = subprocess.run(
-                ["git", "rev-parse", "HEAD"],
+                ["git", "rev-parse", "HEAD"],  # noqa: S607
+                check=False,
                 cwd=project_path,
                 capture_output=True,
                 text=True,
@@ -165,13 +190,16 @@ class GitService:
             }
 
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Commit failed: {e}")
+            raise RuntimeError(f"Commit failed: {e}") from e
 
     async def add_elan_file(
         self, project_name: str, file: UploadFile, user_name: str = "user"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Add an ELAN file to the project."""
         project_path = self.base_path / project_name
+        logger.info(f"Adding ELAN file to project: {project_name}")
+        logger.info(f"File details: {file.filename}, size: {file.size}")
+        logger.info(f"Project PAth: {project_path}")
 
         if not project_path.exists():
             raise FileNotFoundError(f"Project '{project_name}' not found")
@@ -190,12 +218,18 @@ class GitService:
                 buffer.write(content)
 
             # Commit the file
-            subprocess.run(
-                ["git", "add", f"elan_files/{filename}"], cwd=project_path, check=True
+            subprocess.run(  # noqa: S603
+                [  # noqa: S607,
+                    "git",
+                    "add",
+                    f"elan_files/{filename}",
+                ],
+                cwd=project_path,
+                check=True,
             )
             commit_message = f"Add ELAN file: {filename}"
-            subprocess.run(
-                [
+            subprocess.run(  # noqa: S603
+                [  # noqa: S607
                     "git",
                     "commit",
                     "-m",
@@ -213,7 +247,7 @@ class GitService:
             }
 
         except Exception as e:
-            raise RuntimeError(f"Failed to add ELAN file: {e}")
+            raise RuntimeError(f"Failed to add ELAN file: {e}") from e
 
     def _create_readme(self, project_name: str) -> str:
         """Create README content for a project."""
@@ -237,9 +271,9 @@ Project path: {self.base_path / project_name}
 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 """
 
-    def _parse_git_status(self, status_output: str) -> List[Dict[str, str]]:
+    def _parse_git_status(self, status_output: str) -> list[dict[str, str]]:
         """Parse Git status output."""
-        files: List[Dict[str, str]] = []
+        files: list[dict[str, str]] = []
         if status_output:
             for line in status_output.strip().split("\n"):
                 if line.strip():
@@ -256,7 +290,7 @@ Project path: {self.base_path / project_name}
 
     def _parse_status_code(self, status_code: str) -> str:
         """Parse Git status codes."""
-        status_map: Dict[str, str] = {
+        status_map: dict[str, str] = {
             "M ": "Modified",
             "A ": "Added",
             "D ": "Deleted",
@@ -266,17 +300,18 @@ Project path: {self.base_path / project_name}
         }
         return status_map.get(status_code, "Unknown")
 
-    def _get_recent_commits(self, project_path: Path, limit: int = 5) -> List[str]:
+    def _get_recent_commits(self, project_path: Path, limit: int = 5) -> list[str]:
         """Get recent commits from a project."""
         try:
-            result = subprocess.run(
-                ["git", "log", "--oneline", f"-{limit}"],
+            result = subprocess.run(  # noqa: S603
+                ["git", "log", "--oneline", f"-{limit}"],  # noqa: S607
+                check=False,
                 cwd=project_path,
                 capture_output=True,
                 text=True,
             )
 
-            commits: List[str] = []
+            commits: list[str] = []
             if result.stdout:
                 for line in result.stdout.strip().split("\n"):
                     if line.strip():
@@ -285,17 +320,18 @@ Project path: {self.base_path / project_name}
         except subprocess.CalledProcessError:
             return []
 
-    def _check_for_conflicts(self, project_path: Path) -> List[str]:
+    def _check_for_conflicts(self, project_path: Path) -> list[str]:
         """Check for merge conflicts in a project."""
         try:
             result = subprocess.run(
-                ["git", "diff", "--name-only", "--diff-filter=U"],
+                ["git", "diff", "--name-only", "--diff-filter=U"],  # noqa: S607
+                check=False,
                 cwd=project_path,
                 capture_output=True,
                 text=True,
             )
 
-            conflicts: List[str] = []
+            conflicts: list[str] = []
             if result.stdout:
                 for line in result.stdout.strip().split("\n"):
                     if line.strip():

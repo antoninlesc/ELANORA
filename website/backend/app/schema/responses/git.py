@@ -1,4 +1,3 @@
-from typing import List, Optional
 from schema.common.base import CustomBaseModel
 from schema.common.git import FileStatus
 
@@ -7,9 +6,9 @@ class GitStatusResponse(CustomBaseModel):
     """Schema for Git availability status."""
 
     git_available: bool
-    version: Optional[str] = None
+    version: str | None = None
     status: str
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class ProjectCreateResponse(CustomBaseModel):
@@ -45,7 +44,7 @@ class ProjectStatusResponse(CustomBaseModel):
     """Schema for project status response."""
 
     project_name: str
-    files: List[FileStatus]
-    recent_commits: List[str]
-    conflicts: List[str]
+    files: list[FileStatus]
+    recent_commits: list[str]
+    conflicts: list[str]
     status: str

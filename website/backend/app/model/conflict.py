@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
+from db.database import Base
 from sqlalchemy import (
     DateTime,
     ForeignKey,
@@ -14,8 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from db.database import Base
-from .enums import ConflictType, ConflictSeverity, ConflictStatus
+from .enums import ConflictSeverity, ConflictStatus, ConflictType
 
 if TYPE_CHECKING:
     from .project import Project

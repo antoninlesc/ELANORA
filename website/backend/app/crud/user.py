@@ -1,11 +1,11 @@
 """User CRUD operations - Pure database access layer."""
 
+from model.user import User, UserRole
+from schema.common.user import UserCreateData
 from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-
-from model.user import User, UserRole
 
 ROLE_ADMIN = UserRole.ADMIN
 
@@ -19,6 +19,7 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:
 
     Returns:
         User or None: The user object if found, otherwise None.
+
     """
     result = await db.execute(
         select(User).options(selectinload(User.address)).filter(User.user_id == user_id)
@@ -37,6 +38,7 @@ async def get_user_by_username_or_email(
 
     Returns:
         User: The user object if found, otherwise None.
+
     """
     result = await db.execute(
         select(User)
@@ -54,30 +56,14 @@ async def get_user_by_username_or_email(
 
 async def create_user_in_db(
     db: AsyncSession,
-    username: str,
-    hashed_password: str,
-    email: str,
-    first_name: str,
-    last_name: str,
-    affiliation: str,
-    department: str,
-    activation_code: str,
-    address_id: int | None = None,
+    user_data: UserCreateData,
     **additional_fields,
 ) -> User:
     """Create a new user in the database.
 
     Args:
         db (AsyncSession): Database session.
-        username (str): User username.
-        hashed_password (str): Already hashed password.
-        email (str): User email.
-        first_name (str): User's first name.
-        last_name (str): User's last name.
-        affiliation (str): User's affiliation.
-        department (str): User's department.
-        activation_code (str): Activation code.
-        address_id (int | None): Optional address ID.
+        user_data (UserCreateData): User creation data.
         **additional_fields: Additional user fields.
 
     Returns:
@@ -85,17 +71,18 @@ async def create_user_in_db(
 
     Raises:
         Exception: If user creation fails.
+
     """
     user = User(
-        username=username,
-        password=hashed_password,
-        email=email,
-        first_name=first_name,
-        last_name=last_name,
-        affiliation=affiliation,
-        department=department,
-        activation_code=activation_code,
-        address_id=address_id,
+        username=user_data.username,
+        password=user_data.hashed_password,
+        email=user_data.email,
+        first_name=user_data.first_name,
+        last_name=user_data.last_name,
+        affiliation=user_data.affiliation,
+        department=user_data.department,
+        activation_code=user_data.activation_code,
+        address_id=user_data.address_id,
         is_verified_account=False,
         role=UserRole.PUBLIC,
         is_active=True,
@@ -124,6 +111,7 @@ async def update_user_password(
 
     Returns:
         bool: True if update successful, False otherwise.
+
     """
     try:
         user.password = new_password_hash
@@ -144,6 +132,7 @@ async def update_user_profile(db: AsyncSession, user: User, **update_fields) -> 
 
     Returns:
         bool: True if update successful, False otherwise.
+
     """
     try:
         for field, value in update_fields.items():
@@ -166,6 +155,7 @@ async def validate_user_exists_and_active(db: AsyncSession, user_id: int) -> boo
 
     Returns:
         bool: True if the user exists and is active, False otherwise.
+
     """
     result = await db.execute(select(User.is_active).filter(User.user_id == user_id))
     is_active = result.scalar_one_or_none()
@@ -180,8 +170,9 @@ async def get_admin_emails(db: AsyncSession) -> list[str]:
 
     Returns:
         list[str]: A list of administrator email addresses.
+
     """
-    query = select(User.email).where(User.role == ROLE_ADMIN, User.is_active == True)
+    query = select(User.email).where(User.role == ROLE_ADMIN, User.is_active)
     result = await db.execute(query)
     admin_emails = result.scalars().all()
 
@@ -200,6 +191,7 @@ async def check_user_exists_by_username(db: AsyncSession, username: str) -> bool
 
     Returns:
         bool: True if user exists, False otherwise.
+
     """
     result = await db.execute(select(User.user_id).filter(User.username == username))
     return result.scalar_one_or_none() is not None
@@ -214,6 +206,7 @@ async def check_user_exists_by_email(db: AsyncSession, email: str) -> bool:
 
     Returns:
         bool: True if user exists, False otherwise.
+
     """
     result = await db.execute(select(User.user_id).filter(User.email == email))
     return result.scalar_one_or_none() is not None

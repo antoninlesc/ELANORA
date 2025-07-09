@@ -1,5 +1,11 @@
-from core.config import BACKEND_HOST, FRONTEND_HOST, ENVIRONMENT
+# Import API routers
+from api.v1.auth import router as auth_router
+from api.v1.git import router as git_router
+from api.v1.user import router as user_router
+from core.centralized_logging import get_logger
+from core.config import BACKEND_HOST, ENVIRONMENT, FRONTEND_HOST
 from core.exception_handler import (
+    add_general_exception_handler,
     rate_limit_exception_handler,
     validation_exception_handler,
 )
@@ -13,10 +19,11 @@ from slowapi.errors import RateLimitExceeded
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-# Import API routers
-from api.v1.git import router as git_router
-from api.v1.user import router as user_router
-from api.v1.auth import router as auth_router
+# Get logger (this will automatically call setup_application_logging)
+logger = get_logger()
+
+# Get logger (this will automatically call setup_application_logging)
+logger = get_logger()
 
 app = FastAPI(
     title="ELANORA - ELAN Collaboration Platform",
@@ -31,6 +38,7 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, add_general_exception_handler())
 
 # API version prefix constant
 API_V1_PREFIX = "/api/v1"

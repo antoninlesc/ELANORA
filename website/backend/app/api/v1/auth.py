@@ -1,26 +1,26 @@
 import secrets
-from fastapi import APIRouter, Request, HTTPException, Response, BackgroundTasks, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any
 
-from model.user import User
-from schema.responses.user import UserResponse, LoginResponse
-from schema.requests.user import LoginRequest
-from schema.common.token import TokenData
-from service.user import UserService
-from core.jwt import create_access_token, create_refresh_token
-from core.limiter import limiter
-from dependency.user import get_user_dep
-from dependency.database import get_db_dep
 from core.config import (
     ACCESS_TOKEN_COOKIE_NAME,
     ACCESS_TOKEN_EXPIRE_MINUTES,
+    CSRF_TOKEN_NAME,
+    ENVIRONMENT,
     REFRESH_TOKEN_COOKIE_NAME,
     REFRESH_TOKEN_EXPIRE_DAYS,
     REFRESH_TOKEN_PATH,
-    CSRF_TOKEN_NAME,
-    ENVIRONMENT,
 )
+from core.jwt import create_access_token, create_refresh_token
+from core.limiter import limiter
+from dependency.database import get_db_dep
+from dependency.user import get_user_dep
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
+from model.user import User
+from schema.common.token import TokenData
+from schema.requests.user import LoginRequest
+from schema.responses.user import LoginResponse, UserResponse
+from service.user import UserService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -35,7 +35,6 @@ async def login(
     db: AsyncSession = get_db_dep,
 ) -> LoginResponse:
     """Handle user login and set JWT tokens as HTTP-only cookies."""
-
     # Use service layer for authentication
     login_result = await UserService.login_user(
         db=db,
@@ -119,7 +118,6 @@ async def refresh_tokens(
     request: Request, response: Response, db: AsyncSession = get_db_dep
 ) -> dict[str, Any]:
     """Refresh the access token using the refresh token."""
-
     # Get refresh token from cookies
     refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
     if not refresh_token:

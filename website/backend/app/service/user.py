@@ -1,26 +1,25 @@
 """User service layer - Business logic and password management."""
 
 import secrets
-from typing import Dict, Any
-from datetime import datetime, timezone
-from fastapi import BackgroundTasks
+from datetime import UTC, datetime
+from typing import Any
 
-from passlib.context import CryptContext
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from crud.user import (
-    get_user_by_username_or_email,
-    get_user_by_id,
-    update_user_password,
-    create_user_in_db,
-    update_user_profile,
-    check_user_exists_by_username,
-    check_user_exists_by_email,
-)
-from model.user import User
-from schema.requests.user import RegistrationRequest, ProfileUpdateRequest
-from schema.common.token import TokenData
 from core.jwt import create_access_token, create_refresh_token, verify_refresh_token
+from crud.user import (
+    check_user_exists_by_email,
+    check_user_exists_by_username,
+    create_user_in_db,
+    get_user_by_id,
+    get_user_by_username_or_email,
+    update_user_password,
+    update_user_profile,
+)
+from fastapi import BackgroundTasks
+from model.user import User
+from passlib.context import CryptContext
+from schema.common.token import TokenData
+from schema.requests.user import ProfileUpdateRequest, RegistrationRequest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Create a passlib context for bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -38,6 +37,7 @@ class UserService:
 
         Returns:
             str: The hashed password.
+
         """
         return str(pwd_context.hash(password))
 
@@ -51,6 +51,7 @@ class UserService:
 
         Returns:
             bool: True if password matches.
+
         """
         return bool(pwd_context.verify(plain_password, hashed_password))
 
@@ -67,6 +68,7 @@ class UserService:
 
         Returns:
             User | None: User object if authentication successful, None otherwise.
+
         """
         user = await get_user_by_username_or_email(db, login_or_email)
 
@@ -91,11 +93,12 @@ class UserService:
         login_or_email: str,
         password: str,
         background_tasks: BackgroundTasks,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle user login with business logic.
 
         Returns:
             Dict with success, message, user, needs_verification, email
+
         """
         # Authenticate user
         user = await cls.authenticate_user(db, login_or_email, password)
@@ -127,7 +130,7 @@ class UserService:
                 "email": user.email,
                 "code_sent": True,
             }
-        user.last_login = datetime.now(timezone.utc)
+        user.last_login = datetime.now(UTC)
         await db.commit()
 
         return {"success": True, "message": "Login successful", "user": user}
@@ -135,7 +138,7 @@ class UserService:
     @classmethod
     async def refresh_user_tokens(
         cls, db: AsyncSession, refresh_token: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle token refresh with business logic."""
         try:
             # Verify refresh token
@@ -165,7 +168,7 @@ class UserService:
             }
 
         except Exception as e:
-            return {"success": False, "message": f"Token refresh failed: {str(e)}"}
+            return {"success": False, "message": f"Token refresh failed: {e!s}"}
 
     @classmethod
     async def create_user(
@@ -185,6 +188,7 @@ class UserService:
         Raises:
             ValueError: If user creation validation fails.
             Exception: If database operation fails.
+
         """
         # Hash the password
         hashed_password = cls.hash_password(registration_data.password)
@@ -222,12 +226,13 @@ class UserService:
 
         Returns:
             bool: True if update successful, False otherwise.
+
         """
         new_password_hash = cls.hash_password(new_password)
         success = await update_user_password(db, user, new_password_hash)
 
         if success:
-            user.updated_at = datetime.now(timezone.utc)
+            user.updated_at = datetime.now(UTC)
             await db.commit()
 
         return success
@@ -242,6 +247,7 @@ class UserService:
 
         Returns:
             bool: True if current password is correct.
+
         """
         if not user.password:
             return False
@@ -254,7 +260,7 @@ class UserService:
         db: AsyncSession,
         user: User,
         profile_data: ProfileUpdateRequest,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Update user profile with validation.
 
         Args:
@@ -264,6 +270,7 @@ class UserService:
 
         Returns:
             Dict[str, Any]: Result with updated fields and success status.
+
         """
         # Prepare update fields
         update_fields = {}
@@ -290,7 +297,7 @@ class UserService:
                 "updated_fields": [],
             }
 
-        update_fields["updated_at"] = datetime.now(timezone.utc)
+        update_fields["updated_at"] = datetime.now(UTC)
 
         # Update in database
         success = await update_user_profile(db, user, **update_fields)
@@ -313,6 +320,7 @@ class UserService:
 
         Returns:
             bool: True if available, False if taken.
+
         """
         return not await check_user_exists_by_username(db, username)
 
@@ -326,13 +334,14 @@ class UserService:
 
         Returns:
             bool: True if available, False if taken.
+
         """
         return not await check_user_exists_by_email(db, email)
 
     @classmethod
     async def verify_account(
         cls, db: AsyncSession, email: str, verification_code: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Verify user account with activation code.
 
         Args:
@@ -342,6 +351,7 @@ class UserService:
 
         Returns:
             Dict[str, Any]: Verification result.
+
         """
         user = await get_user_by_username_or_email(db, email)
 
@@ -357,7 +367,7 @@ class UserService:
 
         # Mark account as verified
         user.is_verified_account = True
-        user.updated_at = datetime.now(timezone.utc)
+        user.updated_at = datetime.now(UTC)
         await db.commit()
 
         return {"success": True, "message": "Account verified successfully"}
@@ -365,7 +375,7 @@ class UserService:
     @classmethod
     async def reset_password(
         cls, db: AsyncSession, email: str, reset_code: str, new_password: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Reset user password with reset code.
 
         Args:
@@ -376,6 +386,7 @@ class UserService:
 
         Returns:
             Dict[str, Any]: Reset result.
+
         """
         user = await get_user_by_username_or_email(db, email)
 
@@ -392,7 +403,7 @@ class UserService:
         if success:
             # Clear activation code after successful reset
             user.activation_code = ""
-            user.updated_at = datetime.now(timezone.utc)
+            user.updated_at = datetime.now(UTC)
             await db.commit()
 
             return {"success": True, "message": "Password reset successfully"}
@@ -420,6 +431,7 @@ class UserService:
             email (str): Recipient email address.
             username (str): Username for personalization.
             verification_code (str): Verification code to include.
+
         """
         # TODO: Implement email sending logic
         # This would typically use an email service like:
@@ -449,6 +461,7 @@ class UserService:
             email (str): Recipient email address.
             username (str): Username for personalization.
             reset_code (str): Password reset code.
+
         """
         # TODO: Implement password reset email logic
         print(f"Sending password reset email to {email} for user {username}")

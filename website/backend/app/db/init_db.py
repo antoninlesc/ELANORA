@@ -1,16 +1,14 @@
-"""
-Database initialization utilities.
+"""Database initialization utilities.
 
 This module provides utilities for creating and managing database tables.
 """
 
-from sqlalchemy.ext.asyncio import AsyncEngine
-
-from db.database import Base, get_engine
-
 # Import all models to ensure they are registered with the Base metadata
 # This must be imported here to ensure all tables are created
 import model  # noqa: F401
+from sqlalchemy.ext.asyncio import AsyncEngine
+
+from db.database import Base, get_engine
 
 
 async def create_tables(engine: AsyncEngine | None = None) -> None:
