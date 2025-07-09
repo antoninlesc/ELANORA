@@ -17,7 +17,7 @@ export const useUserStore = defineStore('user', {
     authState: {
       initialized: false,
       isAuthenticated: false,
-      loading: false,
+      loading: true,
     },
     // TODO: Add other state properties
   }),
@@ -37,10 +37,8 @@ export const useUserStore = defineStore('user', {
     },
     /**
      * Actively verify authentication with the server.
-     * If roleId is provided, also checks if user has at least that role.
-     * * @param {Array<number>} roles - Array of role IDs to check against.
      */
-    async verifyAuthentication(roles = null) {
+    async verifyAuthentication() {
       this.authState.loading = true;
       try {
         const userResponse = await fetchUser();
