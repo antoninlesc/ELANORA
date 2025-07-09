@@ -3,7 +3,7 @@
     <!-- Header -->
     <AppHeader 
       :instance-name="instanceInfo.name"
-      :show-navigation="false"
+      :show-navigation="true"
     />
     
     <!-- Hero Section -->

@@ -134,27 +134,21 @@ onMounted(async () => {
 
 const handleLogin = async () => {
   try {
-    const response = await axios.post(
-      '/api/v1/auth/login',
-      {
-        login: loginForm.value.login,
-        password: loginForm.value.password,
-      },
-      {
-        withCredentials: true,
-      }
-    );
-    if (response.data.needs_verification) {
-      eventMessageStore.addMessage(response.data.message || 'Vérifiez votre email avant de vous connecter.', 'warning');
+    const response = await userStore.login({
+      login: loginForm.value.login,
+      password: loginForm.value.password,
+    });
+
+    if (response.needs_verification) {
+      eventMessageStore.addMessage(response.message || 'Vérifiez votre email avant de vous connecter.', 'warning');
       return;
     }
-    if (!response.data.user) {
+    if (!userStore.user) {
       eventMessageStore.addMessage('Erreur de connexion', 'error');
       return;
     }
-    userStore.setUser(response.data.user);
     eventMessageStore.addMessage('Connexion réussie', 'success');
-    router.push('/dashboard');
+    router.push('/homePage');
   } catch (error) {
     console.error('Login error:', error);
     let msg = 'Erreur de connexion';

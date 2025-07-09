@@ -11,14 +11,15 @@ import { useUserStore } from '@stores/user.js';
 const routes = [
   {
     path: '/',
-    name: 'homePage',
-    component: () => import('@views/homePage.vue'), // Lazy load for now
-  },
-  {
-    path: '/login',
     name: 'Login',
     component: () => import('@views/login.vue'),
     meta: { requiresGuest: true }
+  },
+  {
+    path: '/homePage',
+    name: 'homePage',
+    component: () => import('@views/homePage.vue'), // Lazy load for now
+    meta: { requiresAuth: true }
   },
 ];
 
@@ -75,13 +76,15 @@ router.beforeEach((to, from, next) => {
   const eventMessageStore = useEventMessageStore();
   const userStore = useUserStore();
 
+  console.log('beforeEach:', userStore.isAuthenticated, userStore.user);
+
   // Vérifie si la route nécessite d'être non authentifié
-  if (to.meta.requiresGuest && userStore.authState.isAuthenticated) {
+  if (to.meta.requiresGuest && userStore.isAuthenticated) {
     next({ name: 'homePage' });
     return;
   }
   // Vérifie si la route nécessite d'être authentifié
-  if (to.meta.requiresAuth && !userStore.authState.isAuthenticated) {
+  if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     handleNotAuthenticated(eventMessageStore, to, next);
     return;
   }
@@ -92,5 +95,6 @@ router.beforeEach((to, from, next) => {
 router.afterEach((to, from) => {
   // TODO: Add after navigation logic
 });
+
 
 export default router;
