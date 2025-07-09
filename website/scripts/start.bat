@@ -11,12 +11,26 @@ if /i "%ENV%"=="dev" (
 ) else if /i "%ENV%"=="prod" (
     call :check_docker_with_retry
     cd website\docker\website-prod
-    set ENV=prod && docker-compose up
+    set ENVIRONMENT=prod
+    echo Running: docker-compose up
+    docker-compose up
+    if errorlevel 1 (
+        echo.
+        echo ERROR: Docker compose failed!
+        pause
+    )
     goto :eof
 ) else if /i "%ENV%"=="server" (
     call :check_docker_with_retry
     cd website\docker\website-server
-    set ENV=server && docker-compose up
+    set ENVIRONMENT=server
+    echo Running: docker-compose up
+    docker-compose up
+    if errorlevel 1 (
+        echo.
+        echo ERROR: Docker compose failed!
+        pause
+    )
     goto :eof
 ) else (
     echo Invalid environment. Please enter 'dev', 'prod', or 'server'.
@@ -29,16 +43,23 @@ set "USE_DOCKER=%USE_DOCKER: =%"
 if /i "%USE_DOCKER%"=="yes" (
     call :check_docker_with_retry
     cd website\docker\website-dev
-    set ENV=dev.docker && docker-compose up
+    set ENVIRONMENT=dev
+    echo Running: docker-compose up
+    docker-compose up
+    if errorlevel 1 (
+        echo.
+        echo ERROR: Docker compose failed!
+        pause
+    )
     goto :eof
 ) else if /i "%USE_DOCKER%"=="no" (
     call :check_docker_for_db_with_retry
     
     set "REPO_ROOT=%CD%\website"
     wt.exe ^
-        new-tab --title "Database" cmd /k "cd /d !REPO_ROOT!\docker\website-dev && set ENV=dev && docker-compose up db" ^
-        ; new-tab --title "Frontend" cmd /k "cd /d !REPO_ROOT!\frontend && set ENV=dev && npm install && npm run dev" ^
-        ; new-tab --title "Backend" cmd /k "cd /d !REPO_ROOT!\backend && set ENV=dev && poetry install && poetry run fastapi dev app/main.py --port 8018"
+        new-tab --title "Database" cmd /k "cd /d !REPO_ROOT!\docker\website-dev && set ENVIRONMENT=dev && docker-compose up db" ^
+        ; new-tab --title "Frontend" cmd /k "cd /d !REPO_ROOT!\frontend && set ENVIRONMENT=dev && npm install && npm run dev" ^
+        ; new-tab --title "Backend" cmd /k "cd /d !REPO_ROOT!\backend && set ENVIRONMENT=dev && poetry install && poetry run fastapi dev app/main.py --port 8018"
     goto :eof
 ) else if /i "%USE_DOCKER%"=="back" (
     goto ask_env

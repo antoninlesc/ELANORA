@@ -2,21 +2,20 @@ import pytest
 from sqlalchemy import select
 
 from app.db.database import get_db
-from app.models.instance import Instance
+from app.model.instance import Instance
 
 
 @pytest.mark.asyncio
 async def test_get_all_instances():
-    """Test pour vérifier la récupération des instances."""
+    """Test to verify instance fetching."""
     async for session in get_db():
         try:
             result = await session.execute(select(Instance))
             instances = result.scalars().all()
 
             assert isinstance(instances, list)
-            print(f"Instances récupérées: {len(instances)}")
+            print(f"Instances fetched: {len(instances)}")
 
-            # Si vous avez des données de test, vous pouvez vérifier
             if instances:
                 first_instance = instances[0]
                 assert hasattr(first_instance, "instance_id")
@@ -30,7 +29,7 @@ async def test_get_all_instances():
 
 @pytest.mark.asyncio
 async def test_get_instance_by_id():
-    """Test pour récupérer une instance par ID."""
+    """Test to fetch an instance by ID."""
     async for session in get_db():
         try:
             result = await session.execute(
@@ -39,9 +38,7 @@ async def test_get_instance_by_id():
             instance = result.scalar_one_or_none()
 
             if instance:
-                # Affiche toutes les colonnes de l'instance sous forme de dict
                 print(instance.__dict__)
-                # Ou, pour un affichage plus propre (sans _sa_instance_state)
                 print(
                     {
                         k: v
@@ -51,7 +48,7 @@ async def test_get_instance_by_id():
                 )
                 assert instance.instance_id == 1
             else:
-                print("Aucune instance trouvée avec l'ID 1")
+                print("No instance with ID 1 was found.")
         finally:
             await session.close()
         break

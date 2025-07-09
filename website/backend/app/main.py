@@ -1,8 +1,5 @@
 from core.centralized_logging import get_logger
-from core.config import (
-    BACKEND_HOST,
-    FRONTEND_HOST,
-)
+from core.config import BACKEND_HOST, FRONTEND_HOST, ENVIRONMENT
 from core.exception_handler import (
     add_general_exception_handler,
     rate_limit_exception_handler,
@@ -21,7 +18,24 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 # Get logger (this will automatically call setup_application_logging)
 logger = get_logger()
 
-app = FastAPI()
+# Get logger (this will automatically call setup_application_logging)
+logger = get_logger()
+
+# Import API routers
+from api.v1.git import router as git_router
+from api.v1.user import router as user_router
+from api.v1.auth import router as auth_router
+
+app = FastAPI(
+    title="ELANORA - ELAN Collaboration Platform",
+    description="API for collaborative ELAN annotation projects",
+    version="1.0.0",
+    # Disable documentation for production
+    docs_url="/docs" if ENVIRONMENT != "server" else None,
+    redoc_url="/redoc" if ENVIRONMENT != "server" else None,
+    openapi_url="/openapi.json" if ENVIRONMENT != "server" else None,
+)
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -53,3 +67,26 @@ app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=[BACKEND_HOST, "localhost", "127.0.0.1"],
 )
+
+# Include API routers
+app.include_router(git_router, prefix=f"{API_V1_PREFIX}/git", tags=["GIT"])
+app.include_router(user_router, prefix=f"{API_V1_PREFIX}/user", tags=["USER"])
+app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["AUTHENTICATION"])
+
+
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint for API health check."""
+    return {
+        "message": "ELANORA API is running",
+        "version": "1.0.0",
+        "status": "healthy",
+    }
+
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "healthy"}

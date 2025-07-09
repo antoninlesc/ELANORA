@@ -1,5 +1,4 @@
 from datetime import datetime
-from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
@@ -15,20 +14,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.database import Base
+from db.database import Base
+from .enums import CommentTargetType
 
 if TYPE_CHECKING:
     from .user import User
-
-
-class CommentTargetType(str, Enum):
-    """Enumeration for comment target types."""
-
-    PROJECT = "project"
-    ELAN_FILE = "elan_file"
-    CONFLICT = "conflict"
-    TIER = "tier"
-    ANNOTATION = "annotation"
 
 
 class Comment(Base):

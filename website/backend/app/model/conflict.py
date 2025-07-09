@@ -1,5 +1,4 @@
 from datetime import datetime
-from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
@@ -15,39 +14,12 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.database import Base
+from db.database import Base
+from .enums import ConflictType, ConflictSeverity, ConflictStatus
 
 if TYPE_CHECKING:
     from .project import Project
     from .user import User
-
-
-class ConflictType(str, Enum):
-    """Enumeration for conflict types."""
-
-    ANNOTATION_OVERLAP = "annotation_overlap"
-    TIER_MISMATCH = "tier_mismatch"
-    VALUE_DIFFERENCE = "value_difference"
-    STRUCTURAL = "structural"
-    OTHER = "other"
-
-
-class ConflictSeverity(str, Enum):
-    """Enumeration for conflict severity levels."""
-
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
-
-
-class ConflictStatus(str, Enum):
-    """Enumeration for conflict status."""
-
-    DETECTED = "detected"
-    IN_PROGRESS = "in_progress"
-    RESOLVED = "resolved"
-    DISMISSED = "dismissed"
 
 
 class Conflict(Base):

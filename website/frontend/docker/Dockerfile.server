@@ -46,7 +46,7 @@ RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
     echo 'exec nginx -g "daemon off;"' >> /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh
 
-# Expose port 70
-EXPOSE 70
+# Expose port 80
+EXPOSE 80
 
 CMD ["/docker-entrypoint.sh"]

@@ -10,9 +10,6 @@ COPY ./package*.json ./
 # Install dependencies
 RUN npm install --ignore-scripts
 
-# Copy the env directory so Vite can find .env.prod
-COPY ../env ../env
-
 # Copy only necessary files for the build
 COPY ./src ./src
 COPY ./public ./public
@@ -46,7 +43,7 @@ RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
     echo 'exec nginx -g "daemon off;"' >> /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh
 
-# Expose port 70
-EXPOSE 70
+# Expose port 80
+EXPOSE 80
 
 CMD ["/docker-entrypoint.sh"]
