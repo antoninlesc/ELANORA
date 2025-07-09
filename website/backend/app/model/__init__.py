@@ -1,95 +1,86 @@
-"""
-SQLAlchemy models package.
+"""SQLAlchemy models package.
 
 This module imports all models in the correct order to avoid circular imports.
 Models are imported based on their dependencies, with base models first.
 """
 
 # Import enums first
-from .enums import (
-    UserRole,
-    ProjectPermission,
-    InvitationStatus,
-    ConflictType,
-    ConflictSeverity,
-    ConflictStatus,
-    CommentTargetType,
-)
+from .address import Address
+from .annotation import Annotation
 
 # Base models with no dependencies
 from .annotation_standard import AnnotationStandard
-from .country import Country
-from .instance import Instance
-
-# Models with single dependencies
-from .city import City
-from .address import Address
-
-# User model (depends on address)
-from .user import User
-
-# Project model (depends on instance)
-from .project import Project
-
-# Models with dependencies on user/project
-from .elan_file import ElanFile
-from .invitation import Invitation
-from .conflict import Conflict
-from .comment import Comment
-
-# Tier and annotation models
-from .tier import Tier
-from .annotation import Annotation
 
 # Association tables (import last)
 from .associations import (
+    CommentConflict,
+    CommentElanFile,
+    CommentProject,
+    ConflictOfElanFile,
     ElanFileToProject,
     ElanFileToTier,
     ProjectAnnotStandard,
     UserToProject,
     UserWorkOnConflict,
-    ConflictOfElanFile,
-    CommentProject,
-    CommentElanFile,
-    CommentConflict,
 )
 
+# Models with single dependencies
+from .city import City
+from .comment import Comment
+from .conflict import Conflict
+from .country import Country
+
+# Models with dependencies on user/project
+from .elan_file import ElanFile
+from .enums import (
+    CommentTargetType,
+    ConflictSeverity,
+    ConflictStatus,
+    ConflictType,
+    InvitationStatus,
+    ProjectPermission,
+    UserRole,
+)
+from .instance import Instance
+from .invitation import Invitation
+
+# Project model (depends on instance)
+from .project import Project
+
+# Tier and annotation models
+from .tier import Tier
+
+# User model (depends on address)
+from .user import User
+
 __all__ = [
-    # Enums
-    "UserRole",
-    "ProjectPermission",
-    "InvitationStatus",
-    "ConflictType",
+    "Address",
+    "Annotation",
+    "AnnotationStandard",
+    "City",
+    "Comment",
+    "CommentConflict",
+    "CommentElanFile",
+    "CommentProject",
+    "CommentTargetType",
+    "Conflict",
+    "ConflictOfElanFile",
     "ConflictSeverity",
     "ConflictStatus",
-    "CommentTargetType",
-    # Base models
-    "AnnotationStandard",
+    "ConflictType",
     "Country",
-    "Instance",
-    # Location models
-    "City",
-    "Address",
-    # User model
-    "User",
-    # Project model
-    "Project",
-    # File and content models
     "ElanFile",
-    "Tier",
-    "Annotation",
-    # Collaboration models
-    "Invitation",
-    "Conflict",
-    "Comment",
-    # Association tables
     "ElanFileToProject",
     "ElanFileToTier",
+    "Instance",
+    "Invitation",
+    "InvitationStatus",
+    "Project",
     "ProjectAnnotStandard",
+    "ProjectPermission",
+    "Tier",
+    "User",
+    "UserRole",
     "UserToProject",
     "UserWorkOnConflict",
-    "ConflictOfElanFile",
-    "CommentProject",
-    "CommentElanFile",
-    "CommentConflict",
 ]

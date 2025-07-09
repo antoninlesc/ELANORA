@@ -7,8 +7,8 @@ from schema.common.token import TokenData
 from core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     JWT_ALGORITHM,
-    REFRESH_TOKEN_EXPIRE_DAYS,
     JWT_SECRET_KEY,
+    REFRESH_TOKEN_EXPIRE_DAYS,
 )
 
 # Token type constants for clarity and to avoid hardcoded string warnings

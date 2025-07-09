@@ -1,11 +1,12 @@
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as DefusedET
+from core.centralized_logging import get_logger
 from fastapi import HTTPException, UploadFile
-from typing import List
+
+logger = get_logger()
 
 
 def validate_elan_file(file: UploadFile) -> UploadFile:
-    """
-    Validate uploaded ELAN file.
+    """Validate uploaded ELAN file.
 
     Args:
         file: The uploaded file
@@ -15,6 +16,7 @@ def validate_elan_file(file: UploadFile) -> UploadFile:
 
     Raises:
         HTTPException: If file validation fails
+
     """
     # Check file extension
     if not file.filename or not file.filename.endswith(".eaf"):
@@ -26,25 +28,30 @@ def validate_elan_file(file: UploadFile) -> UploadFile:
             status_code=400, detail="File too large. Maximum size is 50MB per file"
         )
 
-    # Check MIME type (optional)
-    allowed_types = [
-        "application/xml",
-        "text/xml",
-        "application/octet-stream",
-        "text/plain",
-    ]
-    if file.content_type and file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid file type. Allowed types: {', '.join(allowed_types)}",
-        )
+    logger.info(f"Debug MIME type for file: {file.filename} - {file.content_type}")
+
+    # Check content type only if it's suspicious, best practice as it allows not-known types of eaf files
+    if file.content_type:
+        # Block obviously dangerous types
+        dangerous_types = [
+            "application/javascript",
+            "text/javascript",
+            "application/x-executable",
+            "application/x-msdownload",
+            "text/html",
+        ]
+
+        if file.content_type in dangerous_types:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File type '{file.content_type}' is not allowed for security reasons",
+            )
 
     return file
 
 
-def validate_multiple_elan_files(files: List[UploadFile]) -> List[UploadFile]:
-    """
-    Validate multiple ELAN files with no count limit.
+def validate_multiple_elan_files(files: list[UploadFile]) -> list[UploadFile]:
+    """Validate multiple ELAN files with no count limit.
 
     Args:
         files: List of uploaded files
@@ -54,6 +61,7 @@ def validate_multiple_elan_files(files: List[UploadFile]) -> List[UploadFile]:
 
     Raises:
         HTTPException: If validation fails
+
     """
     if not files:
         raise HTTPException(status_code=400, detail="At least one file is required")
@@ -77,8 +85,7 @@ def validate_multiple_elan_files(files: List[UploadFile]) -> List[UploadFile]:
 
 
 async def validate_elan_file_content(file: UploadFile) -> UploadFile:
-    """
-    Validate ELAN file content structure (advanced validation).
+    """Validate ELAN file content structure (advanced validation).
 
     Args:
         file: The uploaded file
@@ -88,6 +95,7 @@ async def validate_elan_file_content(file: UploadFile) -> UploadFile:
 
     Raises:
         HTTPException: If file content validation fails
+
     """
     try:
         # Read file content
@@ -96,8 +104,8 @@ async def validate_elan_file_content(file: UploadFile) -> UploadFile:
         # Reset file pointer for later use
         file.file.seek(0)
 
-        # Parse XML
-        root = ET.fromstring(content)
+        # Parse XML using defusedxml for security
+        root = DefusedET.fromstring(content)
 
         # Check if it's a valid ELAN file
         if root.tag != "ANNOTATION_DOCUMENT":
@@ -121,9 +129,11 @@ async def validate_elan_file_content(file: UploadFile) -> UploadFile:
 
         return file
 
-    except ET.ParseError:
+    except DefusedET.ParseError as e:
         raise HTTPException(
             status_code=400, detail="Invalid ELAN file: XML parsing failed"
-        )
+        ) from e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"File validation failed: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"File validation failed: {e!s}"
+        ) from e

@@ -1,5 +1,4 @@
-from typing import Optional
-from ..common.base import CustomBaseModel
+from schema.common.base import CustomBaseModel
 
 
 class ProjectCreateRequest(CustomBaseModel):

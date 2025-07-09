@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from pydantic import EmailStr
 from schema.common.base import CustomBaseModel
 

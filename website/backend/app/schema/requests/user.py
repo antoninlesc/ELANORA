@@ -37,6 +37,7 @@ class RegistrationRequest(CustomBaseModel):
     @field_validator("confirm_password")
     @classmethod
     def passwords_match(cls, v, values):
+        """Ensure that the confirmed password matches the original password."""
         if "password" in values.data and v != values.data["password"]:
             raise ValueError("Passwords do not match")
         return v
@@ -44,6 +45,7 @@ class RegistrationRequest(CustomBaseModel):
     @field_validator("confirm_email")
     @classmethod
     def emails_match(cls, v, values):
+        """Ensure that the confirmed email matches the original email."""
         if "email" in values.data and v != values.data["email"]:
             raise ValueError("Emails do not match")
         return v
