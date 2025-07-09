@@ -17,7 +17,7 @@ const routes = [
   },
   {
     path: '/homePage',
-    name: 'homePage',
+    name: 'HomePage',
     component: () => import('@views/homePage.vue'), // Lazy load for now
     meta: { requiresAuth: true }
   },
@@ -80,7 +80,7 @@ router.beforeEach((to, from, next) => {
 
   // Vérifie si la route nécessite d'être non authentifié
   if (to.meta.requiresGuest && userStore.isAuthenticated) {
-    next({ name: 'homePage' });
+    next({ name: 'HomePage' });
     return;
   }
   // Vérifie si la route nécessite d'être authentifié
