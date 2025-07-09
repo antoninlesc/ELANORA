@@ -19,7 +19,7 @@ services:
       context: ../../frontend
       dockerfile: ../frontend/docker/Dockerfile.server
     ports:
-      - '70:70'
+      - '80:80'
     env_file:
       - ../../env/.env.server
     depends_on:

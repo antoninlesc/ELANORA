@@ -16,7 +16,13 @@ class GitService:
         Args:
             base_path: Custom base path for projects. If None, uses config value.
         """
-        self.base_path = Path(base_path or ELAN_PROJECTS_BASE_PATH)
+        if base_path is None:
+            current_file = Path(__file__)
+            website_root = current_file.parent.parent.parent.parent
+            self.base_path = website_root / ELAN_PROJECTS_BASE_PATH
+        else:
+            self.base_path = Path(base_path)
+
         self.base_path.mkdir(parents=True, exist_ok=True)
 
     def check_git_availability(self) -> Dict[str, Any]:
@@ -54,7 +60,6 @@ class GitService:
 
             # Create project structure
             (project_path / "elan_files").mkdir(exist_ok=True)
-            (project_path / "media").mkdir(exist_ok=True)
 
             # Create README
             readme_content = self._create_readme(project_name)
