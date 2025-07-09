@@ -3,27 +3,45 @@
     <div class="header-container">
       <div class="header-left">
         <h1 class="logo">ELANORA</h1>
-        <span class="instance-label" v-if="instanceName">{{ instanceName }}</span>
-        <span class="breadcrumb" v-if="breadcrumb"> / </span>
-        <span class="repo-name" v-if="repoName">{{ repoName }}</span>
+        <span v-if="instanceName" class="instance-label">{{
+          instanceName
+        }}</span>
+        <span v-if="breadcrumb" class="breadcrumb"> / </span>
+        <span v-if="repoName" class="repo-name">{{ repoName }}</span>
       </div>
-      <nav class="nav" v-if="showNavigation">
-        <router-link to="/projects" class="nav-link">{{ $t('navigation.projects') }}</router-link>
-        <router-link to="/dashboard" class="nav-link">{{ $t('navigation.dashboard') }}</router-link>
+      <nav v-if="showNavigation" class="nav">
+        <router-link to="/projects" class="nav-link">{{
+          t('navigation.projects')
+        }}</router-link>
+        <router-link to="/dashboard" class="nav-link">{{
+          t('navigation.dashboard')
+        }}</router-link>
         <router-link to="/conflicts" class="nav-link">
-          {{ $t('navigation.conflicts') }}
-          <span class="badge" v-if="conflictCount > 0">{{ conflictCount }}</span>
+          {{ t('navigation.conflicts') }}
+          <span v-if="conflictCount > 0" class="badge">{{
+            conflictCount
+          }}</span>
         </router-link>
-        <router-link to="/tiers" class="nav-link">{{ $t('navigation.tier_management') }}</router-link>
-        <router-link to="/export" class="nav-link">{{ $t('navigation.export') }}</router-link>
-        <div class="user-menu" v-if="user">
+        <router-link to="/tiers" class="nav-link">{{
+          t('navigation.tier_management')
+        }}</router-link>
+        <router-link to="/export" class="nav-link">{{
+          t('navigation.export')
+        }}</router-link>
+        <div v-if="user" class="user-menu">
           <span>{{ user.name }}</span>
-          <button class="btn-logout" @click="handleLogout">{{ $t('common.logout') }}</button>
+          <button class="btn-logout" @click="handleLogout">
+            {{ t('common.logout') }}
+          </button>
         </div>
       </nav>
-      <div class="header-actions" v-else>
-        <router-link to="/login" class="btn-secondary">{{ $t('auth.login') }}</router-link>
-        <button class="btn-primary" @click="requestAccess">{{ $t('auth.request_access') }}</button>
+      <div v-else class="header-actions">
+        <router-link to="/" class="btn-secondary">{{
+          t('auth.login')
+        }}</router-link>
+        <button class="btn-primary" @click="requestAccess">
+          {{ t('auth.request_access') }}
+        </button>
       </div>
     </div>
   </header>
@@ -35,21 +53,27 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUserStore } from '@/stores/user';
 
-const props = defineProps({
-  instanceName: String,
-  repoName: String,
+defineProps({
+  instanceName: {
+    type: String,
+    default: 'elanora',
+  },
+  repoName: {
+    type: String,
+    default: 'elanora-repo',
+  },
   breadcrumb: {
     type: Boolean,
-    default: false
+    default: false,
   },
   showNavigation: {
     type: Boolean,
-    default: false
+    default: false,
   },
   conflictCount: {
     type: Number,
-    default: 0
-  }
+    default: 0,
+  },
 });
 
 const router = useRouter();
@@ -64,7 +88,7 @@ const handleLogout = () => {
 };
 
 const requestAccess = () => {
-  router.push('/login');
+  router.push('/request-access');
 };
 </script>
 
@@ -73,7 +97,7 @@ const requestAccess = () => {
   background: white;
   border-bottom: 1px solid #e1e8ed;
   padding: 1rem 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -158,7 +182,9 @@ const requestAccess = () => {
   color: #5f6368;
 }
 
-.btn-logout, .btn-secondary, .btn-primary {
+.btn-logout,
+.btn-secondary,
+.btn-primary {
   padding: 0.5rem 1rem;
   border-radius: 8px;
   font-weight: 500;
@@ -204,12 +230,12 @@ const requestAccess = () => {
   align-items: center;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .header-container {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .nav {
     flex-wrap: wrap;
     gap: 1rem;

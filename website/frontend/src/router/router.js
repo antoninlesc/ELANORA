@@ -2,24 +2,36 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
 
-// TODO: Import views
-// import HomePage from '@views/HomePage.vue';
-// import HTTPStatus from '@views/HTTPStatus.vue';
-// ... add other view imports
+import HomePage from '@views/HomePage.vue';
+import LoginPage from '@views/LoginPage.vue';
+import HTTPStatus from '@views/HTTPStatus.vue';
 
 // Define routes
 const routes = [
   {
     path: '/',
-    name: 'Login',
-    component: () => import('@views/login.vue'),
-    meta: { requiresGuest: true }
+    name: 'LoginPage',
+    component: LoginPage,
   },
   {
     path: '/homePage',
     name: 'HomePage',
-    component: () => import('@views/homePage.vue'), // Lazy load for now
-    meta: { requiresAuth: true }
+    component: HomePage,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/error/:statusCode',
+    name: 'HTTPStatus',
+    props: (route) => ({
+      statusCode: String(route.params.statusCode),
+      message: getErrorMessage(route.params.statusCode),
+    }),
+    component: HTTPStatus,
+  },
+  {
+    // Catch-all to redirect to 404 page when no route matches
+    path: '/:catchAll(.*)',
+    redirect: '/error/404',
   },
 ];
 
@@ -49,52 +61,49 @@ const router = createRouter({
 function handleNotAuthenticated(eventMessageStore, to, next) {
   localStorage.setItem('redirectAfterLogin', to.fullPath);
   eventMessageStore.addMessage('http_status.401', 'warning');
-  next({ name: 'Login' }); 
-}
-
-// Helper: handle role denied
-function handleRoleDenied(
-  eventMessageStore,
-  from,
-  next,
-  attempts,
-  statusCode = 403
-) {
-  const newAttempts = attempts + 1;
-  localStorage.setItem('permissionDeniedAttempts', newAttempts.toString());
-  if (newAttempts <= 2) {
-    eventMessageStore.addMessage('event_messages.permission_denied', 'warning');
-    if (from.name) next(false);
-    else next({ name: 'HomePage' });
-  } else {
-    next({ name: 'HTTPStatus', params: { statusCode } });
-  }
+  next({ name: 'LoginPage' });
 }
 
 // Global route guard
 router.beforeEach((to, from, next) => {
   const eventMessageStore = useEventMessageStore();
   const userStore = useUserStore();
-
-  console.log('beforeEach:', userStore.isAuthenticated, userStore.user);
-
-  // Vérifie si la route nécessite d'être non authentifié
-  if (to.meta.requiresGuest && userStore.isAuthenticated) {
-    next({ name: 'HomePage' });
-    return;
+  console.log('userStore', userStore);
+  console.log(
+    'userStore.authState.initialized',
+    userStore.authState.initialized
+  );
+  console.log('userStore.isAuthenticated', userStore.isAuthenticated);
+  // Handle login route: redirect if already authenticated
+  if (to.name === 'LoginPage' && userStore.isAuthenticated) {
+    eventMessageStore.addMessage('event_messages.already_logged_in', 'info');
+    if (from.name) return next(false);
+    return next({ name: 'HomePage' });
   }
-  // Vérifie si la route nécessite d'être authentifié
-  if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-    handleNotAuthenticated(eventMessageStore, to, next);
-    return;
+
+  // Only check auth if required
+  if (to.meta.requiresAuth) {
+    if (!userStore.authState.initialized) {
+      // Let App.vue handle the loading spinner, just allow navigation to continue
+      return next();
+    }
+    if (!userStore.isAuthenticated) {
+      return handleNotAuthenticated(eventMessageStore, to, next);
+    }
   }
   next();
 });
 
 // Add afterEach to track last successful route for redirectTo
 router.afterEach((to, from) => {
-  // TODO: Add after navigation logic
+  // Don't update redirectTo if navigating to or coming from the HTTPStatus error page
+  if (to.name !== 'HTTPStatus' && from.name !== 'HTTPStatus') {
+    localStorage.setItem('redirectTo', from.fullPath || '/');
+  }
+  // If user navigates from LoginPage to HomePage, update redirectAfterLogin to homepage
+  if (from.name === 'LoginPage' && to.name === 'HomePage') {
+    localStorage.setItem('redirectAfterLogin', '/');
+  }
 });
-
 
 export default router;

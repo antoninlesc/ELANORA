@@ -46,7 +46,11 @@ export const useUserStore = defineStore('user', {
           this.user = userResponse.data;
           this.authState.isAuthenticated = true;
           this.authState.initialized = true;
-          console.log('verifyAuthentication:', userResponse.data, this.authState.isAuthenticated);
+          console.log(
+            'verifyAuthentication:',
+            userResponse.data,
+            this.authState.isAuthenticated
+          );
           return true;
         } else {
           this.clearAuth();
@@ -129,17 +133,13 @@ export const useUserStore = defineStore('user', {
      Getters
      ========================= */
   getters: {
-    // TODO: Add getters
-    isAuthInitialized() {
-      return this.authState.initialized;
-    },
     /**
      * Frontend-only check for authentication check.
      */
     isAuthenticated() {
       if (!this.authState.isAuthenticated) return false;
       const hasCSRFCookie = document.cookie.includes('elanora_csrf');
-      return !!this.user?.id && hasCSRFCookie;
+      return !!this.user?.user_id && hasCSRFCookie;
     },
   },
 });

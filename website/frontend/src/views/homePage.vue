@@ -1,25 +1,22 @@
 <template>
   <div class="home-page">
     <!-- Header -->
-    <AppHeader 
-      :instance-name="instanceInfo.name"
-      :show-navigation="true"
-    />
-    
+    <AppHeader :instance-name="instanceInfo.name" :show-navigation="true" />
+
     <!-- Hero Section -->
     <section class="hero-section">
       <div class="hero-container">
         <div class="hero-content">
           <div class="hero-text">
-            <h1 class="hero-title">{{ $t('homePage.welcomeMessage') }}</h1>
-            <p class="hero-subtitle">{{ $t('homePage.description') }}</p>
-            <p class="hero-instructions">{{ $t('homePage.instructions') }}</p>
+            <h1 class="hero-title">{{ t('homePage.welcomeMessage') }}</h1>
+            <p class="hero-subtitle">{{ t('homePage.description') }}</p>
+            <p class="hero-instructions">{{ t('homePage.instructions') }}</p>
             <div class="hero-actions">
-              <router-link to="/login" class="btn-primary">
-                {{ $t('homePage.getStarted') }}
+              <router-link to="/" class="btn-primary">
+                {{ t('homePage.getStarted') }}
               </router-link>
               <button class="btn-secondary" @click="showDemo">
-                {{ $t('homePage.viewDemo') }}
+                {{ t('homePage.viewDemo') }}
               </button>
             </div>
           </div>
@@ -45,12 +42,16 @@
     <!-- Features Section -->
     <section class="features-section">
       <div class="container">
-        <h2 class="section-title">{{ $t('homePage.features.title') }}</h2>
+        <h2 class="section-title">{{ t('homePage.features.title') }}</h2>
         <div class="features-grid">
-          <div class="feature-card" v-for="feature in features" :key="feature.key">
+          <div
+            v-for="feature in features"
+            :key="feature.key"
+            class="feature-card"
+          >
             <div class="feature-icon">{{ feature.icon }}</div>
-            <h3>{{ $t(`homePage.features.${feature.key}.title`) }}</h3>
-            <p>{{ $t(`homePage.features.${feature.key}.description`) }}</p>
+            <h3>{{ t(`homePage.features.${feature.key}.title`) }}</h3>
+            <p>{{ t(`homePage.features.${feature.key}.description`) }}</p>
           </div>
         </div>
       </div>
@@ -59,14 +60,14 @@
     <!-- Stats Section -->
     <section class="stats-section">
       <div class="container">
-        <h2 class="section-title">{{ $t('homePage.platform_stats') }}</h2>
+        <h2 class="section-title">{{ t('homePage.platform_stats') }}</h2>
         <div class="stats-grid">
           <StatCard
             v-for="stat in platformStats"
             :key="stat.key"
             :icon="stat.icon"
             :value="stat.value"
-            :label="$t(`homePage.stats.${stat.key}`)"
+            :label="t(`homePage.stats.${stat.key}`)"
             :trend="stat.trend"
             :trend-type="stat.trendType"
             :variant="stat.variant"
@@ -79,14 +80,14 @@
     <section class="cta-section">
       <div class="container">
         <div class="cta-content">
-          <h2>{{ $t('homePage.cta.title') }}</h2>
-          <p>{{ $t('homePage.cta.description') }}</p>
+          <h2>{{ t('homePage.cta.title') }}</h2>
+          <p>{{ t('homePage.cta.description') }}</p>
           <div class="cta-actions">
-            <router-link to="/login" class="btn-primary">
-              {{ $t('homePage.cta.get_started') }}
+            <router-link to="/" class="btn-primary">
+              {{ t('homePage.cta.get_started') }}
             </router-link>
             <a href="/contact" class="btn-secondary">
-              {{ $t('homePage.cta.contact_us') }}
+              {{ t('homePage.cta.contact_us') }}
             </a>
           </div>
         </div>
@@ -94,10 +95,7 @@
     </section>
 
     <!-- Footer -->
-    <AppFooter 
-      :instance-name="instanceInfo.name"
-      :version="appVersion"
-    />
+    <AppFooter :instance-name="instanceInfo.name" :version="appVersion" />
   </div>
 </template>
 
@@ -113,7 +111,7 @@ const { t } = useI18n();
 // Instance info (could come from a store later)
 const instanceInfo = ref({
   name: 'LSFB Lab',
-  institution: 'Belgian French Sign Language Laboratory'
+  institution: 'Belgian French Sign Language Laboratory',
 });
 
 const appVersion = ref('1.0.0');
@@ -122,28 +120,28 @@ const appVersion = ref('1.0.0');
 const features = ref([
   {
     key: 'collaborative_elan',
-    icon: '🤝'
+    icon: '🤝',
   },
   {
     key: 'conflict_detection',
-    icon: '⚠️'
+    icon: '⚠️',
   },
   {
     key: 'annotation_workflows',
-    icon: '📋'
+    icon: '📋',
   },
   {
     key: 'project_repositories',
-    icon: '📚'
+    icon: '📚',
   },
   {
     key: 'secure_instance',
-    icon: '🔒'
+    icon: '🔒',
   },
   {
     key: 'export_tools',
-    icon: '📄'
-  }
+    icon: '📄',
+  },
 ]);
 
 // Platform statistics
@@ -154,7 +152,7 @@ const platformStats = ref([
     value: '-',
     trend: '',
     trendType: 'neutral',
-    variant: 'primary'
+    variant: 'primary',
   },
   {
     key: 'active_users',
@@ -162,7 +160,7 @@ const platformStats = ref([
     value: '-',
     trend: '',
     trendType: 'neutral',
-    variant: 'success'
+    variant: 'success',
   },
   {
     key: 'elan_files',
@@ -170,7 +168,7 @@ const platformStats = ref([
     value: '-',
     trend: '',
     trendType: 'neutral',
-    variant: 'primary'
+    variant: 'primary',
   },
   {
     key: 'institutions',
@@ -178,8 +176,8 @@ const platformStats = ref([
     value: '-',
     trend: '',
     trendType: 'neutral',
-    variant: 'default'
-  }
+    variant: 'default',
+  },
 ]);
 
 const showDemo = () => {
