@@ -120,6 +120,8 @@
     "sso_error": "Échec de la connexion SSO.",
     "access_request_sent": "Demande d'accès envoyée à l'instance pour {email}.",
     "access_request_error": "Échec de l'envoi de la demande d'accès.",
-    "enter_email_first": "Veuillez d'abord saisir votre e-mail."
+    "enter_email_first": "Veuillez d'abord saisir votre e-mail.",
+    "logout_success": "Déconnexion réussie !",
+    "logout_error": "Échec de la déconnexion. Veuillez réessayer."
   }
 }

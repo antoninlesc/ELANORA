@@ -115,7 +115,9 @@
     "sso_error": "SSO login failed.",
     "access_request_sent": "Access request sent to instance for {email}.",
     "access_request_error": "Failed to send access request.",
-    "enter_email_first": "Please enter your email first."
+    "enter_email_first": "Please enter your email first.",
+    "logout_success": "Logout successful!",
+    "logout_error": "Logout failed. Please try again."
   },
   "common": {
     "or": "or",

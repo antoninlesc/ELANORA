@@ -153,7 +153,13 @@ const ssoProvider = computed(() => {
     : 'SSO';
 });
 
-onMounted(async () => {});
+onMounted(() => {
+  const msg = localStorage.getItem('logoutMessage');
+  if (msg) {
+    eventMessageStore.addMessage(msg, 'success');
+    localStorage.removeItem('logoutMessage');
+  }
+});
 
 const handleLogin = async () => {
   try {

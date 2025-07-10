@@ -52,6 +52,7 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUserStore } from '@/stores/user';
+import { useEventMessageStore } from '@stores/eventMessage';
 
 defineProps({
   instanceName: {
@@ -79,11 +80,17 @@ defineProps({
 const router = useRouter();
 const { t } = useI18n();
 const userStore = useUserStore();
-
+const eventMessageStore = useEventMessageStore();
 const user = computed(() => userStore.user);
 
-const handleLogout = () => {
-  userStore.logout();
+const handleLogout = async () => {
+  try {
+    await userStore.logout();
+    localStorage.setItem('logoutMessage', t('auth.logout_success'));
+  } catch (error) {
+    console.error('Logout failed:', error);
+    localStorage.setItem('logoutMessage', t('auth.logout_error'));
+  }
   router.push('/');
 };
 
