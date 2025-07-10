@@ -193,7 +193,7 @@ const handleLogin = async () => {
 
 const handleSSOLogin = async () => {
   try {
-    // À adapter selon votre logique SSO
+    // Check if SSO is enabled
     await userStore.initiateSSOLogin();
   } catch (error) {
     console.error('SSO login error:', error);
