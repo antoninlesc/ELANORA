@@ -17,9 +17,10 @@ from dependency.user import get_user_dep
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
 from model.user import User
 from schema.common.token import TokenData
-from schema.requests.user import LoginRequest
+from schema.requests.user import LoginRequest, ForgotPasswordRequest
 from schema.responses.user import LoginResponse, UserResponse
 from service.user import UserService
+from service.email_service import EmailService
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -229,4 +230,70 @@ async def check_email_availability(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error checking email availability: {e!s}"
+        ) from e
+
+
+@router.post("/forgot-password")
+@limiter.limit("3/minute")
+async def forgot_password(
+    request: Request,
+    body: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = get_db_dep,
+) -> dict[str, Any]:
+    """Request a password reset via email.
+
+    This endpoint allows a user to request a password reset by providing their email address.
+    A verification code will be sent via email if the address exists in the database.
+
+    Args:
+        request (Request): The HTTP Request object (required by SlowAPI for rate limiting)
+        body (ForgotPasswordRequest): Form data containing email and language
+        background_tasks (BackgroundTasks): Background task manager for sending emails
+        db (AsyncSession): Database session
+
+    Returns:
+        dict[str, Any]: JSON response with a confirmation message
+
+    Raises:
+        HTTPException: If an error occurs during request processing
+
+    Note:
+        For security reasons, the same response is returned whether the email exists or not
+        in the database.
+
+    """
+    try:
+        # Check if user exists
+        user = await UserService.get_user_by_email(db, body.email)
+
+        if user:
+            # Generate verification code
+            verification_code = UserService._generate_verification_code()
+            hashed_code = UserService._hash_verification_code(verification_code)
+
+            # Update user's activation code for password reset
+            user.activation_code = hashed_code
+            await db.commit()
+
+            # Send password reset email via background task
+            email_service = EmailService()
+            background_tasks.add_task(
+                email_service.send_password_reset_verification_email,
+                email=body.email,
+                username=user.username,
+                code=verification_code,
+                language=body.language if hasattr(body, "language") else "en",
+            )
+
+        # Always return the same response for security
+        return {
+            "message": "If the email address exists in our system, you will receive a password reset code shortly.",
+            "success": True,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while processing your request: {str(e)}",
         ) from e

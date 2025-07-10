@@ -116,7 +116,7 @@ class UserService:
             await db.commit()
 
             # Add email sending to background tasks
-            background_tasks.add_task(
+            sks.add_task(
                 cls._send_verification_email,
                 user.email,
                 user.username,
@@ -409,6 +409,11 @@ class UserService:
             return {"success": True, "message": "Password reset successfully"}
 
         return {"success": False, "message": "Failed to reset password"}
+
+    @classmethod
+    async def get_user_by_email(cls, db: AsyncSession, email: str) -> User | None:
+        """Get a user by email address."""
+        return await get_user_by_username_or_email(db, email)
 
     # Private helper methods for business logic
     @staticmethod

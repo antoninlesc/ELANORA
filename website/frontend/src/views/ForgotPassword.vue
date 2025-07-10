@@ -48,6 +48,7 @@ const handleSubmit = async () => {
     eventMessageStore.addMessage(t('forgotPassword.code_sent'), 'success');
     router.push({ name: 'ResetPassword', query: { email: email.value } });
   } catch (error) {
+    console.error(error);
     eventMessageStore.addMessage(
       error?.response?.data?.detail || t('forgotPassword.error'),
       'error'
