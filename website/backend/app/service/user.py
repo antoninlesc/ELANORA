@@ -418,8 +418,8 @@ class UserService:
     # Private helper methods for business logic
     @staticmethod
     def _generate_verification_code() -> str:
-        """Generate a verification code."""
-        return secrets.token_hex(8)
+        """Generate a 6-digit numeric verification code."""
+        return f"{secrets.randbelow(1000000):06d}"
 
     @staticmethod
     def _hash_verification_code(code: str) -> str:
