@@ -2,19 +2,37 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
 
-// TODO: Import views
-// import HomePage from '@views/HomePage.vue';
-// import HTTPStatus from '@views/HTTPStatus.vue';
-// ... add other view imports
+import HomePage from '@views/HomePage.vue';
+import LoginPage from '@views/LoginPage.vue';
+import HTTPStatus from '@views/HTTPStatus.vue';
 
 // Define routes
 const routes = [
   {
     path: '/',
-    name: 'homePage',
-    component: () => import('@views/homePage.vue'), // Lazy load for now
+    name: 'LoginPage',
+    component: LoginPage,
   },
-  // TODO: Add other routes
+  {
+    path: '/homePage',
+    name: 'HomePage',
+    component: HomePage,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/error/:statusCode',
+    name: 'HTTPStatus',
+    props: (route) => ({
+      statusCode: String(route.params.statusCode),
+      message: getErrorMessage(route.params.statusCode),
+    }),
+    component: HTTPStatus,
+  },
+  {
+    // Catch-all to redirect to 404 page when no route matches
+    path: '/:catchAll(.*)',
+    redirect: '/error/404',
+  },
 ];
 
 // Function to map status codes to messages
@@ -46,37 +64,46 @@ function handleNotAuthenticated(eventMessageStore, to, next) {
   next({ name: 'LoginPage' });
 }
 
-// Helper: handle role denied
-function handleRoleDenied(
-  eventMessageStore,
-  from,
-  next,
-  attempts,
-  statusCode = 403
-) {
-  const newAttempts = attempts + 1;
-  localStorage.setItem('permissionDeniedAttempts', newAttempts.toString());
-  if (newAttempts <= 2) {
-    eventMessageStore.addMessage('event_messages.permission_denied', 'warning');
-    if (from.name) next(false);
-    else next({ name: 'HomePage' });
-  } else {
-    next({ name: 'HTTPStatus', params: { statusCode } });
-  }
-}
-
 // Global route guard
 router.beforeEach((to, from, next) => {
   const eventMessageStore = useEventMessageStore();
   const userStore = useUserStore();
+  console.log('userStore', userStore);
+  console.log(
+    'userStore.authState.initialized',
+    userStore.authState.initialized
+  );
+  console.log('userStore.isAuthenticated', userStore.isAuthenticated);
+  // Handle login route: redirect if already authenticated
+  if (to.name === 'LoginPage' && userStore.isAuthenticated) {
+    eventMessageStore.addMessage('event_messages.already_logged_in', 'info');
+    if (from.name) return next(false);
+    return next({ name: 'HomePage' });
+  }
 
-  // TODO: Add route guard logic
+  // Only check auth if required
+  if (to.meta.requiresAuth) {
+    if (!userStore.authState.initialized) {
+      // Let App.vue handle the loading spinner, just allow navigation to continue
+      return next();
+    }
+    if (!userStore.isAuthenticated) {
+      return handleNotAuthenticated(eventMessageStore, to, next);
+    }
+  }
   next();
 });
 
 // Add afterEach to track last successful route for redirectTo
 router.afterEach((to, from) => {
-  // TODO: Add after navigation logic
+  // Don't update redirectTo if navigating to or coming from the HTTPStatus error page
+  if (to.name !== 'HTTPStatus' && from.name !== 'HTTPStatus') {
+    localStorage.setItem('redirectTo', from.fullPath || '/');
+  }
+  // If user navigates from LoginPage to HomePage, update redirectAfterLogin to homepage
+  if (from.name === 'LoginPage' && to.name === 'HomePage') {
+    localStorage.setItem('redirectAfterLogin', '/');
+  }
 });
 
 export default router;

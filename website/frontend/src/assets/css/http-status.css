@@ -1,0 +1,37 @@
+@import url('style.css');
+
+.http-status-error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+}
+
+.http-status-error-code {
+  font-size: 3.75rem;
+  font-weight: bold;
+}
+
+.http-status-error-message {
+  font-size: 1.125rem;
+  color: var(--text-gray-medium);
+  margin-top: 1rem;
+}
+
+.http-status-error-link {
+  margin-top: 1.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-main);
+  color: var(--white);
+  border-radius: 0.5rem;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.http-status-error-link:hover {
+  background-color: var(--highlighted-color-main);
+  transform: scale(1.05);
+  color: var(--white);
+}

@@ -1,1 +1,127 @@
-{}
+{
+  "homePage": {
+    "welcomeMessage": "Bienvenue sur ELANORA !",
+    "description": "Une plateforme collaborative pour gérer et annoter des corpus linguistiques.",
+    "instructions": "Pour commencer, créez ou rejoignez un projet et explorez vos données.",
+    "getStarted": "Commencer",
+    "viewDemo": "Voir la démo",
+    "features": {
+      "title": "Fonctionnalités principales",
+      "collaborative_elan": {
+        "title": "Annotation ELAN collaborative",
+        "description": "Travaillez en équipe sur des fichiers ELAN avec synchronisation en temps réel."
+      },
+      "conflict_detection": {
+        "title": "Détection de conflits",
+        "description": "Identifiez et résolvez automatiquement les conflits d'annotation."
+      },
+      "annotation_workflows": {
+        "title": "Workflows d'annotation",
+        "description": "Gérez des processus d'annotation complexes avec des étapes structurées."
+      },
+      "project_repositories": {
+        "title": "Dépôts de projets",
+        "description": "Organisez vos corpus en projets avec versioning et historique."
+      },
+      "secure_instance": {
+        "title": "Instance sécurisée",
+        "description": "Vos données sont protégées avec des protocoles de sécurité avancés."
+      },
+      "export_tools": {
+        "title": "Outils d'export",
+        "description": "Exportez vos annotations dans différents formats pour l'analyse."
+      }
+    },
+    "platform_stats": "Statistiques de la plateforme",
+    "stats": {
+      "total_projects": "Projets totaux",
+      "active_users": "Utilisateurs actifs",
+      "elan_files": "Fichiers ELAN",
+      "institutions": "Institutions"
+    },
+    "cta": {
+      "title": "Prêt à collaborer ?",
+      "description": "Rejoignez des milliers de chercheurs qui utilisent ELANORA pour leurs projets de linguistique.",
+      "get_started": "Commencer maintenant",
+      "contact_us": "Nous contacter"
+    }
+  },
+  "login": {
+    "platform_subtitle": "Plateforme collaborative d'annotation pour la linguistique.",
+    "connect_to_access": "Connectez-vous pour accéder à l'instance : {instanceName}",
+    "login_placeholder": "Entrez votre identifiant",
+    "password": "Mot de passe",
+    "password_placeholder": "Entrez votre mot de passe",
+    "remember_me": "Se souvenir de moi",
+    "forgot_password": "Mot de passe oublié ?",
+    "logging_in": "Connexion en cours...",
+    "login": "Connexion",
+    "login_with_sso": "Connexion avec {provider}",
+    "no_account": "Pas de compte ?",
+    "request_access": "Demander un accès",
+    "have_invitation": "Vous avez une invitation ?",
+    "join_project": "Rejoindre un projet",
+    "welcome_to_elanora": "Bienvenue sur ELANORA !",
+    "features": {
+      "collaborative_elan": "Annotation ELAN collaborative",
+      "conflict_detection": "Détection de conflits",
+      "annotation_workflows": "Workflows d'annotation",
+      "project_repositories": "Dépôts de projets",
+      "secure_instance": "Instance sécurisée"
+    },
+    "stats": {
+      "active_projects": "Projets actifs",
+      "researchers": "Chercheurs",
+      "elan_files": "Fichiers ELAN"
+    },
+    "enter_email_first": "Veuillez d'abord saisir votre e-mail.",
+    "login_success": "Connexion réussie !",
+    "login_error": "Échec de la connexion. Vérifiez vos identifiants.",
+    "sso_error": "Échec de la connexion SSO.",
+    "access_request_sent": "Demande d'accès envoyée à l'instance pour {email}.",
+    "access_request_error": "Échec de l'envoi de la demande d'accès.",
+    "retrieving_lab_info": "Récupération des informations du laboratoire..."
+  },
+  "common": {
+    "or": "ou",
+    "loading": "Chargement...",
+    "logout": "Déconnexion"
+  },
+  "navigation": {
+    "projects": "Projets",
+    "dashboard": "Tableau de bord",
+    "conflicts": "Conflits",
+    "tier_management": "Gestion des tiers",
+    "export": "Export"
+  },
+  "footer": {
+    "platform_description": "Plateforme collaborative d'annotation linguistique pour les corpus ELAN.",
+    "resources": "Ressources",
+    "documentation": "Documentation",
+    "api_reference": "Référence API",
+    "tutorials": "Tutoriels",
+    "support": "Support",
+    "community": "Communauté",
+    "about": "À propos",
+    "research": "Recherche",
+    "partnerships": "Partenariats",
+    "contact": "Contact",
+    "legal": "Légal",
+    "privacy_policy": "Politique de confidentialité",
+    "terms_of_service": "Conditions d'utilisation",
+    "cookie_policy": "Politique des cookies",
+    "all_rights_reserved": "Tous droits réservés."
+  },
+  "auth": {
+    "login": "Connexion",
+    "request_access": "Demander un accès",
+    "login_success": "Connexion réussie !",
+    "login_error": "Échec de la connexion. Vérifiez vos identifiants.",
+    "sso_error": "Échec de la connexion SSO.",
+    "access_request_sent": "Demande d'accès envoyée à l'instance pour {email}.",
+    "access_request_error": "Échec de l'envoi de la demande d'accès.",
+    "enter_email_first": "Veuillez d'abord saisir votre e-mail.",
+    "logout_success": "Déconnexion réussie !",
+    "logout_error": "Échec de la déconnexion. Veuillez réessayer."
+  }
+}
