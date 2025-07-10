@@ -119,6 +119,15 @@
     "logout_success": "Logout successful!",
     "logout_error": "Logout failed. Please try again."
   },
+  "forgotPassword": {
+    "title": "Forgot Password",
+    "email_label": "Enter your email address",
+    "email_placeholder": "Your email",
+    "send_code": "Send verification code",
+    "error": "An error occurred while sending the verification code. Please try again.",
+    "code_sent": "Verification code sent.",
+    "sending": "Sending verification code..."
+  },
   "common": {
     "or": "or",
     "loading": "Loading...",

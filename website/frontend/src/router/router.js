@@ -4,6 +4,7 @@ import { useUserStore } from '@stores/user.js';
 
 import HomePage from '@views/HomePage.vue';
 import LoginPage from '@views/LoginPage.vue';
+import ForgotPassword from '@views/ForgotPassword.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
 
 // Define routes
@@ -18,6 +19,11 @@ const routes = [
     name: 'HomePage',
     component: HomePage,
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPassword,
   },
   {
     path: '/error/:statusCode',

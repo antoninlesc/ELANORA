@@ -123,5 +123,14 @@
     "enter_email_first": "Veuillez d'abord saisir votre e-mail.",
     "logout_success": "Déconnexion réussie !",
     "logout_error": "Échec de la déconnexion. Veuillez réessayer."
+  },
+  "forgotPassword": {
+    "title": "Mot de passe oublié",
+    "email_label": "Entrez votre adresse e-mail",
+    "email_placeholder": "Votre e-mail",
+    "send_code": "Envoyer le code de vérification",
+    "error": "Une erreur s'est produite lors de l'envoi du code de vérification. Veuillez réessayer.",
+    "code_sent": "Code de vérification envoyé.",
+    "sending": "Envoi du code de vérification..."
   }
 }
