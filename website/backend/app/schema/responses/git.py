@@ -37,6 +37,12 @@ class FileUploadResponse(CustomBaseModel):
     filename: str
     project_name: str
     status: str
+    branch_name: str
+    file_existed: bool
+    merge_status: str
+    has_conflicts: bool
+    conflicts: list[str] | None = None
+    status: str
     added_at: str
 
 

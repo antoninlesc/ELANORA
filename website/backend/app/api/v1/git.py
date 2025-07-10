@@ -154,3 +154,31 @@ async def upload_elan_file(
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/projects/{project_name}/branches")
+async def get_project_branches(project_name: str):
+    """Get all branches for a project."""
+    try:
+        result = git_service.get_branches(project_name)
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/projects/{project_name}/resolve-conflicts")
+async def resolve_conflicts(
+    project_name: str, branch_name: str, resolution_strategy: str = "accept_incoming"
+):
+    """Resolve conflicts and merge a branch."""
+    try:
+        result = git_service.resolve_conflicts(
+            project_name, branch_name, resolution_strategy
+        )
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e

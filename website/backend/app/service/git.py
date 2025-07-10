@@ -24,6 +24,7 @@ class GitService:
             current_file = Path(__file__)
             website_root = current_file.parent.parent.parent.parent
             self.base_path = website_root / ELAN_PROJECTS_BASE_PATH
+            logger.info(f"GitService initialized with base path: {self.base_path}")
         else:
             self.base_path = Path(base_path)
 
@@ -134,6 +135,7 @@ class GitService:
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Git status check failed: {e}") from e
 
+    # TODO: error 500 when commiting file that is already in folder projects
     def commit_changes(
         self, project_name: str, commit_message: str, user_name: str = "user"
     ) -> dict[str, Any]:
@@ -195,41 +197,57 @@ class GitService:
     async def add_elan_file(
         self, project_name: str, file: UploadFile, user_name: str = "user"
     ) -> dict[str, Any]:
-        """Add an ELAN file to the project."""
+        """Add an ELAN file to the project with branch-based workflow."""
         project_path = self.base_path / project_name
         logger.info(f"Adding ELAN file to project: {project_name}")
         logger.info(f"File details: {file.filename}, size: {file.size}")
-        logger.info(f"Project PAth: {project_path}")
+        logger.info(f"Project Path: {project_path}")
 
         if not project_path.exists():
             raise FileNotFoundError(f"Project '{project_name}' not found")
 
         try:
+            # Configure Git user
+            self._configure_git_user(project_path, user_name)
+
             # Get filename
             filename = file.filename
             if not filename:
                 raise ValueError("File must have a filename")
 
-            # Save file directly to project
-            dest_path = project_path / "elan_files" / filename
+            # Create a unique branch name for this upload
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            branch_name = f"upload_{user_name}_{timestamp}_{filename.replace('.', '_')}"
 
+            # Check if file already exists in main branch
+            dest_path = project_path / "elan_files" / filename
+            file_exists = dest_path.exists()
+
+            # Always create a new branch for the upload
+            subprocess.run(  # noqa: S603
+                ["git", "checkout", "-b", branch_name],  # noqa: S607
+                cwd=project_path,
+                check=True,
+            )
+            logger.info(f"Switched to new branch: {branch_name}")
+            # Save the uploaded file
             with open(dest_path, "wb") as buffer:
                 content = await file.read()
                 buffer.write(content)
 
-            # Commit the file
+            # Add and commit the file in the new branch
             subprocess.run(  # noqa: S603
-                [  # noqa: S607,
-                    "git",
-                    "add",
-                    f"elan_files/{filename}",
-                ],
+                ["git", "add", f"elan_files/{filename}"],  # noqa: S607
                 cwd=project_path,
                 check=True,
             )
-            commit_message = f"Add ELAN file: {filename}"
+            logger.info(f"Added file to Git: {dest_path}")
+
+            commit_message = (
+                f"{'Update' if file_exists else 'Add'} ELAN file: {filename}"
+            )
             subprocess.run(  # noqa: S603
-                [  # noqa: S607
+                [
                     "git",
                     "commit",
                     "-m",
@@ -238,104 +256,426 @@ class GitService:
                 cwd=project_path,
                 check=True,
             )
+            logger.info(f"Committed file to Git: {commit_message}")
+
+            # Try to merge back to main branch
+            logger.info(f"Attempting to merge branch '{branch_name}' to main branch")
+            merge_result = self._attempt_merge_to_main(
+                project_path, branch_name, filename
+            )
+            logger.info(f"Merge result: {merge_result}")
 
             return {
                 "filename": filename,
                 "project_name": project_name,
-                "status": "added",
+                "branch_name": branch_name,
+                "file_existed": file_exists,
+                "merge_status": merge_result["status"],
+                "has_conflicts": merge_result["has_conflicts"],
+                "conflicts": merge_result.get("conflicts", []),
+                "status": "added"
+                if not merge_result["has_conflicts"]
+                else "conflicts_detected",
                 "added_at": datetime.now().isoformat(),
             }
 
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Git operation failed: {e}")
+            # Try to go back to main branch if something failed
+            try:
+                subprocess.run(
+                    ["git", "checkout", "main"],  # noqa: S607
+                    cwd=project_path,
+                    check=False,
+                )
+            except:
+                pass
+            raise RuntimeError(f"Failed to add ELAN file: {e}") from e
         except Exception as e:
+            logger.error(f"File operation failed: {e}")
             raise RuntimeError(f"Failed to add ELAN file: {e}") from e
 
-    def _create_readme(self, project_name: str) -> str:
-        """Create README content for a project."""
-        return f"""# {project_name}
-
-ELAN Collaboration Project
-
-## Files
-- elan_files/ - Your .eaf annotation files
-- media/ - Audio/video files
-
-## Usage
-Upload your ELAN files through the web interface.
-All changes are automatically tracked with Git.
-
-## Project Location
-Base path: {self.base_path}
-Project path: {self.base_path / project_name}
-
-## Created
-{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-"""
-
-    def _parse_git_status(self, status_output: str) -> list[dict[str, str]]:
-        """Parse Git status output."""
-        files: list[dict[str, str]] = []
-        if status_output:
-            for line in status_output.strip().split("\n"):
-                if line.strip():
-                    status = line[:2]
-                    filename = line[3:]
-                    files.append(
-                        {
-                            "filename": filename,
-                            "status": status,
-                            "description": self._parse_status_code(status),
-                        }
-                    )
-        return files
-
-    def _parse_status_code(self, status_code: str) -> str:
-        """Parse Git status codes."""
-        status_map: dict[str, str] = {
-            "M ": "Modified",
-            "A ": "Added",
-            "D ": "Deleted",
-            "R ": "Renamed",
-            "??": "Untracked",
-            "UU": "Conflict (both modified)",
-        }
-        return status_map.get(status_code, "Unknown")
-
-    def _get_recent_commits(self, project_path: Path, limit: int = 5) -> list[str]:
-        """Get recent commits from a project."""
+    def _configure_git_user(
+        self, project_path: Path, user_name: str = "ELAN User"
+    ) -> None:
+        """Configure Git user for the project repository."""
         try:
-            result = subprocess.run(  # noqa: S603
-                ["git", "log", "--oneline", f"-{limit}"],  # noqa: S607
-                check=False,
+            # Set user.name
+            subprocess.run(  # noqa: S603
+                ["git", "config", "user.name", user_name],  # noqa: S607
+                cwd=project_path,
+                check=True,
+            )
+            # Set user.email
+            subprocess.run(
+                ["git", "config", "user.email", "elan@localhost"],  # noqa: S607
+                cwd=project_path,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Failed to configure Git user: {e}")
+
+    def _attempt_merge_to_main(
+        self, project_path: Path, branch_name: str, filename: str
+    ) -> dict[str, Any]:
+        """Check for differences before merging using git diff."""
+        try:
+            # Switch back to main branch
+            subprocess.run(
+                ["git", "checkout", "master"],  # noqa: S607
+                cwd=project_path,
+                check=True,
+            )
+            logger.info("Switched to main branch: master")
+
+            # Check for ANY differences using git diff
+            diff_result = subprocess.run(  # noqa: S603
+                [
+                    "git",
+                    "diff",
+                    f"master...{branch_name}",
+                    "--",
+                    f"elan_files/{filename}",
+                ],
                 cwd=project_path,
                 capture_output=True,
                 text=True,
+                check=False,
             )
+            logger.info(f"diff_result: {diff_result}")
+            logger.info(f"Git diff result: {diff_result.stdout.strip()}")
 
-            commits: list[str] = []
-            if result.stdout:
-                for line in result.stdout.strip().split("\n"):
-                    if line.strip():
-                        commits.append(line)
-            return commits
-        except subprocess.CalledProcessError:
-            return []
+            if diff_result.stdout.strip():
+                # There are differences - parse and return them
+                differences = self._parse_git_diff_output(diff_result.stdout, filename)
+                logger.info(f"Differences detected in file '{filename}': {differences}")
+                return {
+                    "status": "changes_detected",
+                    "has_conflicts": False,
+                    "has_differences": True,
+                    "differences": differences,
+                    "branch_name": branch_name,
+                    "message": "Changes detected - manual review required before merge",
+                }
+            else:
+                logger.info(
+                    f"No differences detected in file '{filename}' between branches '{branch_name}' and 'master'."
+                )
+                # No differences - safe to merge automatically
+                logger.info(
+                    f"Attempting to merge branch '{branch_name}' into 'master' without conflicts."
+                )
+                merge_result = subprocess.run(  # noqa: S603
+                    [
+                        "git",
+                        "merge",
+                        branch_name,
+                        "--no-ff",
+                        "-m",
+                        f"Merge branch '{branch_name}' into master",
+                    ],
+                    cwd=project_path,
+                    check=True,
+                )
+                logger.info(f"Merge result: {merge_result}")
+                subprocess.run(  # noqa: S603
+                    ["git", "branch", "-d", branch_name],  # noqa: S607
+                    cwd=project_path,
+                    check=False,
+                )
+                logger.info(f"Deleted branch '{branch_name}' after successful merge.")
 
-    def _check_for_conflicts(self, project_path: Path) -> list[str]:
-        """Check for merge conflicts in a project."""
+                return {
+                    "status": "merged_successfully",
+                    "has_conflicts": False,
+                    "has_differences": False,
+                }
+
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Merge attempt failed: {e}")
+            return {
+                "status": "merge_error",
+                "has_conflicts": False,
+                "error": str(e),
+            }
+
+    def _parse_git_diff_output(self, diff_output: str, filename: str) -> dict[str, Any]:
+        """Parse git diff output to extract detailed change information."""
         try:
+            lines = diff_output.split("\n")
+            changes = {
+                "filename": filename,
+                "added_lines": [],
+                "removed_lines": [],
+                "modified_sections": [],
+                "total_additions": 0,
+                "total_deletions": 0,
+                "hunks": [],
+                "summary": "",
+                "diff_raw": diff_output,
+            }
+
+            current_hunk = None
+            line_number_old = 0
+            line_number_new = 0
+
+            for line in lines:
+                if line.startswith("@@"):
+                    # Parse hunk header: @@ -old_start,old_count +new_start,new_count @@
+                    import re
+
+                    hunk_match = re.match(
+                        r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)", line
+                    )
+                    if hunk_match:
+                        line_number_old = int(hunk_match.group(1))
+                        line_number_new = int(hunk_match.group(3))
+
+                        current_hunk = {
+                            "old_start": line_number_old,
+                            "new_start": line_number_new,
+                            "old_count": int(hunk_match.group(2))
+                            if hunk_match.group(2)
+                            else 1,
+                            "new_count": int(hunk_match.group(4))
+                            if hunk_match.group(4)
+                            else 1,
+                            "context": hunk_match.group(5).strip()
+                            if hunk_match.group(5)
+                            else "",
+                            "changes": [],
+                        }
+                        changes["hunks"].append(current_hunk)
+
+                elif line.startswith("+") and not line.startswith("+++"):
+                    # Added line
+                    change = {
+                        "type": "addition",
+                        "line_number": line_number_new,
+                        "content": line[1:],  # Remove the + prefix
+                    }
+                    changes["added_lines"].append(change)
+                    if current_hunk:
+                        current_hunk["changes"].append(change)
+                    changes["total_additions"] += 1
+                    line_number_new += 1
+
+                elif line.startswith("-") and not line.startswith("---"):
+                    # Removed line
+                    change = {
+                        "type": "deletion",
+                        "line_number": line_number_old,
+                        "content": line[1:],  # Remove the - prefix
+                    }
+                    changes["removed_lines"].append(change)
+                    if current_hunk:
+                        current_hunk["changes"].append(change)
+                    changes["total_deletions"] += 1
+                    line_number_old += 1
+
+                elif line.startswith(" "):
+                    # Context line (unchanged)
+                    if current_hunk:
+                        current_hunk["changes"].append(
+                            {
+                                "type": "context",
+                                "line_number_old": line_number_old,
+                                "line_number_new": line_number_new,
+                                "content": line[1:],  # Remove the space prefix
+                            }
+                        )
+                    line_number_old += 1
+                    line_number_new += 1
+
+            # Create summary
+            if changes["total_additions"] and changes["total_deletions"]:
+                changes["summary"] = (
+                    f"{changes['total_additions']} additions, {changes['total_deletions']} deletions"
+                )
+            elif changes["total_additions"]:
+                changes["summary"] = f"{changes['total_additions']} additions"
+            elif changes["total_deletions"]:
+                changes["summary"] = f"{changes['total_deletions']} deletions"
+            else:
+                changes["summary"] = "No changes"
+
+            return changes
+
+        except Exception as e:
+            logger.error(f"Error parsing git diff: {e}")
+            return {"error": str(e), "diff_raw": diff_output, "filename": filename}
+
+    def _detect_merge_conflicts(self, project_path: Path) -> list[dict[str, str]]:
+        """Detect and parse merge conflicts."""
+        try:
+            # Get files with conflicts
             result = subprocess.run(
                 ["git", "diff", "--name-only", "--diff-filter=U"],  # noqa: S607
-                check=False,
                 cwd=project_path,
                 capture_output=True,
                 text=True,
+                check=False,
             )
 
-            conflicts: list[str] = []
+            conflicts = []
             if result.stdout:
-                for line in result.stdout.strip().split("\n"):
-                    if line.strip():
-                        conflicts.append(line)
+                for filename in result.stdout.strip().split("\n"):
+                    if filename.strip():
+                        # Get conflict details for each file
+                        conflict_details = self._get_conflict_details(
+                            project_path, filename.strip()
+                        )
+                        conflicts.append(
+                            {
+                                "filename": filename.strip(),
+                                "type": "content_conflict",
+                                "details": conflict_details,
+                            }
+                        )
+
             return conflicts
+
         except subprocess.CalledProcessError:
             return []
+
+    def _get_conflict_details(
+        self, project_path: Path, filename: str
+    ) -> dict[str, Any]:
+        """Get detailed information about a specific conflict."""
+        try:
+            # Get the conflict markers and content
+            file_path = project_path / filename
+            if file_path.exists():
+                with open(file_path, encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+
+                # Count conflict markers
+                conflict_markers = content.count("<<<<<<< HEAD")
+
+                return {
+                    "conflict_markers_count": conflict_markers,
+                    "file_size": len(content),
+                    "has_binary_conflict": "<<<<<<< HEAD"
+                    not in content,  # Binary files won't have text markers
+                }
+
+            return {"error": "File not found"}
+
+        except Exception as e:
+            return {"error": str(e)}
+
+    def get_branches(self, project_name: str) -> dict[str, Any]:
+        """Get all branches for a project."""
+        project_path = self.base_path / project_name
+
+        if not project_path.exists():
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+
+        try:
+            # Get all branches
+            result = subprocess.run(
+                ["git", "branch", "-a"],  # noqa: S607
+                cwd=project_path,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            branches = []
+            current_branch = None
+
+            for line in result.stdout.strip().split("\n"):
+                line = line.strip()
+                if line.startswith("* "):
+                    current_branch = line[2:]
+                    branches.append({"name": current_branch, "is_current": True})
+                elif line and not line.startswith("remotes/"):
+                    branches.append({"name": line, "is_current": False})
+
+            return {
+                "project_name": project_name,
+                "branches": branches,
+                "current_branch": current_branch,
+            }
+
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"Failed to get branches: {e}") from e
+
+    def resolve_conflicts(
+        self,
+        project_name: str,
+        branch_name: str,
+        resolution_strategy: str = "accept_incoming",
+    ) -> dict[str, Any]:
+        """Resolve conflicts and merge a branch."""
+        project_path = self.base_path / project_name
+
+        if not project_path.exists():
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+
+        try:
+            # Switch to main branch
+            subprocess.run(
+                ["git", "checkout", "main"],  # noqa: S607
+                cwd=project_path,
+                check=True,
+            )
+
+            # Attempt merge again
+            subprocess.run(  # noqa: S603
+                ["git", "merge", branch_name, "--no-ff"],  # noqa: S607
+                cwd=project_path,
+                check=False,
+            )
+
+            # Apply resolution strategy
+            if resolution_strategy == "accept_incoming":
+                # Accept all incoming changes
+                subprocess.run(
+                    ["git", "checkout", "--theirs", "."],  # noqa: S607
+                    cwd=project_path,
+                    check=True,
+                )
+            elif resolution_strategy == "accept_current":
+                # Keep current version
+                subprocess.run(
+                    ["git", "checkout", "--ours", "."],  # noqa: S607
+                    cwd=project_path,
+                    check=True,
+                )
+
+            # Add resolved files and commit
+            subprocess.run(
+                ["git", "add", "."],  # noqa: S607
+                cwd=project_path,
+                check=True,
+            )
+
+            subprocess.run(  # noqa: S603
+                [
+                    "git",
+                    "commit",
+                    "-m",
+                    f"Resolve conflicts from {branch_name} using {resolution_strategy}",
+                ],
+                cwd=project_path,
+                check=True,
+            )
+
+            # Delete the merged branch
+            subprocess.run(  # noqa: S603
+                ["git", "branch", "-d", branch_name],  # noqa: S607
+                cwd=project_path,
+                check=False,
+            )
+
+            return {
+                "project_name": project_name,
+                "branch_name": branch_name,
+                "resolution_strategy": resolution_strategy,
+                "status": "resolved",
+                "resolved_at": datetime.now().isoformat(),
+            }
+
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"Failed to resolve conflicts: {e}") from e
