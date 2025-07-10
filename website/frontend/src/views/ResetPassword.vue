@@ -51,6 +51,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { resetPassword } from '@/api/service/authService';
+import '@/assets/css/resetpassword.css';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -105,30 +106,3 @@ const handleSubmit = async () => {
 };
 </script>
 
-<style scoped>
-.reset-password-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: #f5f5f5;
-}
-.reset-password-card {
-  background: #fff;
-  padding: 2rem 2.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  width: 100%;
-  max-width: 400px;
-}
-.reset-password-title {
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-.reset-password-form .form-group {
-  margin-bottom: 1rem;
-}
-.reset-password-btn {
-  width: 100%;
-}
-</style>
