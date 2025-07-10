@@ -17,7 +17,11 @@ from dependency.user import get_user_dep
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
 from model.user import User
 from schema.common.token import TokenData
-from schema.requests.user import LoginRequest, ForgotPasswordRequest
+from schema.requests.user import (
+    LoginRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+)
 from schema.responses.user import LoginResponse, UserResponse
 from service.user import UserService
 from service.email_service import EmailService
@@ -276,15 +280,20 @@ async def forgot_password(
             user.activation_code = hashed_code
             await db.commit()
 
-            # Send password reset email via background task
+            # Send password reset email
             email_service = EmailService()
-            background_tasks.add_task(
-                email_service.send_password_reset_verification_email,
+            email_sent = await email_service.send_password_reset_verification_email(
                 email=body.email,
                 username=user.username,
                 code=verification_code,
                 language=body.language if hasattr(body, "language") else "en",
             )
+
+            if not email_sent:
+                raise HTTPException(
+                    status_code=500,
+                    detail="An error occurred while sending the verification code. Please try again.",
+                )
 
         # Always return the same response for security
         return {
@@ -296,4 +305,54 @@ async def forgot_password(
         raise HTTPException(
             status_code=500,
             detail=f"An error occurred while processing your request: {str(e)}",
+        ) from e
+
+
+@router.post("/reset-password")
+@limiter.limit("5/minute")
+async def reset_password(
+    request: Request,
+    body: ResetPasswordRequest,
+    db: AsyncSession = get_db_dep,
+) -> dict[str, Any]:
+    """Reset user password with verification code.
+
+    This endpoint allows a user to reset their password using the verification code
+    sent via email.
+
+    Args:
+        request (Request): The HTTP Request object (required by SlowAPI for rate limiting)
+        body (ResetPasswordRequest): Form data containing email, code, and new password
+        db (AsyncSession): Database session
+
+    Returns:
+        dict[str, Any]: JSON response with success or error message
+
+    Raises:
+        HTTPException: If the reset code is invalid or user is not found
+
+    """
+    try:
+        # Reset password using the service
+        result = await UserService.reset_password(
+            db=db,
+            email=body.email,
+            reset_code=body.code,
+            new_password=body.new_password,
+        )
+
+        if result["success"]:
+            return {
+                "message": "Password reset successfully. You can now log in with your new password.",
+                "success": True,
+            }
+        else:
+            raise HTTPException(status_code=400, detail=result["message"])
+
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while resetting your password: {str(e)}",
         ) from e

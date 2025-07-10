@@ -40,3 +40,16 @@ export async function forgotPassword(email, language) {
   console.log('Sending forgot password request for:', email, 'with language:', language);
   return await axiosInstance.post('/auth/forgot-password', payload);
 }
+
+/**
+ * Reset password with verification code.
+ * @param {string} email
+ * @param {string} code
+ * @param {string} newPassword
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function resetPassword(email, code, newPassword) {
+  const payload = { email, code, new_password: newPassword };
+  console.log('Sending reset password request for:', email);
+  return await axiosInstance.post('/auth/reset-password', payload);
+}

@@ -132,5 +132,21 @@
     "error": "Une erreur s'est produite lors de l'envoi du code de vérification. Veuillez réessayer.",
     "code_sent": "Code de vérification envoyé.",
     "sending": "Envoi du code de vérification..."
+  },
+  "resetPassword": {
+    "title": "Réinitialiser le mot de passe",
+    "code_label": "Code de vérification",
+    "code_placeholder": "Entrez le code reçu",
+    "new_password_label": "Nouveau mot de passe",
+    "new_password_placeholder": "Entrez le nouveau mot de passe",
+    "confirm_password_label": "Confirmer le nouveau mot de passe",
+    "confirm_password_placeholder": "Confirmez le nouveau mot de passe",
+    "submit": "Réinitialiser le mot de passe",
+    "submitting": "Réinitialisation...",
+    "success": "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.",
+    "error": "Une erreur s'est produite lors de la réinitialisation de votre mot de passe. Veuillez réessayer.",
+    "passwords_no_match": "Les mots de passe ne correspondent pas",
+    "password_too_short": "Le mot de passe doit contenir au moins 8 caractères",
+    "email_required": "L'email est requis pour réinitialiser le mot de passe"
   }
 }

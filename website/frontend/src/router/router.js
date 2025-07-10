@@ -5,6 +5,7 @@ import { useUserStore } from '@stores/user.js';
 import HomePage from '@views/HomePage.vue';
 import LoginPage from '@views/LoginPage.vue';
 import ForgotPassword from '@views/ForgotPassword.vue';
+import ResetPassword from '@views/ResetPassword.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
 
 // Define routes
@@ -24,7 +25,15 @@ const routes = [
     path: '/forgot-password',
     name: 'ForgotPassword',
     component: ForgotPassword,
+
   },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPassword,
+    
+  },
+
   {
     path: '/error/:statusCode',
     name: 'HTTPStatus',

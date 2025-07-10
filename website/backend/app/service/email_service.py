@@ -124,5 +124,4 @@ class EmailService:
             print(
                 f"[EmailService] Failed to send password reset verification email: {e}"
             )
-            # Ne pas relancer d'exception ici pour éviter l'erreur FastAPI en tâche de fond
-            return False
+            raise e
