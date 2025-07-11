@@ -1,8 +1,10 @@
 import os
+import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from tempfile import TemporaryDirectory
+from typing import Any, Dict
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
@@ -283,40 +285,53 @@ class GitService:
         projects = await list_projects_by_instance(db, instance_id)
         return [p.project_name for p in projects]
 
-    async def init_project_from_folder(
+    async def init_project_from_folder_upload(
         self,
         project_name: str,
         description: str,
-        folder_path: str,
+        files: list[UploadFile],
         db: AsyncSession,
         user_id: int,
     ) -> dict:
-        # Resolve the folder path to an absolute path
-        project_path = Path(folder_path).resolve()
-        if not project_path.exists() or not project_path.is_dir():
-            raise ValueError("Specified folder does not exist or is not a directory.")
+        # 1. Create the project at the usual path
+        project_path = self.base_path / project_name
+        elan_files_dir = project_path / "elan_files"
+        if project_path.exists():
+            raise ValueError(f"Project '{project_name}' already exists")
+        project_path.mkdir(parents=True, exist_ok=True)
+        elan_files_dir.mkdir(parents=True, exist_ok=True)
 
+        # 2. Save only .eaf files, preserving folder structure
+        for file in files:
+            if not file.filename or not file.filename.lower().endswith(".eaf"):
+                continue
+            # file.filename is the relative path (e.g., "subfolder/file.eaf")
+            dest_path = elan_files_dir / file.filename
+            dest_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(dest_path, "wb") as f:
+                shutil.copyfileobj(file.file, f)
+
+        # 3. Initialize git repo, commit, and register in DB (reuse your existing logic)
         runner = GitCommandRunner(project_path)
-        # Initialize git if not already a repo
-        if not (project_path / ".git").exists():
-            runner.init_repo()
-            runner.add_all()
-            runner.commit("Initial commit from existing folder")
+        runner.init_repo()
+        runner.add_all()
+        runner.commit("Initial commit from uploaded folder")
 
-        # Register project in DB
         await create_project_db(
             db=db,
             project_name=project_name,
             description=description,
             project_path=str(project_path),
-            instance_id=1,  # Replace with actual instance logic
+            instance_id=1,
         )
 
-        # Parse and store ELAN files
+        # 4. Parse and store ELAN files in DB
         elan_service = ElanService(db)
-        elan_files = [f for f in project_path.glob("*.eaf")]
+        elan_files = list(elan_files_dir.rglob("*.eaf"))
         for elan_file in elan_files:
-            await elan_service.process_single_file(str(elan_file), user_id)
+            await elan_service.process_single_file(
+                str(elan_file), user_id, project_name
+            )
 
         return {
             "project_name": project_name,
@@ -327,13 +342,15 @@ class GitService:
         }
 
     async def _sync_elan_files_with_db(
-        self, project_path: Path, db: AsyncSession, user_id: int
+        self, project_path: Path, db: AsyncSession, user_id: int, project_name: str
     ):
         """Parse all .eaf files in the project and update the database."""
         elan_service = ElanService(db)
         elan_files = [f for f in (project_path / "elan_files").glob("*.eaf")]
         for elan_file in elan_files:
-            await elan_service.process_single_file(str(elan_file), user_id)
+            await elan_service.process_single_file(
+                str(elan_file), user_id, project_name
+            )
 
     def _validate_upload_request(
         self, project_path: Path, files: list[UploadFile]
@@ -369,7 +386,7 @@ class GitService:
         user_id: int,
         project_path: Path,
     ) -> dict[str, Any]:
-        logger.info(f"Attempting to merge branch '{branch_name}' to main branch")
+        logger.info(f"Attempting to merge branch '{branch_name}' to master branch")
         diff_parser = GitDiffParser()
         branch_manager.switch_to_master()
         analysis = diff_analyzer.analyze_merge_differences(branch_name, diff_parser)
@@ -379,7 +396,9 @@ class GitService:
             branch_manager.delete_branch(branch_name)
             # --- Sync DB with merged ELAN files ---
             if db and user_id and project_path:
-                await self._sync_elan_files_with_db(project_path, db, user_id)
+                await self._sync_elan_files_with_db(
+                    project_path, db, user_id, project_name=branch_name
+                )
 
         logger.info(f"Merge result: {merge_result['status']}")
         return merge_result
@@ -491,7 +510,7 @@ class GitService:
             result = runner.resolve_conflicts(branch_name, resolution_strategy)
 
             # --- Sync DB with merged ELAN files ---
-            await self._sync_elan_files_with_db(project_path, db, user_id)
+            await self._sync_elan_files_with_db(project_path, db, user_id, project_name)
 
             return {
                 "project_name": project_name,
@@ -620,3 +639,59 @@ class GitService:
             }
         except Exception as e:
             raise RuntimeError(f"Failed to checkout branch: {e}") from e
+
+    async def list_project_files(self, project_name: str) -> Dict[str, Any]:
+        """
+        Return a tree of .eaf files and folders containing .eaf files for the given project,
+        always from the master branch. Restore the previous branch after listing.
+        """
+        project_path = self.base_path / project_name
+        elan_files_dir = project_path / "elan_files"
+        if not elan_files_dir.exists():
+            raise FileNotFoundError(
+                f"Project '{project_name}' does not have an 'elan_files' directory."
+            )
+
+        runner = GitCommandRunner(project_path)
+
+        # 1. Detect current branch
+        current_branch = None
+        try:
+            branches_raw = runner.get_branches()
+            for line in branches_raw:
+                line = line.strip()
+                if line.startswith("* "):
+                    current_branch = line[2:]
+                    break
+        except Exception:
+            current_branch = None  # fallback: don't restore if detection fails
+
+        # 2. Checkout master branch before listing files
+        runner.checkout("master")
+
+        def build_tree(path: Path) -> dict | None:
+            if path.is_file():
+                if path.suffix.lower() == ".eaf":
+                    return {"name": path.name, "type": "file"}
+                return None
+            children = []
+            for child in sorted(
+                path.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower())
+            ):
+                subtree = build_tree(child)
+                if subtree:
+                    children.append(subtree)
+            if children:
+                return {"name": path.name, "type": "folder", "children": children}
+            return None
+
+        tree = build_tree(elan_files_dir)
+
+        # 3. Restore previous branch if needed
+        if current_branch and current_branch != "master":
+            try:
+                runner.checkout(current_branch)
+            except Exception:
+                pass  # Don't fail if we can't restore
+
+        return {"tree": tree}

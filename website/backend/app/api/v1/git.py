@@ -2,13 +2,12 @@ from app.dependency.elan_validation import validate_multiple_elan_files
 from app.dependency.user import get_admin_dep
 from app.dependency.database import get_db_dep
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from app.model.user import User
 from app.schema.requests.git import (
     CommitRequest,
     ProjectCreateRequest,
     ProjectCheckoutRequest,
-    ProjectInitFromFolderRequest,
 )
 
 from app.schema.responses.git import (
@@ -236,23 +235,39 @@ async def list_projects(
     return ProjectListResponse(projects=project_names)
 
 
-@router.post("/projects/init-from-folder", response_model=ProjectCreateResponse)
-async def init_project_from_folder(
-    request: ProjectInitFromFolderRequest,
+@router.post("/projects/init-from-folder-upload", response_model=ProjectCreateResponse)
+async def init_project_from_folder_upload(
+    project_name: str = Form(...),
+    description: str = Form(...),
+    files: list[UploadFile] = File(...),
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
     """
-    Initialize a project from an existing folder with files.
+    Initialize a project by uploading a folder (only .eaf files and structure are kept).
     """
     try:
-        result = await git_service.init_project_from_folder(
-            request.project_name,
-            request.description,
-            request.folder_path,
-            db,
-            user_id=user.user_id,
+        result = await git_service.init_project_from_folder_upload(
+            project_name, description, files, db, user.user_id
         )
         return ProjectCreateResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/projects/{project_name}/files")
+async def get_project_files(
+    project_name: str,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """
+    List all .eaf files and folders containing .eaf files in a project as a tree.
+    """
+    try:
+        result = await git_service.list_project_files(project_name)
+        return result  # Should be { "tree": ... }
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

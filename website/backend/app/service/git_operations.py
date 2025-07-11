@@ -388,7 +388,7 @@ class GitCommandRunner:
     def resolve_conflicts(
         self, branch_name: str, resolution_strategy: str
     ) -> dict[str, Any]:
-        self.checkout("main")
+        self.checkout("master")
         self.run(["merge", branch_name, "--no-ff"], check=False)
         if resolution_strategy == "accept_incoming":
             self.run(["checkout", "--theirs", "."], check=True)

@@ -19,11 +19,3 @@ class ProjectCheckoutRequest(CustomBaseModel):
     """Schema for project branch checkout request."""
 
     branch_name: str
-
-
-class ProjectInitFromFolderRequest(CustomBaseModel):
-    """Schema for initializing a project from an existing folder."""
-
-    project_name: str
-    description: str
-    folder_path: str

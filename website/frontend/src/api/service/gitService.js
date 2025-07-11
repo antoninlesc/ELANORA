@@ -86,6 +86,31 @@ const gitService = {
     );
     return data;
   },
+
+  // List files in a project (recursive structure)
+  async listProjectFiles(projectName) {
+    const { data } = await axiosInstance.get(
+      `/git/projects/${encodeURIComponent(projectName)}/files`
+    );
+    return data;
+  },
+
+  // Initialize a project from an existing folder with upload
+  async initProjectFromFolderUpload({ project_name, description, files }) {
+    const formData = new FormData();
+    formData.append('project_name', project_name);
+    formData.append('description', description);
+    files.forEach((file) => {
+      // webkitRelativePath preserves folder structure
+      formData.append('files', file, file.webkitRelativePath);
+    });
+    const { data } = await axiosInstance.post(
+      `/git/projects/init-from-folder-upload`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return data;
+  },
 };
 
 export default gitService;
