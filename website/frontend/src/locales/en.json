@@ -149,5 +149,8 @@
     "or": "or",
     "loading": "Loading...",
     "logout": "Logout"
+  },
+  "event_messages": {
+    "already_logged_in": "You are already logged in."
   }
 }

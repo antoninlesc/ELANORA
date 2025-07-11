@@ -91,7 +91,7 @@ router.beforeEach((to, from, next) => {
   console.log('userStore.isAuthenticated', userStore.isAuthenticated);
   // Handle login route: redirect if already authenticated
   if (to.name === 'LoginPage' && userStore.isAuthenticated) {
-    eventMessageStore.addMessage('event_messages.already_logged_in', 'info');
+    eventMessageStore.addMessage('event_messages.already_logged_in', 'warning');
     if (from.name) return next(false);
     return next({ name: 'HomePage' });
   }

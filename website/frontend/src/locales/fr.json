@@ -149,5 +149,8 @@
     "password_too_short": "Le mot de passe doit contenir au moins 8 caractères",
     "email_required": "L'email est requis pour réinitialiser le mot de passe",
     "code_6_digits": "Le code de vérification doit contenir 6 chiffres"
+  },
+  "event_messages": {
+    "already_logged_in": "Vous êtes déjà connecté."
   }
 }
