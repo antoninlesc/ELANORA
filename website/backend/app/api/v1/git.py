@@ -7,6 +7,7 @@ from app.model.user import User
 from app.schema.requests.git import (
     CommitRequest,
     ProjectCreateRequest,
+    ProjectCheckoutRequest,
 )
 
 from app.schema.responses.git import (
@@ -15,6 +16,8 @@ from app.schema.responses.git import (
     GitStatusResponse,
     ProjectCreateResponse,
     ProjectStatusResponse,
+    ProjectCheckoutResponse,
+    ProjectListResponse,
 )
 from app.service.git import GitService
 
@@ -191,3 +194,34 @@ async def resolve_conflicts(
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post(
+    "/projects/{project_name}/checkout", response_model=ProjectCheckoutResponse
+)
+async def checkout_project_branch(
+    project_name: str,
+    checkout_data: ProjectCheckoutRequest,
+    user: User = get_admin_dep,
+):
+    """
+    Switch to a different branch in the given project.
+    """
+    try:
+        result = git_service.checkout_branch(project_name, checkout_data.branch_name)
+        return ProjectCheckoutResponse(**result)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/projects", response_model=ProjectListResponse)
+async def list_projects(
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """List all project names for the current instance."""
+    instance_id = 1  # Replace with actual logic
+    project_names = await git_service.list_projects(db, instance_id)
+    return ProjectListResponse(projects=project_names)

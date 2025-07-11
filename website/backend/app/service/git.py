@@ -9,7 +9,10 @@ from app.core.config import ELAN_PROJECTS_BASE_PATH
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud.project import create_project_db
+from app.crud.project import (
+    create_project_db,
+    list_projects_by_instance,
+)
 
 from app.service.git_diff_parser import GitDiffParser
 from app.service.git_operations import (
@@ -139,7 +142,6 @@ class GitService:
                 "status": "created",
                 "git_initialized": True,
                 "created_at": datetime.now().isoformat(),
-                "hook_installed": True,
             }
 
         except Exception as e:
@@ -264,6 +266,10 @@ class GitService:
         except Exception as e:
             logger.error(f"Batch file operation failed: {e}")
             raise RuntimeError(f"Failed to add ELAN files: {e}") from e
+
+    async def list_projects(self, db: AsyncSession, instance_id: int) -> list[str]:
+        projects = await list_projects_by_instance(db, instance_id)
+        return [p.project_name for p in projects]
 
     def _validate_upload_request(
         self, project_path: Path, files: list[UploadFile]
@@ -585,3 +591,20 @@ class GitService:
     def _check_for_conflicts(self, project_path: Path) -> list[dict[str, str]]:
         """Check for merge conflicts in the project."""
         return self._detect_merge_conflicts(project_path)
+
+    def checkout_branch(self, project_name: str, branch_name: str) -> dict[str, str]:
+        """Switch to a different branch in the given project."""
+        project_path = self.base_path / project_name
+        if not project_path.exists():
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+        try:
+            runner = GitCommandRunner(project_path)
+            runner.checkout(branch_name)
+            return {
+                "project_name": project_name,
+                "branch_name": branch_name,
+                "status": "checked_out",
+                "message": f"Switched to branch '{branch_name}' in project '{project_name}'.",
+            }
+        except Exception as e:
+            raise RuntimeError(f"Failed to checkout branch: {e}") from e

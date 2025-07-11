@@ -114,3 +114,16 @@ class ProjectStatusResponse(CustomBaseModel):
     recent_commits: list[str]
     conflicts: list[str]
     status: str
+
+
+class ProjectCheckoutResponse(CustomBaseModel):
+    """Schema for project branch checkout response."""
+
+    project_name: str
+    branch_name: str
+    status: str
+    message: str | None = None
+
+
+class ProjectListResponse(CustomBaseModel):
+    projects: list[str]

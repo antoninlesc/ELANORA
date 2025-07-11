@@ -39,3 +39,10 @@ async def delete_project(db: AsyncSession, project_id: int) -> None:
     if project:
         await db.delete(project)
         await db.commit()
+
+
+async def list_projects_by_instance(
+    db: AsyncSession, instance_id: int
+) -> list[Project]:
+    result = await db.execute(select(Project).where(Project.instance_id == instance_id))
+    return result.scalars().all()

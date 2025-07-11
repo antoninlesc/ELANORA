@@ -20,6 +20,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/projects',
+    name: 'ProjectsPage',
+    component: () => import('@views/ProjectsPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/error/:statusCode',
     name: 'HTTPStatus',
     props: (route) => ({
