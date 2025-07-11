@@ -27,6 +27,7 @@
             class="form-input" 
             :placeholder="t('resetPassword.new_password_placeholder')" 
             required 
+            autocomplete="new-password"
           />
         </div>
         <div class="form-group">
@@ -38,6 +39,7 @@
             class="form-input" 
             :placeholder="t('resetPassword.confirm_password_placeholder')" 
             required 
+            autocomplete="new-password"
           />
         </div>
         <button type="submit" class="btn-primary reset-password-btn" :disabled="loading">
