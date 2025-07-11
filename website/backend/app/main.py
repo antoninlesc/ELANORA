@@ -1,20 +1,21 @@
 # Import API routers
-from api.v1.auth import router as auth_router
-from api.v1.git import router as git_router
-from api.v1.user import router as user_router
-from core.centralized_logging import get_logger
-from core.config import BACKEND_HOST, ENVIRONMENT, FRONTEND_HOST
-from core.exception_handler import (
+from app.api.v1.auth import router as auth_router
+from app.api.v1.git import router as git_router
+from app.api.v1.user import router as user_router
+from app.api.v1.tier import router as tier_router
+from app.core.centralized_logging import get_logger
+from app.core.config import BACKEND_HOST, ENVIRONMENT, FRONTEND_HOST
+from app.core.exception_handler import (
     add_general_exception_handler,
     rate_limit_exception_handler,
     validation_exception_handler,
 )
-from core.limiter import limiter
+from app.core.limiter import limiter
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from middleware.csrf import CSRFMiddleware
-from middleware.security_headers import SecurityHeadersMiddleware
+from app.middleware.csrf import CSRFMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -71,6 +72,7 @@ app.add_middleware(
 app.include_router(git_router, prefix=f"{API_V1_PREFIX}/git", tags=["GIT"])
 app.include_router(user_router, prefix=f"{API_V1_PREFIX}/user", tags=["USER"])
 app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["AUTHENTICATION"])
+app.include_router(tier_router, prefix=f"{API_V1_PREFIX}/tier", tags=["TIER"])
 
 
 # Root endpoint

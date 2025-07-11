@@ -1,14 +1,18 @@
+import os
 import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from core.centralized_logging import get_logger
-from core.config import ELAN_PROJECTS_BASE_PATH
+from app.core.centralized_logging import get_logger
+from app.core.config import ELAN_PROJECTS_BASE_PATH
 from fastapi import UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from service.git_diff_parser import GitDiffParser
-from service.git_operations import (
+from app.crud.project import create_project_db
+
+from app.service.git_diff_parser import GitDiffParser
+from app.service.git_operations import (
     FileUploadProcessor,
     GitBranchManager,
     GitDiffAnalyzer,
@@ -30,9 +34,8 @@ class GitService:
         """
         if base_path is None:
             current_file = Path(__file__)
-            website_root = current_file.parent.parent.parent.parent
-            self.base_path = website_root / ELAN_PROJECTS_BASE_PATH
-            logger.info(f"GitService initialized with base path: {self.base_path}")
+            elanora_root = current_file.parent.parent.parent.parent.parent
+            self.base_path = elanora_root / ELAN_PROJECTS_BASE_PATH
         else:
             self.base_path = Path(base_path)
 
@@ -63,8 +66,14 @@ class GitService:
                 "error": "Git not installed",
             }
 
-    def create_project(self, project_name: str) -> dict[str, Any]:
-        """Create a new project with Git repository."""
+    async def create_project(
+        self,
+        project_name: str,
+        description: str,
+        db: AsyncSession,
+        instance_id: int = 1,
+    ) -> dict[str, Any]:
+        """Create a new project with Git repository and description."""
         project_path = self.base_path / project_name
 
         if project_path.exists():
@@ -80,6 +89,13 @@ class GitService:
             # Create project structure
             (project_path / "elan_files").mkdir(exist_ok=True)
 
+            # Create .gitignore to only track .eaf files in elan_files/
+            gitignore_content = (
+                "*\n!.gitignore\n!README.md\n!elan_files/\n!elan_files/*.eaf\n"
+            )
+            with open(project_path / ".gitignore", "w", encoding="utf-8") as f:
+                f.write(gitignore_content)
+
             # Create README
             readme_content = self._create_readme(project_name)
             with open(project_path / "README.md", "w", encoding="utf-8") as f:
@@ -93,12 +109,45 @@ class GitService:
                 check=True,
             )
 
+            # Paths
+            central_githooks = project_path.parent / ".githooks"
+            hooks_dir = project_path / ".git" / "hooks"
+            hooks_dir.mkdir(parents=True, exist_ok=True)
+
+            # Install all hooks found in the central .githooks
+            for hook_file in central_githooks.iterdir():
+                if hook_file.is_file():
+                    hook_name = hook_file.name
+                    hook_dest = hooks_dir / hook_name
+
+                    # Read template and substitute variables
+                    with open(hook_file, "r", encoding="utf-8") as f:
+                        hook_content = f.read()
+                    hook_content = (
+                        hook_content.replace("{{REPO_NAME}}", project_name)
+                        .replace("{{WORK_TREE}}", str(project_path))
+                        .replace("{{GIT_DIR}}", str(project_path / ".git"))
+                    )
+                    with open(hook_dest, "w", encoding="utf-8") as f:
+                        f.write(hook_content)
+                    os.chmod(hook_dest, 0o775)
+
+            # Save to database
+            await create_project_db(
+                db=db,
+                project_name=project_name,
+                description=description,
+                project_path=str(project_path),
+                instance_id=instance_id,
+            )
+
             return {
                 "project_name": project_name,
                 "path": str(project_path),
                 "status": "created",
                 "git_initialized": True,
                 "created_at": datetime.now().isoformat(),
+                "hook_installed": True,
             }
 
         except subprocess.CalledProcessError as e:
@@ -272,9 +321,10 @@ class GitService:
         """Get list of files that already exist."""
         existing_files = []
         for file in files:
-            dest_path = project_path / "elan_files" / file.filename
-            if dest_path.exists():
-                existing_files.append(file.filename)
+            filename = file.filename if file.filename is not None else ""
+            dest_path = project_path / "elan_files" / filename
+            if filename and dest_path.exists():
+                existing_files.append(filename)
         return existing_files
 
     def _attempt_merge(

@@ -1,10 +1,11 @@
-from schema.common.base import CustomBaseModel
+from app.schema.common.base import CustomBaseModel
 
 
 class ProjectCreateRequest(CustomBaseModel):
     """Schema for project creation request."""
 
     project_name: str
+    description: str
 
 
 class CommitRequest(CustomBaseModel):

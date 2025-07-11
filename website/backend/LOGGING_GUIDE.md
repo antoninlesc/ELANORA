@@ -6,7 +6,7 @@
 Just import and use - the logger will automatically detect your module name:
 
 ```python
-from core.centralized_logging import get_logger
+from app.core.centralized_logging import get_logger
 
 logger = get_logger()  # Auto-detects module name
 logger.info("This works in any file!")
@@ -16,7 +16,7 @@ logger.info("This works in any file!")
 Use one logger for all files in a directory:
 
 ```python
-from core.centralized_logging import get_directory_logger
+from app.core.centralized_logging import get_directory_logger
 
 # All files in 'api' directory can use this same logger
 api_logger = get_directory_logger("api")
@@ -82,7 +82,7 @@ APP_NAME=elanora
 ### In any API file:
 ```python
 # api/auth.py
-from core.centralized_logging import get_logger
+from app.core.centralized_logging import get_logger
 
 logger = get_logger()  # Becomes "elanora.api.auth"
 
@@ -102,8 +102,8 @@ async def login(user_data):
 ### In your main FastAPI app:
 ```python
 # main.py
-from core.centralized_logging import get_logger
-from core.logging import setup_application_logging
+from app.core.centralized_logging import get_logger
+from app.core.logging import setup_application_logging
 
 # Setup logging FIRST
 setup_application_logging()
@@ -123,7 +123,7 @@ The exception handlers are already configured to use structured logging:
 
 ```python
 # In your main.py
-from core.exception_handler import (
+from app.core.exception_handler import (
     validation_exception_handler,
     rate_limit_exception_handler,
     add_general_exception_handler

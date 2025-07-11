@@ -1,23 +1,26 @@
-from dependency.elan_validation import validate_multiple_elan_files
-from dependency.user import get_admin_dep
+from app.dependency.elan_validation import validate_multiple_elan_files
+from app.dependency.user import get_admin_dep
+from app.dependency.database import get_db_dep
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
-from model.user import User
-from schema.requests.git import (
+from app.model.user import User
+from app.schema.requests.git import (
     CommitRequest,
     ProjectCreateRequest,
 )
-from schema.responses.git import (
+
+from app.schema.responses.git import (
     BatchFileUploadResponse,
     CommitResponse,
     GitStatusResponse,
     ProjectCreateResponse,
     ProjectStatusResponse,
 )
-from service.git import GitService
+from app.service.git import GitService
 
 router = APIRouter()
-git_service = GitService()
 
+git_service = GitService()
 
 # Create a dependency instance at module level
 validate_elan_files_dep = Depends(validate_multiple_elan_files)
@@ -46,8 +49,10 @@ async def check_git(user: User = get_admin_dep) -> GitStatusResponse:
 
 @router.post("/projects/create", response_model=ProjectCreateResponse)
 async def create_project(
-    project_data: ProjectCreateRequest, user: User = get_admin_dep
-) -> ProjectCreateResponse:
+    project_data: ProjectCreateRequest,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
     """Create a new ELAN project with Git repository.
 
     Args:
@@ -62,7 +67,11 @@ async def create_project(
 
     """
     try:
-        result = git_service.create_project(project_data.project_name)
+        result = await git_service.create_project(
+            project_data.project_name,
+            project_data.description,
+            db,
+        )
         return ProjectCreateResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

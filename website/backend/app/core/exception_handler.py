@@ -8,11 +8,11 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.status import HTTP_400_BAD_REQUEST
 
-from core.logging import get_rotating_logger
+from app.core.logging import get_rotating_logger
 
 # Try to import config, but don't fail if it's not available
 try:
-    from core.config import EXCEPTION_LOG_DIR, EXCEPTION_LOG_LEVEL
+    from app.core.config import EXCEPTION_LOG_DIR, EXCEPTION_LOG_LEVEL
 
     HAS_CONFIG = True
 except ImportError:

@@ -1,5 +1,11 @@
 [tool.poetry]
-package-mode = false
+name = "elanora-backend"
+version = "0.1.0"
+description = "ELANORA backend"
+authors = ["forsakenscheme", "antoninlesc", "romsti"]
+packages = [
+    { include = "app" }
+]
 
 [tool.poetry.dependencies]
 python= "^3.13"

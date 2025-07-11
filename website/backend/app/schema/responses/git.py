@@ -1,5 +1,5 @@
-from schema.common.base import CustomBaseModel
-from schema.common.git import FileStatus
+from app.schema.common.base import CustomBaseModel
+from app.schema.common.git import FileStatus
 
 
 class GitStatusResponse(CustomBaseModel):

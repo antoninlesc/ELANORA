@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import EmailStr
-from schema.common.base import CustomBaseModel
+from app.schema.common.base import CustomBaseModel
 
 
 class CityResponse(CustomBaseModel):
