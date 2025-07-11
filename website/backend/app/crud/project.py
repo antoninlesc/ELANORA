@@ -45,4 +45,4 @@ async def list_projects_by_instance(
     db: AsyncSession, instance_id: int
 ) -> list[Project]:
     result = await db.execute(select(Project).where(Project.instance_id == instance_id))
-    return result.scalars().all()
+    return list(result.scalars().all())

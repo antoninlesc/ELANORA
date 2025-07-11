@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
 
 from app.crud import elan_file, tier, annotation
+from app.crud.project import get_project_by_name
 from app.model.elan_file import ElanFile
 from app.model.tier import Tier
 from app.model.annotation import Annotation
@@ -98,8 +99,10 @@ class ElanService:
 
     # ==================== STORAGE METHODS ====================
 
-    async def store_elan_file_data(self, file_info: Dict, user_id: int) -> int:
-        """Store parsed ELAN file data in the database."""
+    async def store_elan_file_data(
+        self, file_info: Dict, user_id: int, project_ids: List[int]
+    ) -> int:
+        """Store parsed ELAN file data in the database and sync associations."""
         logger.info(f"Storing ELAN file data: {file_info['filename']}")
 
         # Check if file already exists using CRUD
@@ -111,6 +114,10 @@ class ElanService:
             )
             if existing_file:
                 logger.info(f"File {file_info['filename']} already exists. Skipping.")
+                # Always sync associations even if file exists
+                await elan_file.sync_elan_file_to_projects(
+                    self.db, existing_file.elan_id, project_ids
+                )
                 return existing_file.elan_id
 
         # Create ELAN file record using CRUD
@@ -124,6 +131,17 @@ class ElanService:
 
         # Store tiers and annotations using CRUD
         await self._store_tiers_and_annotations(file_info["tiers"])
+
+        # Sync ELAN_FILE_TO_TIER associations
+        tier_ids = [tier["tier_id"] for tier in file_info["tiers"]]
+        await elan_file.sync_elan_file_to_tiers(
+            self.db, elan_file_obj.elan_id, tier_ids
+        )
+
+        # Always sync ELAN_FILE_TO_PROJECT associations
+        await elan_file.sync_elan_file_to_projects(
+            self.db, elan_file_obj.elan_id, project_ids
+        )
 
         logger.info(
             f"Successfully stored: {file_info['filename']} (ID: {elan_file_obj.elan_id})"
@@ -180,18 +198,27 @@ class ElanService:
 
         return tier_obj
 
-    async def process_single_file(self, file_path: str, user_id: int) -> int:
-        """Process and store a single ELAN file."""
+    async def process_single_file(
+        self, file_path: str, user_id: int, project_name: str
+    ) -> int:
+        """Process and store a single ELAN file for the given project."""
         logger.info(f"Processing single ELAN file: {file_path}")
+
+        # Resolve project name to ID
+        project = await get_project_by_name(self.db, project_name)
+        if not project:
+            raise ValueError(f"Project '{project_name}' not found")
+        project_ids = [project.project_id]
+
         file_info = self.parse_elan_file(file_path)
-        elan_id = await self.store_elan_file_data(file_info, user_id)
+        elan_id = await self.store_elan_file_data(file_info, user_id, project_ids)
         logger.info(f"Completed processing file: {file_path} (ID: {elan_id})")
         return elan_id
 
     async def process_directory(
-        self, directory_path: str, user_id: int
+        self, directory_path: str, user_id: int, project_name: str
     ) -> Dict[str, Optional[int]]:
-        """Process all ELAN files in a directory."""
+        """Process all ELAN files in a directory for the given project."""
         logger.info(f"Starting directory processing: {directory_path}")
         eaf_files = self.get_files_in_directory(directory_path)
 
@@ -204,7 +231,9 @@ class ElanService:
         for eaf_file in eaf_files:
             try:
                 logger.info(f"Processing: {eaf_file.name}")
-                elan_id = await self.process_single_file(str(eaf_file), user_id)
+                elan_id = await self.process_single_file(
+                    str(eaf_file), user_id, project_name
+                )
                 results[eaf_file.name] = elan_id
                 processed_count += 1
             except Exception as e:

@@ -14,13 +14,14 @@ from app.crud.project import (
     list_projects_by_instance,
 )
 
+from app.service.elan import ElanService
 from app.service.git_diff_parser import GitDiffParser
 from app.service.git_operations import (
-    FileUploadProcessor,
+    GitCommandRunner,
     GitBranchManager,
+    FileUploadProcessor,
     GitDiffAnalyzer,
     GitMerger,
-    GitCommandRunner,
 )
 
 logger = get_logger()
@@ -216,7 +217,12 @@ class GitService:
             raise RuntimeError(f"Commit failed: {e}") from e
 
     async def add_elan_files(
-        self, project_name: str, files: list[UploadFile], user_name: str = "user"
+        self,
+        project_name: str,
+        files: list[UploadFile],
+        db: AsyncSession,
+        user_id: int,
+        user_name: str = "user",
     ) -> dict[str, Any]:
         """Add multiple ELAN files to the project with branch-based workflow."""
         project_path = self.base_path / project_name
@@ -246,8 +252,14 @@ class GitService:
 
             # Commit and attempt merge
             file_processor.commit_files(uploaded_files, user_name)
-            merge_result = self._attempt_merge(
-                branch_manager, diff_analyzer, merger, branch_name
+            merge_result = await self._attempt_merge(
+                branch_manager,
+                diff_analyzer,
+                merger,
+                branch_name,
+                db=db,
+                user_id=user_id,
+                project_path=project_path,
             )
 
             # Build response
@@ -270,6 +282,58 @@ class GitService:
     async def list_projects(self, db: AsyncSession, instance_id: int) -> list[str]:
         projects = await list_projects_by_instance(db, instance_id)
         return [p.project_name for p in projects]
+
+    async def init_project_from_folder(
+        self,
+        project_name: str,
+        description: str,
+        folder_path: str,
+        db: AsyncSession,
+        user_id: int,
+    ) -> dict:
+        # Resolve the folder path to an absolute path
+        project_path = Path(folder_path).resolve()
+        if not project_path.exists() or not project_path.is_dir():
+            raise ValueError("Specified folder does not exist or is not a directory.")
+
+        runner = GitCommandRunner(project_path)
+        # Initialize git if not already a repo
+        if not (project_path / ".git").exists():
+            runner.init_repo()
+            runner.add_all()
+            runner.commit("Initial commit from existing folder")
+
+        # Register project in DB
+        await create_project_db(
+            db=db,
+            project_name=project_name,
+            description=description,
+            project_path=str(project_path),
+            instance_id=1,  # Replace with actual instance logic
+        )
+
+        # Parse and store ELAN files
+        elan_service = ElanService(db)
+        elan_files = [f for f in project_path.glob("*.eaf")]
+        for elan_file in elan_files:
+            await elan_service.process_single_file(str(elan_file), user_id)
+
+        return {
+            "project_name": project_name,
+            "path": str(project_path),
+            "status": "initialized",
+            "git_initialized": True,
+            "created_at": datetime.now().isoformat(),
+        }
+
+    async def _sync_elan_files_with_db(
+        self, project_path: Path, db: AsyncSession, user_id: int
+    ):
+        """Parse all .eaf files in the project and update the database."""
+        elan_service = ElanService(db)
+        elan_files = [f for f in (project_path / "elan_files").glob("*.eaf")]
+        for elan_file in elan_files:
+            await elan_service.process_single_file(str(elan_file), user_id)
 
     def _validate_upload_request(
         self, project_path: Path, files: list[UploadFile]
@@ -295,14 +359,16 @@ class GitService:
                 existing_files.append(filename)
         return existing_files
 
-    def _attempt_merge(
+    async def _attempt_merge(
         self,
         branch_manager: GitBranchManager,
         diff_analyzer: GitDiffAnalyzer,
         merger: GitMerger,
         branch_name: str,
+        db: AsyncSession,
+        user_id: int,
+        project_path: Path,
     ) -> dict[str, Any]:
-        """Attempt to merge the upload branch."""
         logger.info(f"Attempting to merge branch '{branch_name}' to main branch")
         diff_parser = GitDiffParser()
         branch_manager.switch_to_master()
@@ -311,6 +377,9 @@ class GitService:
 
         if merge_result["status"] == "merged_successfully":
             branch_manager.delete_branch(branch_name)
+            # --- Sync DB with merged ELAN files ---
+            if db and user_id and project_path:
+                await self._sync_elan_files_with_db(project_path, db, user_id)
 
         logger.info(f"Merge result: {merge_result['status']}")
         return merge_result
@@ -381,19 +450,12 @@ class GitService:
             raise FileNotFoundError(f"Project '{project_name}' not found")
 
         try:
-            # Get all branches
-            result = subprocess.run(
-                ["git", "branch", "-a"],
-                cwd=project_path,
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-
+            runner = GitCommandRunner(project_path)
+            branches_raw = runner.get_branches()
             branches = []
             current_branch = None
 
-            for line in result.stdout.strip().split("\n"):
+            for line in branches_raw:
                 line = line.strip()
                 if line.startswith("* "):
                     current_branch = line[2:]
@@ -407,87 +469,37 @@ class GitService:
                 "current_branch": current_branch,
             }
 
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
             raise RuntimeError(f"Failed to get branches: {e}") from e
 
-    # TODO : transform this to use git operations classes
-    def resolve_conflicts(
+    async def resolve_conflicts(
         self,
         project_name: str,
         branch_name: str,
-        resolution_strategy: str = "accept_incoming",
+        resolution_strategy: str,
+        db: AsyncSession,
+        user_id: int,
     ) -> dict[str, Any]:
-        """Resolve conflicts and merge a branch."""
+        """Resolve conflicts and merge a branch, then sync ELAN files with DB."""
         project_path = self.base_path / project_name
 
         if not project_path.exists():
             raise FileNotFoundError(f"Project '{project_name}' not found")
 
         try:
-            # Switch to main branch
-            subprocess.run(
-                ["git", "checkout", "main"],
-                cwd=project_path,
-                check=True,
-            )
+            runner = GitCommandRunner(project_path)
+            result = runner.resolve_conflicts(branch_name, resolution_strategy)
 
-            # Attempt merge again
-            subprocess.run(
-                ["git", "merge", branch_name, "--no-ff"],
-                cwd=project_path,
-                check=False,
-            )
-
-            # Apply resolution strategy
-            if resolution_strategy == "accept_incoming":
-                # Accept all incoming changes
-                subprocess.run(
-                    ["git", "checkout", "--theirs", "."],
-                    cwd=project_path,
-                    check=True,
-                )
-            elif resolution_strategy == "accept_current":
-                # Keep current version
-                subprocess.run(
-                    ["git", "checkout", "--ours", "."],
-                    cwd=project_path,
-                    check=True,
-                )
-
-            # Add resolved files and commit
-            subprocess.run(
-                ["git", "add", "."],
-                cwd=project_path,
-                check=True,
-            )
-
-            subprocess.run(
-                [
-                    "git",
-                    "commit",
-                    "-m",
-                    f"Resolve conflicts from {branch_name} using {resolution_strategy}",
-                ],
-                cwd=project_path,
-                check=True,
-            )
-
-            # Delete the merged branch
-            subprocess.run(
-                ["git", "branch", "-d", branch_name],
-                cwd=project_path,
-                check=False,
-            )
+            # --- Sync DB with merged ELAN files ---
+            await self._sync_elan_files_with_db(project_path, db, user_id)
 
             return {
                 "project_name": project_name,
-                "branch_name": branch_name,
-                "resolution_strategy": resolution_strategy,
-                "status": "resolved",
+                **result,
                 "resolved_at": datetime.now().isoformat(),
             }
 
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
             raise RuntimeError(f"Failed to resolve conflicts: {e}") from e
 
     def _configure_git_user(self, project_path: Path, instance_name: str) -> None:

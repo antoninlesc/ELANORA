@@ -384,3 +384,50 @@ class GitCommandRunner:
 
     def delete_branch(self, branch_name: str):
         self.run(["branch", "-d", branch_name], check=False)
+
+    def resolve_conflicts(
+        self, branch_name: str, resolution_strategy: str
+    ) -> dict[str, Any]:
+        self.checkout("main")
+        self.run(["merge", branch_name, "--no-ff"], check=False)
+        if resolution_strategy == "accept_incoming":
+            self.run(["checkout", "--theirs", "."], check=True)
+        elif resolution_strategy == "accept_current":
+            self.run(["checkout", "--ours", "."], check=True)
+        self.run(["add", "."], check=True)
+        self.run(
+            [
+                "commit",
+                "-m",
+                f"Resolve conflicts from {branch_name} using {resolution_strategy}",
+            ],
+            check=True,
+        )
+        self.run(["branch", "-d", branch_name], check=False)
+        return {
+            "branch_name": branch_name,
+            "resolution_strategy": resolution_strategy,
+            "status": "resolved",
+        }
+
+    def cleanup_on_error(self):
+        try:
+            self.run(["checkout", "master"], check=False)
+        except Exception:
+            pass
+
+    def detect_merge_conflicts(self) -> list[dict[str, str]]:
+        result = self.run(["diff", "--name-only", "--diff-filter=U"])
+        conflicts = []
+        if result.stdout:
+            for filename in result.stdout.strip().split("\n"):
+                if filename.strip():
+                    conflict_details = self.get_conflict_details(filename.strip())
+                    conflicts.append(
+                        {
+                            "filename": filename.strip(),
+                            "type": "content_conflict",
+                            "details": conflict_details,
+                        }
+                    )
+        return conflicts

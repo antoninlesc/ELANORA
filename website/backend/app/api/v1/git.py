@@ -8,6 +8,7 @@ from app.schema.requests.git import (
     CommitRequest,
     ProjectCreateRequest,
     ProjectCheckoutRequest,
+    ProjectInitFromFolderRequest,
 )
 
 from app.schema.responses.git import (
@@ -140,6 +141,8 @@ async def upload_elan_files(
     project_name: str,
     user_name: str = "user",
     files: list[UploadFile] = validate_elan_files_dep,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
 ) -> BatchFileUploadResponse:
     """Upload an ELAN file to a project.
 
@@ -160,7 +163,9 @@ async def upload_elan_files(
 
     """
     try:
-        result = await git_service.add_elan_files(project_name, files, user_name)
+        result = await git_service.add_elan_files(
+            project_name, files, db, user.user_id, user_name
+        )
         return BatchFileUploadResponse(**result)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -182,12 +187,16 @@ async def get_project_branches(project_name: str):
 
 @router.post("/projects/{project_name}/resolve-conflicts")
 async def resolve_conflicts(
-    project_name: str, branch_name: str, resolution_strategy: str = "accept_incoming"
+    project_name: str,
+    branch_name: str,
+    resolution_strategy: str = "accept_incoming",
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
 ):
     """Resolve conflicts and merge a branch."""
     try:
-        result = git_service.resolve_conflicts(
-            project_name, branch_name, resolution_strategy
+        result = await git_service.resolve_conflicts(
+            project_name, branch_name, resolution_strategy, db, user.user_id
         )
         return result
     except FileNotFoundError as e:
@@ -225,3 +234,25 @@ async def list_projects(
     instance_id = 1  # Replace with actual logic
     project_names = await git_service.list_projects(db, instance_id)
     return ProjectListResponse(projects=project_names)
+
+
+@router.post("/projects/init-from-folder", response_model=ProjectCreateResponse)
+async def init_project_from_folder(
+    request: ProjectInitFromFolderRequest,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """
+    Initialize a project from an existing folder with files.
+    """
+    try:
+        result = await git_service.init_project_from_folder(
+            request.project_name,
+            request.description,
+            request.folder_path,
+            db,
+            user_id=user.user_id,
+        )
+        return ProjectCreateResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
