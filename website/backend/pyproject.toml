@@ -89,4 +89,4 @@ ignore = [
     "ISC002",
 ]
 
-per-file-ignores = { "app/utils/gif_to_webm.py" = ["S603"], "tests/**/*.py" = ["S101"] }
+per-file-ignores = { "app/service/git.py" = ["S603", "S607"], "tests/**/*.py" = ["S101"], "app/service/git_operations.py" = ["S603", "S607"]}

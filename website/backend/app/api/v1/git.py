@@ -1,4 +1,4 @@
-from dependency.elan_validation import validate_elan_file
+from dependency.elan_validation import validate_multiple_elan_files
 from dependency.user import get_admin_dep
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from model.user import User
@@ -7,8 +7,8 @@ from schema.requests.git import (
     ProjectCreateRequest,
 )
 from schema.responses.git import (
+    BatchFileUploadResponse,
     CommitResponse,
-    FileUploadResponse,
     GitStatusResponse,
     ProjectCreateResponse,
     ProjectStatusResponse,
@@ -20,7 +20,7 @@ git_service = GitService()
 
 
 # Create a dependency instance at module level
-validate_elan_file_dep = Depends(validate_elan_file)
+validate_elan_files_dep = Depends(validate_multiple_elan_files)
 
 
 @router.get("/check", response_model=GitStatusResponse)
@@ -123,12 +123,12 @@ async def commit_changes(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/projects/{project_name}/upload", response_model=FileUploadResponse)
-async def upload_elan_file(
+@router.post("/projects/{project_name}/upload", response_model=BatchFileUploadResponse)
+async def upload_elan_files(
     project_name: str,
     user_name: str = "user",
-    file: UploadFile = validate_elan_file_dep,
-) -> FileUploadResponse:
+    files: list[UploadFile] = validate_elan_files_dep,
+) -> BatchFileUploadResponse:
     """Upload an ELAN file to a project.
 
     Args:
@@ -148,8 +148,8 @@ async def upload_elan_file(
 
     """
     try:
-        result = await git_service.add_elan_file(project_name, file, user_name)
-        return FileUploadResponse(**result)
+        result = await git_service.add_elan_files(project_name, files, user_name)
+        return BatchFileUploadResponse(**result)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
