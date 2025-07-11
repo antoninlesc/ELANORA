@@ -12,6 +12,10 @@
             class="form-input" 
             :placeholder="t('resetPassword.code_placeholder')" 
             required 
+            maxlength="6"
+            inputmode="numeric"
+            pattern="\\d{6}"
+            @input="form.code = form.code.replace(/[^\d]/g, '').slice(0,6)"
           />
         </div>
         <div class="form-group">
@@ -77,6 +81,11 @@ onMounted(() => {
 });
 
 const handleSubmit = async () => {
+  // Validate code is exactly 6 digits
+  if (!/^\d{6}$/.test(form.value.code)) {
+    eventMessageStore.addMessage(t('resetPassword.code_6_digits'), 'error');
+    return;
+  }
   // Validate passwords match
   if (form.value.newPassword !== form.value.confirmPassword) {
     eventMessageStore.addMessage(t('resetPassword.passwords_no_match'), 'error');

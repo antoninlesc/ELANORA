@@ -142,7 +142,8 @@
     "error": "An error occurred while resetting your password. Please try again.",
     "passwords_no_match": "Passwords do not match",
     "password_too_short": "Password must be at least 8 characters long",
-    "email_required": "Email is required to reset the password"
+    "email_required": "Email is required to reset the password",
+    "code_6_digits": "Verification code must be 6 digits"
   },
   "common": {
     "or": "or",
