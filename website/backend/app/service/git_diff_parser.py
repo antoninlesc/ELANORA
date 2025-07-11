@@ -1,7 +1,7 @@
 import re
 from typing import Any
 
-from core.centralized_logging import get_logger
+from app.core.centralized_logging import get_logger
 
 logger = get_logger()
 
@@ -90,3 +90,64 @@ class GitDiffParser:
             changes["hunks"].append(current_hunk)
             return current_hunk, line_number_old, line_number_new
         return None, 0, 0
+
+    def _process_addition(
+        self, line: str, line_number_new: int, changes: dict, current_hunk: dict | None
+    ) -> int:
+        """Process an added line in the diff."""
+        content = line[1:]
+        line_number_new += 1
+        changes["added_lines"].append(
+            {"line_number": line_number_new, "content": content}
+        )
+        changes["total_additions"] += 1
+        if current_hunk is not None:
+            current_hunk["changes"].append(
+                {"type": "addition", "line_number": line_number_new, "content": content}
+            )
+        return line_number_new
+
+    def _process_deletion(
+        self, line: str, line_number_old: int, changes: dict, current_hunk: dict | None
+    ) -> int:
+        """Process a deleted line in the diff."""
+        content = line[1:]
+        line_number_old += 1
+        changes["removed_lines"].append(
+            {"line_number": line_number_old, "content": content}
+        )
+        changes["total_deletions"] += 1
+        if current_hunk is not None:
+            current_hunk["changes"].append(
+                {"type": "deletion", "line_number": line_number_old, "content": content}
+            )
+        return line_number_old
+
+    def _process_context(
+        self,
+        line: str,
+        line_number_old: int,
+        line_number_new: int,
+        current_hunk: dict | None,
+    ) -> tuple[int, int]:
+        """Process a context (unchanged) line in the diff."""
+        content = line[1:]
+        line_number_old += 1
+        line_number_new += 1
+        if current_hunk is not None:
+            current_hunk["changes"].append(
+                {
+                    "type": "context",
+                    "line_number_old": line_number_old,
+                    "line_number_new": line_number_new,
+                    "content": content,
+                }
+            )
+        return line_number_old, line_number_new
+
+    def _create_summary(self, changes: dict) -> str:
+        """Create a summary of the changes."""
+        return (
+            f"Added {changes['total_additions']} lines, "
+            f"removed {changes['total_deletions']} lines."
+        )

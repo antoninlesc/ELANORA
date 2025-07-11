@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from core.centralized_logging import get_logger
+from app.core.centralized_logging import get_logger
 
 logger = get_logger()
 
@@ -28,7 +28,7 @@ class MergeAnalysis:
     modified_files: list[str]
     deleted_files: list[str]
     has_conflicts: bool
-    file_changes: list[dict] = None
+    file_changes: list[dict] | None = None
 
 
 class GitBranchManager:
@@ -297,3 +297,90 @@ class FileUploadProcessor:
             check=True,
         )
         logger.info(f"Committed {file_count} files to Git")
+
+
+class GitCommandRunner:
+    """Runs generic git commands and returns results."""
+
+    def __init__(self, project_path: Path):
+        self.project_path = project_path
+
+    def run(self, args: list[str], check: bool = False) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git"] + args,
+            cwd=self.project_path,
+            capture_output=True,
+            text=True,
+            check=check,
+        )
+
+    def get_status(self) -> str:
+        return self.run(["status", "--porcelain"]).stdout
+
+    def get_log(self, count: int = 5) -> str:
+        return self.run(
+            ["log", f"-{count}", "--pretty=format:%h|%an|%ad|%s", "--date=iso"]
+        ).stdout
+
+    def get_conflicted_files(self) -> list[str]:
+        result = self.run(["diff", "--name-only", "--diff-filter=U"])
+        return [
+            line.strip() for line in result.stdout.strip().split("\n") if line.strip()
+        ]
+
+    def get_conflict_details(self, filename: str) -> dict[str, Any]:
+        file_path = self.project_path / filename
+        if file_path.exists():
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+            conflict_markers = content.count("<<<<<<< HEAD")
+            return {
+                "conflict_markers_count": conflict_markers,
+                "file_size": len(content),
+                "has_binary_conflict": "<<<<<<< HEAD" not in content,
+            }
+        return {"error": "File not found"}
+
+    def configure_user(self, instance_name: str):
+        """Configure Git user using the instance name."""
+        # Clean the instance name for use in email (lowercase, no spaces)
+        safe_name = instance_name.lower().replace(" ", "_")
+        email = f"{safe_name}@elanora.local"
+        self.run(["config", "user.name", instance_name], check=True)
+        self.run(["config", "user.email", email], check=True)
+        logger.info(f"Configured Git user: {instance_name} <{email}>")
+
+    def get_branches(self) -> list[str]:
+        result = self.run(["branch", "-a"], check=True)
+        return result.stdout.strip().split("\n")
+
+    def checkout(self, branch: str):
+        self.run(["checkout", branch], check=True)
+
+    def add_all(self):
+        self.run(["add", "."], check=True)
+
+    def commit(self, message: str):
+        self.run(["commit", "-m", message], check=True)
+
+    def get_commit_hash(self) -> str:
+        return self.run(["rev-parse", "HEAD"]).stdout.strip()
+
+    def init_repo(self):
+        self.run(["init"], check=True)
+
+    def add_file(self, filepath: str):
+        self.run(["add", filepath], check=True)
+
+    def merge(self, branch_name: str, message: str, no_ff: bool = True):
+        args = ["merge", branch_name]
+        if no_ff:
+            args.append("--no-ff")
+        args += ["-m", message]
+        self.run(args, check=True)
+
+    def diff_stat(self, branch_name: str) -> str:
+        return self.run(["diff", f"master...{branch_name}", "--stat"]).stdout
+
+    def delete_branch(self, branch_name: str):
+        self.run(["branch", "-d", branch_name], check=False)

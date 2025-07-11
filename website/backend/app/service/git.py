@@ -17,6 +17,7 @@ from app.service.git_operations import (
     GitBranchManager,
     GitDiffAnalyzer,
     GitMerger,
+    GitCommandRunner,
 )
 
 logger = get_logger()
@@ -44,15 +45,8 @@ class GitService:
     def check_git_availability(self) -> dict[str, Any]:
         """Check if Git is available on the system."""
         try:
-            result = subprocess.run(
-                [
-                    "git",
-                    "--version",
-                ],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
+            runner = GitCommandRunner(self.base_path)
+            result = runner.run(["--version"])
             return {
                 "git_available": result.returncode == 0,
                 "version": result.stdout.strip() if result.returncode == 0 else None,
@@ -83,8 +77,10 @@ class GitService:
             # Create project directory
             project_path.mkdir(parents=True, exist_ok=True)
 
+            runner = GitCommandRunner(project_path)
+
             # Initialize Git repository
-            subprocess.run(["git", "init"], cwd=project_path, check=True)
+            runner.init_repo()
 
             # Create project structure
             (project_path / "elan_files").mkdir(exist_ok=True)
@@ -102,12 +98,8 @@ class GitService:
                 f.write(readme_content)
 
             # Initial commit
-            subprocess.run(["git", "add", "."], cwd=project_path, check=True)
-            subprocess.run(
-                ["git", "commit", "-m", "Initial project setup"],
-                cwd=project_path,
-                check=True,
-            )
+            runner.add_all()
+            runner.commit("Initial project setup")
 
             # Paths
             central_githooks = project_path.parent / ".githooks"
@@ -150,8 +142,6 @@ class GitService:
                 "hook_installed": True,
             }
 
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Git operation failed: {e}") from e
         except Exception as e:
             raise RuntimeError(f"Project creation failed: {e}") from e
 
@@ -163,17 +153,10 @@ class GitService:
             raise FileNotFoundError(f"Project '{project_name}' not found")
 
         try:
-            # Get Git status
-            status_result = subprocess.run(
-                ["git", "status", "--porcelain"],
-                check=False,
-                cwd=project_path,
-                capture_output=True,
-                text=True,
-            )
+            runner = GitCommandRunner(project_path)
 
-            # Parse file status
-            files = self._parse_git_status(status_result.stdout)
+            # Get Git status
+            files = self._parse_git_status(runner.get_status())
 
             # Get recent commits
             commits = self._get_recent_commits(project_path)
@@ -189,7 +172,7 @@ class GitService:
                 "status": "ok",
             }
 
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
             raise RuntimeError(f"Git status check failed: {e}") from e
 
     # TODO: error 500 when commiting file that is already in folder projects
@@ -203,52 +186,31 @@ class GitService:
             raise FileNotFoundError(f"Project '{project_name}' not found")
 
         try:
-            # Check if there are changes to commit
-            status_result = subprocess.run(
-                ["git", "status", "--porcelain"],
-                check=False,
-                cwd=project_path,
-                capture_output=True,
-                text=True,
-            )
+            runner = GitCommandRunner(project_path)
 
-            if not status_result.stdout.strip():
+            # Check if there are changes to commit
+            if not runner.get_status().strip():
                 raise ValueError("No changes to commit")
 
             # Add all changes
-            subprocess.run(["git", "add", "."], cwd=project_path, check=True)
+            runner.add_all()
 
             # Commit with user info
             full_message = f"{commit_message}\n\nCommitted by: {user_name}"
-            subprocess.run(
-                [
-                    "git",
-                    "commit",
-                    "-m",
-                    full_message,
-                ],
-                cwd=project_path,
-                check=True,
-            )
+            runner.commit(full_message)
 
             # Get commit hash
-            hash_result = subprocess.run(
-                ["git", "rev-parse", "HEAD"],
-                check=False,
-                cwd=project_path,
-                capture_output=True,
-                text=True,
-            )
+            commit_hash = runner.get_commit_hash()
 
             return {
                 "project_name": project_name,
                 "message": commit_message,
-                "commit_hash": hash_result.stdout.strip(),
+                "commit_hash": commit_hash,
                 "status": "committed",
                 "committed_at": datetime.now().isoformat(),
             }
 
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
             raise RuntimeError(f"Commit failed: {e}") from e
 
     async def add_elan_files(
@@ -522,29 +484,9 @@ class GitService:
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Failed to resolve conflicts: {e}") from e
 
-    def _configure_git_user(self, project_path: Path, user_name: str) -> None:
-        """Configure Git user for the project."""
-        try:
-            # Set user name
-            subprocess.run(
-                ["git", "config", "user.name", user_name],
-                cwd=project_path,
-                check=True,
-            )
-
-            # Set user email (use a default format)
-            email = f"{user_name}@elanora.local"
-            subprocess.run(
-                ["git", "config", "user.email", email],
-                cwd=project_path,
-                check=True,
-            )
-
-            logger.info(f"Configured Git user: {user_name} <{email}>")
-
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to configure Git user: {e}")
-            raise RuntimeError(f"Failed to configure Git user: {e}") from e
+    def _configure_git_user(self, project_path: Path, instance_name: str) -> None:
+        runner = GitCommandRunner(project_path)
+        runner.configure_user(instance_name)
 
     def _detect_merge_conflicts(self, project_path: Path) -> list[dict[str, str]]:
         """Detect and parse merge conflicts."""
@@ -604,3 +546,42 @@ class GitService:
 
         except Exception as e:
             return {"error": str(e)}
+
+    def _create_readme(self, project_name: str) -> str:
+        """Generate README content for a new project."""
+        return f"# {project_name}\n\nThis is the ELAN project '{project_name}'.\n"
+
+    def _parse_git_status(self, status_output: str) -> list[dict[str, str]]:
+        """Parse the output of 'git status --porcelain'."""
+        files = []
+        for line in status_output.strip().splitlines():
+            if not line:
+                continue
+            status = line[:2].strip()
+            filename = line[3:].strip()
+            files.append({"filename": filename, "status": status})
+        return files
+
+    def _get_recent_commits(
+        self, project_path: Path, count: int = 5
+    ) -> list[dict[str, str]]:
+        """Get recent commits for the project."""
+        runner = GitCommandRunner(project_path)
+        result = runner.get_log(count)
+        commits = []
+        for line in result.strip().splitlines():
+            parts = line.split("|", 3)
+            if len(parts) == 4:
+                commits.append(
+                    {
+                        "hash": parts[0],
+                        "author": parts[1],
+                        "date": parts[2],
+                        "message": parts[3],
+                    }
+                )
+        return commits
+
+    def _check_for_conflicts(self, project_path: Path) -> list[dict[str, str]]:
+        """Check for merge conflicts in the project."""
+        return self._detect_merge_conflicts(project_path)
