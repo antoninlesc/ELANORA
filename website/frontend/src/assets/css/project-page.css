@@ -115,3 +115,54 @@
   font-size: 0.98rem;
   text-align: center;
 }
+
+/* Modal overlay (no background) */
+.project-page-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 50%);
+}
+
+/* Modal content */
+.project-page-modal-content {
+  background: #fff;
+  padding: 32px 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgb(0 0 0 / 8%);
+  min-width: 320px;
+  max-width: 95vw;
+}
+
+/* Modal title */
+.project-page-modal-title {
+  margin-bottom: 18px;
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.project-page-files-tree-section {
+  margin: 32px 0 0;
+  padding: 24px 18px;
+  background: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 1px 8px rgb(0 0 0 / 6%);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.project-page-files-tree-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: #1976d2;
+  text-align: left;
+}

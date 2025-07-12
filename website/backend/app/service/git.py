@@ -654,7 +654,7 @@ class GitService:
 
         runner = GitCommandRunner(project_path)
 
-        # 1. Detect current branch
+        # Detect current branch
         current_branch = None
         try:
             branches_raw = runner.get_branches()
@@ -664,9 +664,9 @@ class GitService:
                     current_branch = line[2:]
                     break
         except Exception:
-            current_branch = None  # fallback: don't restore if detection fails
+            current_branch = None
 
-        # 2. Checkout master branch before listing files
+        # Checkout master branch before listing files
         runner.checkout("master")
 
         def build_tree(path: Path) -> dict | None:
@@ -687,11 +687,61 @@ class GitService:
 
         tree = build_tree(elan_files_dir)
 
-        # 3. Restore previous branch if needed
+        # Restore previous branch if needed
         if current_branch and current_branch != "master":
             try:
                 runner.checkout(current_branch)
             except Exception:
-                pass  # Don't fail if we can't restore
+                pass
 
         return {"tree": tree}
+
+    async def synchronize_project(
+        self, project_name: str, db: AsyncSession, user_id: int
+    ):
+        """
+        - Checkout master branch
+        - Add/commit new/changed .eaf files in elan_files/
+        - Parse all .eaf files and update the DB
+        """
+        project_path = self.base_path / project_name
+        elan_files_dir = project_path / "elan_files"
+        runner = GitCommandRunner(project_path)
+
+        # Work on master branch
+        current_branch = None
+        try:
+            branches_raw = runner.get_branches()
+            for line in branches_raw:
+                line = line.strip()
+                if line.startswith("* "):
+                    current_branch = line[2:]
+                    break
+        except Exception:
+            pass
+        if current_branch != "master":
+            runner.checkout("master")
+
+        # Add and commit new/changed .eaf files
+        runner.add_all()
+        if runner.get_status().strip():
+            runner.commit("Synchronize .eaf files from filesystem")
+
+        # Parse and update DB for all .eaf files
+        elan_service = ElanService(db)
+        elan_files = list(elan_files_dir.rglob("*.eaf"))
+        for elan_file in elan_files:
+            await elan_service.process_single_file(
+                str(elan_file), user_id, project_name
+            )
+
+        # Restore previous branch
+        if current_branch and current_branch != "master":
+            try:
+                runner.checkout(current_branch)
+            except Exception:
+                pass
+
+        return (
+            f"Synchronized {len(elan_files)} .eaf files for project '{project_name}'."
+        )

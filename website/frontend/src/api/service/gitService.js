@@ -111,6 +111,14 @@ const gitService = {
     );
     return data;
   },
+
+  // Synchronize a project
+  async synchronizeProject(projectName) {
+    const { data } = await axiosInstance.post(
+      `/git/projects/${encodeURIComponent(projectName)}/synchronize`
+    );
+    return data;
+  },
 };
 
 export default gitService;
