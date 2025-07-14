@@ -3,8 +3,9 @@
 from typing import List, Optional
 from app.core.centralized_logging import get_logger
 from app.crud.invitation import (
-    create_invitation_in_db,
+    create_invitation,
     get_invitation_by_id,
+    get_invitation_by_code,
     get_invitations_by_email,
     get_pending_invitations_by_email,
     update_invitation_status,
@@ -57,7 +58,7 @@ class InvitationService:
             project_name = project.project_name
 
             # Create invitation in database
-            invitation = await create_invitation_in_db(
+            invitation, raw_code = await create_invitation(
                 db=db,
                 sender_id=sender_id,
                 receiver_email=str(request.receiver_email),
@@ -69,7 +70,7 @@ class InvitationService:
             # Send invitation email
             email_sent = await self.email_service.send_invitation_email(
                 email=str(request.receiver_email),
-                invitation_id=invitation.invitation_id,
+                invitation_code=raw_code,  # Now the parameter name is clear
                 sender_name=f"{sender.first_name} {sender.last_name}",
                 project_name=project_name,
                 custom_message=request.message,
@@ -113,22 +114,16 @@ class InvitationService:
     async def validate_invitation(
         self,
         db: AsyncSession,
-        invitation_id: str,
+        invitation_code: str,  # Now this is the raw code, not invitation_id
     ) -> InvitationValidationResponse:
         """Validate an invitation code."""
         try:
-            invitation = await get_invitation_by_id(db, invitation_id)
+            # Find invitation by code
+            invitation = await get_invitation_by_code(db, invitation_code)
 
             if not invitation:
                 return InvitationValidationResponse(
-                    valid=False, message="Invitation not found"
-                )
-
-            is_valid = await check_invitation_exists_and_valid(db, invitation_id)
-
-            if not is_valid:
-                return InvitationValidationResponse(
-                    valid=False, message="Invitation is expired or already used"
+                    valid=False, message="Invalid invitation code"
                 )
 
             # Convert to response format
@@ -144,7 +139,7 @@ class InvitationService:
             logger.error(
                 "Failed to validate invitation",
                 extra={
-                    "invitation_id": invitation_id,
+                    "invitation_code": invitation_code,
                     "error": str(e),
                 },
                 exc_info=True,

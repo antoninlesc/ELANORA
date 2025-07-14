@@ -131,7 +131,7 @@ class EmailService:
     async def send_invitation_email(
         self,
         email: str,
-        invitation_id: str,
+        invitation_code: str,
         sender_name: str,
         project_name: str | None = None,
         custom_message: str | None = None,
@@ -142,7 +142,7 @@ class EmailService:
 
         Args:
             email (str): The email address to send the invitation to
-            invitation_id (str): The invitation ID/code
+            invitation_code (str): The invitation code for registration link
             sender_name (str): The name of the person sending the invitation
             project_name (str): The name of the project (optional)
             custom_message (str): Custom message from the sender (optional)
@@ -153,7 +153,7 @@ class EmailService:
         """
         current_year = datetime.datetime.now().year
         contact_url = f"{config.FRONTEND_HOST}/contact"
-        register_url = f"{config.FRONTEND_HOST}/register?invitation={invitation_id}"
+        register_url = f"{config.FRONTEND_HOST}/register?invitation={invitation_code}"
 
         # Determine email template and subject based on language
         if language.lower() == "fr":
@@ -190,7 +190,7 @@ class EmailService:
                 sender_name=sender_name,
                 project_info=project_info,
                 custom_message=formatted_custom_message,
-                invitation_code=invitation_id,
+                invitation_code=invitation_code,
                 register_url=register_url,
                 year=current_year,
                 contact_url=contact_url,
@@ -223,7 +223,7 @@ class EmailService:
                   {formatted_custom_message if custom_message else ""}
                   <div style="background: #f0f4ff; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
                     <p><strong>Invitation Code:</strong></p>
-                    <div style="font-size: 24px; font-weight: bold; color: #2563eb; font-family: monospace; margin: 10px 0;">{invitation_id}</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #2563eb; font-family: monospace; margin: 10px 0;">{invitation_code}</div>
                   </div>
                   <p style="text-align: center;">
                     <a href="{register_url}" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">{fallback_cta}</a>

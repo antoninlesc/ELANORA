@@ -1,10 +1,11 @@
 """Invitation CRUD operations - Pure database access layer."""
 
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import uuid
+import secrets
 from passlib.context import CryptContext
 
 from app.model.invitation import Invitation
@@ -14,20 +15,25 @@ from app.model.enums import InvitationStatus, ProjectPermission
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-async def create_invitation_in_db(
+async def create_invitation(
     db: AsyncSession,
     sender_id: int,
     receiver_email: str,
     project_id: int,
     project_permission: ProjectPermission = ProjectPermission.READ,
     expires_in_days: int = 7,
-) -> Invitation:
-    """Create a new invitation in the database."""
+) -> Tuple[Invitation, str]:
+    """Create a new invitation in the database.
+
+    Returns:
+        Tuple[Invitation, str]: The created invitation and the raw code for email
+    """
     invitation_id = str(uuid.uuid4())
     expires_at = datetime.now() + timedelta(days=expires_in_days)
 
-    # Generate hashed code for the invitation_id
-    hashed_code = pwd_context.hash(invitation_id)
+    # Generate a secure random code (independent of invitation_id)
+    raw_code = secrets.token_urlsafe(32)  # 32 bytes = 256 bits of entropy
+    hashed_code = pwd_context.hash(raw_code)
 
     invitation = Invitation(
         invitation_id=invitation_id,
@@ -43,7 +49,7 @@ async def create_invitation_in_db(
     db.add(invitation)
     await db.commit()
     await db.refresh(invitation)
-    return invitation
+    return invitation, raw_code
 
 
 async def get_invitation_by_id(
@@ -136,3 +142,34 @@ async def expire_old_invitations(db: AsyncSession) -> int:
         await db.commit()
 
     return count
+
+
+async def verify_invitation_code(
+    db: AsyncSession, invitation_id: str, raw_code: str
+) -> bool:
+    """Verify if the provided code matches the invitation's hashed code."""
+    invitation = await get_invitation_by_id(db, invitation_id)
+    if not invitation:
+        return False
+
+    return pwd_context.verify(raw_code, invitation.hashed_code)
+
+
+async def get_invitation_by_code(
+    db: AsyncSession, raw_code: str
+) -> Optional[Invitation]:
+    """Retrieve an invitation by verifying the raw code against hashed codes."""
+    # Get all pending invitations
+    result = await db.execute(
+        select(Invitation)
+        .filter(Invitation.status == InvitationStatus.PENDING)
+        .filter(Invitation.expires_at > datetime.now())
+    )
+    invitations = list(result.scalars().all())
+
+    # Check each invitation's hashed code against the provided raw code
+    for invitation in invitations:
+        if pwd_context.verify(raw_code, invitation.hashed_code):
+            return invitation
+
+    return None

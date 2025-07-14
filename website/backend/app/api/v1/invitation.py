@@ -40,16 +40,16 @@ async def send_invitation(
     )
 
 
-@router.get("/validate/{invitation_id}", response_model=InvitationValidationResponse)
+@router.get("/validate/{invitation_code}", response_model=InvitationValidationResponse)
 async def validate_invitation(
-    invitation_id: str,
+    invitation_code: str,
     db: AsyncSession = get_db_dep,
 ) -> InvitationValidationResponse:
     """Validate an invitation code (Public endpoint for registration)."""
     invitation_service = InvitationService()
     return await invitation_service.validate_invitation(
         db=db,
-        invitation_id=invitation_id,
+        invitation_code=invitation_code,
     )
 
 

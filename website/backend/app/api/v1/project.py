@@ -13,7 +13,7 @@ from app.schema.responses.project import ProjectResponse
 router = APIRouter()
 
 
-@router.get("", response_model=List[ProjectResponse])
+@router.get("/list", response_model=List[ProjectResponse])
 async def get_projects(
     user: User = get_user_dep,
     db: AsyncSession = get_db_dep,
@@ -29,7 +29,7 @@ async def get_projects(
         )
 
 
-@router.get("/{project_id}", response_model=ProjectResponse)
+@router.get("/details/{project_id}", response_model=ProjectResponse)
 async def get_project(
     project_id: int,
     user: User = get_user_dep,

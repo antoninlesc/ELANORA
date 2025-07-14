@@ -11,7 +11,7 @@ import axiosInstance from '@api/apiClient.js';
  * @returns {Promise<import('axios').AxiosResponse>}
  */
 export async function getProjects() {
-  return await axiosInstance.get('/project');
+  return await axiosInstance.get('/project/list');
 }
 
 /**
@@ -20,5 +20,5 @@ export async function getProjects() {
  * @returns {Promise<import('axios').AxiosResponse>}
  */
 export async function getProject(projectId) {
-  return await axiosInstance.get(`/project/${projectId}`);
+  return await axiosInstance.get(`/project/details/${projectId}`);
 }
