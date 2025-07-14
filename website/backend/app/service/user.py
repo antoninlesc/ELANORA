@@ -75,11 +75,11 @@ class UserService:
         if not user:
             return None
 
-        if not user.password:
+        if not user.hash_password:
             return None
 
         # Verify password using bcrypt
-        is_valid = cls.verify_password(password, user.password)
+        is_valid = cls.verify_password(password, user.hash_password)
 
         if is_valid:
             return user
@@ -249,10 +249,10 @@ class UserService:
             bool: True if current password is correct.
 
         """
-        if not user.password:
+        if not user.hash_password:
             return False
 
-        return cls.verify_password(current_password, user.password)
+        return cls.verify_password(current_password, user.hash_password)
 
     @classmethod
     async def update_user_profile(
