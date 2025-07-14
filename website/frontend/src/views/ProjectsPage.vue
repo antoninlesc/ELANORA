@@ -38,6 +38,7 @@
 
     <div v-if="loading" class="project-page-loading">Loading projects...</div>
     <div v-else class="project-page-list">
+      <!-- Replace your project list loop with this -->
       <div
         v-for="project in projects"
         :key="project"
@@ -53,6 +54,13 @@
           class="project-page-feedback"
           >Active</span
         >
+        <button
+          class="project-page-delete-btn"
+          title="Delete Project"
+          @click.stop="deleteProject(project)"
+        >
+          🗑️
+        </button>
       </div>
     </div>
 
@@ -253,6 +261,27 @@ async function synchronizeProject() {
     console.error('Failed to synchronize project:', currentProjectName.value);
   } finally {
     syncing.value = false;
+  }
+}
+
+async function deleteProject(projectName) {
+  if (
+    !confirm(
+      `Are you sure you want to delete project "${projectName}"? This cannot be undone.`
+    )
+  )
+    return;
+  try {
+    await gitService.deleteProject(projectName);
+    await fetchProjects();
+    if (currentProjectName.value === projectName) {
+      projectStore.clearCurrentProject();
+      projectFiles.value = null;
+    }
+  } catch {
+    console.error('Failed to delete project:', projectName);
+  } finally {
+    await fetchProjects();
   }
 }
 

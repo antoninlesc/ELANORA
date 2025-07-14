@@ -16,13 +16,14 @@
       {{ files.length }} file{{ files.length > 1 ? 's' : '' }} selected
     </span>
     <div v-if="files.length" class="upload-folder-tree">
-      <FolderTree :tree="fileTree" />
+      <FileTree v-if="files.length" :tree="fileTree" :level="0" />
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
+import FileTree from './FileTree.vue';
 
 defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -56,55 +57,29 @@ function buildTree(files) {
     let node = root;
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
-      if (i === parts.length - 1) {
-        // file
-        node[part] = { type: 'file', file };
-      } else {
-        if (!node[part]) node[part] = { type: 'folder', children: {} };
-        node = node[part].children;
+      if (!node[part]) {
+        node[part] = {
+          name: part,
+          type: i === parts.length - 1 ? 'file' : 'folder',
+          children: i === parts.length - 1 ? undefined : {},
+        };
       }
+      node = node[part].children || node[part];
     }
   }
-  return root;
+  // Recursively convert children objects to arrays
+  function toArray(node) {
+    if (node.type === 'folder') {
+      node.children = Object.values(node.children).map(toArray);
+    }
+    return node;
+  }
+  const roots = Object.values(root).map(toArray);
+  // If only one root, return it; else wrap in a virtual root
+  return roots.length === 1
+    ? roots[0]
+    : { name: '', type: 'folder', children: roots };
 }
-
-// Recursive folder tree as a component using <template>
-import { defineComponent, reactive } from 'vue';
-
-const FolderTree = defineComponent({
-  name: 'FolderTree',
-  props: {
-    tree: { type: Object, required: true },
-    level: { type: Number, default: 0 },
-  },
-  setup(props) {
-    const open = reactive({});
-    const toggle = (folder) => {
-      open[folder] = !open[folder];
-    };
-    return { open, toggle, props };
-  },
-  template: `
-    <ul class="upload-folder-list" :style="{ marginLeft: (props.level * 14) + 'px' }">
-      <template v-for="(node, name) in props.tree" :key="name">
-        <li v-if="node.type === 'file'" class="upload-folder-file">
-          <span class="upload-folder-file-name">{{ name }}</span>
-        </li>
-        <li v-else>
-          <div
-            class="upload-folder-folder"
-            style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;"
-            @click="toggle(name)"
-          >
-            <span style="color:#388e3c;">{{ open[name] ? '📂' : '📁' }}</span>
-            <span style="font-weight:600;">{{ name }}</span>
-          </div>
-          <FolderTree v-if="open[name]" :tree="node.children" :level="props.level + 1" />
-        </li>
-      </template>
-    </ul>
-  `,
-});
 </script>
 
 <style scoped>

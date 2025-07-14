@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from .annotation import Annotation
+    from .elan_file import ElanFile
 
 
 class Tier(Base):
@@ -18,6 +19,9 @@ class Tier(Base):
     parent_tier_id: Mapped[str | None] = mapped_column(
         String(50), ForeignKey("TIER.tier_id"), nullable=True
     )
+    elan_id: Mapped[int] = mapped_column(
+        ForeignKey("ELAN_FILE.elan_id", ondelete="CASCADE"), nullable=False
+    )
 
     # Relationships
     parent_tier: Mapped[Optional["Tier"]] = relationship(
@@ -29,7 +33,10 @@ class Tier(Base):
     annotations: Mapped[list["Annotation"]] = relationship(
         "Annotation", back_populates="tier"
     )
+    elan_file: Mapped[Optional["ElanFile"]] = relationship(
+        "ElanFile", back_populates="tiers"
+    )
 
     def __repr__(self) -> str:
         """Return a string representation of the Tier."""
-        return f"<Tier(tier_id='{self.tier_id}', tier_name='{self.tier_name}')>"
+        return f"<Tier(tier_id='{self.tier_id}', tier_name='{self.tier_name}', elan_id='{self.elan_id}')>"

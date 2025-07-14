@@ -2,7 +2,6 @@
 from app.api.v1.auth import router as auth_router
 from app.api.v1.git import router as git_router
 from app.api.v1.user import router as user_router
-from app.api.v1.tier import router as tier_router
 from app.core.centralized_logging import get_logger
 from app.core.config import BACKEND_HOST, ENVIRONMENT, FRONTEND_HOST
 from app.core.exception_handler import (
@@ -19,9 +18,6 @@ from app.middleware.security_headers import SecurityHeadersMiddleware
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
-
-# Get logger (this will automatically call setup_application_logging)
-logger = get_logger()
 
 # Get logger (this will automatically call setup_application_logging)
 logger = get_logger()
@@ -72,7 +68,6 @@ app.add_middleware(
 app.include_router(git_router, prefix=f"{API_V1_PREFIX}/git", tags=["GIT"])
 app.include_router(user_router, prefix=f"{API_V1_PREFIX}/user", tags=["USER"])
 app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["AUTHENTICATION"])
-app.include_router(tier_router, prefix=f"{API_V1_PREFIX}/tier", tags=["TIER"])
 
 
 # Root endpoint

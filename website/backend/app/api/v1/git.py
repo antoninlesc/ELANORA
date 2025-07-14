@@ -74,6 +74,7 @@ async def create_project(
             project_data.project_name,
             project_data.description,
             db,
+            user.user_id,
         )
         return ProjectCreateResponse(**result)
     except ValueError as e:
@@ -285,5 +286,21 @@ async def synchronize_project(
     try:
         result = await git_service.synchronize_project(project_name, db, user.user_id)
         return {"status": "success", "detail": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.delete("/projects/{project_name}")
+async def delete_project(
+    project_name: str,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """
+    Delete a project, its files, and all associated database artifacts.
+    """
+    try:
+        await git_service.delete_project(project_name, db, user.user_id)
+        return {"status": "success", "detail": f"Project '{project_name}' deleted."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

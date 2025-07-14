@@ -3,17 +3,20 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any, Dict
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
+from app.db.database import get_session_maker
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from app.crud.project import (
     create_project_db,
+    delete_project_db,
     list_projects_by_instance,
+    project_exists_by_name,
 )
 
 from app.service.elan import ElanService
@@ -24,6 +27,7 @@ from app.service.git_operations import (
     FileUploadProcessor,
     GitDiffAnalyzer,
     GitMerger,
+    delete_project_folder,
 )
 
 logger = get_logger()
@@ -71,12 +75,23 @@ class GitService:
         project_name: str,
         description: str,
         db: AsyncSession,
+        user_id: int,
         instance_id: int = 1,
     ) -> dict[str, Any]:
         """Create a new project with Git repository and description."""
         project_path = self.base_path / project_name
 
+        logger.info(f"Checking if project folder exists: {project_path}")
+        logger.info(f"Folder exists? {project_path.exists()}")
+
         if project_path.exists():
+            logger.warning(f"Project folder '{project_path}' already exists.")
+            raise ValueError(f"Project '{project_name}' already exists")
+
+        exists = await project_exists_by_name(db, project_name)
+        logger.info(f"Checking if project exists in DB: {project_name} -> {exists}")
+        if exists:
+            logger.warning(f"Project '{project_name}' already exists in the database.")
             raise ValueError(f"Project '{project_name}' already exists")
 
         try:
@@ -137,6 +152,7 @@ class GitService:
                 description=description,
                 project_path=str(project_path),
                 instance_id=instance_id,
+                creator_user_id=user_id,
             )
 
             return {
@@ -323,6 +339,7 @@ class GitService:
             description=description,
             project_path=str(project_path),
             instance_id=1,
+            creator_user_id=user_id,
         )
 
         # 4. Parse and store ELAN files in DB
@@ -727,7 +744,6 @@ class GitService:
         if runner.get_status().strip():
             runner.commit("Synchronize .eaf files from filesystem")
 
-        # Parse and update DB for all .eaf files
         elan_service = ElanService(db)
         elan_files = list(elan_files_dir.rglob("*.eaf"))
         for elan_file in elan_files:
@@ -745,3 +761,19 @@ class GitService:
         return (
             f"Synchronized {len(elan_files)} .eaf files for project '{project_name}'."
         )
+
+    async def delete_project(self, project_name: str, db: AsyncSession, user_id: int):
+        logger.info(f"Starting deletion of project: {project_name}")
+        # Remove all DB artifacts (project, files, annotations, etc.)
+        try:
+            await delete_project_db(db, project_name)
+            logger.info(f"Database records deleted for project: {project_name}")
+        except Exception as db_exc:
+            logger.error(
+                f"Failed to delete project from DB: {project_name} | Error: {db_exc}"
+            )
+            raise
+
+        # Remove the project folder from disk
+        project_path = self.base_path / project_name
+        delete_project_folder(project_path)

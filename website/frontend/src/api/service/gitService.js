@@ -119,6 +119,14 @@ const gitService = {
     );
     return data;
   },
+
+  // Delete a project
+  async deleteProject(projectName) {
+    const { data } = await axiosInstance.delete(
+      `/git/projects/${encodeURIComponent(projectName)}`
+    );
+    return data;
+  },
 };
 
 export default gitService;
