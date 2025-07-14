@@ -190,6 +190,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { validateInvitation } from '@/api/service/invitationService';
+import { registerWithInvitation } from '@/api/service/authService';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -280,11 +281,19 @@ const handleRegister = async () => {
   loading.value = true;
 
   try {
-    // TODO: Implement registration with invitation
-    // For now, just show success message
+    // API call for registration with invitation
+    const payload = {
+      invitation_code: invitationCode.value,
+      first_name: form.value.firstName,
+      last_name: form.value.lastName,
+      username: form.value.username,
+      email: form.value.email,
+      password: form.value.password,
+      affiliation: form.value.affiliation,
+      department: form.value.department,
+    };
+    await registerWithInvitation(payload);
     eventMessageStore.addMessage(t('register.success'), 'success');
-    
-    // Redirect to login
     router.push({ name: 'LoginPage' });
   } catch (error) {
     console.error('Registration error:', error);

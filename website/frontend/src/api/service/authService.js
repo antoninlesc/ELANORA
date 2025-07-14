@@ -53,3 +53,12 @@ export async function resetPassword(email, code, newPassword) {
   console.log('Sending reset password request for:', email);
   return await axiosInstance.post('/auth/reset-password', payload);
 }
+
+/**
+ * Register a user with an invitation code.
+ * @param {Object} data - Registration data
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function registerWithInvitation(data) {
+  return await axiosInstance.post('/auth/register-with-invitation', data);
+}

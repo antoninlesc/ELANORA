@@ -235,6 +235,64 @@ class UserService:
         return user
 
     @classmethod
+    async def create_user_from_invitation(
+        cls,
+        db: AsyncSession,
+        username: str,
+        email: str,
+        password: str,
+        first_name: str,
+        last_name: str,
+        affiliation: str,
+        department: str,
+        is_verified: bool = False,
+    ) -> User:
+        """Create a new user from invitation data.
+
+        Args:
+            db (AsyncSession): Database session.
+            username (str): Username for the new user.
+            email (str): Email address.
+            password (str): Plain text password.
+            first_name (str): First name.
+            last_name (str): Last name.
+            affiliation (str): User affiliation.
+            department (str): User department.
+            is_verified (bool): Whether the account should be marked as verified.
+
+        Returns:
+            User: The created user object.
+
+        Raises:
+            ValueError: If user creation validation fails.
+            Exception: If database operation fails.
+
+        """
+        logger.info(f"Creating new user from invitation: {username}")
+
+        # Hash the password
+        hashed_password = cls.hash_password(password)
+
+        # Create UserCreateData object
+        user_data = UserCreateData(
+            username=username,
+            hashed_password=hashed_password,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            affiliation=affiliation,
+            department=department,
+            activation_code="",  # No activation code needed for invitation registration
+            address_id=None,
+        )
+
+        # Create user in database with verification status
+        user = await create_user_in_db(db, user_data, is_verified_account=is_verified)
+
+        logger.info(f"User created successfully from invitation: {user.username}")
+        return user
+
+    @classmethod
     async def update_password(
         cls, db: AsyncSession, user: User, new_password: str
     ) -> bool:

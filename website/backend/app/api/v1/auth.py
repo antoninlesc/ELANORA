@@ -407,14 +407,16 @@ async def register_with_invitation(
 
     # 2. Create the user
     is_verified = False
-    if invitation_info.receiver_email and request.email:
-        if (
-            invitation_info.receiver_email.strip().lower()
-            == request.email.strip().lower()
-        ):
-            is_verified = True
+    if (
+        invitation_info.receiver_email
+        and request.email
+        and invitation_info.receiver_email.strip().lower()
+        == request.email.strip().lower()
+    ):
+        is_verified = True
 
-    user = await user_service.create_user(
+    # Create user using UserService
+    user = await user_service.create_user_from_invitation(
         db=db,
         username=request.username,
         email=request.email,
@@ -423,11 +425,22 @@ async def register_with_invitation(
         last_name=request.last_name,
         affiliation=request.affiliation,
         department=request.department,
-        is_verified_account=is_verified,
+        is_verified=is_verified,
     )
-    # 3. Marquer l'invitation comme utilisée
+    # 3. Accept the invitation
     await invitation_service.accept_invitation(
         db, invitation_info.invitation_id, user.user_id
     )
     # 4. Return the user response
-    return UserResponse.model_validate(user)
+    user_response = UserResponse(
+        user_id=user.user_id,
+        username=user.username,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        role=user.role.value,
+        is_active=user.is_active,
+        is_verified_account=user.is_verified_account,
+        created_at=user.created_at,
+    )
+    return user_response

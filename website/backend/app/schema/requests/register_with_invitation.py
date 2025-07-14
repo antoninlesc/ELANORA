@@ -6,6 +6,7 @@ class RegisterWithInvitationRequest(BaseModel):
     first_name: str
     last_name: str
     username: str
+    email: EmailStr
     password: str
     affiliation: str
     department: str

@@ -75,7 +75,7 @@ async def create_user_in_db(
     """
     user = User(
         username=user_data.username,
-        password=user_data.hashed_password,
+        hashed_password=user_data.hashed_password,
         email=user_data.email,
         first_name=user_data.first_name,
         last_name=user_data.last_name,
@@ -83,7 +83,7 @@ async def create_user_in_db(
         department=user_data.department,
         activation_code=user_data.activation_code,
         address_id=user_data.address_id,
-        is_verified_account=False,
+        # is_verified_account=False,
         role=UserRole.PUBLIC,
         is_active=True,
         **additional_fields,
