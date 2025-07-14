@@ -292,7 +292,7 @@ class GitService:
         db: AsyncSession,
         user_id: int,
     ) -> dict:
-        # 1. Create the project at the usual path
+        # Create the project at the usual path
         project_path = self.base_path / project_name
         elan_files_dir = project_path / "elan_files"
         if project_path.exists():
@@ -300,7 +300,7 @@ class GitService:
         project_path.mkdir(parents=True, exist_ok=True)
         elan_files_dir.mkdir(parents=True, exist_ok=True)
 
-        # 2. Save only .eaf files, preserving folder structure
+        # Save only .eaf files, preserving folder structure
         for file in files:
             if not file.filename or not file.filename.lower().endswith(".eaf"):
                 continue
@@ -310,7 +310,7 @@ class GitService:
             with open(dest_path, "wb") as f:
                 shutil.copyfileobj(file.file, f)
 
-        # 3. Initialize git repo, commit, and register in DB (reuse your existing logic)
+        # Initialize git repo, commit, and register in DB (reuse your existing logic)
         runner = GitCommandRunner(project_path)
         runner.init_repo()
         runner.add_all()
@@ -324,7 +324,7 @@ class GitService:
             instance_id=1,
         )
 
-        # 4. Parse and store ELAN files in DB
+        # Parse and store ELAN files in DB
         elan_service = ElanService(db)
         elan_files = list(elan_files_dir.rglob("*.eaf"))
         for elan_file in elan_files:

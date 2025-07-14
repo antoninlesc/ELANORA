@@ -187,12 +187,12 @@ class GitMerger:
         conflict_branch_name = f"{branch_name}_conflicts"
 
         try:
-            # 1. Start from master and create conflict branch
+            # Start from master and create conflict branch
             runner.checkout("master")
             runner.run(["checkout", "-b", conflict_branch_name], check=True)
             logger.info(f"Created conflict branch '{conflict_branch_name}' from master")
 
-            # 2. Cherry-pick ONLY modified files to conflict branch
+            # Cherry-pick ONLY modified files to conflict branch
             if analysis.modified_files:
                 logger.info(
                     f"Adding {len(analysis.modified_files)} modified files to conflict branch"
@@ -212,7 +212,7 @@ class GitMerger:
                 runner.commit(f"Modified files from {branch_name} for review")
                 logger.info("Successfully created conflict branch with modified files")
 
-            # 3. Switch to upload branch and remove ALL conflicting content
+            # Switch to upload branch and remove ALL conflicting content
             runner.checkout(branch_name)
 
             # Remove modified files (reset to master version = remove changes)
@@ -251,7 +251,7 @@ class GitMerger:
                 runner.commit("Remove conflicting changes - keep only new files")
                 logger.info("Cleaned upload branch to contain only new files")
 
-            # 4. Merge clean upload branch to master
+            # Merge clean upload branch to master
             runner.checkout("master")
 
             # Check what's actually different (should be only new files now)
@@ -269,7 +269,7 @@ class GitMerger:
             else:
                 logger.info("No new files to merge")
 
-            # 5. Clean up upload branch
+            # Clean up upload branch
             runner.delete_branch(branch_name)
 
             return {
