@@ -57,6 +57,16 @@ class InvitationService:
                 )
             project_name = project.project_name
 
+            # Check for existing invitations
+            existing = await get_pending_invitations_by_email(
+                db, str(request.receiver_email)
+            )
+            if existing:
+                return InvitationSendResponse(
+                    success=False,
+                    message="An active invitation already exists for this email.",
+                )
+
             # Create invitation in database
             invitation, raw_code = await create_invitation(
                 db=db,
