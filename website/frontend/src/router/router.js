@@ -4,6 +4,8 @@ import { useUserStore } from '@stores/user.js';
 
 import HomePage from '@views/HomePage.vue';
 import LoginPage from '@views/LoginPage.vue';
+import ForgotPassword from '@views/ForgotPassword.vue';
+import ResetPassword from '@views/ResetPassword.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
 
 // Define routes
@@ -25,6 +27,19 @@ const routes = [
     component: () => import('@views/ProjectsPage.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPassword,
+
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPassword,
+    
+  },
+
   {
     path: '/error/:statusCode',
     name: 'HTTPStatus',
@@ -82,7 +97,7 @@ router.beforeEach((to, from, next) => {
   console.log('userStore.isAuthenticated', userStore.isAuthenticated);
   // Handle login route: redirect if already authenticated
   if (to.name === 'LoginPage' && userStore.isAuthenticated) {
-    eventMessageStore.addMessage('event_messages.already_logged_in', 'info');
+    eventMessageStore.addMessage('event_messages.already_logged_in', 'warning');
     if (from.name) return next(false);
     return next({ name: 'HomePage' });
   }

@@ -74,6 +74,7 @@ class ForgotPasswordRequest(CustomBaseModel):
     """Schema for requesting a password reset email."""
 
     email: EmailStr
+    language: str = "en"
 
 
 class ContactForm(CustomBaseModel):

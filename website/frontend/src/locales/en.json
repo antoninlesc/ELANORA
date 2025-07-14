@@ -119,9 +119,38 @@
     "logout_success": "Logout successful!",
     "logout_error": "Logout failed. Please try again."
   },
+  "forgotPassword": {
+    "title": "Forgot Password",
+    "email_label": "Enter your email address",
+    "email_placeholder": "Your email",
+    "send_code": "Send verification code",
+    "error": "An error occurred while sending the verification code. Please try again.",
+    "code_sent": "Verification code sent.",
+    "sending": "Sending verification code..."
+  },
+  "resetPassword": {
+    "title": "Reset Password",
+    "code_label": "Verification Code",
+    "code_placeholder": "Enter the received code",
+    "new_password_label": "New Password",
+    "new_password_placeholder": "Enter the new password",
+    "confirm_password_label": "Confirm New Password",
+    "confirm_password_placeholder": "Confirm the new password",
+    "submit": "Reset Password",
+    "submitting": "Resetting...",
+    "success": "Password reset successfully. You can now log in with your new password.",
+    "error": "An error occurred while resetting your password. Please try again.",
+    "passwords_no_match": "Passwords do not match",
+    "password_too_short": "Password must be at least 8 characters long",
+    "email_required": "Email is required to reset the password",
+    "code_6_digits": "Verification code must be 6 digits"
+  },
   "common": {
     "or": "or",
     "loading": "Loading...",
     "logout": "Logout"
+  },
+  "event_messages": {
+    "already_logged_in": "You are already logged in."
   }
 }

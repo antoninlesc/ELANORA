@@ -126,7 +126,7 @@ class UserService:
             await db.commit()
 
             # Add email sending to background tasks
-            background_tasks.add_task(
+            sks.add_task(
                 cls._send_verification_email,
                 user.email,
                 user.username,
@@ -274,6 +274,7 @@ class UserService:
             bool: True if current password is correct.
 
         """
+
         if not user.hashed_password:
             logger.warning(
                 f"Password verification failed - no password set: {user.username}"
@@ -478,11 +479,16 @@ class UserService:
         logger.error(f"Password reset failed during update for: {email}")
         return {"success": False, "message": "Failed to reset password"}
 
+    @classmethod
+    async def get_user_by_email(cls, db: AsyncSession, email: str) -> User | None:
+        """Get a user by email address."""
+        return await get_user_by_username_or_email(db, email)
+
     # Private helper methods for business logic
     @staticmethod
     def _generate_verification_code() -> str:
-        """Generate a verification code."""
-        return secrets.token_hex(8)
+        """Generate a 6-digit numeric verification code."""
+        return f"{secrets.randbelow(1000000):06d}"
 
     @staticmethod
     def _hash_verification_code(code: str) -> str:

@@ -9,6 +9,10 @@
   --text-secondary: #4b5563;
   --border-radius: 1.5rem;
   --shadow-main: 0 25px 50px rgba(0,0,0,0.2);
+  --input-border: var(--main-bg-gradient);
+  --input-radius: 0.75rem;
+  --btn-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+  --btn-shadow-hover: 0 4px 16px rgba(37, 99, 235, 0.12);
 }
 
 body {
@@ -24,4 +28,49 @@ body {
 }
 .bg-card {
   background: var(--card-bg);
+}
+
+/* Formulaires globaux */
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  font-size: 1rem;
+  background: var(--secondary-bg);
+  transition: border 0.2s;
+  color: var(--text-main);
+}
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: var(--card-bg);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.75rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: var(--input-radius);
+  box-shadow: var(--btn-shadow);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-color-dark);
+  box-shadow: var(--btn-shadow-hover);
 }
