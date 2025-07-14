@@ -14,7 +14,7 @@
             required 
             maxlength="6"
             inputmode="numeric"
-            pattern="\\d{6}"
+            pattern="\d{6}"
             @input="form.code = form.code.replace(/[^\d]/g, '').slice(0,6)"
           />
         </div>
