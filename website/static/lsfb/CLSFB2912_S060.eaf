@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="2.0" encoding="UTF-8"?>
 <ANNOTATION_DOCUMENT AUTHOR="" DATE="2025-07-03T10:24:57+02:00"
     FORMAT="3.0" VERSION="3.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.mpi.nl/tools/elan/EAFv3.0.xsd">
@@ -5560,13 +5560,6 @@
             </ALIGNABLE_ANNOTATION>
         </ANNOTATION>
         <ANNOTATION>
-            <ALIGNABLE_ANNOTATION ANNOTATION_ID="a1403"
-                CVE_REF="cveid_68f82a17-f461-4262-8cd2-8a1661946417"
-                TIME_SLOT_REF1="ts1009" TIME_SLOT_REF2="ts1010">
-                <ANNOTATION_VALUE>unclear</ANNOTATION_VALUE>
-            </ALIGNABLE_ANNOTATION>
-        </ANNOTATION>
-        <ANNOTATION>
             <ALIGNABLE_ANNOTATION ANNOTATION_ID="a1404"
                 CVE_REF="cveid_abe034c7-a69c-4e2a-bf10-2b026ff76b06"
                 TIME_SLOT_REF1="ts1011" TIME_SLOT_REF2="ts1019">
@@ -6910,12 +6903,6 @@
             </ALIGNABLE_ANNOTATION>
         </ANNOTATION>
         <ANNOTATION>
-            <ALIGNABLE_ANNOTATION ANNOTATION_ID="a2968"
-                TIME_SLOT_REF1="ts1655" TIME_SLOT_REF2="ts1671">
-                <ANNOTATION_VALUE>yes</ANNOTATION_VALUE>
-            </ALIGNABLE_ANNOTATION>
-        </ANNOTATION>
-        <ANNOTATION>
             <ALIGNABLE_ANNOTATION ANNOTATION_ID="a2969"
                 TIME_SLOT_REF1="ts1682" TIME_SLOT_REF2="ts1693">
                 <ANNOTATION_VALUE>yes</ANNOTATION_VALUE>
@@ -8255,7 +8242,7 @@ Merci de commenter en cas de désaccord ou d'incertitude.</DESCRIPTION>
     <CONTROLLED_VOCABULARY CV_ID="task">
         <DESCRIPTION LANG_REF="und"/>
         <CV_ENTRY_ML CVE_ID="cveid_45973241-6c91-45b7-b714-dc23fc36ddd7">
-            <CVE_VALUE DESCRIPTION="language attitudes" LANG_REF="und">5</CVE_VALUE>
+            <CVE_VALUE DESCRIPTION="language attitudes" LANG_REF="und">50</CVE_VALUE>
         </CV_ENTRY_ML>
         <CV_ENTRY_ML CVE_ID="cveid_502d5cf5-cb55-43f3-adfc-d8ed900c05e8">
             <CVE_VALUE DESCRIPTION="long story" LANG_REF="und">12</CVE_VALUE>

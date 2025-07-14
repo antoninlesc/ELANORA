@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from db.database import Base
+from app.db.database import Base
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -37,7 +37,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(100), nullable=False, unique=True, index=True
     )
-    hash_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     first_name: Mapped[str] = mapped_column(String(50), nullable=False)
     last_name: Mapped[str] = mapped_column(String(50), nullable=False)
     phone_number: Mapped[str | None] = mapped_column(String(20), nullable=True)

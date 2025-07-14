@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from typing import ClassVar, Optional
 
-from core.logging import get_rotating_logger
+from app.core.logging import get_rotating_logger
 
 # Constants
 MAX_FRAME_DEPTH = 10
@@ -18,11 +18,16 @@ MIN_MODULE_PARTS = 2
 
 # Try to import config, but don't fail if it's not available
 try:
-    from core.config import APP_NAME, LOG_DIR, LOG_LEVEL, ROOT_LOG_LEVEL
+    from app.core.config import APP_NAME, LOG_DIR, LOG_LEVEL, ROOT_LOG_LEVEL
 
     HAS_CONFIG = True
 except ImportError:
     HAS_CONFIG = False
+    # Set defaults when config is not available
+    APP_NAME = "elanora"
+    LOG_DIR = "app/logs"
+    LOG_LEVEL = "INFO"
+    ROOT_LOG_LEVEL = "WARNING"
 
 
 def setup_application_logging():
@@ -36,7 +41,7 @@ def setup_application_logging():
     if HAS_CONFIG:
         root_level = ROOT_LOG_LEVEL
     else:
-        root_level = os.getenv("ROOT_LOG_LEVEL", "WARNING")
+        root_level = os.getenv("ROOT_LOG_LEVEL", ROOT_LOG_LEVEL)
 
     root_numeric_level = getattr(logging, root_level.upper(), logging.WARNING)
 
@@ -75,8 +80,8 @@ class CentralizedLogger:
                 self._base_log_dir = LOG_DIR
                 self._app_name = APP_NAME
             else:
-                self._base_log_dir = os.getenv("LOG_DIR", "app/logs")
-                self._app_name = os.getenv("APP_NAME", "elanora")
+                self._base_log_dir = os.getenv("LOG_DIR", LOG_DIR)
+                self._app_name = os.getenv("APP_NAME", APP_NAME)
 
             # Setup application logging once
             setup_application_logging()
@@ -155,7 +160,7 @@ class CentralizedLogger:
         log_filename = self._get_log_filename_for_module(module_name)
 
         # Use config if available, fallback to environment
-        level = LOG_LEVEL if HAS_CONFIG else os.getenv("LOG_LEVEL", "INFO")
+        level = LOG_LEVEL if HAS_CONFIG else os.getenv("LOG_LEVEL", LOG_LEVEL)
 
         return get_rotating_logger(
             logger_name=module_name,
@@ -210,7 +215,7 @@ class CentralizedLogger:
 
         # Create directory-specific logger
         # Use config if available, fallback to environment
-        level = LOG_LEVEL if HAS_CONFIG else os.getenv("LOG_LEVEL", "INFO")
+        level = LOG_LEVEL if HAS_CONFIG else os.getenv("LOG_LEVEL", LOG_LEVEL)
 
         logger = get_rotating_logger(
             logger_name=logger_name,
@@ -231,7 +236,7 @@ def get_logger(module_name: str | None = None) -> logging.Logger:
     """Get a logger for the current module. This is the main function to use.
 
     Usage in any file:
-        from core.centralized_logging import get_logger
+        from app.core.centralized_logging import get_logger
         logger = get_logger()  # Auto-detects module name
         logger.info("This is a log message")
 
@@ -251,7 +256,7 @@ def get_directory_logger(
     """Get a single logger for an entire directory.
 
     Usage:
-        from core.centralized_logging import get_directory_logger
+        from app.core.centralized_logging import get_directory_logger
         logger = get_directory_logger("api/v1")
 
     Args:

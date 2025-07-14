@@ -186,4 +186,4 @@ const showDemo = () => {
 };
 </script>
 
-<style scoped src="@/assets/css/homePage.css"></style>
+<style scoped src="@/assets/css/home-page.css"></style>

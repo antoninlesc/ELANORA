@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from db.database import Base
+from app.db.database import Base
 from sqlalchemy import (
     DateTime,
     ForeignKey,

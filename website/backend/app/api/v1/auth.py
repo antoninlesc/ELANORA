@@ -1,7 +1,7 @@
 import secrets
 from typing import Any
 
-from core.config import (
+from app.core.config import (
     ACCESS_TOKEN_COOKIE_NAME,
     ACCESS_TOKEN_EXPIRE_MINUTES,
     CSRF_TOKEN_NAME,
@@ -10,21 +10,18 @@ from core.config import (
     REFRESH_TOKEN_EXPIRE_DAYS,
     REFRESH_TOKEN_PATH,
 )
-from core.jwt import create_access_token, create_refresh_token
-from core.limiter import limiter
-from dependency.database import get_db_dep
-from dependency.user import get_user_dep
+from app.core.jwt import create_access_token, create_refresh_token
+from app.core.limiter import limiter
+from app.dependency.database import get_db_dep
+from app.dependency.user import get_user_dep
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
-from model.user import User
-from schema.common.token import TokenData
-from schema.requests.user import (
-    LoginRequest,
-    ForgotPasswordRequest,
-    ResetPasswordRequest,
+from app.model.user import User
+from app.schema.common.token import TokenData
+from app.schema.requests.user import LoginRequest, ForgotPasswordRequest, ResetPasswordRequest
 )
-from schema.responses.user import LoginResponse, UserResponse
-from service.user import UserService
-from service.email_service import EmailService
+from app.schema.responses.user import LoginResponse, UserResponse
+from app.service.user import UserService
+from app.service.email_service import EmailService
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()

@@ -59,7 +59,7 @@ if /i "%USE_DOCKER%"=="yes" (
     wt.exe ^
         new-tab --title "Database" cmd /k "cd /d !REPO_ROOT!\docker\website-dev && set ENVIRONMENT=dev && docker-compose up db" ^
         ; new-tab --title "Frontend" cmd /k "cd /d !REPO_ROOT!\frontend && set ENVIRONMENT=dev && npm install && npm run dev" ^
-        ; new-tab --title "Backend" cmd /k "cd /d !REPO_ROOT!\backend && set ENVIRONMENT=dev && poetry install && poetry run fastapi dev app/main.py --port 8018"
+        ; new-tab --title "Backend" cmd /k "cd /d !REPO_ROOT!\backend && set ENVIRONMENT=dev && poetry install && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8018"
     goto :eof
 ) else if /i "%USE_DOCKER%"=="back" (
     goto ask_env

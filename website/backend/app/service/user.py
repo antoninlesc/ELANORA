@@ -4,8 +4,9 @@ import secrets
 from datetime import UTC, datetime
 from typing import Any
 
-from core.jwt import create_access_token, create_refresh_token, verify_refresh_token
-from crud.user import (
+from app.core.centralized_logging import get_logger
+from app.core.jwt import create_access_token, create_refresh_token, verify_refresh_token
+from app.crud.user import (
     check_user_exists_by_email,
     check_user_exists_by_username,
     create_user_in_db,
@@ -15,11 +16,15 @@ from crud.user import (
     update_user_profile,
 )
 from fastapi import BackgroundTasks
-from model.user import User
+from app.model.user import User
 from passlib.context import CryptContext
-from schema.common.token import TokenData
-from schema.requests.user import ProfileUpdateRequest, RegistrationRequest
+from app.schema.common.token import TokenData
+from app.schema.common.user import UserCreateData
+from app.schema.requests.user import ProfileUpdateRequest, RegistrationRequest
 from sqlalchemy.ext.asyncio import AsyncSession
+
+# Get logger for this module
+logger = get_logger()
 
 # Create a passlib context for bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -73,17 +78,21 @@ class UserService:
         user = await get_user_by_username_or_email(db, login_or_email)
 
         if not user:
+            logger.warning(f"Authentication failed - user not found: {login_or_email}")
             return None
 
-        if not user.hash_password:
+        if not user.hashed_password:
+            logger.warning(f"Authentication failed - no password set: {login_or_email}")
             return None
 
         # Verify password using bcrypt
-        is_valid = cls.verify_password(password, user.hash_password)
+        is_valid = cls.verify_password(password, user.hashed_password)
 
         if is_valid:
+            logger.info(f"User authenticated successfully: {login_or_email}")
             return user
 
+        logger.warning(f"Authentication failed - invalid password: {login_or_email}")
         return None
 
     @classmethod
@@ -108,6 +117,7 @@ class UserService:
 
         # Check if email is verified
         if not user.is_verified_account:
+            logger.info(f"User login requires email verification: {user.email}")
             verification_code = cls._generate_verification_code()
             hashed_code = cls._hash_verification_code(verification_code)
 
@@ -132,6 +142,7 @@ class UserService:
             }
         user.last_login = datetime.now(UTC)
         await db.commit()
+        logger.info(f"User logged in successfully: {user.username}")
 
         return {"success": True, "message": "Login successful", "user": user}
 
@@ -148,6 +159,9 @@ class UserService:
             user = await get_user_by_id(db, int(token_data.sub))
 
             if not user or not user.is_active:
+                logger.warning(
+                    f"Token refresh failed - inactive user: {token_data.sub}"
+                )
                 return {
                     "success": False,
                     "message": "User account is inactive or not found",
@@ -159,6 +173,7 @@ class UserService:
             new_refresh_token = create_refresh_token(new_token_data)
             csrf_token = secrets.token_hex(16)
 
+            logger.info(f"Tokens refreshed successfully for user: {user.username}")
             return {
                 "success": True,
                 "access_token": new_access_token,
@@ -168,6 +183,7 @@ class UserService:
             }
 
         except Exception as e:
+            logger.error(f"Token refresh failed: {e!s}")
             return {"success": False, "message": f"Token refresh failed: {e!s}"}
 
     @classmethod
@@ -190,6 +206,8 @@ class UserService:
             Exception: If database operation fails.
 
         """
+        logger.info(f"Creating new user: {registration_data.username}")
+
         # Hash the password
         hashed_password = cls.hash_password(registration_data.password)
 
@@ -197,9 +215,8 @@ class UserService:
         activation_code = cls._generate_verification_code()
         hashed_activation_code = cls._hash_verification_code(activation_code)
 
-        # Create user in database
-        user = await create_user_in_db(
-            db,
+        # Create UserCreateData object with correct field names
+        user_data = UserCreateData(
             username=registration_data.username,
             hashed_password=hashed_password,
             email=registration_data.email,
@@ -208,9 +225,13 @@ class UserService:
             affiliation=registration_data.affiliation,
             department=registration_data.department,
             activation_code=hashed_activation_code,
-            phone_number=registration_data.phone_number,
+            address_id=None,
         )
 
+        # Create user in database
+        user = await create_user_in_db(db, user_data)
+
+        logger.info(f"User created successfully: {user.username}")
         return user
 
     @classmethod
@@ -228,12 +249,16 @@ class UserService:
             bool: True if update successful, False otherwise.
 
         """
+        logger.info(f"Updating password for user: {user.username}")
         new_password_hash = cls.hash_password(new_password)
         success = await update_user_password(db, user, new_password_hash)
 
         if success:
             user.updated_at = datetime.now(UTC)
             await db.commit()
+            logger.info(f"Password updated successfully for user: {user.username}")
+        else:
+            logger.error(f"Failed to update password for user: {user.username}")
 
         return success
 
@@ -249,10 +274,22 @@ class UserService:
             bool: True if current password is correct.
 
         """
-        if not user.hash_password:
+
+        if not user.hashed_password:
+            logger.warning(
+                f"Password verification failed - no password set: {user.username}"
+            )
             return False
 
-        return cls.verify_password(current_password, user.hash_password)
+        result = cls.verify_password(current_password, user.hashed_password)
+        if result:
+            logger.debug(f"Current password verified for user: {user.username}")
+        else:
+            logger.warning(
+                f"Current password verification failed for user: {user.username}"
+            )
+
+        return result
 
     @classmethod
     async def update_user_profile(
@@ -272,6 +309,8 @@ class UserService:
             Dict[str, Any]: Result with updated fields and success status.
 
         """
+        logger.info(f"Updating profile for user: {user.username}")
+
         # Prepare update fields
         update_fields = {}
         updated_field_names = []
@@ -291,6 +330,9 @@ class UserService:
                 updated_field_names.append(field_name)
 
         if not update_fields:
+            logger.warning(
+                f"Profile update attempted with no fields to update: {user.username}"
+            )
             return {
                 "success": False,
                 "message": "No fields to update",
@@ -301,6 +343,13 @@ class UserService:
 
         # Update in database
         success = await update_user_profile(db, user, **update_fields)
+
+        if success:
+            logger.info(
+                f"Profile updated successfully for user {user.username}: {updated_field_names}"
+            )
+        else:
+            logger.error(f"Profile update failed for user: {user.username}")
 
         return {
             "success": success,
@@ -322,7 +371,11 @@ class UserService:
             bool: True if available, False if taken.
 
         """
-        return not await check_user_exists_by_username(db, username)
+        is_available = not await check_user_exists_by_username(db, username)
+        logger.debug(
+            f"Username availability check for '{username}': {'available' if is_available else 'taken'}"
+        )
+        return is_available
 
     @classmethod
     async def check_email_availability(cls, db: AsyncSession, email: str) -> bool:
@@ -336,7 +389,11 @@ class UserService:
             bool: True if available, False if taken.
 
         """
-        return not await check_user_exists_by_email(db, email)
+        is_available = not await check_user_exists_by_email(db, email)
+        logger.debug(
+            f"Email availability check for '{email}': {'available' if is_available else 'taken'}"
+        )
+        return is_available
 
     @classmethod
     async def verify_account(
@@ -353,16 +410,22 @@ class UserService:
             Dict[str, Any]: Verification result.
 
         """
+        logger.info(f"Account verification attempt for email: {email}")
         user = await get_user_by_username_or_email(db, email)
 
         if not user:
+            logger.warning(f"Account verification failed - user not found: {email}")
             return {"success": False, "message": "User not found"}
 
         if user.is_verified_account:
+            logger.info(
+                f"Account verification attempted for already verified user: {email}"
+            )
             return {"success": False, "message": "Account is already verified"}
 
         # Verify the activation code
         if not cls.verify_password(verification_code, user.activation_code):
+            logger.warning(f"Account verification failed - invalid code: {email}")
             return {"success": False, "message": "Invalid verification code"}
 
         # Mark account as verified
@@ -370,6 +433,7 @@ class UserService:
         user.updated_at = datetime.now(UTC)
         await db.commit()
 
+        logger.info(f"Account verified successfully: {email}")
         return {"success": True, "message": "Account verified successfully"}
 
     @classmethod
@@ -388,13 +452,16 @@ class UserService:
             Dict[str, Any]: Reset result.
 
         """
+        logger.info(f"Password reset attempt for email: {email}")
         user = await get_user_by_username_or_email(db, email)
 
         if not user:
+            logger.warning(f"Password reset failed - user not found: {email}")
             return {"success": False, "message": "User not found"}
 
         # Verify reset code
         if not cls.verify_password(reset_code, user.activation_code):
+            logger.warning(f"Password reset failed - invalid reset code: {email}")
             return {"success": False, "message": "Invalid reset code"}
 
         # Update password
@@ -406,8 +473,10 @@ class UserService:
             user.updated_at = datetime.now(UTC)
             await db.commit()
 
+            logger.info(f"Password reset successfully for: {email}")
             return {"success": True, "message": "Password reset successfully"}
 
+        logger.error(f"Password reset failed during update for: {email}")
         return {"success": False, "message": "Failed to reset password"}
 
     @classmethod
@@ -445,8 +514,8 @@ class UserService:
         # - SMTP server
         # - Mailgun
 
-        print(f"Sending verification email to {email} for user {username}")
-        print(f"Verification code: {verification_code}")
+        logger.info(f"Verification email queued for {email} (user: {username})")
+        logger.debug(f"Verification code for {email}: {verification_code}")
 
         # Example implementation structure:
         # await email_service.send_verification_email(
@@ -454,7 +523,6 @@ class UserService:
         #     username=username,
         #     verification_code=verification_code
         # )
-        pass
 
     @staticmethod
     async def _send_password_reset_email(
@@ -469,6 +537,5 @@ class UserService:
 
         """
         # TODO: Implement password reset email logic
-        print(f"Sending password reset email to {email} for user {username}")
-        print(f"Reset code: {reset_code}")
-        pass
+        logger.info(f"Password reset email queued for {email} (user: {username})")
+        logger.debug(f"Reset code for {email}: {reset_code}")

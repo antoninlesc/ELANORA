@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from db.database import Base
+from app.db.database import Base
 from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,6 +23,7 @@ class Project(Base):
     instance_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("INSTANCE.instance_id"), nullable=False
     )
+    project_path: Mapped[str] = mapped_column(String(512), nullable=False, unique=True)
 
     # Relationships - use string references
     instance: Mapped["Instance"] = relationship("Instance", back_populates="projects")

@@ -2,9 +2,9 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from jose import ExpiredSignatureError, JWTError, jwt
-from schema.common.token import TokenData
+from app.schema.common.token import TokenData
 
-from core.config import (
+from app.core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     JWT_ALGORITHM,
     JWT_SECRET_KEY,

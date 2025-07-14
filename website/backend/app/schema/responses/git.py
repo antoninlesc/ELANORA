@@ -1,5 +1,5 @@
-from schema.common.base import CustomBaseModel
-from schema.common.git import FileStatus
+from app.schema.common.base import CustomBaseModel
+from app.schema.common.git import FileStatus
 
 
 class GitStatusResponse(CustomBaseModel):
@@ -37,7 +37,73 @@ class FileUploadResponse(CustomBaseModel):
     filename: str
     project_name: str
     status: str
+    branch_name: str
+    file_existed: bool
+    merge_status: str
+    has_conflicts: bool
+    conflicts: list[str] | None = None
+    status: str
     added_at: str
+
+
+class UploadedFileInfo(CustomBaseModel):
+    filename: str
+    size: int | None = None
+    existed: bool
+
+
+class FailedFileInfo(CustomBaseModel):
+    filename: str
+    error: str
+
+
+class DiffChange(CustomBaseModel):
+    type: str  # "addition", "deletion", "context"
+    line_number: int | None = None
+    line_number_old: int | None = None
+    line_number_new: int | None = None
+    content: str
+
+
+class DiffHunk(CustomBaseModel):
+    old_start: int
+    new_start: int
+    old_count: int
+    new_count: int
+    context: str
+    changes: list[DiffChange]
+
+
+class FileChanges(CustomBaseModel):
+    filename: str
+    added_lines: list[DiffChange]
+    removed_lines: list[DiffChange]
+    modified_sections: list = []
+    total_additions: int
+    total_deletions: int
+    hunks: list[DiffHunk]
+    summary: str
+    diff_raw: str
+    error: str | None = None
+
+
+class BatchFileUploadResponse(CustomBaseModel):
+    project_name: str
+    branch_name: str
+    uploaded_files: list[UploadedFileInfo]
+    failed_files: list[FailedFileInfo]
+    total_uploaded: int
+    total_failed: int
+    existing_files_updated: int
+    new_files_added: int
+    merge_status: str
+    has_conflicts: bool
+    conflicts: list[FileChanges] = []
+    new_files_in_merge: list[str] | None = []
+    modified_files_in_merge: list[str] | None = []
+    status: str
+    uploaded_at: str
+    message: str | None = None
 
 
 class ProjectStatusResponse(CustomBaseModel):
@@ -48,3 +114,16 @@ class ProjectStatusResponse(CustomBaseModel):
     recent_commits: list[str]
     conflicts: list[str]
     status: str
+
+
+class ProjectCheckoutResponse(CustomBaseModel):
+    """Schema for project branch checkout response."""
+
+    project_name: str
+    branch_name: str
+    status: str
+    message: str | None = None
+
+
+class ProjectListResponse(CustomBaseModel):
+    projects: list[str]

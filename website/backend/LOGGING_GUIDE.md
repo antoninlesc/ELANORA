@@ -3,20 +3,22 @@
 ## Quick Start
 
 ### Method 1: Auto-Detection (Recommended)
+
 Just import and use - the logger will automatically detect your module name:
 
 ```python
-from core.centralized_logging import get_logger
+from app.core.centralized_logging import get_logger
 
 logger = get_logger()  # Auto-detects module name
 logger.info("This works in any file!")
 ```
 
 ### Method 2: Directory-Wide Logging
+
 Use one logger for all files in a directory:
 
 ```python
-from core.centralized_logging import get_directory_logger
+from app.core.centralized_logging import get_directory_logger
 
 # All files in 'api' directory can use this same logger
 api_logger = get_directory_logger("api")
@@ -26,18 +28,21 @@ api_logger.info("Shared logger for entire directory")
 ## How to Run Examples
 
 ### Option 1: Using the helper script (Easiest)
+
 ```powershell
 cd C:\Users\Laffineur\Documents\GitHub\ELANORA\website\backend
 python run_logging_examples.py
 ```
 
 ### Option 2: As a Python module
+
 ```powershell
 cd C:\Users\Laffineur\Documents\GitHub\ELANORA\website\backend
 python -m app.examples.logging_examples
 ```
 
 ### Option 3: Direct execution
+
 ```powershell
 cd C:\Users\Laffineur\Documents\GitHub\ELANORA\website\backend
 python app/examples/logging_examples.py
@@ -47,7 +52,7 @@ python app/examples/logging_examples.py
 
 Your logs are automatically organized by module:
 
-```
+```bash
 app/logs/
 ├── api/
 │   └── api.log                  # Directory-wide API logs
@@ -79,10 +84,11 @@ APP_NAME=elanora
 
 ## Usage in Your FastAPI Files
 
-### In any API file:
+### In any API file
+
 ```python
 # api/auth.py
-from core.centralized_logging import get_logger
+from app.core.centralized_logging import get_logger
 
 logger = get_logger()  # Becomes "elanora.api.auth"
 
@@ -99,11 +105,12 @@ async def login(user_data):
         logger.error("Login failed", exc_info=True)
 ```
 
-### In your main FastAPI app:
+### In your main FastAPI app
+
 ```python
 # main.py
-from core.centralized_logging import get_logger
-from core.logging import setup_application_logging
+from app.core.centralized_logging import get_logger
+from app.core.logging import setup_application_logging
 
 # Setup logging FIRST
 setup_application_logging()
@@ -123,7 +130,7 @@ The exception handlers are already configured to use structured logging:
 
 ```python
 # In your main.py
-from core.exception_handler import (
+from app.core.exception_handler import (
     validation_exception_handler,
     rate_limit_exception_handler,
     add_general_exception_handler
@@ -154,6 +161,7 @@ logger.info(
 ## Log Output Format
 
 Each log entry includes:
+
 - Timestamp
 - Logger name (auto-detected module)
 - Log level
@@ -162,7 +170,8 @@ Each log entry includes:
 - Extra structured data (when provided)
 
 Example:
-```
+
+``` bash
 2025-07-08 17:39:15 | elanora.api.auth | INFO | auth.login:25 | User login successful
 ```
 
@@ -171,6 +180,7 @@ Example:
 ### ModuleNotFoundError: No module named 'core'
 
 **Solution**: Always run from the backend directory:
+
 ```powershell
 cd C:\Users\Laffineur\Documents\GitHub\ELANORA\website\backend
 ```

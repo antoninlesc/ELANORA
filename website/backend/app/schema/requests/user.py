@@ -1,5 +1,5 @@
 from pydantic import EmailStr, field_validator
-from schema.common.base import CustomBaseModel
+from app.schema.common.base import CustomBaseModel
 
 
 class AddressRequest(CustomBaseModel):

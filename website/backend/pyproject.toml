@@ -1,5 +1,11 @@
 [tool.poetry]
-package-mode = false
+name = "elanora-backend"
+version = "0.1.0"
+description = "ELANORA backend"
+authors = ["forsakenscheme", "antoninlesc", "romsti"]
+packages = [
+    { include = "app" }
+]
 
 [tool.poetry.dependencies]
 python= "^3.13"
@@ -89,4 +95,4 @@ ignore = [
     "ISC002",
 ]
 
-per-file-ignores = { "app/utils/gif_to_webm.py" = ["S603"], "tests/**/*.py" = ["S101"] }
+per-file-ignores = { "app/service/git.py" = ["S603", "S607"], "tests/**/*.py" = ["S101"], "app/service/git_operations.py" = ["S603", "S607"]}

@@ -10,7 +10,7 @@ import sys
 # Add the app directory to Python path so we can import core modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.centralized_logging import get_directory_logger, get_logger
+from app.core.centralized_logging import get_directory_logger, get_logger
 
 # Method 1: Auto-detection (Recommended)
 logger = get_logger()  # Automatically detects module name

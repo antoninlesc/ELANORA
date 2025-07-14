@@ -1,4 +1,4 @@
-from schema.common.base import CustomBaseModel
+from app.schema.common.base import CustomBaseModel
 
 
 class FileStatus(CustomBaseModel):

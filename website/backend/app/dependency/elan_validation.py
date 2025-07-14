@@ -1,5 +1,5 @@
 import defusedxml.ElementTree as DefusedET
-from core.centralized_logging import get_logger
+from app.core.centralized_logging import get_logger
 from fastapi import HTTPException, UploadFile
 
 logger = get_logger()

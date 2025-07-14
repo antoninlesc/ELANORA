@@ -1,7 +1,7 @@
 import os
 from collections.abc import Awaitable, Callable
 
-from core.logging import get_rotating_logger
+from app.core.logging import get_rotating_logger
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware

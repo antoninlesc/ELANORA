@@ -1,4 +1,4 @@
-@import './style.css';
+@import url('./style.css');
 
 .home-page {
   min-height: 100vh;
@@ -73,11 +73,11 @@
 .btn-primary:hover {
   background: #f8f9fa;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 25px rgb(0 0 0 / 15%);
 }
 
 .btn-secondary {
-  background: rgba(255,255,255,0.1);
+  background: rgb(255 255 255 / 10%);
   color: white;
   border: 2px solid white;
 }
@@ -92,7 +92,7 @@
 .demo-preview {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 40px rgb(0 0 0 / 20%);
   overflow: hidden;
   transform: perspective(1000px) rotateY(-5deg);
   transition: transform 0.3s;
@@ -196,14 +196,14 @@
   background: white;
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
   text-align: center;
   transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .feature-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 25px rgb(0 0 0 / 15%);
 }
 
 .feature-icon {
@@ -268,7 +268,7 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .hero-content {
     grid-template-columns: 1fr;
     text-align: center;

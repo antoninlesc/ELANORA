@@ -8,7 +8,7 @@ This module provides utilities for creating and managing database tables.
 import model  # noqa: F401
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from db.database import Base, get_engine
+from app.db.database import Base, get_engine
 
 
 async def create_tables(engine: AsyncEngine | None = None) -> None:

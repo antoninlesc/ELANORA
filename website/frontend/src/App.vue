@@ -15,12 +15,14 @@ import { onMounted, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLanguageStore } from '@stores/language';
 import { useUserStore } from '@/stores/user';
+import { useProjectStore } from '@/stores/project';
 
 import EventMessageContainer from '@components/eventComponent/eventMessageContainer.vue';
 
 const languageStore = useLanguageStore();
 const { t, locale } = useI18n();
 const userStore = useUserStore();
+const projectStore = useProjectStore();
 
 const updateDocumentMeta = () => {
   document.title = t('app.title');
@@ -36,6 +38,7 @@ const isAuthLoading = computed(() => userStore.authState.loading);
 onMounted(async () => {
   languageStore.initializeFromStorage();
   userStore.initializeFromStorage();
+  projectStore.loadCurrentProject();
 
   await userStore.verifyAuthentication();
 
