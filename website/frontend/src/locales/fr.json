@@ -152,5 +152,25 @@
   },
   "event_messages": {
     "already_logged_in": "Vous êtes déjà connecté."
+  },
+  "invitation": {
+    "send_title": "Envoyer une invitation",
+    "send_description": "Inviter des utilisateurs à rejoindre un projet spécifique sur ELANORA",
+    "email_label": "Adresse email",
+    "email_placeholder": "Saisissez l'email du destinataire",
+    "project_label": "Projet",
+    "select_project": "Sélectionnez un projet",
+    "project_required": "Veuillez sélectionner un projet",
+    "message_label": "Message personnel (Optionnel)",
+    "message_placeholder": "Ajoutez un message personnel à l'invitation",
+    "language_label": "Langue",
+    "send_button": "Envoyer l'invitation",
+    "sending": "Envoi en cours...",
+    "success": "Invitation envoyée avec succès !",
+    "error": "Échec de l'envoi de l'invitation",
+    "invalid_email": "Veuillez saisir une adresse email valide"
+  },
+  "project": {
+    "load_error": "Échec du chargement des projets"
   }
 }

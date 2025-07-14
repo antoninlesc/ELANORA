@@ -4,6 +4,7 @@ import { useUserStore } from '@stores/user.js';
 
 import HomePage from '@views/HomePage.vue';
 import LoginPage from '@views/LoginPage.vue';
+import RegisterPage from '@views/RegisterPage.vue';
 import ForgotPassword from '@views/ForgotPassword.vue';
 import ResetPassword from '@views/ResetPassword.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
@@ -22,10 +23,21 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/register',
+    name: 'RegisterPage',
+    component: RegisterPage,
+  },
+  {
     path: '/projects',
     name: 'ProjectsPage',
     component: () => import('@views/ProjectsPage.vue'),
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/admin/invitations',
+    name: 'AdminInvitationsPage',
+    component: () => import('@views/AdminInvitationsPage.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/forgot-password',
@@ -39,7 +51,6 @@ const routes = [
     component: ResetPassword,
     
   },
-
   {
     path: '/error/:statusCode',
     name: 'HTTPStatus',

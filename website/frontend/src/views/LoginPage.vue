@@ -92,7 +92,7 @@
           </p>
           <p class="invitation-text">
             {{ t('login.have_invitation') }}
-            <router-link to="/invitation">{{
+            <router-link to="/register">{{
               t('login.join_project')
             }}</router-link>
           </p>

@@ -46,3 +46,9 @@ async def list_projects_by_instance(
 ) -> list[Project]:
     result = await db.execute(select(Project).where(Project.instance_id == instance_id))
     return list(result.scalars().all())
+
+
+async def get_all_projects(db: AsyncSession) -> list[Project]:
+    """Get all projects."""
+    result = await db.execute(select(Project))
+    return list(result.scalars().all())

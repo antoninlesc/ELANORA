@@ -20,8 +20,9 @@ class Invitation(Base):
 
     invitation_id: Mapped[str] = mapped_column(String(50), primary_key=True)
     project_permission: Mapped[ProjectPermission] = mapped_column(
-        SQLEnum(ProjectPermission), nullable=False, default=ProjectPermission.READ
+        String(20), nullable=False, default=ProjectPermission.READ
     )
+    hashed_code: Mapped[str] = mapped_column(String(60), nullable=False)
     status: Mapped[InvitationStatus] = mapped_column(
         SQLEnum(InvitationStatus), nullable=False, default=InvitationStatus.PENDING
     )
@@ -33,9 +34,10 @@ class Invitation(Base):
     sender: Mapped[int] = mapped_column(
         Integer, ForeignKey("USER.user_id"), nullable=False
     )
-    receiver: Mapped[int] = mapped_column(
-        Integer, ForeignKey("USER.user_id"), nullable=False
+    receiver: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("USER.user_id"), nullable=True
     )
+    receiver_email: Mapped[str] = mapped_column(String(100), nullable=False)
     project_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PROJECT.project_id"), nullable=False
     )
@@ -44,7 +46,7 @@ class Invitation(Base):
     sender_user: Mapped["User"] = relationship(
         "User", foreign_keys=[sender], back_populates="sent_invitations"
     )
-    receiver_user: Mapped["User"] = relationship(
+    receiver_user: Mapped["User | None"] = relationship(
         "User", foreign_keys=[receiver], back_populates="received_invitations"
     )
     project: Mapped["Project"] = relationship("Project", back_populates="invitations")
