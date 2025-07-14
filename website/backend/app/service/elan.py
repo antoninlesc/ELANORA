@@ -1,20 +1,18 @@
 """ELAN Service - Simplified using utilities."""
 
 import xml.etree.ElementTree as ET
-from pathlib import Path
-from typing import Dict, List, Optional
 from decimal import Decimal
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select
+from pathlib import Path
 
-from app.crud import elan_file, tier, annotation
-from app.crud.project import get_project_by_name
-from app.model.elan_file import ElanFile
-from app.model.tier import Tier
-from app.model.annotation import Annotation
-from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
-from app.utils.validation import ValidationUtils
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.centralized_logging import get_logger
+from app.crud import annotation, elan_file, tier
+from app.crud.project import get_project_by_name
+from app.model.annotation import Annotation
+from app.model.tier import Tier
+from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
 
 # Get logger for this module
 logger = get_logger()
@@ -28,7 +26,7 @@ class ElanService:
         self.file_processor = ElanFileProcessor()
         self.xml_extractor = XmlAttributeExtractor()
 
-    def parse_elan_file(self, file_path: str) -> Dict:
+    def parse_elan_file(self, file_path: str) -> dict:
         """Parse a single ELAN file and extract all relevant information."""
         logger.info(f"Starting to parse ELAN file: {file_path}")
 
@@ -50,7 +48,7 @@ class ElanService:
         )
         return file_info
 
-    def _extract_tiers(self, root: ET.Element, file_info: Dict) -> None:
+    def _extract_tiers(self, root: ET.Element, file_info: dict) -> None:
         """Extract tiers using utility functions."""
         tier_count = 0
         for tier_element in root.findall(".//TIER"):
@@ -66,8 +64,8 @@ class ElanService:
         logger.debug(f"Extracted {tier_count} tiers with annotations")
 
     def _extract_annotations(
-        self, tier_element: ET.Element, time_slots: Dict[str, int]
-    ) -> List[Dict]:
+        self, tier_element: ET.Element, time_slots: dict[str, int]
+    ) -> list[dict]:
         """Extract annotations for a tier using utility functions."""
         annotations = []
 
@@ -90,7 +88,7 @@ class ElanService:
         logger.debug(f"Extracted {len(annotations)} annotations from tier")
         return annotations
 
-    def get_files_in_directory(self, directory_path: str) -> List[Path]:
+    def get_files_in_directory(self, directory_path: str) -> list[Path]:
         """Get all ELAN files in a directory using utility."""
         logger.info(f"Scanning directory for ELAN files: {directory_path}")
         files = ElanFileProcessor.find_files_in_directory(directory_path)
@@ -100,7 +98,7 @@ class ElanService:
     # ==================== STORAGE METHODS ====================
 
     async def store_elan_file_data(
-        self, file_info: Dict, user_id: int, project_ids: List[int]
+        self, file_info: dict, user_id: int, project_ids: list[int]
     ) -> int:
         """Store parsed ELAN file data in the database and sync associations."""
         logger.info(f"Storing ELAN file data: {file_info['filename']}")
@@ -148,7 +146,7 @@ class ElanService:
         )
         return elan_file_obj.elan_id
 
-    async def _store_tiers_and_annotations(self, tiers_data: List[Dict]) -> None:
+    async def _store_tiers_and_annotations(self, tiers_data: list[dict]) -> None:
         """Store tiers and their annotations using CRUD functions."""
         logger.debug(f"Storing {len(tiers_data)} tiers with annotations")
 
@@ -177,7 +175,7 @@ class ElanService:
                     f"Stored {annotation_count} new annotations for tier: {tier_data['tier_name']}"
                 )
 
-    async def _get_or_create_tier(self, tier_data: Dict) -> Tier:
+    async def _get_or_create_tier(self, tier_data: dict) -> Tier:
         """Get existing tier or create new one using CRUD."""
         tier_obj = await tier.get_tier_by_id(self.db, tier_data["tier_id"])
 
@@ -217,7 +215,7 @@ class ElanService:
 
     async def process_directory(
         self, directory_path: str, user_id: int, project_name: str
-    ) -> Dict[str, Optional[int]]:
+    ) -> dict[str, int | None]:
         """Process all ELAN files in a directory for the given project."""
         logger.info(f"Starting directory processing: {directory_path}")
         eaf_files = self.get_files_in_directory(directory_path)
@@ -248,7 +246,7 @@ class ElanService:
 
     # ==================== QUERY METHODS ====================
 
-    async def get_all_files_with_tiers(self) -> Dict[str, List[str]]:
+    async def get_all_files_with_tiers(self) -> dict[str, list[str]]:
         """Get all files with their associated tier names."""
         logger.debug("Retrieving all files with their tier names")
 
@@ -268,7 +266,7 @@ class ElanService:
         # Return all tiers for all files (you might want to refine this logic)
         return {f.filename: tier_names for f in files}
 
-    async def get_file_structure(self, filename: str) -> Optional[Dict]:
+    async def get_file_structure(self, filename: str) -> dict | None:
         """Get complete structure for a specific file."""
         logger.debug(f"Retrieving file structure for: {filename}")
 
@@ -320,14 +318,14 @@ class ElanService:
         )
         return file_structure
 
-    async def _get_tiers_with_annotations(self) -> List[Tier]:
+    async def _get_tiers_with_annotations(self) -> list[Tier]:
         """Get all tiers that have at least one annotation."""
         result = await self.db.execute(select(Tier).join(Annotation).distinct())
         tiers = list(result.scalars().all())
         logger.debug(f"Found {len(tiers)} tiers with annotations")
         return tiers
 
-    async def get_tier_statistics(self) -> Dict:
+    async def get_tier_statistics(self) -> dict:
         """Get statistics about tiers across all files."""
         logger.debug("Generating tier statistics")
 
@@ -353,7 +351,7 @@ class ElanService:
         )
         return stats
 
-    async def get_user_files(self, user_id: int) -> List[Dict]:
+    async def get_user_files(self, user_id: int) -> list[dict]:
         """Get all ELAN files for a specific user."""
         logger.debug(f"Retrieving files for user ID: {user_id}")
 
@@ -388,7 +386,7 @@ class ElanService:
 
     async def get_annotations_in_time_range(
         self, tier_id: str, start_time: Decimal, end_time: Decimal
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Get annotations within a specific time range for a tier."""
         logger.debug(
             f"Retrieving annotations for tier {tier_id} in time range: {start_time}-{end_time}"

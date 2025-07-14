@@ -101,6 +101,10 @@ class BatchFileUploadResponse(CustomBaseModel):
     conflicts: list[FileChanges] = []
     new_files_in_merge: list[str] | None = []
     modified_files_in_merge: list[str] | None = []
+    # New fields for selective merge
+    merged_files: list[str] | None = []
+    conflict_files: list[str] | None = []
+    conflict_branch: str | None = None
     status: str
     uploaded_at: str
     message: str | None = None

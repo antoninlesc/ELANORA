@@ -1,16 +1,16 @@
 """Annotation CRUD operations - Pure database access layer."""
 
-from typing import List, Optional
 from decimal import Decimal
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.model.annotation import Annotation
 
 
 async def get_annotation_by_id(
     db: AsyncSession, annotation_id: str
-) -> Optional[Annotation]:
+) -> Annotation | None:
     """Retrieve an annotation by ID.
 
     Args:
@@ -19,6 +19,7 @@ async def get_annotation_by_id(
 
     Returns:
         The annotation object if found, otherwise None.
+
     """
     result = await db.execute(
         select(Annotation).filter(Annotation.annotation_id == annotation_id)
@@ -26,7 +27,7 @@ async def get_annotation_by_id(
     return result.scalar_one_or_none()
 
 
-async def get_annotations_by_tier(db: AsyncSession, tier_id: str) -> List[Annotation]:
+async def get_annotations_by_tier(db: AsyncSession, tier_id: str) -> list[Annotation]:
     """Get all annotations for a specific tier.
 
     Args:
@@ -35,6 +36,7 @@ async def get_annotations_by_tier(db: AsyncSession, tier_id: str) -> List[Annota
 
     Returns:
         List of annotations for the tier, ordered by start time.
+
     """
     result = await db.execute(
         select(Annotation)
@@ -46,7 +48,7 @@ async def get_annotations_by_tier(db: AsyncSession, tier_id: str) -> List[Annota
 
 async def get_annotations_by_time_range(
     db: AsyncSession, tier_id: str, start_time: Decimal, end_time: Decimal
-) -> List[Annotation]:
+) -> list[Annotation]:
     """Get annotations within a time range for a specific tier.
 
     Args:
@@ -57,6 +59,7 @@ async def get_annotations_by_time_range(
 
     Returns:
         List of annotations within the time range.
+
     """
     result = await db.execute(
         select(Annotation)
@@ -95,6 +98,7 @@ async def create_annotation_in_db(
 
     Raises:
         Exception: If annotation creation fails.
+
     """
     annotation = Annotation(
         annotation_id=annotation_id,
@@ -123,6 +127,7 @@ async def check_annotation_exists(db: AsyncSession, annotation_id: str) -> bool:
 
     Returns:
         True if annotation exists, False otherwise.
+
     """
     result = await db.execute(
         select(Annotation.annotation_id).filter(
@@ -141,6 +146,7 @@ async def delete_annotations_by_tier(db: AsyncSession, tier_id: str) -> int:
 
     Returns:
         Number of annotations deleted.
+
     """
     try:
         result = await db.execute(

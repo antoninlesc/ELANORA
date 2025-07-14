@@ -2,7 +2,6 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from jose import ExpiredSignatureError, JWTError, jwt
-from app.schema.common.token import TokenData
 
 from app.core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -10,6 +9,7 @@ from app.core.config import (
     JWT_SECRET_KEY,
     REFRESH_TOKEN_EXPIRE_DAYS,
 )
+from app.schema.common.token import TokenData
 
 # Token type constants for clarity and to avoid hardcoded string warnings
 ACCESS_TOKEN_TYPE = "access"  # noqa: S105

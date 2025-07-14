@@ -3,25 +3,23 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from tempfile import TemporaryDirectory
-from typing import Any, Dict
+from typing import Any
 
-from app.core.centralized_logging import get_logger
-from app.core.config import ELAN_PROJECTS_BASE_PATH
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.centralized_logging import get_logger
+from app.core.config import ELAN_PROJECTS_BASE_PATH
 from app.crud.project import (
     create_project_db,
     list_projects_by_instance,
 )
-
 from app.service.elan import ElanService
 from app.service.git_diff_parser import GitDiffParser
 from app.service.git_operations import (
-    GitCommandRunner,
-    GitBranchManager,
     FileUploadProcessor,
+    GitBranchManager,
+    GitCommandRunner,
     GitDiffAnalyzer,
     GitMerger,
 )
@@ -75,7 +73,7 @@ class GitService:
     ) -> dict[str, Any]:
         """Create a new project with Git repository and description."""
         project_path = self.base_path / project_name
-
+        logger.info(f"Creating project '{project_name}' at {project_path}")
         if project_path.exists():
             raise ValueError(f"Project '{project_name}' already exists")
 
@@ -119,7 +117,7 @@ class GitService:
                     hook_dest = hooks_dir / hook_name
 
                     # Read template and substitute variables
-                    with open(hook_file, "r", encoding="utf-8") as f:
+                    with open(hook_file, encoding="utf-8") as f:
                         hook_content = f.read()
                     hook_content = (
                         hook_content.replace("{{REPO_NAME}}", project_name)
@@ -262,6 +260,7 @@ class GitService:
                 db=db,
                 user_id=user_id,
                 project_path=project_path,
+                project_name=project_name,
             )
 
             # Build response
@@ -367,13 +366,29 @@ class GitService:
     def _get_existing_files(
         self, project_path: Path, files: list[UploadFile]
     ) -> list[str]:
-        """Get list of files that already exist."""
+        """Get list of files that already exist in Git repository."""
         existing_files = []
+        runner = GitCommandRunner(project_path)
+
+        # Get files tracked by Git
+        try:
+            tracked_result = runner.run(["ls-files", "elan_files/"])
+            tracked_files = set(tracked_result.stdout.strip().splitlines())
+            logger.debug(f"Git tracked files: {tracked_files}")
+        except Exception:
+            tracked_files = set()
+
         for file in files:
             filename = file.filename if file.filename is not None else ""
-            dest_path = project_path / "elan_files" / filename
-            if filename and dest_path.exists():
-                existing_files.append(filename)
+            if filename:
+                git_path = f"elan_files/{filename}"
+                if git_path in tracked_files:
+                    existing_files.append(filename)
+                    logger.debug(f"File {filename} exists in Git repository")
+
+        logger.info(
+            f"Found {len(existing_files)} existing files in Git out of {len(files)} uploads"
+        )
         return existing_files
 
     async def _attempt_merge(
@@ -385,19 +400,32 @@ class GitService:
         db: AsyncSession,
         user_id: int,
         project_path: Path,
+        project_name: str,
     ) -> dict[str, Any]:
         logger.info(f"Attempting to merge branch '{branch_name}' to master branch")
+        """Attempt to merge the upload branch with selective merge strategy."""
+        logger.info(
+            f"Attempting selective merge of branch '{branch_name}' to main branch"
+        )
         diff_parser = GitDiffParser()
         branch_manager.switch_to_master()
         analysis = diff_analyzer.analyze_merge_differences(branch_name, diff_parser)
-        merge_result = merger.auto_merge_if_safe(branch_name, analysis)
 
-        if merge_result["status"] == "merged_successfully":
+        # Use selective merge instead of auto_merge_if_safe
+        merge_result = merger.selective_merge_with_conflict_isolation(
+            branch_name, analysis
+        )
+
+        if merge_result["status"] in (
+            "merged_successfully",
+            "selective_merge_completed",
+        ):
+            # If merge was successful, delete the branch
             branch_manager.delete_branch(branch_name)
             # --- Sync DB with merged ELAN files ---
             if db and user_id and project_path:
                 await self._sync_elan_files_with_db(
-                    project_path, db, user_id, project_name=branch_name
+                    project_path, db, user_id, project_name
                 )
 
         logger.info(f"Merge result: {merge_result['status']}")
@@ -413,15 +441,17 @@ class GitService:
         merge_result: dict[str, Any],
     ) -> dict[str, Any]:
         """Build the upload response."""
-        # Determine final status
+        # Determine final status based on new selective merge results
         if merge_result["status"] == "merged_successfully":
             final_status = "uploaded_and_merged"
+        elif merge_result["status"] == "selective_merge_completed":
+            final_status = "partially_merged_with_conflicts"
         elif merge_result.get("has_conflicts", False):
             final_status = "uploaded_with_conflicts"
         else:
             final_status = "uploaded_pending_review"
 
-        return {
+        response = {
             "project_name": project_name,
             "branch_name": branch_name,
             "uploaded_files": [self._convert_upload_result(f) for f in uploaded_files],
@@ -435,10 +465,16 @@ class GitService:
             "conflicts": merge_result.get("file_changes", []),
             "new_files_in_merge": merge_result.get("new_files", []),
             "modified_files_in_merge": merge_result.get("modified_files", []),
+            # Add new selective merge fields
+            "merged_files": merge_result.get("merged_files", []),
+            "conflict_files": merge_result.get("conflict_files", []),
+            "conflict_branch": merge_result.get("conflict_branch"),
             "status": final_status,
             "uploaded_at": datetime.now().isoformat(),
             "message": merge_result.get("message", "Batch upload completed"),
         }
+
+        return response
 
     def _convert_upload_result(self, result) -> dict:
         """Convert FileUploadResult to dict for response."""
@@ -640,9 +676,8 @@ class GitService:
         except Exception as e:
             raise RuntimeError(f"Failed to checkout branch: {e}") from e
 
-    async def list_project_files(self, project_name: str) -> Dict[str, Any]:
-        """
-        Return a tree of .eaf files and folders containing .eaf files for the given project,
+    async def list_project_files(self, project_name: str) -> dict[str, Any]:
+        """Return a tree of .eaf files and folders containing .eaf files for the given project,
         always from the master branch. Restore the previous branch after listing.
         """
         project_path = self.base_path / project_name

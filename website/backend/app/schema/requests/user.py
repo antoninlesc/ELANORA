@@ -1,4 +1,5 @@
 from pydantic import EmailStr, field_validator
+
 from app.schema.common.base import CustomBaseModel
 
 
