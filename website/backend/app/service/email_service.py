@@ -9,7 +9,7 @@ from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from passlib.context import CryptContext
 from pydantic import SecretStr
 
-from core import config
+from app.core import config
 
 
 # Password hashing context
