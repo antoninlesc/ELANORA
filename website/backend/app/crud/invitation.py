@@ -1,6 +1,6 @@
 """Invitation CRUD operations - Pure database access layer."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -24,7 +24,7 @@ async def create_invitation_in_db(
 ) -> Invitation:
     """Create a new invitation in the database."""
     invitation_id = str(uuid.uuid4())
-    expires_at = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
+    expires_at = datetime.now() + timedelta(days=expires_in_days)
 
     # Generate hashed code for the invitation_id
     hashed_code = pwd_context.hash(invitation_id)
@@ -72,7 +72,7 @@ async def get_pending_invitations_by_email(
         select(Invitation)
         .filter(Invitation.receiver_email == email)
         .filter(Invitation.status == InvitationStatus.PENDING)
-        .filter(Invitation.expires_at > datetime.now(timezone.utc))
+        .filter(Invitation.expires_at > datetime.now())
     )
     return list(result.scalars().all())
 
@@ -89,7 +89,7 @@ async def update_invitation_status(
         return False
 
     invitation.status = status
-    invitation.responded_at = datetime.now(timezone.utc)
+    invitation.responded_at = datetime.now()
     if receiver_id:
         invitation.receiver = receiver_id
 
@@ -105,7 +105,7 @@ async def check_invitation_exists_and_valid(
     return (
         invitation is not None
         and invitation.status == InvitationStatus.PENDING
-        and invitation.expires_at > datetime.now(timezone.utc)
+        and invitation.expires_at > datetime.now()
     )
 
 
@@ -122,7 +122,7 @@ async def expire_old_invitations(db: AsyncSession) -> int:
     result = await db.execute(
         select(Invitation)
         .filter(Invitation.status == InvitationStatus.PENDING)
-        .filter(Invitation.expires_at <= datetime.now(timezone.utc))
+        .filter(Invitation.expires_at <= datetime.now())
     )
 
     expired_invitations = list(result.scalars().all())
