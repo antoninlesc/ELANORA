@@ -8,22 +8,9 @@ from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
 from app.model.user import User
 from app.crud.project import get_all_projects, get_project_by_id
-from pydantic import BaseModel
+from app.schema.responses.project import ProjectResponse
 
 router = APIRouter()
-
-
-class ProjectResponse(BaseModel):
-    """Schema for project data."""
-
-    project_id: int
-    project_name: str
-    description: str
-    instance_id: int
-    project_path: str
-
-    class Config:
-        from_attributes = True
 
 
 @router.get("", response_model=List[ProjectResponse])
