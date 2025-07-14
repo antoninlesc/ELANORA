@@ -17,7 +17,10 @@ from app.dependency.user import get_user_dep
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
 from app.model.user import User
 from app.schema.common.token import TokenData
-from app.schema.requests.user import LoginRequest, ForgotPasswordRequest, ResetPasswordRequest
+from app.schema.requests.user import (
+    LoginRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
 )
 from app.schema.responses.user import LoginResponse, UserResponse
 from app.service.user import UserService
