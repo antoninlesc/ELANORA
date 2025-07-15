@@ -4,6 +4,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.model.tier import Tier
+from app.core.centralized_logging import get_logger
+
+logger = get_logger()
 
 
 async def get_tier_by_id(db: AsyncSession, tier_id: str) -> Tier | None:
@@ -33,10 +36,25 @@ async def get_root_tiers(db: AsyncSession) -> list[Tier]:
 
 
 async def create_tier_in_db(
-    db: AsyncSession, tier_id: str, tier_name: str, parent_tier_id: str | None = None
+    db: AsyncSession,
+    tier_id: str,
+    tier_name: str,
+    elan_id: int,
+    parent_tier_id: Optional[str] = None,
 ) -> Tier:
     """Create a new tier in the database."""
-    tier = Tier(tier_id=tier_id, tier_name=tier_name, parent_tier_id=parent_tier_id)
+
+    if elan_id is None:
+        raise ValueError(
+            "elan_id cannot be None when creating a Tier. This indicates a bug in the calling code."
+        )
+
+    tier = Tier(
+        tier_id=tier_id,
+        tier_name=tier_name,
+        elan_id=elan_id,
+        parent_tier_id=parent_tier_id,
+    )
 
     try:
         db.add(tier)
@@ -46,6 +64,12 @@ async def create_tier_in_db(
     except Exception:
         await db.rollback()
         raise
+
+
+async def get_tiers_by_elan_id(db: AsyncSession, elan_id: int) -> List[Tier]:
+    """Get all tiers for a given ELAN file."""
+    result = await db.execute(select(Tier).filter(Tier.elan_id == elan_id))
+    return list(result.scalars().all())
 
 
 async def check_tier_exists(db: AsyncSession, tier_id: str) -> bool:

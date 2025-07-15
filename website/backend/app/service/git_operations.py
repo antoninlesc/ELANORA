@@ -1,4 +1,5 @@
 import subprocess
+import shutil
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -649,3 +650,44 @@ class GitCommandRunner:
                         }
                     )
         return conflicts
+
+
+def delete_project_folder(project_path: Path) -> None:
+    """Delete the project folder and log errors with details."""
+    if not project_path.exists():
+        logger.warning(f"Project folder does not exist: {project_path}")
+        return
+
+    def on_rm_exc(func, path, exc_info):
+        import traceback
+
+        exc = (
+            exc_info[1]
+            if isinstance(exc_info, tuple) and len(exc_info) > 1
+            else exc_info
+        )
+        # Try to remove read-only and retry
+        try:
+            import os
+            import stat
+
+            os.chmod(path, stat.S_IWRITE)
+            func(path)
+            logger.info(f"Retried and deleted after chmod: {path}")
+            return
+        except Exception:
+            pass
+        logger.error(
+            f"Failed to delete file or folder during rmtree: {path} | Function: {func.__name__} | Error: {exc}\nTraceback: {''.join(traceback.format_exception(*exc_info)) if isinstance(exc_info, tuple) else str(exc_info)}"
+        )
+
+    try:
+        shutil.rmtree(project_path, onexc=on_rm_exc)
+        logger.info(f"Successfully deleted project folder: {project_path}")
+    except Exception as fs_exc:
+        logger.error(
+            f"Failed to delete project folder: {project_path} | Error: {fs_exc}"
+        )
+        raise RuntimeError(
+            f"Failed to delete project folder: {project_path} | Error: {fs_exc}"
+        )

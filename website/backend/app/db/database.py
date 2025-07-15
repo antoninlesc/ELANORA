@@ -1,7 +1,6 @@
 import os
 import urllib.parse
 from collections.abc import AsyncGenerator
-
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -9,6 +8,9 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import declarative_base
+from app.core.centralized_logging import get_logger
+
+logger = get_logger()
 
 
 def build_database_url() -> str | None:
@@ -31,7 +33,9 @@ def get_engine(database_url: str | None = None, echo: bool = True) -> AsyncEngin
     url = database_url or build_database_url()
     if not url:
         raise RuntimeError("DATABASE_URL is not set or incomplete")
-    return create_async_engine(url, echo=echo)
+    engine = create_async_engine(url, echo=echo)
+    logger.debug(f"[ENGINE] Created AsyncEngine {id(engine)} with url: {url}")
+    return engine
 
 
 def get_session_maker(
@@ -40,13 +44,17 @@ def get_session_maker(
     """Return an async sessionmaker bound to the given engine."""
     if engine is None:
         engine = get_engine()
-    return async_sessionmaker(
+    session_maker = async_sessionmaker(
         bind=engine,
         class_=AsyncSession,
         expire_on_commit=False,
         autoflush=False,
         autocommit=False,
     )
+    logger.debug(
+        f"[SESSIONMAKER] Created async_sessionmaker {id(session_maker)} bound to engine {id(engine)}"
+    )
+    return session_maker
 
 
 # Async session generator (for FastAPI dependency injection)
@@ -55,7 +63,9 @@ async def get_db() -> AsyncGenerator[AsyncSession]:
     engine = get_engine()
     session_local = get_session_maker(engine)
     async with session_local() as session:
+        logger.debug(f"[SESSION] get_db: Yielding session {id(session)} from generator")
         yield session
+        logger.debug(f"[SESSION] get_db: Session {id(session)} closed after yield")
 
 
 # Base class for models

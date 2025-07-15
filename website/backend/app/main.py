@@ -20,9 +20,9 @@ from app.core.exception_handler import (
 from app.core.limiter import limiter
 from app.middleware.csrf import CSRFMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
-
-# Get logger (this will automatically call setup_application_logging)
-logger = get_logger()
+from slowapi.errors import RateLimitExceeded
+from starlette.middleware.gzip import GZipMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 # Get logger (this will automatically call setup_application_logging)
 logger = get_logger()
@@ -73,7 +73,6 @@ app.add_middleware(
 app.include_router(git_router, prefix=f"{API_V1_PREFIX}/git", tags=["GIT"])
 app.include_router(user_router, prefix=f"{API_V1_PREFIX}/user", tags=["USER"])
 app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["AUTHENTICATION"])
-app.include_router(tier_router, prefix=f"{API_V1_PREFIX}/tier", tags=["TIER"])
 
 
 # Root endpoint

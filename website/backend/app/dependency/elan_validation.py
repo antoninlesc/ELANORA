@@ -1,4 +1,5 @@
-import defusedxml.ElementTree as DefusedET
+from lxml import etree as lxml_etree
+from app.core.centralized_logging import get_logger
 from fastapi import HTTPException, UploadFile
 
 from app.core.centralized_logging import get_logger
@@ -105,8 +106,11 @@ async def validate_elan_file_content(file: UploadFile) -> UploadFile:
         # Reset file pointer for later use
         file.file.seek(0)
 
-        # Parse XML using defusedxml for security
-        root = DefusedET.fromstring(content)
+        # Parse XML using lxml for security and speed
+        parser = lxml_etree.XMLParser(
+            resolve_entities=False, no_network=True, recover=True
+        )
+        root = lxml_etree.fromstring(content, parser=parser)
 
         # Check if it's a valid ELAN file
         if root.tag != "ANNOTATION_DOCUMENT":
@@ -130,7 +134,7 @@ async def validate_elan_file_content(file: UploadFile) -> UploadFile:
 
         return file
 
-    except DefusedET.ParseError as e:
+    except lxml_etree.XMLSyntaxError as e:
         raise HTTPException(
             status_code=400, detail="Invalid ELAN file: XML parsing failed"
         ) from e

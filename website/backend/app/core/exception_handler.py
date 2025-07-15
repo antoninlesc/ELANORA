@@ -12,9 +12,19 @@ from app.core.logging import get_rotating_logger
 
 # Try to import config, but don't fail if it's not available
 try:
-    from app.core.config import EXCEPTION_LOG_DIR, EXCEPTION_LOG_LEVEL
+    from app.core.config import (
+        EXCEPTION_LOG_DIR as CONFIG_LOG_DIR,
+        EXCEPTION_LOG_LEVEL as CONFIG_LOG_LEVEL,
+    )
 
+    EXCEPTION_LOG_DIR = CONFIG_LOG_DIR
+    EXCEPTION_LOG_LEVEL = CONFIG_LOG_LEVEL
     HAS_CONFIG = True
+
+    if not EXCEPTION_LOG_DIR:
+        EXCEPTION_LOG_DIR = "app/logs/exceptions"
+    if not EXCEPTION_LOG_LEVEL:
+        EXCEPTION_LOG_LEVEL = "WARNING"
 except ImportError:
     HAS_CONFIG = False
 

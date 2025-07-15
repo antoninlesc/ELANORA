@@ -1,6 +1,8 @@
 """ELAN Service - Simplified using utilities."""
 
-import xml.etree.ElementTree as ET
+from lxml import etree as ET
+from pathlib import Path
+from typing import Dict, List, Optional
 from decimal import Decimal
 from pathlib import Path
 
@@ -10,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.centralized_logging import get_logger
 from app.crud import annotation, elan_file, tier
 from app.crud.project import get_project_by_name
-from app.model.annotation import Annotation
 from app.model.tier import Tier
+from app.model.annotation import Annotation
 from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
 
 # Get logger for this module
@@ -33,7 +35,8 @@ class ElanService:
         # Use utility for validation
         file_path_obj = ElanFileProcessor.validate_elan_file(file_path)
 
-        tree = ET.parse(file_path_obj)
+        parser = ET.XMLParser(resolve_entities=False, no_network=True, recover=False)
+        tree = ET.parse(file_path_obj, parser=parser)
         root = tree.getroot()
 
         # Use utilities for file info extraction
@@ -48,10 +51,10 @@ class ElanService:
         )
         return file_info
 
-    def _extract_tiers(self, root: ET.Element, file_info: dict) -> None:
+    def _extract_tiers(self, root: ET._Element, file_info: dict) -> None:
         """Extract tiers using utility functions."""
         tier_count = 0
-        for tier_element in root.findall(".//TIER"):
+        for tier_element in root.findall(".//TIER", namespaces=None):
             tier_info = self.xml_extractor.get_tier_attributes(tier_element)
             tier_info["annotations"] = self._extract_annotations(
                 tier_element, file_info["time_slots"]
@@ -64,14 +67,15 @@ class ElanService:
         logger.debug(f"Extracted {tier_count} tiers with annotations")
 
     def _extract_annotations(
-        self, tier_element: ET.Element, time_slots: dict[str, int]
+        self, tier_element: ET._Element, time_slots: dict[str, int]
     ) -> list[dict]:
         """Extract annotations for a tier using utility functions."""
         annotations = []
 
         # Extract alignable annotations
         for annotation_elem in tier_element.findall(
-            ".//ANNOTATION/ALIGNABLE_ANNOTATION"
+            ".//ANNOTATION/ALIGNABLE_ANNOTATION",
+            namespaces=None,
         ):
             ann_info = self.xml_extractor.get_alignable_annotation_attributes(
                 annotation_elem, time_slots
@@ -80,7 +84,9 @@ class ElanService:
                 annotations.append(ann_info)
 
         # Extract reference annotations
-        for annotation_elem in tier_element.findall(".//ANNOTATION/REF_ANNOTATION"):
+        for annotation_elem in tier_element.findall(
+            ".//ANNOTATION/REF_ANNOTATION", namespaces=None
+        ):
             ann_info = self.xml_extractor.get_ref_annotation_attributes(annotation_elem)
             if ann_info:
                 annotations.append(ann_info)
@@ -96,6 +102,81 @@ class ElanService:
         return files
 
     # ==================== STORAGE METHODS ====================
+
+    async def _store_tiers_and_annotations(
+        self, tiers_data: List[Dict], elan_id: int
+    ) -> None:
+        """Store tiers and their annotations using CRUD functions."""
+        logger.debug(f"Storing {len(tiers_data)} tiers with annotations")
+
+        from app.model.annotation_value import AnnotationValue
+
+        # Build a value map to avoid duplicate AnnotationValue entries
+        value_map = {}
+        for tier_data in tiers_data:
+            for ann_data in tier_data["annotations"]:
+                value = ann_data["annotation_value"]
+                if value not in value_map:
+                    # Try to get or create the AnnotationValue
+                    result = await self.db.execute(
+                        select(AnnotationValue).filter(
+                            AnnotationValue.annotation_value == value
+                        )
+                    )
+                    annotation_value = result.scalar_one_or_none()
+                    if not annotation_value:
+                        annotation_value = AnnotationValue(annotation_value=value)
+                        self.db.add(annotation_value)
+                        await self.db.flush()
+                    value_map[value] = annotation_value.value_id
+
+        for tier_data in tiers_data:
+            # Get or create tier using CRUD
+            tier_obj = await self._get_or_create_tier(tier_data, elan_id)
+
+            # Store annotations using CRUD
+            annotation_count = 0
+            for ann_data in tier_data["annotations"]:
+                if not await annotation.check_annotation_exists(
+                    self.db, ann_data["annotation_id"], elan_id
+                ):
+                    await annotation.create_annotation_in_db(
+                        db=self.db,
+                        annotation_id=ann_data["annotation_id"],
+                        elan_id=elan_id,
+                        value_id=value_map[ann_data["annotation_value"]],
+                        start_time=ann_data["start_time"],
+                        end_time=ann_data["end_time"],
+                        tier_id=tier_obj.tier_id,
+                    )
+                    annotation_count += 1
+
+            if annotation_count > 0:
+                logger.debug(
+                    f"Stored {annotation_count} new annotations for tier: {tier_data['tier_name']}"
+                )
+
+    async def _get_or_create_tier(self, tier_data: Dict, elan_id: int) -> Tier:
+        """Get existing tier or create new one using CRUD."""
+        tier_obj = await tier.get_tier_by_id(self.db, tier_data["tier_id"])
+
+        if not tier_obj:
+            tier_obj = await tier.create_tier_in_db(
+                db=self.db,
+                tier_id=tier_data["tier_id"],
+                tier_name=tier_data["tier_name"],
+                elan_id=elan_id,
+                parent_tier_id=tier_data.get("parent_tier_id"),
+            )
+            logger.debug(
+                f"Created new tier: {tier_data['tier_name']} (ID: {tier_data['tier_id']})"
+            )
+        else:
+            logger.debug(
+                f"Using existing tier: {tier_data['tier_name']} (ID: {tier_data['tier_id']})"
+            )
+
+        return tier_obj
 
     async def store_elan_file_data(
         self, file_info: dict, user_id: int, project_ids: list[int]
@@ -128,7 +209,9 @@ class ElanService:
         )
 
         # Store tiers and annotations using CRUD
-        await self._store_tiers_and_annotations(file_info["tiers"])
+        await self._store_tiers_and_annotations(
+            file_info["tiers"], elan_file_obj.elan_id
+        )
 
         # Sync ELAN_FILE_TO_TIER associations
         tier_ids = [tier["tier_id"] for tier in file_info["tiers"]]
@@ -145,56 +228,6 @@ class ElanService:
             f"Successfully stored: {file_info['filename']} (ID: {elan_file_obj.elan_id})"
         )
         return elan_file_obj.elan_id
-
-    async def _store_tiers_and_annotations(self, tiers_data: list[dict]) -> None:
-        """Store tiers and their annotations using CRUD functions."""
-        logger.debug(f"Storing {len(tiers_data)} tiers with annotations")
-
-        for tier_data in tiers_data:
-            # Get or create tier using CRUD
-            tier_obj = await self._get_or_create_tier(tier_data)
-
-            # Store annotations using CRUD
-            annotation_count = 0
-            for ann_data in tier_data["annotations"]:
-                if not await annotation.check_annotation_exists(
-                    self.db, ann_data["annotation_id"]
-                ):
-                    await annotation.create_annotation_in_db(
-                        db=self.db,
-                        annotation_id=ann_data["annotation_id"],
-                        annotation_value=ann_data["annotation_value"],
-                        start_time=ann_data["start_time"],
-                        end_time=ann_data["end_time"],
-                        tier_id=tier_obj.tier_id,
-                    )
-                    annotation_count += 1
-
-            if annotation_count > 0:
-                logger.debug(
-                    f"Stored {annotation_count} new annotations for tier: {tier_data['tier_name']}"
-                )
-
-    async def _get_or_create_tier(self, tier_data: dict) -> Tier:
-        """Get existing tier or create new one using CRUD."""
-        tier_obj = await tier.get_tier_by_id(self.db, tier_data["tier_id"])
-
-        if not tier_obj:
-            tier_obj = await tier.create_tier_in_db(
-                db=self.db,
-                tier_id=tier_data["tier_id"],
-                tier_name=tier_data["tier_name"],
-                parent_tier_id=tier_data["parent_tier_id"],
-            )
-            logger.debug(
-                f"Created new tier: {tier_data['tier_name']} (ID: {tier_data['tier_id']})"
-            )
-        else:
-            logger.debug(
-                f"Using existing tier: {tier_data['tier_name']} (ID: {tier_data['tier_id']})"
-            )
-
-        return tier_obj
 
     async def process_single_file(
         self, file_path: str, user_id: int, project_name: str
