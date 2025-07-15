@@ -1,8 +1,9 @@
 """Database utility functions for common operations."""
 
-from typing import TypeVar, Type, Optional, List, Any
+from typing import Any, TypeVar
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
 from sqlalchemy.orm import DeclarativeBase
 
 ModelType = TypeVar("ModelType", bound=DeclarativeBase)
@@ -13,8 +14,8 @@ class DatabaseUtils:
 
     @staticmethod
     async def get_by_id(
-        db: AsyncSession, model: Type[ModelType], id_field: str, id_value: Any
-    ) -> Optional[ModelType]:
+        db: AsyncSession, model: type[ModelType], id_field: str, id_value: Any
+    ) -> ModelType | None:
         """Generic get by ID function."""
         result = await db.execute(
             select(model).filter(getattr(model, id_field) == id_value)
@@ -22,14 +23,14 @@ class DatabaseUtils:
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def get_all(db: AsyncSession, model: Type[ModelType]) -> List[ModelType]:
+    async def get_all(db: AsyncSession, model: type[ModelType]) -> list[ModelType]:
         """Generic get all function."""
         result = await db.execute(select(model))
         return list(result.scalars().all())
 
     @staticmethod
     async def exists(
-        db: AsyncSession, model: Type[ModelType], field: str, value: Any
+        db: AsyncSession, model: type[ModelType], field: str, value: Any
     ) -> bool:
         """Generic existence check."""
         result = await db.execute(
@@ -51,7 +52,7 @@ class DatabaseUtils:
 
     @staticmethod
     async def delete_by_filter(
-        db: AsyncSession, model: Type[ModelType], **filters
+        db: AsyncSession, model: type[ModelType], **filters
     ) -> int:
         """Generic delete with filters."""
         try:

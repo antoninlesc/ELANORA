@@ -1,9 +1,8 @@
 """File processing utilities for ELAN files."""
 
 import xml.etree.ElementTree as ET
-from pathlib import Path
-from typing import Dict, List, Optional
 from decimal import Decimal
+from pathlib import Path
 
 
 class ElanFileProcessor:
@@ -23,7 +22,7 @@ class ElanFileProcessor:
         return file_path_obj
 
     @staticmethod
-    def get_file_info(file_path_obj: Path) -> Dict:
+    def get_file_info(file_path_obj: Path) -> dict:
         """Extract basic file information."""
         return {
             "filename": file_path_obj.name,
@@ -32,7 +31,7 @@ class ElanFileProcessor:
         }
 
     @staticmethod
-    def extract_time_slots(root: ET.Element) -> Dict[str, int]:
+    def extract_time_slots(root: ET.Element) -> dict[str, int]:
         """Extract time slots from ELAN XML root."""
         time_slots = {}
         for time_slot in root.findall(".//TIME_SLOT"):
@@ -43,7 +42,7 @@ class ElanFileProcessor:
         return time_slots
 
     @staticmethod
-    def safe_get_text(element: Optional[ET.Element]) -> Optional[str]:
+    def safe_get_text(element: ET.Element | None) -> str | None:
         """Safely get text from XML element."""
         if element is None or not element.text:
             return None
@@ -57,7 +56,7 @@ class ElanFileProcessor:
     @staticmethod
     def find_files_in_directory(
         directory_path: str, pattern: str = "**/*.eaf"
-    ) -> List[Path]:
+    ) -> list[Path]:
         """Find all ELAN files in directory."""
         directory = Path(directory_path)
 
@@ -71,7 +70,7 @@ class XmlAttributeExtractor:
     """Utilities for extracting attributes from XML elements."""
 
     @staticmethod
-    def get_tier_attributes(tier_element: ET.Element) -> Dict:
+    def get_tier_attributes(tier_element: ET.Element) -> dict:
         """Extract tier attributes from XML element."""
         return {
             "tier_id": tier_element.get("TIER_ID"),
@@ -81,7 +80,7 @@ class XmlAttributeExtractor:
         }
 
     @staticmethod
-    def get_annotation_attributes(annotation: ET.Element) -> Dict:
+    def get_annotation_attributes(annotation: ET.Element) -> dict:
         """Extract annotation attributes from XML element."""
         return {
             "annotation_id": annotation.get("ANNOTATION_ID"),
@@ -91,8 +90,8 @@ class XmlAttributeExtractor:
 
     @staticmethod
     def get_alignable_annotation_attributes(
-        annotation: ET.Element, time_slots: Dict[str, int]
-    ) -> Optional[Dict]:
+        annotation: ET.Element, time_slots: dict[str, int]
+    ) -> dict | None:
         """Extract information from an alignable annotation."""
         annotation_value_elem = annotation.find("ANNOTATION_VALUE")
         if annotation_value_elem is None or not annotation_value_elem.text:
@@ -112,7 +111,7 @@ class XmlAttributeExtractor:
         }
 
     @staticmethod
-    def get_ref_annotation_attributes(annotation: ET.Element) -> Optional[Dict]:
+    def get_ref_annotation_attributes(annotation: ET.Element) -> dict | None:
         """Extract information from a reference annotation."""
         annotation_value_elem = annotation.find("ANNOTATION_VALUE")
         if annotation_value_elem is None or not annotation_value_elem.text:

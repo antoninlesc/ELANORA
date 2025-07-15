@@ -1,9 +1,10 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from app.db.database import Base
 from sqlalchemy import ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.database import Base
 
 if TYPE_CHECKING:
     from .tier import Tier

@@ -1,6 +1,4 @@
-"""
-Service for sending password verification emails.
-"""
+"""Service for sending password verification emails."""
 
 import datetime
 from pathlib import Path
@@ -10,7 +8,6 @@ from passlib.context import CryptContext
 from pydantic import SecretStr
 
 from app.core import config
-
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -51,8 +48,7 @@ class EmailService:
     async def send_password_reset_verification_email(
         self, email: str, username: str, code: str, language: str = "en"
     ) -> bool:
-        """
-        Send a password reset verification email.
+        """Send a password reset verification email.
 
         Args:
             email (str): The email address to send the verification code to
@@ -62,6 +58,7 @@ class EmailService:
 
         Returns:
             bool: True if the email was sent successfully, False otherwise
+
         """
         current_year = datetime.datetime.now().year
         contact_url = f"{config.FRONTEND_HOST}/contact"

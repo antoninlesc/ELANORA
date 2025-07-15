@@ -41,7 +41,7 @@ REFRESH_TOKEN_PATH = "/api/v1/auth/refresh"  # noqa: S105
 CSRF_TOKEN_NAME = "elanora_csrf"  # noqa: S105
 
 # ELAN Projects configuration
-ELAN_PROJECTS_BASE_PATH = os.getenv("ELAN_PROJECTS_BASE_PATH", "projects")
+ELAN_PROJECTS_BASE_PATH = os.getenv("ELAN_PROJECTS_BASE_PATH", "elanora_projects")
 ELAN_MAX_FILE_SIZE_MB = int(os.getenv("ELAN_MAX_FILE_SIZE_MB", "50"))
 ELAN_MAX_BATCH_SIZE_MB = int(os.getenv("ELAN_MAX_BATCH_SIZE_MB", "500"))
 

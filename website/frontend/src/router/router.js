@@ -50,6 +50,12 @@ const routes = [
     component: HTTPStatus,
   },
   {
+    path: '/upload',
+    name: 'UploadPage',
+    component: () => import('@views/UploadPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     // Catch-all to redirect to 404 page when no route matches
     path: '/:catchAll(.*)',
     redirect: '/error/404',

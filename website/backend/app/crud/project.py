@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.model.project import Project
 from sqlalchemy.future import select
+
+from app.model.project import Project
 
 
 async def create_project_db(
