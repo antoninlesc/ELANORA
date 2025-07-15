@@ -37,6 +37,7 @@ class GitBranchManager:
     def __init__(self, project_path: Path):
         """Initialize with the project path."""
         self.project_path = project_path
+        self.commandRunner = GitCommandRunner(project_path)
 
     def create_upload_branch(self, user_name: str, file_count: int) -> str:
         """Create a unique branch for file uploads."""
@@ -62,11 +63,7 @@ class GitBranchManager:
 
     def delete_branch(self, branch_name: str) -> None:
         """Delete a branch."""
-        subprocess.run(
-            ["git", "branch", "-d", branch_name],
-            cwd=self.project_path,
-            check=False,
-        )
+        self.commandRunner.delete_branch(branch_name)
         logger.info(f"Deleted branch: {branch_name}")
 
 
@@ -596,8 +593,15 @@ class GitCommandRunner:
     def diff_stat(self, branch_name: str) -> str:
         return self.run(["diff", f"master...{branch_name}", "--stat"]).stdout
 
+    def delete_branch_localy(self, branch_name: str):
+        self.run(["branch", "-D", branch_name], check=False)
+
+    def delete_branch_on_remote(self, branch_name: str):
+        self.run(["push", "origin", "--delete", branch_name], check=False)
+
     def delete_branch(self, branch_name: str):
-        self.run(["branch", "-d", branch_name], check=False)
+        self.delete_branch_localy(branch_name)
+        self.delete_branch_on_remote(branch_name)
 
     def resolve_conflicts(
         self, branch_name: str, resolution_strategy: str
