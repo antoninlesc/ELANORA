@@ -1,6 +1,6 @@
 <template>
-  <header class="elanora-header">
-    <div class="elanora-header-container">
+  <header>
+    <div class="navbar-container">
       <div class="elanora-header-left">
         <img
           src="@images/ELANora-logo.png"
@@ -12,16 +12,10 @@
         <a href="/projects" class="elanora-header-menu-link">
           {{ t('navigation.projects') }}
         </a>
-        <a
-          href="/upload"
-          class="elanora-header-menu-link"
-        >
+        <a href="/upload" class="elanora-header-menu-link">
           {{ t('navigation.upload') }}
         </a>
-        <a
-          href="/conflicts"
-          class="elanora-header-menu-link"
-        >
+        <a href="/conflicts" class="elanora-header-menu-link">
           {{ t('navigation.conflicts') }}
         </a>
         <span v-if="instanceName" class="elanora-header-instance-label">{{
@@ -67,25 +61,6 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
-.elanora-header {
-  background: white;
-  border-bottom: 1px solid #e1e8ed;
-  padding: 1rem 0;
-  box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.elanora-header-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .elanora-header-left {
   display: flex;
   align-items: center;

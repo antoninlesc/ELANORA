@@ -1,176 +1,178 @@
 <template>
-  <div class="project-page-root">
-    <h1 class="project-page-title">Projects</h1>
+  <div>
+    <div class="project-page-root">
+      <h1 class="project-page-title">Projects</h1>
 
-    <!-- Create Project Section -->
-    <form class="project-page-create-form" @submit.prevent="createProject">
-      <div class="project-page-create-fields">
-        <input
-          v-model="newProjectName"
-          class="project-page-create-input"
-          type="text"
-          placeholder="Project name"
-          required
-        />
-        <input
-          v-model="newProjectDescription"
-          class="project-page-create-input"
-          type="text"
-          placeholder="Description"
-          required
-        />
-        <button class="project-page-create-btn" :disabled="creating">
-          {{ creating ? 'Creating...' : 'Create Project' }}
-        </button>
-        <button
-          class="project-page-create-btn"
-          type="button"
-          style="margin-left: 8px"
-          @click="showInitDialog = true"
+      <!-- Create Project Section -->
+      <form class="project-page-create-form" @submit.prevent="createProject">
+        <div class="project-page-create-fields">
+          <input
+            v-model="newProjectName"
+            class="project-page-create-input"
+            type="text"
+            placeholder="Project name"
+            required
+          />
+          <input
+            v-model="newProjectDescription"
+            class="project-page-create-input"
+            type="text"
+            placeholder="Description"
+            required
+          />
+          <button class="project-page-create-btn" :disabled="creating">
+            {{ creating ? 'Creating...' : 'Create Project' }}
+          </button>
+          <button
+            class="project-page-create-btn"
+            type="button"
+            style="margin-left: 8px"
+            @click="showInitDialog = true"
+          >
+            Init from Folder
+          </button>
+        </div>
+        <div v-if="createError" class="project-page-create-error">
+          {{ createError }}
+        </div>
+      </form>
+
+      <div v-if="loading" class="project-page-loading">Loading projects...</div>
+      <div v-else class="project-page-list">
+        <!-- Replace your project list loop with this -->
+        <div
+          v-for="project in projects"
+          :key="project"
+          :class="[
+            'project-page-project-box',
+            { 'project-page-active': project === currentProjectName },
+          ]"
+          @click="selectProject(project)"
         >
-          Init from Folder
-        </button>
-      </div>
-      <div v-if="createError" class="project-page-create-error">
-        {{ createError }}
-      </div>
-    </form>
-
-    <div v-if="loading" class="project-page-loading">Loading projects...</div>
-    <div v-else class="project-page-list">
-      <!-- Replace your project list loop with this -->
-      <div
-        v-for="project in projects"
-        :key="project"
-        :class="[
-          'project-page-project-box',
-          { 'project-page-active': project === currentProjectName },
-        ]"
-        @click="selectProject(project)"
-      >
-        <div style="display: flex; align-items: center">
-          <span class="project-page-project-name">{{ project }}</span>
-          <span
-            v-if="project === currentProjectName"
-            class="project-page-feedback"
-            >Active</span
-          >
-        </div>
-        <div class="project-page-actions">
-          <button
-            class="project-page-edit-btn"
-            title="Rename Project"
-            @click.stop="openRenameDialog(project)"
-          >
-            <font-awesome-icon icon="fa-regular fa-pen-to-square" />
-          </button>
-          <button
-            class="project-page-delete-btn"
-            title="Delete Project"
-            @click.stop="deleteProject(project)"
-          >
-            <font-awesome-icon icon="trash" />
-          </button>
+          <div style="display: flex; align-items: center">
+            <span class="project-page-project-name">{{ project }}</span>
+            <span
+              v-if="project === currentProjectName"
+              class="project-page-feedback"
+              >Active</span
+            >
+          </div>
+          <div class="project-page-actions">
+            <button
+              class="project-page-edit-btn"
+              title="Rename Project"
+              @click.stop="openRenameDialog(project)"
+            >
+              <font-awesome-icon icon="fa-regular fa-pen-to-square" />
+            </button>
+            <button
+              class="project-page-delete-btn"
+              title="Delete Project"
+              @click.stop="deleteProject(project)"
+            >
+              <font-awesome-icon icon="trash" />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Initialize Project from Folder Section -->
-    <div class="project-page-init-section">
-      <!-- Modal for initializing from folder -->
-      <div v-if="showInitDialog" class="project-page-modal-overlay">
+      <!-- Initialize Project from Folder Section -->
+      <div class="project-page-init-section">
+        <!-- Modal for initializing from folder -->
+        <div v-if="showInitDialog" class="project-page-modal-overlay">
+          <div class="project-page-modal-content">
+            <h2 class="project-page-modal-title">Init Project from Folder</h2>
+            <form @submit.prevent="initFromFolder">
+              <input
+                v-model="initProjectName"
+                class="project-page-create-input"
+                type="text"
+                placeholder="Project name"
+                required
+              />
+              <input
+                v-model="initProjectDescription"
+                class="project-page-create-input"
+                type="text"
+                placeholder="Description"
+                required
+                style="margin-top: 8px"
+              />
+              <UploadFolder v-model="selectedFiles" />
+              <div style="margin-top: 16px; display: flex; gap: 12px">
+                <button class="project-page-create-btn" :disabled="initing">
+                  {{ initing ? 'Initializing...' : 'Init' }}
+                </button>
+                <button
+                  class="project-page-create-btn"
+                  type="button"
+                  style="background: #bdbdbd"
+                  @click="showInitDialog = false"
+                >
+                  Cancel
+                </button>
+              </div>
+              <div v-if="initError" class="project-page-create-error">
+                {{ initError }}
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rename Project Section -->
+      <div v-if="renameDialogVisible" class="project-page-modal-overlay">
         <div class="project-page-modal-content">
-          <h2 class="project-page-modal-title">Init Project from Folder</h2>
-          <form @submit.prevent="initFromFolder">
+          <h2 class="project-page-modal-title">Rename Project</h2>
+          <form @submit.prevent="renameProject">
             <input
-              v-model="initProjectName"
+              v-model="renameInput"
               class="project-page-create-input"
               type="text"
-              placeholder="Project name"
+              placeholder="New project name"
               required
             />
-            <input
-              v-model="initProjectDescription"
-              class="project-page-create-input"
-              type="text"
-              placeholder="Description"
-              required
-              style="margin-top: 8px"
-            />
-            <UploadFolder v-model="selectedFiles" />
             <div style="margin-top: 16px; display: flex; gap: 12px">
-              <button class="project-page-create-btn" :disabled="initing">
-                {{ initing ? 'Initializing...' : 'Init' }}
+              <button class="project-page-create-btn" :disabled="renaming">
+                {{ renaming ? 'Renaming...' : 'Rename' }}
               </button>
               <button
                 class="project-page-create-btn"
                 type="button"
                 style="background: #bdbdbd"
-                @click="showInitDialog = false"
+                @click="closeRenameDialog"
               >
                 Cancel
               </button>
             </div>
-            <div v-if="initError" class="project-page-create-error">
-              {{ initError }}
+            <div v-if="renameError" class="project-page-create-error">
+              {{ renameError }}
             </div>
           </form>
         </div>
       </div>
-    </div>
 
-    <!-- Rename Project Section -->
-    <div v-if="renameDialogVisible" class="project-page-modal-overlay">
-      <div class="project-page-modal-content">
-        <h2 class="project-page-modal-title">Rename Project</h2>
-        <form @submit.prevent="renameProject">
-          <input
-            v-model="renameInput"
-            class="project-page-create-input"
-            type="text"
-            placeholder="New project name"
-            required
-          />
-          <div style="margin-top: 16px; display: flex; gap: 12px">
-            <button class="project-page-create-btn" :disabled="renaming">
-              {{ renaming ? 'Renaming...' : 'Rename' }}
-            </button>
-            <button
-              class="project-page-create-btn"
-              type="button"
-              style="background: #bdbdbd"
-              @click="closeRenameDialog"
-            >
-              Cancel
-            </button>
-          </div>
-          <div v-if="renameError" class="project-page-create-error">
-            {{ renameError }}
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Project Files Section -->
-    <!-- Project Files Tree -->
-    <div v-if="currentProjectName" class="project-page-files-tree-section">
-      <div class="project-page-files-tree-title">
-        Files in "{{ currentProjectName }}"
-        <button
-          class="project-page-create-btn"
-          style="float: right; margin-left: 16px"
-          :disabled="syncing"
-          @click="synchronizeProject"
-        >
-          {{ syncing ? 'Synchronizing...' : 'Synchronize' }}
-        </button>
-      </div>
-      <div v-if="filesLoading" class="project-page-loading">
-        Loading files...
-      </div>
-      <div v-else>
-        <FileTree v-if="projectFiles" :tree="projectFiles" :level="0" />
-        <div v-else class="project-page-loading">No files found.</div>
+      <!-- Project Files Section -->
+      <!-- Project Files Tree -->
+      <div v-if="currentProjectName" class="project-page-files-tree-section">
+        <div class="project-page-files-tree-title">
+          Files in "{{ currentProjectName }}"
+          <button
+            class="project-page-create-btn"
+            style="float: right; margin-left: 16px"
+            :disabled="syncing"
+            @click="synchronizeProject"
+          >
+            {{ syncing ? 'Synchronizing...' : 'Synchronize' }}
+          </button>
+        </div>
+        <div v-if="filesLoading" class="project-page-loading">
+          Loading files...
+        </div>
+        <div v-else>
+          <FileTree v-if="projectFiles" :tree="projectFiles" :level="0" />
+          <div v-else class="project-page-loading">No files found.</div>
+        </div>
       </div>
     </div>
   </div>

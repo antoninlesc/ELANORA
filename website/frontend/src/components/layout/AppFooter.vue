@@ -1,5 +1,5 @@
 <template>
-  <footer class="app-footer">
+  <footer>
     <div class="footer-container">
       <div class="footer-content">
         <div class="footer-section">
@@ -94,19 +94,6 @@ const { t } = useI18n();
 </script>
 
 <style scoped>
-.app-footer {
-  background: #2d3748;
-  color: #e2e8f0;
-  padding: 3rem 0 1rem;
-  margin-top: auto;
-}
-
-.footer-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
-
 .footer-content {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
