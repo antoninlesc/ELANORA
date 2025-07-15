@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, delete, select, insert
 from sqlalchemy.orm import selectinload
 
 from typing import Optional
@@ -205,22 +205,23 @@ async def delete_annotations_by_tier(db: AsyncSession, tier_id: str) -> int:
 async def bulk_create_annotations(
     db: AsyncSession, tiers_data: list[dict], elan_id: int, value_map: dict[str, int]
 ) -> None:
-    from app.model.annotation import Annotation
+    """Bulk create annotations for multiple tiers."""
 
     all_annotations = []
     for tier_data in tiers_data:
         tier_id = tier_data["tier_id"]
         for ann in tier_data["annotations"]:
             all_annotations.append(
-                Annotation(
-                    annotation_id=ann["annotation_id"],
-                    elan_id=elan_id,
-                    value_id=value_map[ann["annotation_value"]],
-                    start_time=ann["start_time"],
-                    end_time=ann["end_time"],
-                    tier_id=tier_id,
-                )
+                {
+                    "annotation_id": ann["annotation_id"],
+                    "elan_id": elan_id,
+                    "value_id": value_map[ann["annotation_value"]],
+                    "start_time": ann["start_time"],
+                    "end_time": ann["end_time"],
+                    "tier_id": tier_id,
+                }
             )
     if all_annotations:
-        db.add_all(all_annotations)
-        await db.flush()
+        stmt = insert(Annotation).values(all_annotations)
+        await db.execute(stmt)
+        await db.commit()

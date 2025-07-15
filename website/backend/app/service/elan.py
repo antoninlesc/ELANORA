@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from decimal import Decimal
 from pathlib import Path
+import time
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,8 @@ from app.crud.project import get_project_by_name
 from app.model.tier import Tier
 from app.model.annotation import Annotation
 from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
+from app.crud.annotation_value import bulk_get_or_create_annotation_values
+from app.crud.annotation import bulk_create_annotations
 
 # Get logger for this module
 logger = get_logger()
@@ -29,26 +32,36 @@ class ElanService:
         self.xml_extractor = XmlAttributeExtractor()
 
     def parse_elan_file(self, file_path: str) -> dict:
-        """Parse a single ELAN file and extract all relevant information."""
         logger.info(f"Starting to parse ELAN file: {file_path}")
+        t0 = time.perf_counter()
 
         # Use utility for validation
         file_path_obj = ElanFileProcessor.validate_elan_file(file_path)
 
+        t_parse_start = time.perf_counter()
         parser = ET.XMLParser(resolve_entities=False, no_network=True, recover=False)
         tree = ET.parse(file_path_obj, parser=parser)
         root = tree.getroot()
+        t_parse_end = time.perf_counter()
+        logger.info(f"XML parsing took {t_parse_end - t_parse_start:.3f}s")
 
-        # Use utilities for file info extraction
+        t_info_start = time.perf_counter()
         file_info = ElanFileProcessor.get_file_info(file_path_obj)
         file_info.update(
             {"tiers": [], "time_slots": ElanFileProcessor.extract_time_slots(root)}
         )
+        t_info_end = time.perf_counter()
+        logger.info(f"File info extraction took {t_info_end - t_info_start:.3f}s")
 
+        t_tiers_start = time.perf_counter()
         self._extract_tiers(root, file_info)
+        t_tiers_end = time.perf_counter()
         logger.info(
-            f"Successfully parsed ELAN file: {file_path} - Found {len(file_info['tiers'])} tiers"
+            f"Tier and annotation extraction took {t_tiers_end - t_tiers_start:.3f}s"
         )
+
+        total_time = time.perf_counter() - t0
+        logger.info(f"Total parse_elan_file time: {total_time:.3f}s")
         return file_info
 
     def _extract_tiers(self, root: ET._Element, file_info: dict) -> None:
@@ -106,55 +119,35 @@ class ElanService:
     async def _store_tiers_and_annotations(
         self, tiers_data: List[Dict], elan_id: int
     ) -> None:
-        """Store tiers and their annotations using CRUD functions."""
         logger.debug(f"Storing {len(tiers_data)} tiers with annotations")
+        t0 = time.perf_counter()
 
-        from app.model.annotation_value import AnnotationValue
+        # 1. Bulk get or create all annotation values, get value_map
+        t_val_start = time.perf_counter()
+        value_map = await bulk_get_or_create_annotation_values(self.db, tiers_data)
+        t_val_end = time.perf_counter()
+        logger.info(f"AnnotationValue creation took {t_val_end - t_val_start:.3f}s")
 
-        # Build a value map to avoid duplicate AnnotationValue entries
-        value_map = {}
+        # 2. Ensure all tiers exist (still need to do this one by one)
+        t_tier_start = time.perf_counter()
         for tier_data in tiers_data:
-            for ann_data in tier_data["annotations"]:
-                value = ann_data["annotation_value"]
-                if value not in value_map:
-                    # Try to get or create the AnnotationValue
-                    result = await self.db.execute(
-                        select(AnnotationValue).filter(
-                            AnnotationValue.annotation_value == value
-                        )
-                    )
-                    annotation_value = result.scalar_one_or_none()
-                    if not annotation_value:
-                        annotation_value = AnnotationValue(annotation_value=value)
-                        self.db.add(annotation_value)
-                        await self.db.flush()
-                    value_map[value] = annotation_value.value_id
-
-        for tier_data in tiers_data:
-            # Get or create tier using CRUD
             tier_obj = await self._get_or_create_tier(tier_data, elan_id)
+            tier_data["tier_id"] = tier_obj.tier_id  # ensure DB id is set
+        t_tier_end = time.perf_counter()
 
-            # Store annotations using CRUD
-            annotation_count = 0
-            for ann_data in tier_data["annotations"]:
-                if not await annotation.check_annotation_exists(
-                    self.db, ann_data["annotation_id"], elan_id
-                ):
-                    await annotation.create_annotation_in_db(
-                        db=self.db,
-                        annotation_id=ann_data["annotation_id"],
-                        elan_id=elan_id,
-                        value_id=value_map[ann_data["annotation_value"]],
-                        start_time=ann_data["start_time"],
-                        end_time=ann_data["end_time"],
-                        tier_id=tier_obj.tier_id,
-                    )
-                    annotation_count += 1
+        # 3. Bulk create all annotations for all tiers
+        t_ann_start = time.perf_counter()
+        await bulk_create_annotations(self.db, tiers_data, elan_id, value_map)
+        t_ann_end = time.perf_counter()
+        logger.info(
+            f"Annotation creation (all tiers) took {t_ann_end - t_ann_start:.3f}s"
+        )
 
-            if annotation_count > 0:
-                logger.debug(
-                    f"Stored {annotation_count} new annotations for tier: {tier_data['tier_name']}"
-                )
+        logger.info(
+            f"Tier/annotation DB operations took {t_ann_end - t_tier_start:.3f}s"
+        )
+        total_time = time.perf_counter() - t0
+        logger.info(f"Total _store_tiers_and_annotations time: {total_time:.3f}s")
 
     async def _get_or_create_tier(self, tier_data: Dict, elan_id: int) -> Tier:
         """Get existing tier or create new one using CRUD."""
