@@ -21,5 +21,17 @@ export const useProjectStore = defineStore('project', {
       this.currentProject = null;
       localStorage.removeItem('currentProject');
     },
+    renameCurrentProject(newName) {
+      if (this.currentProject && typeof this.currentProject === 'object') {
+        this.currentProject.project_name = newName;
+        localStorage.setItem(
+          'currentProject',
+          JSON.stringify(this.currentProject)
+        );
+      } else if (typeof this.currentProject === 'string') {
+        this.currentProject = newName;
+        localStorage.setItem('currentProject', JSON.stringify(newName));
+      }
+    },
   },
 });

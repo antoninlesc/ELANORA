@@ -167,16 +167,46 @@
   text-align: left;
 }
 
+/* Delete button: red border and icon */
 .project-page-delete-btn {
   background: none;
-  border: none;
+  border: 2px solid #d32f2f;
   color: #d32f2f;
   font-size: 1.2rem;
   cursor: pointer;
   margin-left: 12px;
-  transition: color 0.2s;
+  border-radius: 6px;
+  padding: 4px 10px;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
 
 .project-page-delete-btn:hover {
-  color: #b71c1c;
+  color: #fff;
+  background: #d32f2f;
+  border-color: #b71c1c;
+}
+
+/* Edit button: neutral gray border and icon */
+.project-page-edit-btn {
+  background: none;
+  border: 2px solid #6c757d;
+  color: #6c757d;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-left: 12px;
+  border-radius: 6px;
+  padding: 4px 10px;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.project-page-edit-btn:hover {
+  color: #fff;
+  background: #6c757d;
+  border-color: #495057;
+}
+
+.project-page-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }

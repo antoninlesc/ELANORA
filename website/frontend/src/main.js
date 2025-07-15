@@ -1,8 +1,8 @@
-import App from './App.vue';
 import { createApp } from 'vue';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import App from './App.vue';
 import { createPinia } from 'pinia';
-import { setupI18n } from './i18n';
+import { setupI18n } from '@plugins/i18n';
+import FontAwesomeIcon from '@plugins/fontawesome';
 
 import '@css/tailwind.css';
 import '@css/style.css';
@@ -10,21 +10,15 @@ import '@css/app.css';
 
 import router from '@/router/router.js';
 
+const app = createApp(App);
 const pinia = createPinia();
 const i18n = setupI18n();
-const app = createApp(App);
 
-// Register the FontAwesomeIcon component globally
-app.component('FontAwesomeIcon', FontAwesomeIcon);
-
-// Use the router instance in the app
+app.use(pinia);
+app.use(i18n);
 app.use(router);
 
-// Use the Pinia store in the app
-app.use(pinia);
+// eslint-disable-next-line vue/component-definition-name-casing
+app.component('font-awesome-icon', FontAwesomeIcon);
 
-// Use the i18n instance in the app
-app.use(i18n);
-
-// Mount the app to the DOM
 app.mount('#app');

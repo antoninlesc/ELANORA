@@ -127,6 +127,15 @@ const gitService = {
     );
     return data;
   },
+
+  // Rename a project
+  async renameProject(oldProjectName, newProjectName) {
+    const { data } = await axiosInstance.post(
+      `/git/projects/${encodeURIComponent(oldProjectName)}/rename`,
+      { new_project_name: newProjectName }
+    );
+    return data;
+  },
 };
 
 export default gitService;

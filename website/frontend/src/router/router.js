@@ -2,63 +2,51 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
 
+import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import HomePage from '@views/HomePage.vue';
 import LoginPage from '@views/LoginPage.vue';
-import ForgotPassword from '@views/ForgotPassword.vue';
-import ResetPassword from '@views/ResetPassword.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
 
 // Define routes
 const routes = [
+  // Login page (no layout)
   {
     path: '/',
     name: 'LoginPage',
     component: LoginPage,
   },
+  // All other pages use DefaultLayout
   {
-    path: '/homePage',
-    name: 'HomePage',
-    component: HomePage,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/projects',
-    name: 'ProjectsPage',
-    component: () => import('@views/ProjectsPage.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/forgot-password',
-    name: 'ForgotPassword',
-    component: ForgotPassword,
-
-  },
-  {
-    path: '/reset-password',
-    name: 'ResetPassword',
-    component: ResetPassword,
-    
-  },
-
-  {
-    path: '/error/:statusCode',
-    name: 'HTTPStatus',
-    props: (route) => ({
-      statusCode: String(route.params.statusCode),
-      message: getErrorMessage(route.params.statusCode),
-    }),
-    component: HTTPStatus,
-  },
-  {
-    path: '/upload',
-    name: 'UploadPage',
-    component: () => import('@views/UploadPage.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    // Catch-all to redirect to 404 page when no route matches
-    path: '/:catchAll(.*)',
-    redirect: '/error/404',
+    path: '/',
+    component: DefaultLayout,
+    children: [
+      {
+        path: 'homePage',
+        name: 'HomePage',
+        component: HomePage,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'projects',
+        name: 'ProjectsPage',
+        component: () => import('@views/ProjectsPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'error/:statusCode',
+        name: 'HTTPStatus',
+        props: (route) => ({
+          statusCode: String(route.params.statusCode),
+          message: getErrorMessage(route.params.statusCode),
+        }),
+        component: HTTPStatus,
+      },
+      {
+        // Catch-all to redirect to 404 page when no route matches
+        path: '/:catchAll(.*)',
+        redirect: '/error/404',
+      },
+    ],
   },
 ];
 
@@ -95,15 +83,9 @@ function handleNotAuthenticated(eventMessageStore, to, next) {
 router.beforeEach((to, from, next) => {
   const eventMessageStore = useEventMessageStore();
   const userStore = useUserStore();
-  console.log('userStore', userStore);
-  console.log(
-    'userStore.authState.initialized',
-    userStore.authState.initialized
-  );
-  console.log('userStore.isAuthenticated', userStore.isAuthenticated);
   // Handle login route: redirect if already authenticated
   if (to.name === 'LoginPage' && userStore.isAuthenticated) {
-    eventMessageStore.addMessage('event_messages.already_logged_in', 'warning');
+    eventMessageStore.addMessage('event_messages.already_logged_in', 'info');
     if (from.name) return next(false);
     return next({ name: 'HomePage' });
   }

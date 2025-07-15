@@ -19,3 +19,16 @@ class ProjectCheckoutRequest(CustomBaseModel):
     """Schema for project branch checkout request."""
 
     branch_name: str
+
+
+class ProjectRenameRequest(CustomBaseModel):
+    """Schema for project rename request."""
+
+    new_project_name: str
+
+
+class ProjectDeleteRequest(CustomBaseModel):
+    """Schema for project delete request."""
+
+    project_id: int
+    confirm: bool = False

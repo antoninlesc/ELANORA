@@ -6,7 +6,7 @@
         :style="{ marginLeft: `${level * 18}px` }"
         class="filetree-file"
       >
-        <span style="color: #1976d2">📄</span>
+        <font-awesome-icon icon="file" style="color: #1976d2" />
         <span>{{ tree.name }}</span>
       </div>
       <div
@@ -15,7 +15,10 @@
         class="filetree-folder"
       >
         <div class="filetree-folder-header" @click="toggle">
-          <span style="color: #388e3c">{{ open ? '📂' : '📁' }}</span>
+          <font-awesome-icon
+            :icon="open ? 'folder-open' : 'folder'"
+            style="color: #388e3c"
+          />
           <span style="font-weight: 600">{{ tree.name }}</span>
         </div>
         <div v-show="open">

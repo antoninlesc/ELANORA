@@ -48,19 +48,30 @@
         ]"
         @click="selectProject(project)"
       >
-        <span class="project-page-project-name">{{ project }}</span>
-        <span
-          v-if="project === currentProjectName"
-          class="project-page-feedback"
-          >Active</span
-        >
-        <button
-          class="project-page-delete-btn"
-          title="Delete Project"
-          @click.stop="deleteProject(project)"
-        >
-          🗑️
-        </button>
+        <div style="display: flex; align-items: center">
+          <span class="project-page-project-name">{{ project }}</span>
+          <span
+            v-if="project === currentProjectName"
+            class="project-page-feedback"
+            >Active</span
+          >
+        </div>
+        <div class="project-page-actions">
+          <button
+            class="project-page-edit-btn"
+            title="Rename Project"
+            @click.stop="openRenameDialog(project)"
+          >
+            <font-awesome-icon icon="fa-regular fa-pen-to-square" />
+          </button>
+          <button
+            class="project-page-delete-btn"
+            title="Delete Project"
+            @click.stop="deleteProject(project)"
+          >
+            <font-awesome-icon icon="trash" />
+          </button>
+        </div>
       </div>
     </div>
 
@@ -105,6 +116,38 @@
             </div>
           </form>
         </div>
+      </div>
+    </div>
+
+    <!-- Rename Project Section -->
+    <div v-if="renameDialogVisible" class="project-page-modal-overlay">
+      <div class="project-page-modal-content">
+        <h2 class="project-page-modal-title">Rename Project</h2>
+        <form @submit.prevent="renameProject">
+          <input
+            v-model="renameInput"
+            class="project-page-create-input"
+            type="text"
+            placeholder="New project name"
+            required
+          />
+          <div style="margin-top: 16px; display: flex; gap: 12px">
+            <button class="project-page-create-btn" :disabled="renaming">
+              {{ renaming ? 'Renaming...' : 'Rename' }}
+            </button>
+            <button
+              class="project-page-create-btn"
+              type="button"
+              style="background: #bdbdbd"
+              @click="closeRenameDialog"
+            >
+              Cancel
+            </button>
+          </div>
+          <div v-if="renameError" class="project-page-create-error">
+            {{ renameError }}
+          </div>
+        </form>
       </div>
     </div>
 
@@ -168,6 +211,12 @@ const currentProjectName = computed(
 );
 
 const syncing = ref(false);
+
+const renameDialogVisible = ref(false);
+const renameInput = ref('');
+const renaming = ref(false);
+const renameError = ref('');
+const renamingProject = ref(null);
 
 async function fetchProjects() {
   loading.value = true;
@@ -282,6 +331,46 @@ async function deleteProject(projectName) {
     console.error('Failed to delete project:', projectName);
   } finally {
     await fetchProjects();
+  }
+}
+
+function openRenameDialog(project) {
+  renamingProject.value = project;
+  renameInput.value = project;
+  renameError.value = '';
+  renameDialogVisible.value = true;
+}
+
+function closeRenameDialog() {
+  renamingProject.value = null;
+  renameInput.value = '';
+  renameError.value = '';
+  renameDialogVisible.value = false;
+}
+
+async function renameProject() {
+  renameError.value = '';
+  if (!renameInput.value.trim()) {
+    renameError.value = 'Please enter a new project name.';
+    return;
+  }
+  renaming.value = true;
+  try {
+    await gitService.renameProject(
+      renamingProject.value,
+      renameInput.value.trim()
+    );
+    // Update project list and current project reactively
+    await fetchProjects();
+    if (currentProjectName.value === renamingProject.value) {
+      projectStore.renameCurrentProject(renameInput.value.trim());
+    }
+    closeRenameDialog();
+  } catch (e) {
+    renameError.value =
+      e?.response?.data?.detail || 'Failed to rename project.';
+  } finally {
+    renaming.value = false;
   }
 }
 

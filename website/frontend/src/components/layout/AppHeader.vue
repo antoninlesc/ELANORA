@@ -2,16 +2,19 @@
   <header class="elanora-header">
     <div class="elanora-header-container">
       <div class="elanora-header-left">
-        <img src="/images/ELANora-logo.png" alt="ELANORA Logo" class="elanora-header-logo" />
+        <img
+          src="/images/ELANora-logo.png"
+          alt="ELANORA Logo"
+          class="elanora-header-logo"
+        />
       </div>
       <div class="elanora-header-right">
-        <a
-          href="/projects"
-          class="elanora-header-menu-link"
-        >
+        <a href="/projects" class="elanora-header-menu-link">
           {{ t('navigation.projects') }}
         </a>
-        <span v-if="instanceName" class="elanora-header-instance-label">{{ instanceName }}</span>
+        <span v-if="instanceName" class="elanora-header-instance-label">{{
+          instanceName
+        }}</span>
         <button
           v-if="user"
           class="elanora-header-btn-logout"
@@ -26,22 +29,17 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useAppInfoStore } from '@/stores/appInfo';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUserStore } from '@/stores/user';
-import { useEventMessageStore } from '@stores/eventMessage';
 
-defineProps({
-  instanceName: {
-    type: String,
-    default: 'elanora',
-  },
-});
+const appInfo = useAppInfoStore();
+const instanceName = computed(() => appInfo.instanceName);
 
 const router = useRouter();
 const { t } = useI18n();
 const userStore = useUserStore();
-const eventMessageStore = useEventMessageStore();
 const user = computed(() => userStore.user);
 
 const handleLogout = async () => {
@@ -132,11 +130,12 @@ const handleLogout = async () => {
   background: #e8f0fe;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .elanora-header-container {
     flex-direction: column;
     gap: 1rem;
   }
+
   .elanora-header-right {
     margin-left: 0;
   }

@@ -101,10 +101,6 @@ class BatchFileUploadResponse(CustomBaseModel):
     conflicts: list[FileChanges] = []
     new_files_in_merge: list[str] | None = []
     modified_files_in_merge: list[str] | None = []
-    # New fields for selective merge
-    merged_files: list[str] | None = []
-    conflict_files: list[str] | None = []
-    conflict_branch: str | None = None
     status: str
     uploaded_at: str
     message: str | None = None
@@ -131,3 +127,17 @@ class ProjectCheckoutResponse(CustomBaseModel):
 
 class ProjectListResponse(CustomBaseModel):
     projects: list[str]
+
+
+class ProjectRenameResponse(CustomBaseModel):
+    """Schema for project rename response."""
+
+    new_project_name: str
+
+
+class ProjectDeleteResponse(CustomBaseModel):
+    """Schema for project delete response."""
+
+    project_id: int
+    status: str
+    message: str | None = None
