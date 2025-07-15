@@ -20,7 +20,7 @@ from app.model.user import User
 from passlib.context import CryptContext
 from app.schema.common.token import TokenData
 from app.schema.common.user import UserCreateData
-from app.schema.requests.user import ProfileUpdateRequest, RegistrationRequest
+from app.schema.requests.user import ProfileUpdateRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Get logger for this module
@@ -190,54 +190,6 @@ class UserService:
     async def create_user(
         cls,
         db: AsyncSession,
-        registration_data: RegistrationRequest,
-    ) -> User:
-        """Create a new user with bcrypt password hashing.
-
-        Args:
-            db (AsyncSession): Database session.
-            registration_data (RegistrationRequest): User registration data.
-
-        Returns:
-            User: The created user object.
-
-        Raises:
-            ValueError: If user creation validation fails.
-            Exception: If database operation fails.
-
-        """
-        logger.info(f"Creating new user: {registration_data.username}")
-
-        # Hash the password
-        hashed_password = cls.hash_password(registration_data.password)
-
-        # Generate activation code
-        activation_code = cls._generate_verification_code()
-        hashed_activation_code = cls._hash_verification_code(activation_code)
-
-        # Create UserCreateData object with correct field names
-        user_data = UserCreateData(
-            username=registration_data.username,
-            hashed_password=hashed_password,
-            email=registration_data.email,
-            first_name=registration_data.first_name,
-            last_name=registration_data.last_name,
-            affiliation=registration_data.affiliation,
-            department=registration_data.department,
-            activation_code=hashed_activation_code,
-            address_id=None,
-        )
-
-        # Create user in database
-        user = await create_user_in_db(db, user_data)
-
-        logger.info(f"User created successfully: {user.username}")
-        return user
-
-    @classmethod
-    async def create_user_from_invitation(
-        cls,
-        db: AsyncSession,
         username: str,
         email: str,
         password: str,
@@ -247,7 +199,7 @@ class UserService:
         department: str,
         is_verified: bool = False,
     ) -> User:
-        """Create a new user from invitation data.
+        """Create a new user with bcrypt password hashing.
 
         Args:
             db (AsyncSession): Database session.
@@ -268,10 +220,17 @@ class UserService:
             Exception: If database operation fails.
 
         """
-        logger.info(f"Creating new user from invitation: {username}")
+        logger.info(f"Creating new user: {username}")
 
         # Hash the password
         hashed_password = cls.hash_password(password)
+
+        # Determine activation code logic
+        activation_code = ""
+        if not is_verified:
+            # If email is not verified, generate activation code
+            activation_code = cls._generate_verification_code()
+            activation_code = cls._hash_verification_code(activation_code)
 
         # Create UserCreateData object
         user_data = UserCreateData(
@@ -282,14 +241,15 @@ class UserService:
             last_name=last_name,
             affiliation=affiliation,
             department=department,
-            activation_code="",  # No activation code needed for invitation registration
+            activation_code=activation_code,
+            is_verified_account=is_verified,
             address_id=None,
         )
 
-        # Create user in database with verification status
-        user = await create_user_in_db(db, user_data, is_verified_account=is_verified)
+        # Create user in database
+        user = await create_user_in_db(db, user_data)
 
-        logger.info(f"User created successfully from invitation: {user.username}")
+        logger.info(f"User created successfully: {user.username}")
         return user
 
     @classmethod

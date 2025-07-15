@@ -83,7 +83,7 @@ async def create_user_in_db(
         department=user_data.department,
         activation_code=user_data.activation_code,
         address_id=user_data.address_id,
-        # is_verified_account=False,
+        is_verified_account=user_data.is_verified_account,
         role=UserRole.PUBLIC,
         is_active=True,
         **additional_fields,

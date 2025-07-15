@@ -86,22 +86,7 @@
           />
         </div>
 
-        <div class="form-group">
-          <label for="email" class="form-label">
-            {{ t('register.email_label') }}
-            <span class="required">*</span>
-          </label>
-          <input 
-            id="email"
-            v-model="form.email"
-            type="email"
-            class="form-input"
-            :placeholder="t('register.email_placeholder')"
-            :value="invitationInfo?.receiver_email || ''"
-            :readonly="!!invitationInfo?.receiver_email"
-            required
-          />
-        </div>
+        <!-- Email field -->
 
         <div class="form-row">
           <div class="form-group">
@@ -132,6 +117,21 @@
               required
             />
           </div>
+        </div>
+        <div class="form-group">
+          <label for="email" class="form-label">
+            {{ t('register.email_label') }}
+            <span class="required">*</span>
+          </label>
+          <input
+            id="email"
+            v-model="form.email"
+            type="email"
+            class="form-input"
+            :placeholder="t('register.email_placeholder')"
+            required
+            :disabled="!!invitationInfo?.receiver_email"
+          />
         </div>
 
         <div class="form-group">
@@ -249,8 +249,11 @@ const validateInvitationCode = async () => {
       invitationInfo.value = response.data.invitation;
       
       // Pre-fill email if available
+      // Pre-fill email if available and disable editing
       if (invitationInfo.value?.receiver_email) {
         form.value.email = invitationInfo.value.receiver_email;
+      } else {
+        form.value.email = '';
       }
       
       eventMessageStore.addMessage(t('register.invitation_valid'), 'success');

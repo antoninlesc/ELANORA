@@ -360,8 +360,8 @@ async def reset_password(
         ) from e
 
 
-@router.post("/register-with-invitation", response_model=UserResponse)
-async def register_with_invitation(
+@router.post("/register", response_model=UserResponse)
+async def register(
     request: RegisterWithInvitationRequest,
     db: AsyncSession = get_db_dep,
 ):
@@ -416,7 +416,7 @@ async def register_with_invitation(
         is_verified = True
 
     # Create user using UserService
-    user = await user_service.create_user_from_invitation(
+    user = await user_service.create_user(
         db=db,
         username=request.username,
         email=request.email,
