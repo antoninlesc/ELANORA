@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div>
     <template v-if="!isAuthLoading">
       <router-view />
       <EventMessageContainer />

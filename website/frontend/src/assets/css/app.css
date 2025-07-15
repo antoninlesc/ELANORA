@@ -1,0 +1,24 @@
+/* Layout container */
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100vw;
+}
+
+/* Main content styling */
+.content {
+  max-width: 1504px;
+  width: clamp(320px, 90vw, 1504px);
+  margin: 4rem auto 6rem;
+  padding-left: 24px;
+  padding-right: 24px;
+  flex: 1 1 auto;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.footer {
+  flex-shrink: 0;
+  width: 100vw;
+}

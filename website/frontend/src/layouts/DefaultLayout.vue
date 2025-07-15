@@ -1,8 +1,8 @@
 <template>
-  <div>
-    <AppHeader />
-    <router-view />
-    <AppFooter />
+  <div id="app">
+    <AppHeader class="navbar" />
+    <router-view class="content" />
+    <AppFooter class="footer" />
   </div>
 </template>
 
