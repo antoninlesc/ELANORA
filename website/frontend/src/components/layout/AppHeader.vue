@@ -11,6 +11,18 @@
         >
           {{ t('navigation.projects') }}
         </a>
+        <a
+          href="/upload"
+          class="elanora-header-menu-link"
+        >
+          {{ t('navigation.upload') }}
+        </a>
+        <a
+          href="/conflicts"
+          class="elanora-header-menu-link"
+        >
+          {{ t('navigation.conflicts') }}
+        </a>
         <span v-if="instanceName" class="elanora-header-instance-label">{{ instanceName }}</span>
         <button
           v-if="user"
