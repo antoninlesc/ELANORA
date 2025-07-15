@@ -205,7 +205,10 @@
     "success": "Account created successfully! Please check your email to verify your account.",
     "error": "Registration failed. Please try again.",
     "already_have_account": "Already have an account?",
-    "login_here": "Login here"
+    "login_here": "Login here",
+    "confirm_email_label": "Confirm Email",
+    "confirm_email_placeholder": "Confirm your email address",
+    "emails_no_match": "Email addresses do not match"
   },
   "invitation": {
     "send_title": "Send Invitation",

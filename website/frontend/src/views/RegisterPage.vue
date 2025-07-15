@@ -133,6 +133,21 @@
             :disabled="!!invitationInfo?.receiver_email"
           />
         </div>
+        <div class="form-group">
+          <label for="confirm-email" class="form-label">
+            {{ t('register.confirm_email_label') }}
+            <span class="required">*</span>
+          </label>
+          <input
+            id="confirm-email"
+            v-model="form.confirmEmail"
+            type="email"
+            class="form-input"
+            :placeholder="t('register.confirm_email_placeholder')"
+            required
+            :disabled="!!invitationInfo?.receiver_email"
+          />
+        </div>
 
         <div class="form-group">
           <label for="phone" class="form-label">
@@ -330,6 +345,7 @@ const form = ref({
   lastName: '',
   username: '',
   email: '',
+  confirmEmail: '',
   password: '',
   confirmPassword: '',
   phoneNumber: '',
@@ -380,12 +396,13 @@ const validateInvitationCode = async () => {
       invitationValid.value = true;
       invitationInfo.value = response.data.invitation;
       
-      // Pre-fill email if available
       // Pre-fill email if available and disable editing
       if (invitationInfo.value?.receiver_email) {
         form.value.email = invitationInfo.value.receiver_email;
+        form.value.confirmEmail = invitationInfo.value.receiver_email;
       } else {
         form.value.email = '';
+        form.value.confirmEmail = '';
       }
       
       eventMessageStore.addMessage(t('register.invitation_valid'), 'success');
@@ -425,8 +442,14 @@ const onCountryChange = async () => {
 
 const handleRegister = async () => {
   // Validate form
+
   if (form.value.password !== form.value.confirmPassword) {
     eventMessageStore.addMessage(t('register.passwords_no_match'), 'error');
+    return;
+  }
+
+  if (form.value.email !== form.value.confirmEmail) {
+    eventMessageStore.addMessage(t('register.emails_no_match'), 'error');
     return;
   }
 
