@@ -135,6 +135,19 @@
         </div>
 
         <div class="form-group">
+          <label for="phone" class="form-label">
+            {{ t('register.phone_label') }}
+          </label>
+          <input 
+            id="phone"
+            v-model="form.phoneNumber"
+            type="tel"
+            class="form-input"
+            :placeholder="t('register.phone_placeholder')"
+          />
+        </div>
+
+        <div class="form-group">
           <label for="affiliation" class="form-label">
             {{ t('register.affiliation_label') }}
             <span class="required">*</span>
@@ -164,6 +177,111 @@
           />
         </div>
 
+        <!-- Address Section -->
+        <div class="address-section">
+          <h3 class="section-title">{{ t('register.address_section') }}</h3>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="country" class="form-label">
+                {{ t('register.country_label') }}
+                <span class="required">*</span>
+              </label>
+              <select 
+                id="country"
+                v-model="form.address.countryId"
+                class="form-select"
+                @change="onCountryChange"
+                required
+              >
+                <option value="">{{ t('register.country_placeholder') }}</option>
+                <option 
+                  v-for="country in countries" 
+                  :key="country.country_id" 
+                  :value="country.country_id"
+                >
+                  {{ country.country_name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="city" class="form-label">
+                {{ t('register.city_label') }}
+                <span class="required">*</span>
+              </label>
+              <input 
+                id="city"
+                v-model="form.address.cityName"
+                type="text"
+                class="form-input"
+                :placeholder="t('register.city_placeholder')"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="streetName" class="form-label">
+                {{ t('register.street_name_label') }}
+                <span class="required">*</span>
+              </label>
+              <input 
+                id="streetName"
+                v-model="form.address.streetName"
+                type="text"
+                class="form-input"
+                :placeholder="t('register.street_name_placeholder')"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="streetNumber" class="form-label">
+                {{ t('register.street_number_label') }}
+              </label>
+              <input 
+                id="streetNumber"
+                v-model="form.address.streetNumber"
+                type="text"
+                class="form-input"
+                :placeholder="t('register.street_number_placeholder')"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="postalCode" class="form-label">
+                {{ t('register.postal_code_label') }}
+                <span class="required">*</span>
+              </label>
+              <input 
+                id="postalCode"
+                v-model="form.address.postalCode"
+                type="text"
+                class="form-input"
+                :placeholder="t('register.postal_code_placeholder')"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="addressLine2" class="form-label">
+                {{ t('register.address_line2_label') }}
+              </label>
+              <input 
+                id="addressLine2"
+                v-model="form.address.addressLine2"
+                type="text"
+                class="form-input"
+                :placeholder="t('register.address_line2_placeholder')"
+              />
+            </div>
+          </div>
+        </div>
+
         <button 
           type="submit" 
           class="btn-primary register-btn" 
@@ -191,6 +309,7 @@ import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { validateInvitation } from '@/api/service/invitationService';
 import { registerWithInvitation } from '@/api/service/authService';
+import { getCountries } from '@/api/service/locationService';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -204,6 +323,7 @@ const invitationValidating = ref(false);
 const invitationError = ref('');
 const invitationInfo = ref(null);
 const loading = ref(false);
+const countries = ref([]);
 
 const form = ref({
   firstName: '',
@@ -212,17 +332,29 @@ const form = ref({
   email: '',
   password: '',
   confirmPassword: '',
+  phoneNumber: '',
   affiliation: '',
-  department: ''
+  department: '',
+  address: {
+    countryId: '',
+    cityName: '',
+    streetName: '',
+    streetNumber: '',
+    postalCode: '',
+    addressLine2: ''
+  }
 });
 
 // Check for invitation code in URL params
-onMounted(() => {
+onMounted(async () => {
   const invitationParam = route.query.invitation;
   if (invitationParam) {
     invitationCode.value = invitationParam;
     validateInvitationCode();
   }
+  
+  // Load countries
+  await loadCountries();
 });
 
 // Watch for changes in invitation code
@@ -269,6 +401,28 @@ const validateInvitationCode = async () => {
   }
 };
 
+// Load countries from API
+const loadCountries = async () => {
+  try {
+    const response = await getCountries();
+    if (response.success) {
+      countries.value = response.data;
+    } else {
+      eventMessageStore.addMessage(t('register.error_loading_countries'), 'error');
+    }
+  } catch (error) {
+    console.error('Error loading countries:', error);
+    eventMessageStore.addMessage(t('register.error_loading_countries'), 'error');
+  }
+};
+
+// Load cities when country changes
+const onCountryChange = async () => {
+  // No longer need to load cities since it's a free text field
+  // Reset city name when country changes if needed
+  // form.value.address.cityName = '';
+};
+
 const handleRegister = async () => {
   // Validate form
   if (form.value.password !== form.value.confirmPassword) {
@@ -284,6 +438,19 @@ const handleRegister = async () => {
   loading.value = true;
 
   try {
+    // Prepare address object if fields are filled
+    let address = null;
+    if (form.value.address.streetName && form.value.address.cityName && form.value.address.postalCode && form.value.address.countryId) {
+      address = {
+        street_name: form.value.address.streetName,
+        street_number: form.value.address.streetNumber || null,
+        city_name: form.value.address.cityName,
+        country_id: parseInt(form.value.address.countryId),
+        postal_code: form.value.address.postalCode,
+        address_line_2: form.value.address.addressLine2 || null
+      };
+    }
+
     // API call for registration with invitation
     const payload = {
       invitation_code: invitationCode.value,
@@ -292,8 +459,10 @@ const handleRegister = async () => {
       username: form.value.username,
       email: form.value.email,
       password: form.value.password,
+      phone_number: form.value.phoneNumber || null,
       affiliation: form.value.affiliation,
       department: form.value.department,
+      address: address
     };
     await registerWithInvitation(payload);
     eventMessageStore.addMessage(t('register.success'), 'success');

@@ -79,6 +79,7 @@ async def create_user_in_db(
         email=user_data.email,
         first_name=user_data.first_name,
         last_name=user_data.last_name,
+        phone_number=user_data.phone_number,
         affiliation=user_data.affiliation,
         department=user_data.department,
         activation_code=user_data.activation_code,

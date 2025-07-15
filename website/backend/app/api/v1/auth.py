@@ -426,6 +426,8 @@ async def register(
         affiliation=request.affiliation,
         department=request.department,
         is_verified=is_verified,
+        phone_number=request.phone_number,
+        address_data=request.address,
     )
     # 3. Accept the invitation
     await invitation_service.accept_invitation(

@@ -14,4 +14,5 @@ class UserCreateData:
     department: str
     activation_code: str
     is_verified_account: bool = False
+    phone_number: str | None = None
     address_id: int | None = None
