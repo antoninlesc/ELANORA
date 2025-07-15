@@ -7,6 +7,9 @@ import LoginPage from '@views/LoginPage.vue';
 import ForgotPassword from '@views/ForgotPassword.vue';
 import ResetPassword from '@views/ResetPassword.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
+import ProjectsPage from '@views/ProjectsPage.vue';
+import UploadPage from '@views/UploadPage.vue';
+import ConflictsPage from '@views/ConflictsPage.vue';
 
 // Define routes
 const routes = [
@@ -24,20 +27,18 @@ const routes = [
   {
     path: '/projects',
     name: 'ProjectsPage',
-    component: () => import('@views/ProjectsPage.vue'),
+    component: ProjectsPage,
     meta: { requiresAuth: true },
   },
   {
     path: '/forgot-password',
     name: 'ForgotPassword',
     component: ForgotPassword,
-
   },
   {
     path: '/reset-password',
     name: 'ResetPassword',
     component: ResetPassword,
-    
   },
   {
     path: '/error/:statusCode',
@@ -51,13 +52,13 @@ const routes = [
   {
     path: '/upload',
     name: 'UploadPage',
-    component: () => import('@views/UploadPage.vue'),
+    component: UploadPage,
     meta: { requiresAuth: true },
   },
   {
     path: '/conflicts',
     name: 'Conflicts',
-    component: () => import('@views/ConflictsPage.vue'),
+    component: ConflictsPage,
     meta: { requiresAuth: true },
   },
   {
