@@ -97,7 +97,7 @@ class GitService:
                 f.write(gitignore_content)
 
             # Create README
-            readme_content = self._create_readme(project_name)
+            readme_content = self._create_readme(project_name, description)
             with open(project_path / "README.md", "w", encoding="utf-8") as f:
                 f.write(readme_content)
 
@@ -620,9 +620,9 @@ class GitService:
         except Exception as e:
             return {"error": str(e)}
 
-    def _create_readme(self, project_name: str) -> str:
+    def _create_readme(self, project_name: str, description: str) -> str:
         """Generate README content for a new project."""
-        return f"# {project_name}\n\nThis is the ELAN project '{project_name}'.\n"
+        return f"# {project_name}\nThis is the ELAN project '{project_name}'.\n#### Description of the project:\n{description}\n"
 
     def _parse_git_status(self, status_output: str) -> list[dict[str, str]]:
         """Parse the output of 'git status --porcelain'."""
