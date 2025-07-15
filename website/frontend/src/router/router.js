@@ -39,7 +39,6 @@ const routes = [
     component: ResetPassword,
     
   },
-
   {
     path: '/error/:statusCode',
     name: 'HTTPStatus',
@@ -53,6 +52,12 @@ const routes = [
     path: '/upload',
     name: 'UploadPage',
     component: () => import('@views/UploadPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/conflicts',
+    name: 'Conflicts',
+    component: () => import('@views/ConflictsPage.vue'),
     meta: { requiresAuth: true },
   },
   {
