@@ -6,6 +6,9 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import HomePage from '@views/HomePage.vue';
 import LoginPage from '@views/LoginPage.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
+import ProjectsPage from '@views/ProjectsPage.vue';
+import UploadPage from '@views/UploadPage.vue';
+import ConflictsPage from '@views/ConflictsPage.vue';
 
 // Define routes
 const routes = [
@@ -29,7 +32,7 @@ const routes = [
       {
         path: 'projects',
         name: 'ProjectsPage',
-        component: () => import('@views/ProjectsPage.vue'),
+        component: ProjectsPage,
         meta: { requiresAuth: true },
       },
       {
@@ -40,6 +43,18 @@ const routes = [
           message: getErrorMessage(route.params.statusCode),
         }),
         component: HTTPStatus,
+      },
+      {
+        path: '/upload',
+        name: 'UploadPage',
+        component: UploadPage,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: '/conflicts',
+        name: 'Conflicts',
+        component: ConflictsPage,
+        meta: { requiresAuth: true },
       },
       {
         // Catch-all to redirect to 404 page when no route matches

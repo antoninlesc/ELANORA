@@ -3861,7 +3861,7 @@
             <ALIGNABLE_ANNOTATION ANNOTATION_ID="a1116"
                 CVE_REF="cveid_abe034c7-a69c-4e2a-bf10-2b026ff76b06"
                 TIME_SLOT_REF1="ts181" TIME_SLOT_REF2="ts182">
-                <ANNOTATION_VALUE>yes</ANNOTATION_VALUE>
+                <ANNOTATION_VALUE>no</ANNOTATION_VALUE>
             </ALIGNABLE_ANNOTATION>
         </ANNOTATION>
         <ANNOTATION>
