@@ -1,4 +1,7 @@
 {
+  "app": {
+    "title" : "ELANORA"
+  },
   "homePage": {
     "welcomeMessage": "Welcome to ELANORA!",
     "description": "A collaborative platform for managing and annotating linguistic corpora.",
@@ -49,6 +52,7 @@
   "navigation": {
     "projects": "Projects",
     "dashboard": "Dashboard",
+    "upload": "File Upload",
     "conflicts": "Conflicts",
     "tier_management": "Tier Management",
     "export": "Export"
