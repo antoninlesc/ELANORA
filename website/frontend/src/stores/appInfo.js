@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 
 export const useAppInfoStore = defineStore('appInfo', {
   state: () => ({
-    instanceName: 'ELANORA',
+    instance: null,
     version: '1.0.0',
   }),
 });

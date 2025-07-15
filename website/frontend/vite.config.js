@@ -64,7 +64,7 @@ export default defineConfig(({ mode }) => {
         '@stores': '/src/stores',
         '@locales': '/src/locales',
         '@utils': '/src/utils',
-        '@data': '/src/data',
+        '@instance': '/instance',
         '@plugins': '/src/plugins',
       },
     },

@@ -3,7 +3,7 @@
     <div class="elanora-header-container">
       <div class="elanora-header-left">
         <img
-          src="/images/ELANora-logo.png"
+          src="@images/ELANora-logo.png"
           alt="ELANORA Logo"
           class="elanora-header-logo"
         />

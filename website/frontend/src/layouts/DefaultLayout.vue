@@ -1,8 +1,8 @@
 <template>
   <div>
-    <AppHeader :instance-name="instanceName" />
+    <AppHeader />
     <router-view />
-    <AppFooter :instance-name="instanceName" :version="version" />
+    <AppFooter />
   </div>
 </template>
 
