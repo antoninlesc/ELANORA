@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import selectinload
 
-
+from typing import Optional
 from app.model.annotation import Annotation
 from app.model.annotation_value import AnnotationValue
 from app.core.centralized_logging import get_logger

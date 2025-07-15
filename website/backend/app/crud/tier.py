@@ -2,6 +2,7 @@
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from app.model.tier import Tier
 from app.core.centralized_logging import get_logger
@@ -66,7 +67,7 @@ async def create_tier_in_db(
         raise
 
 
-async def get_tiers_by_elan_id(db: AsyncSession, elan_id: int) -> List[Tier]:
+async def get_tiers_by_elan_id(db: AsyncSession, elan_id: int) -> list[Tier]:
     """Get all tiers for a given ELAN file."""
     result = await db.execute(select(Tier).filter(Tier.elan_id == elan_id))
     return list(result.scalars().all())
