@@ -101,6 +101,7 @@
               class="form-input"
               :placeholder="t('register.password_placeholder')"
               required
+              autocomplete="new-password"
             />
           </div>
           <div class="form-group">
@@ -115,6 +116,7 @@
               class="form-input"
               :placeholder="t('register.confirm_password_placeholder')"
               required
+              autocomplete="new-password"
             />
           </div>
         </div>
