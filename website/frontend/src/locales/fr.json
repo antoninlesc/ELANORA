@@ -1,4 +1,7 @@
 {
+  "app": {
+    "title" : "ELANORA"
+  },
   "homePage": {
     "welcomeMessage": "Bienvenue sur ELANORA !",
     "description": "Une plateforme collaborative pour gérer et annoter des corpus linguistiques.",
@@ -90,6 +93,7 @@
   "navigation": {
     "projects": "Projets",
     "dashboard": "Tableau de bord",
+    "upload": "File Upload",
     "conflicts": "Conflits",
     "tier_management": "Gestion des tiers",
     "export": "Export"
