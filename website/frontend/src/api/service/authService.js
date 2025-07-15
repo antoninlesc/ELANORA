@@ -60,5 +60,5 @@ export async function resetPassword(email, code, newPassword) {
  * @returns {Promise<import('axios').AxiosResponse>}
  */
 export async function registerWithInvitation(data) {
-  return await axiosInstance.post('/auth/register-with-invitation', data);
+  return await axiosInstance.post('/auth/register', data);
 }
