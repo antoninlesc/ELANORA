@@ -5,12 +5,13 @@
       type="file"
       webkitdirectory
       directory
-      multiple
       style="display: none"
+      accept=".eaf"
       @change="onFolderChange"
     />
     <button class="upload-folder-btn" type="button" @click="openPicker">
-      <span>📁</span> <span>Browse...</span>
+      <font-awesome-icon icon="folder-open" style="margin-right: 6px" />
+      <span>Browse...</span>
     </button>
     <span v-if="files.length" class="upload-folder-summary">
       {{ files.length }} file{{ files.length > 1 ? 's' : '' }} selected
@@ -24,6 +25,7 @@
 <script setup>
 import { ref } from 'vue';
 import FileTree from './FileTree.vue';
+import FontAwesomeIcon from '@/plugins/fontawesome';
 
 defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -42,7 +44,12 @@ function openPicker() {
 }
 
 function onFolderChange(e) {
-  files.value = Array.from(e.target.files);
+  // Only keep .eaf files
+  const allFiles = Array.from(e.target.files);
+  const eafFiles = allFiles.filter((f) =>
+    f.name.toLowerCase().endsWith('.eaf')
+  );
+  files.value = eafFiles;
   emit('update:modelValue', files.value);
   fileTree.value = buildTree(files.value);
 }

@@ -58,6 +58,7 @@ export default defineConfig(({ mode }) => {
         '@css': '/src/assets/css',
         '@images': '/images',
         '@icons': '/images/icons', 
+        '@logos': '/images/logos',
         '@search': '/images/search',
         '@videos': '/videos', 
         '@router': '/src/router',
