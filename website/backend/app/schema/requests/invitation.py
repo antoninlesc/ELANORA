@@ -13,6 +13,7 @@ class InvitationSendRequest(CustomBaseModel):
     project_id: int
     project_permission: ProjectPermission = ProjectPermission.READ
     expires_in_days: int = 7
+    language: str = "en"
     message: Optional[str] = None
 
 

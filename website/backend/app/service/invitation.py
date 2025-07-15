@@ -77,6 +77,8 @@ class InvitationService:
                 expires_in_days=request.expires_in_days,
             )
 
+            language = request.language or "en"  # Default to English if not provided
+
             # Send invitation email
             email_sent = await self.email_service.send_invitation_email(
                 email=str(request.receiver_email),
@@ -84,7 +86,7 @@ class InvitationService:
                 sender_name=f"{sender.first_name} {sender.last_name}",
                 project_name=project_name,
                 custom_message=request.message,
-                language="en",  # Default to English for now
+                language=language,
             )
 
             if email_sent:
@@ -124,7 +126,7 @@ class InvitationService:
     async def validate_invitation(
         self,
         db: AsyncSession,
-        invitation_code: str,  # Now this is the raw code, not invitation_id
+        invitation_code: str,
     ) -> InvitationValidationResponse:
         """Validate an invitation code."""
         try:

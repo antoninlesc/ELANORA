@@ -201,7 +201,8 @@ const handleSendInvitation = async () => {
       receiver_email: form.value.email,
       project_id: parseInt(form.value.projectId),
       message: form.value.message || null,
-      expires_in_days: 7
+      expires_in_days: 7,
+      language: form.value.language || 'en'
     });
 
     if (response.data.success) {
