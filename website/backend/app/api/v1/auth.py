@@ -19,6 +19,7 @@ from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
 from app.model.user import User
 from app.schema.common.token import TokenData
+from app.schema.requests.register_with_invitation import RegisterWithInvitationRequest
 from app.schema.requests.user import (
     ForgotPasswordRequest,
     LoginRequest,
@@ -26,12 +27,10 @@ from app.schema.requests.user import (
     SendVerificationEmailRequest,
     VerifyEmailRequest,
 )
-from app.schema.requests.register_with_invitation import RegisterWithInvitationRequest
-from app.schema.responses.user import LoginResponse, UserResponse, RegistrationResponse
-from app.service.user import UserService
+from app.schema.responses.user import LoginResponse, RegistrationResponse, UserResponse
 from app.service.email_service import EmailService
 from app.service.invitation import InvitationService
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.service.user import UserService
 
 router = APIRouter()
 
@@ -374,6 +373,7 @@ async def register(
 
     This endpoint allows a user to register using an invitation code.
     It validates the invitation code, creates the user, and marks the invitation as used.
+
     Args:
         request (RegisterWithInvitationRequest): The request body containing user details and invitation code.
         db (AsyncSession): Database session.
@@ -536,7 +536,7 @@ async def send_verification_email(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"An error occurred while processing your request: {str(e)}",
+            detail=f"An error occurred while processing your request: {e!s}",
         ) from e
 
 
@@ -585,5 +585,5 @@ async def verify_email(
             raise e
         raise HTTPException(
             status_code=500,
-            detail=f"An error occurred while verifying your email: {str(e)}",
+            detail=f"An error occurred while verifying your email: {e!s}",
         ) from e

@@ -1,28 +1,27 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from app.model.annotation import Annotation
+
+from app.core.centralized_logging import get_logger
 from app.crud.annotation import delete_unused_annotation_values
-from app.model.tier import Tier
-from app.model.elan_file import ElanFile
+from app.model.annotation import Annotation
 from app.model.associations import (
+    CommentConflict,
+    CommentElanFile,
+    CommentProject,
+    ConflictOfElanFile,
     ElanFileToProject,
     ElanFileToTier,
-    CommentElanFile,
-    ConflictOfElanFile,
     ProjectAnnotStandard,
     UserToProject,
-    CommentProject,
-    CommentConflict,
 )
 from app.model.conflict import Conflict
+from app.model.elan_file import ElanFile
+from app.model.enums import ProjectPermission
 from app.model.invitation import Invitation
 from app.model.project import Project
-from app.model.enums import ProjectPermission
-from app.core.centralized_logging import get_logger
+from app.model.tier import Tier
 
 logger = get_logger()
-
-from app.model.project import Project
 
 
 async def create_project_db(
@@ -266,4 +265,3 @@ async def project_exists_by_name(db: AsyncSession, project_name: str) -> bool:
         select(Project).where(Project.project_name == project_name)
     )
     return result.scalars().first() is not None
-

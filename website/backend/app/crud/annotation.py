@@ -2,15 +2,13 @@
 
 from decimal import Decimal
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, delete, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, delete, select, insert
 from sqlalchemy.orm import selectinload
 
-from typing import Optional
+from app.core.centralized_logging import get_logger
 from app.model.annotation import Annotation
 from app.model.annotation_value import AnnotationValue
-from app.core.centralized_logging import get_logger
 
 logger = get_logger()
 
@@ -30,7 +28,7 @@ async def delete_unused_annotation_values(db: AsyncSession) -> int:
 
 async def get_annotation_by_id(
     db: AsyncSession, annotation_id: str, elan_id: int
-) -> Optional[Annotation]:
+) -> Annotation | None:
     """Retrieve an annotation by ID.
 
     Args:
@@ -77,6 +75,7 @@ async def get_annotations_with_value_by_tier(db: AsyncSession, tier_id: str):
 
     Returns:
         List of annotations with their values for the tier, ordered by start time.
+
     """
     result = await db.execute(
         select(Annotation)
@@ -206,7 +205,6 @@ async def bulk_create_annotations(
     db: AsyncSession, tiers_data: list[dict], elan_id: int, value_map: dict[str, int]
 ) -> None:
     """Bulk create annotations for multiple tiers."""
-
     all_annotations = []
     for tier_data in tiers_data:
         tier_id = tier_data["tier_id"]

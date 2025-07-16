@@ -1,30 +1,28 @@
 """Invitation service layer - Business logic for invitation management."""
 
-from typing import List, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.centralized_logging import get_logger
 from app.crud.invitation import (
     create_invitation,
-    get_invitation_by_id,
     get_invitation_by_code,
     get_invitations_by_email,
+    get_invitations_by_sender,
     get_pending_invitations_by_email,
     update_invitation_status,
-    check_invitation_exists_and_valid,
-    get_invitations_by_sender,
 )
-from app.crud.user import get_user_by_id
 from app.crud.project import get_project_by_id
+from app.crud.user import get_user_by_id
+from app.model.enums import InvitationStatus
 from app.model.invitation import Invitation
-from app.model.enums import InvitationStatus, ProjectPermission
-from app.service.email_service import EmailService
 from app.schema.requests.invitation import InvitationSendRequest
 from app.schema.responses.invitation import (
+    InvitationListResponse,
     InvitationResponse,
     InvitationSendResponse,
-    InvitationListResponse,
     InvitationValidationResponse,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.service.email_service import EmailService
 
 # Get logger for this module
 logger = get_logger()

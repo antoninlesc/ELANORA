@@ -1,15 +1,15 @@
 """Invitation CRUD operations - Pure database access layer."""
 
-from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-import uuid
 import secrets
-from passlib.context import CryptContext
+import uuid
+from datetime import datetime, timedelta
 
-from app.model.invitation import Invitation
+from passlib.context import CryptContext
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.model.enums import InvitationStatus, ProjectPermission
+from app.model.invitation import Invitation
 
 # Password context for hashing codes
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -22,11 +22,12 @@ async def create_invitation(
     project_id: int,
     project_permission: ProjectPermission = ProjectPermission.READ,
     expires_in_days: int = 7,
-) -> Tuple[Invitation, str]:
+) -> tuple[Invitation, str]:
     """Create a new invitation in the database.
 
     Returns:
         Tuple[Invitation, str]: The created invitation and the raw code for email
+
     """
     invitation_id = str(uuid.uuid4())
     expires_at = datetime.now() + timedelta(days=expires_in_days)
@@ -54,7 +55,7 @@ async def create_invitation(
 
 async def get_invitation_by_id(
     db: AsyncSession, invitation_id: str
-) -> Optional[Invitation]:
+) -> Invitation | None:
     """Retrieve an invitation by ID."""
     result = await db.execute(
         select(Invitation).filter(Invitation.invitation_id == invitation_id)
@@ -62,7 +63,7 @@ async def get_invitation_by_id(
     return result.scalar_one_or_none()
 
 
-async def get_invitations_by_email(db: AsyncSession, email: str) -> List[Invitation]:
+async def get_invitations_by_email(db: AsyncSession, email: str) -> list[Invitation]:
     """Get all invitations for a specific email."""
     result = await db.execute(
         select(Invitation).filter(Invitation.receiver_email == email)
@@ -72,7 +73,7 @@ async def get_invitations_by_email(db: AsyncSession, email: str) -> List[Invitat
 
 async def get_pending_invitations_by_email(
     db: AsyncSession, email: str
-) -> List[Invitation]:
+) -> list[Invitation]:
     """Get pending invitations for a specific email."""
     result = await db.execute(
         select(Invitation)
@@ -87,7 +88,7 @@ async def update_invitation_status(
     db: AsyncSession,
     invitation_id: str,
     status: InvitationStatus,
-    receiver_id: Optional[int] = None,
+    receiver_id: int | None = None,
 ) -> bool:
     """Update invitation status and optionally set receiver_id."""
     invitation = await get_invitation_by_id(db, invitation_id)
@@ -117,7 +118,7 @@ async def check_invitation_exists_and_valid(
 
 async def get_invitations_by_sender(
     db: AsyncSession, sender_id: int
-) -> List[Invitation]:
+) -> list[Invitation]:
     """Get all invitations sent by a specific user."""
     result = await db.execute(select(Invitation).filter(Invitation.sender == sender_id))
     return list(result.scalars().all())
@@ -155,9 +156,7 @@ async def verify_invitation_code(
     return pwd_context.verify(raw_code, invitation.hashed_code)
 
 
-async def get_invitation_by_code(
-    db: AsyncSession, raw_code: str
-) -> Optional[Invitation]:
+async def get_invitation_by_code(db: AsyncSession, raw_code: str) -> Invitation | None:
     """Retrieve an invitation by verifying the raw code against hashed codes."""
     # Get all pending invitations
     result = await db.execute(

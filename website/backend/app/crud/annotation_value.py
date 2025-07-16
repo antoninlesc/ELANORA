@@ -1,10 +1,9 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
-import asyncio
-from app.model.annotation_value import AnnotationValue
-from app.core.centralized_logging import get_logger
 from sqlalchemy.dialects.mysql import insert as mysql_insert
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.centralized_logging import get_logger
+from app.model.annotation_value import AnnotationValue
 
 logger = get_logger()
 
