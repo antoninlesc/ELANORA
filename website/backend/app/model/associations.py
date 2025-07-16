@@ -63,7 +63,7 @@ class UserToProject(Base):
         Integer, ForeignKey("USER.user_id"), primary_key=True
     )
     permission: Mapped[ProjectPermission] = mapped_column(
-        SQLEnum(ProjectPermission), nullable=False, default=ProjectPermission.READ
+        String(20), nullable=False, default=ProjectPermission.READ
     )
 
 

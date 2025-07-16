@@ -92,7 +92,7 @@
           </p>
           <p class="invitation-text">
             {{ t('login.have_invitation') }}
-            <router-link to="/invitation">{{
+            <router-link to="/register">{{
               t('login.join_project')
             }}</router-link>
           </p>
@@ -173,6 +173,15 @@ const handleLogin = async () => {
         response.message || 'Vérifiez votre email avant de vous connecter.',
         'warning'
       );
+      
+      // Redirect to email verification page
+      router.push({
+        name: 'EmailVerificationPage',
+        query: { 
+          email: response.email,
+          freshCode: 'true'
+        }
+      });
       return;
     }
     if (!userStore.user) {

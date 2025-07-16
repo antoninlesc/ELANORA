@@ -22,7 +22,11 @@ from app.crud.user import (
 from app.model.user import User
 from app.schema.common.token import TokenData
 from app.schema.common.user import UserCreateData
-from app.schema.requests.user import ProfileUpdateRequest, RegistrationRequest
+from app.schema.requests.user import ProfileUpdateRequest, AddressRequest, RegistrationRequest
+from app.service.address import AddressService
+from app.service.email_service import EmailService
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 # Get logger for this module
 logger = get_logger()
@@ -127,7 +131,7 @@ class UserService:
             await db.commit()
 
             # Add email sending to background tasks
-            sks.add_task(
+            background_tasks.add_task(
                 cls._send_verification_email,
                 user.email,
                 user.username,
@@ -191,13 +195,31 @@ class UserService:
     async def create_user(
         cls,
         db: AsyncSession,
-        registration_data: RegistrationRequest,
+        username: str,
+        email: str,
+        password: str,
+        first_name: str,
+        last_name: str,
+        affiliation: str,
+        department: str,
+        is_verified: bool = False,
+        phone_number: str | None = None,
+        address_data: AddressRequest | None = None,
     ) -> User:
         """Create a new user with bcrypt password hashing.
 
         Args:
             db (AsyncSession): Database session.
-            registration_data (RegistrationRequest): User registration data.
+            username (str): Username for the new user.
+            email (str): Email address.
+            password (str): Plain text password.
+            first_name (str): First name.
+            last_name (str): Last name.
+            affiliation (str): User affiliation.
+            department (str): User department.
+            is_verified (bool): Whether the account should be marked as verified.
+            phone_number (str | None): User's phone number (optional).
+            address_data (AddressRequest | None): User's address data (optional).
 
         Returns:
             User: The created user object.
@@ -207,26 +229,37 @@ class UserService:
             Exception: If database operation fails.
 
         """
-        logger.info(f"Creating new user: {registration_data.username}")
+        logger.info(f"Creating new user: {username}")
 
         # Hash the password
-        hashed_password = cls.hash_password(registration_data.password)
+        hashed_password = cls.hash_password(password)
 
-        # Generate activation code
-        activation_code = cls._generate_verification_code()
-        hashed_activation_code = cls._hash_verification_code(activation_code)
+        # Determine activation code logic
+        activation_code = ""
+        if not is_verified:
+            # If email is not verified, generate activation code
+            activation_code = cls._generate_verification_code()
+            activation_code = cls._hash_verification_code(activation_code)
 
-        # Create UserCreateData object with correct field names
+        # Create address if provided
+        address_id = None
+        if address_data:
+            address = await AddressService.create_address(db, address_data)
+            address_id = address.address_id
+
+        # Create UserCreateData object
         user_data = UserCreateData(
-            username=registration_data.username,
+            username=username,
             hashed_password=hashed_password,
-            email=registration_data.email,
-            first_name=registration_data.first_name,
-            last_name=registration_data.last_name,
-            affiliation=registration_data.affiliation,
-            department=registration_data.department,
-            activation_code=hashed_activation_code,
-            address_id=None,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            phone_number=phone_number,
+            affiliation=affiliation,
+            department=department,
+            activation_code=activation_code,
+            is_verified_account=is_verified,
+            address_id=address_id,
         )
 
         # Create user in database
@@ -507,15 +540,19 @@ class UserService:
             verification_code (str): Verification code to include.
 
         """
-        # TODO: Implement email sending logic
-        # This would typically use an email service like:
-        # - SendGrid
-        # - AWS SES
-        # - SMTP server
-        # - Mailgun
-
-        logger.info(f"Verification email queued for {email} (user: {username})")
-        logger.debug(f"Verification code for {email}: {verification_code}")
+        try:
+            email_service = EmailService()
+            await email_service.send_email_verification_code(
+                email=email,
+                username=username,
+                code=verification_code,
+                language="fr",  # Default to French, could be made configurable
+            )
+            logger.info(f"Verification email sent successfully to {email}")
+        except Exception as e:
+            logger.error(f"Failed to send verification email to {email}: {e}")
+            # Don't raise the exception to prevent registration/login failure
+            # The user can still request a new verification code manually
 
         # Example implementation structure:
         # await email_service.send_verification_email(

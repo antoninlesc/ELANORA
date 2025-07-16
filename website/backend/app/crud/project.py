@@ -266,3 +266,4 @@ async def project_exists_by_name(db: AsyncSession, project_name: str) -> bool:
         select(Project).where(Project.project_name == project_name)
     )
     return result.scalars().first() is not None
+

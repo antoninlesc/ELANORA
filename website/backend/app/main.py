@@ -9,6 +9,10 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from app.api.v1.auth import router as auth_router
 from app.api.v1.git import router as git_router
 from app.api.v1.user import router as user_router
+from app.api.v1.tier import router as tier_router
+from app.api.v1.invitation import router as invitation_router
+from app.api.v1.project import router as project_router
+from app.api.v1.location import router as location_router
 from app.core.centralized_logging import get_logger
 from app.core.config import BACKEND_HOST, ENVIRONMENT, FRONTEND_HOST
 from app.core.exception_handler import (
@@ -72,6 +76,15 @@ app.add_middleware(
 app.include_router(git_router, prefix=f"{API_V1_PREFIX}/git", tags=["GIT"])
 app.include_router(user_router, prefix=f"{API_V1_PREFIX}/user", tags=["USER"])
 app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["AUTHENTICATION"])
+app.include_router(tier_router, prefix=f"{API_V1_PREFIX}/tier", tags=["TIER"])
+app.include_router(
+    invitation_router, prefix=f"{API_V1_PREFIX}/invitation", tags=["INVITATION"]
+)
+app.include_router(project_router, prefix=f"{API_V1_PREFIX}/project", tags=["PROJECT"])
+app.include_router(
+    location_router, prefix=f"{API_V1_PREFIX}/location", tags=["LOCATION"]
+)
+
 
 
 # Root endpoint

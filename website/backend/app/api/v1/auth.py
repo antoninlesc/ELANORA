@@ -23,10 +23,15 @@ from app.schema.requests.user import (
     ForgotPasswordRequest,
     LoginRequest,
     ResetPasswordRequest,
+    SendVerificationEmailRequest,
+    VerifyEmailRequest,
 )
-from app.schema.responses.user import LoginResponse, UserResponse
-from app.service.email_service import EmailService
+from app.schema.requests.register_with_invitation import RegisterWithInvitationRequest
+from app.schema.responses.user import LoginResponse, UserResponse, RegistrationResponse
 from app.service.user import UserService
+from app.service.email_service import EmailService
+from app.service.invitation import InvitationService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -356,4 +361,229 @@ async def reset_password(
         raise HTTPException(
             status_code=500,
             detail=f"An error occurred while resetting your password: {e!s}",
+        ) from e
+
+
+@router.post("/register", response_model=RegistrationResponse)
+async def register(
+    request: RegisterWithInvitationRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = get_db_dep,
+):
+    """Register a new user using an invitation code.
+
+    This endpoint allows a user to register using an invitation code.
+    It validates the invitation code, creates the user, and marks the invitation as used.
+    Args:
+        request (RegisterWithInvitationRequest): The request body containing user details and invitation code.
+        db (AsyncSession): Database session.
+
+    Returns:
+        UserResponse: The registered user details.
+
+    Raises:
+        HTTPException: If the invitation code is invalid or expired, or if user creation fails.
+
+    """
+    invitation_service = InvitationService()
+    user_service = UserService()
+
+    # 1. Validate the invitation code
+    invitation_validation = await invitation_service.validate_invitation(
+        db, request.invitation_code
+    )
+    if not invitation_validation.valid or not invitation_validation.invitation:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invitation invalide ou expirée.",
+        )
+
+    invitation_info = invitation_validation.invitation
+    # check if the email in the invitation matches the one in the request (if provided)
+    if invitation_info.receiver_email and request.email:
+        if (
+            invitation_info.receiver_email.strip().lower()
+            != request.email.strip().lower()
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="L'email du formulaire ne correspond pas à celui de l'invitation.",
+            )
+
+    # 2. Create the user
+    is_verified = False
+    if (
+        invitation_info.receiver_email
+        and request.email
+        and invitation_info.receiver_email.strip().lower()
+        == request.email.strip().lower()
+    ):
+        is_verified = True
+
+    # Create user using UserService
+    user = await user_service.create_user(
+        db=db,
+        username=request.username,
+        email=request.email,
+        password=request.password,
+        first_name=request.first_name,
+        last_name=request.last_name,
+        affiliation=request.affiliation,
+        department=request.department,
+        is_verified=is_verified,
+        phone_number=request.phone_number,
+        address_data=request.address,
+    )
+    # 3. Accept the invitation
+    await invitation_service.accept_invitation(
+        db, invitation_info.invitation_id, user.user_id
+    )
+
+    # 4. Send verification email if user is not verified
+    if not is_verified:
+        verification_code = UserService._generate_verification_code()
+        hashed_code = UserService._hash_verification_code(verification_code)
+
+        # Update user's activation code
+        user.activation_code = hashed_code
+        await db.commit()
+
+        # Add email sending to background tasks
+        background_tasks.add_task(
+            UserService._send_verification_email,
+            user.email,
+            user.username,
+            verification_code,
+        )
+
+    # 5. Return the registration response
+    return RegistrationResponse(
+        message="Account created successfully",
+        user_id=user.user_id,
+        username=user.username,
+        email=user.email,
+        requires_activation=not is_verified,
+    )
+
+
+@router.post("/send-verification-email")
+@limiter.limit("3/minute")
+async def send_verification_email(
+    request: Request,
+    body: SendVerificationEmailRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = get_db_dep,
+) -> dict[str, Any]:
+    """Send email verification code to user.
+
+    This endpoint allows sending a verification code to verify a user's email address.
+    A verification code will be sent via email if the address exists in the database
+    and the account is not already verified.
+
+    Args:
+        request (Request): The HTTP Request object (required by SlowAPI for rate limiting)
+        body (SendVerificationEmailRequest): Form data containing email and language
+        background_tasks (BackgroundTasks): Background task manager for sending emails
+        db (AsyncSession): Database session
+
+    Returns:
+        dict[str, Any]: JSON response with a confirmation message
+
+    Raises:
+        HTTPException: If an error occurs during request processing
+
+    """
+    try:
+        # Check if user exists
+        user = await UserService.get_user_by_email(db, body.email)
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found.")
+
+        if user.is_verified_account:
+            raise HTTPException(status_code=400, detail="Account is already verified.")
+
+        # Generate verification code
+        verification_code = UserService._generate_verification_code()
+        hashed_code = UserService._hash_verification_code(verification_code)
+
+        # Update user's activation code for email verification
+        user.activation_code = hashed_code
+        await db.commit()
+
+        # Send verification email
+        email_service = EmailService()
+        email_sent = await email_service.send_email_verification_code(
+            email=body.email,
+            username=user.username,
+            code=verification_code,
+            language=body.language,
+        )
+
+        if not email_sent:
+            raise HTTPException(
+                status_code=500,
+                detail="An error occurred while sending the verification code. Please try again.",
+            )
+
+        return {
+            "message": "Verification code sent to your email address.",
+            "success": True,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while processing your request: {str(e)}",
+        ) from e
+
+
+@router.post("/verify-email")
+@limiter.limit("5/minute")
+async def verify_email(
+    request: Request,
+    body: VerifyEmailRequest,
+    db: AsyncSession = get_db_dep,
+) -> dict[str, Any]:
+    """Verify user email with verification code.
+
+    This endpoint allows a user to verify their email address using the verification code
+    sent via email.
+
+    Args:
+        request (Request): The HTTP Request object (required by SlowAPI for rate limiting)
+        body (VerifyEmailRequest): Form data containing email and verification code
+        db (AsyncSession): Database session
+
+    Returns:
+        dict[str, Any]: JSON response with success or error message
+
+    Raises:
+        HTTPException: If the verification code is invalid or user is not found
+
+    """
+    try:
+        # Verify email using the service
+        result = await UserService.verify_account(
+            db=db,
+            email=body.email,
+            verification_code=body.code,
+        )
+
+        if result["success"]:
+            return {
+                "message": "Email verified successfully. You can now access all features.",
+                "success": True,
+            }
+        else:
+            raise HTTPException(status_code=400, detail=result["message"])
+
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while verifying your email: {str(e)}",
         ) from e

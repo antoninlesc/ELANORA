@@ -5,6 +5,10 @@ import { useUserStore } from '@stores/user.js';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import HomePage from '@views/HomePage.vue';
 import LoginPage from '@views/LoginPage.vue';
+import RegisterPage from '@views/RegisterPage.vue';
+import ForgotPassword from '@views/ForgotPassword.vue';
+import ResetPassword from '@views/ResetPassword.vue';
+import EmailVerificationPage from '@views/EmailVerificationPage.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import UploadPage from '@views/UploadPage.vue';
@@ -12,13 +16,33 @@ import ConflictsPage from '@views/ConflictsPage.vue';
 
 // Define routes
 const routes = [
-  // Login page (no layout)
+  // Public routes
   {
     path: '/',
     name: 'LoginPage',
     component: LoginPage,
   },
-  // All other pages use DefaultLayout
+  {
+    path: '/register',
+    name: 'RegisterPage',
+    component: RegisterPage,
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPassword,
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPassword,
+  },
+  {
+    path: '/verify-email',
+    name: 'EmailVerificationPage',
+    component: EmailVerificationPage,
+  },
+  // Authenticated routes with layout
   {
     path: '/',
     component: DefaultLayout,
@@ -32,7 +56,25 @@ const routes = [
       {
         path: 'projects',
         name: 'ProjectsPage',
-        component: ProjectsPage,
+        component: () => import('@views/ProjectsPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'admin/invitations',
+        name: 'AdminInvitationsPage',
+        component: () => import('@views/AdminInvitationsPage.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true },
+      },
+      {
+        path: 'upload',
+        name: 'UploadPage',
+        component: UploadPage,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'conflicts',
+        name: 'Conflicts',
+        component: ConflictsPage,
         meta: { requiresAuth: true },
       },
       {
@@ -43,18 +85,6 @@ const routes = [
           message: getErrorMessage(route.params.statusCode),
         }),
         component: HTTPStatus,
-      },
-      {
-        path: '/upload',
-        name: 'UploadPage',
-        component: UploadPage,
-        meta: { requiresAuth: true },
-      },
-      {
-        path: '/conflicts',
-        name: 'Conflicts',
-        component: ConflictsPage,
-        meta: { requiresAuth: true },
       },
       {
         // Catch-all to redirect to 404 page when no route matches
@@ -95,9 +125,19 @@ function handleNotAuthenticated(eventMessageStore, to, next) {
 }
 
 // Global route guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const eventMessageStore = useEventMessageStore();
   const userStore = useUserStore();
+
+  // Check if authentication verification is needed for this route
+  const needsAuthCheck = to.meta.requiresAuth || to.meta.requiresAdmin || to.name === 'LoginPage';
+  
+  // Only verify authentication if we need it for this route
+  if (needsAuthCheck && !userStore.authState.initialized) {
+    console.log('Authentication verification needed, verifying...');
+    await userStore.verifyAuthentication();
+  }
+
   // Handle login route: redirect if already authenticated
   if (to.name === 'LoginPage' && userStore.isAuthenticated) {
     eventMessageStore.addMessage('event_messages.already_logged_in', 'info');
@@ -105,16 +145,21 @@ router.beforeEach((to, from, next) => {
     return next({ name: 'HomePage' });
   }
 
-  // Only check auth if required
+  // Check auth for protected routes
   if (to.meta.requiresAuth) {
-    if (!userStore.authState.initialized) {
-      // Let App.vue handle the loading spinner, just allow navigation to continue
-      return next();
-    }
     if (!userStore.isAuthenticated) {
       return handleNotAuthenticated(eventMessageStore, to, next);
     }
   }
+
+  // Check admin role for admin routes
+  if (to.meta.requiresAdmin) {
+    if (!userStore.user?.role || userStore.user.role !== 'admin') {
+      eventMessageStore.addMessage('http_status.403', 'error');
+      return next({ name: 'HomePage' });
+    }
+  }
+
   next();
 });
 
