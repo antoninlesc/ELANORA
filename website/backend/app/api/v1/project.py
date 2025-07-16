@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud.project import get_all_projects, get_project_by_id
+from app.crud.project import get_project_by_id
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
 from app.model.user import User
