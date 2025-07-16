@@ -205,7 +205,9 @@
     "login_here": "Connectez-vous ici",
     "confirm_email_label": "Confirmer l'email",
     "confirm_email_placeholder": "Confirmez votre adresse email",
-    "emails_no_match": "Les adresses email ne correspondent pas"
+    "emails_no_match": "Les adresses email ne correspondent pas",
+    "checking_username": "Vérification du nom d'utilisateur...",
+    "username_check_error": "Erreur lors de la vérification du nom d'utilisateur"
   },
   "event_messages": {
     "already_logged_in": "Vous êtes déjà connecté."

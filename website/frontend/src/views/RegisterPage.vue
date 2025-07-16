@@ -81,9 +81,14 @@
             v-model="form.username"
             type="text"
             class="form-input"
+            :class="{ 'error': usernameAvailable === false }"
             :placeholder="t('register.username_placeholder')"
             required
+            autocomplete="username"
           />
+          <div v-if="usernameCheckLoading" class="info-message">{{ t('register.checking_username') }}</div>
+          <div v-if="usernameAvailable === true" class="success-message">{{ usernameCheckMessage }}</div>
+          <div v-if="usernameAvailable === false" class="error-message">{{ usernameCheckMessage }}</div>
         </div>
 
         <!-- Email field -->
@@ -178,7 +183,6 @@
             required
           />
         </div>
-
         <div class="form-group">
           <label for="department" class="form-label">
             {{ t('register.department_label') }}
@@ -327,6 +331,7 @@ import { useEventMessageStore } from '@stores/eventMessage';
 import { validateInvitation } from '@/api/service/invitationService';
 import { registerWithInvitation } from '@/api/service/authService';
 import { getCountries } from '@/api/service/locationService';
+import { checkUsernameAvailability } from '@/api/service/userService';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -362,6 +367,12 @@ const form = ref({
     addressLine2: ''
   }
 });
+
+// Username availability check
+const usernameAvailable = ref(null);
+const usernameCheckLoading = ref(false);
+const usernameCheckMessage = ref('');
+let usernameCheckTimeout = null;
 
 // Check for invitation code in URL params
 onMounted(async () => {
@@ -435,13 +446,6 @@ const loadCountries = async () => {
   }
 };
 
-// Load cities when country changes
-const onCountryChange = async () => {
-  // No longer need to load cities since it's a free text field
-  // Reset city name when country changes if needed
-  // form.value.address.cityName = '';
-};
-
 const handleRegister = async () => {
   // Validate form
 
@@ -502,6 +506,28 @@ const handleRegister = async () => {
     loading.value = false;
   }
 };
+
+// Username availability check
+watch(() => form.value.username, (newUsername) => {
+  usernameAvailable.value = null;
+  usernameCheckMessage.value = '';
+  if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
+  if (!newUsername || newUsername.length < 3) return;
+  usernameCheckLoading.value = true;
+  usernameCheckTimeout = setTimeout(async () => {
+    try {
+      const res = await checkUsernameAvailability(newUsername);
+      usernameAvailable.value = res.available;
+      usernameCheckMessage.value = res.message;
+    } catch (e) {
+      console.error('Username check error:', e);
+      usernameAvailable.value = null;
+      usernameCheckMessage.value = t('register.username_check_error');
+    } finally {
+      usernameCheckLoading.value = false;
+    }
+  }, 500);
+});
 </script>
 
 <style scoped src="@/assets/css/register.css"></style>

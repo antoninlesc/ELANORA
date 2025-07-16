@@ -208,7 +208,9 @@
     "login_here": "Login here",
     "confirm_email_label": "Confirm Email",
     "confirm_email_placeholder": "Confirm your email address",
-    "emails_no_match": "Email addresses do not match"
+    "emails_no_match": "Email addresses do not match",
+    "checking_username": "Checking username...",
+    "username_check_error": "Error checking username availability"
   },
   "invitation": {
     "send_title": "Send Invitation",
