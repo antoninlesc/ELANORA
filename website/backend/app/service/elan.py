@@ -1,23 +1,21 @@
 """ELAN Service - Simplified using utilities."""
 
-from lxml import etree as ET
-from pathlib import Path
-from typing import Dict, List, Optional
+import time
 from decimal import Decimal
 from pathlib import Path
-import time
 
+from lxml import etree as ET
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.crud import annotation, elan_file, tier
-from app.crud.project import get_project_by_name
-from app.model.tier import Tier
-from app.model.annotation import Annotation
-from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
-from app.crud.annotation_value import bulk_get_or_create_annotation_values
 from app.crud.annotation import bulk_create_annotations
+from app.crud.annotation_value import bulk_get_or_create_annotation_values
+from app.crud.project import get_project_by_name
+from app.model.annotation import Annotation
+from app.model.tier import Tier
+from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
 
 # Get logger for this module
 logger = get_logger()
@@ -115,7 +113,7 @@ class ElanService:
     # ==================== STORAGE METHODS ====================
 
     async def _store_tiers_and_annotations(
-        self, tiers_data: List[Dict], elan_id: int
+        self, tiers_data: list[dict], elan_id: int
     ) -> None:
         logger.debug(f"Storing {len(tiers_data)} tiers with annotations")
         t0 = time.perf_counter()
@@ -147,7 +145,7 @@ class ElanService:
         total_time = time.perf_counter() - t0
         logger.info(f"Total _store_tiers_and_annotations time: {total_time:.3f}s")
 
-    async def _get_or_create_tier(self, tier_data: Dict, elan_id: int) -> Tier:
+    async def _get_or_create_tier(self, tier_data: dict, elan_id: int) -> Tier:
         """Get existing tier or create new one using CRUD."""
         tier_obj = await tier.get_tier_by_id(self.db, tier_data["tier_id"])
 

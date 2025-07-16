@@ -2,7 +2,7 @@
   <div class="register-page">
     <div class="register-container">
       <div class="register-header">
-        <img src="/images/ELANora-logo.png" alt="ELANORA Logo" class="register-logo" />
+        <img src="@logos/ELANora-logo.png" alt="ELANORA Logo" class="register-logo" />
         <h1 class="register-title">{{ t('register.title') }}</h1>
         <p v-if="invitationValid" class="register-subtitle invitation-welcome">
           {{ t('register.invitation_welcome', { senderName: invitationInfo?.sender_username || 'Un administrateur' }) }}

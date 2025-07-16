@@ -1,20 +1,19 @@
 """Service for location-related operations."""
 
-from typing import List
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.model.country import Country
 from app.model.city import City
-from app.schema.responses.location import CountryResponse, CityResponse
+from app.model.country import Country
+from app.schema.responses.location import CityResponse, CountryResponse
 
 
 class LocationService:
     """Service class for location operations."""
 
     @classmethod
-    async def get_all_countries(cls, db: AsyncSession) -> List[CountryResponse]:
+    async def get_all_countries(cls, db: AsyncSession) -> list[CountryResponse]:
         """Retrieve all countries from the database."""
         result = await db.execute(select(Country))
         countries = result.scalars().all()
@@ -23,7 +22,7 @@ class LocationService:
     @classmethod
     async def get_cities_by_country(
         cls, db: AsyncSession, country_id: int
-    ) -> List[CityResponse]:
+    ) -> list[CityResponse]:
         """Retrieve all cities for a specific country."""
         result = await db.execute(
             select(City)
@@ -34,7 +33,7 @@ class LocationService:
         return [CityResponse.model_validate(city) for city in cities]
 
     @classmethod
-    async def get_all_cities(cls, db: AsyncSession) -> List[CityResponse]:
+    async def get_all_cities(cls, db: AsyncSession) -> list[CityResponse]:
         """Retrieve all cities with their country information."""
         result = await db.execute(select(City).options(selectinload(City.country)))
         cities = result.scalars().all()

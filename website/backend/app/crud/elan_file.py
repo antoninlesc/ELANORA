@@ -2,14 +2,12 @@
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import delete, select
 
-
+from app.core.centralized_logging import get_logger
 from app.model.associations import ElanFileToProject, ElanFileToTier
 from app.model.elan_file import ElanFile
 from app.utils.database import DatabaseUtils
 from app.utils.validation import ValidationUtils
-from app.core.centralized_logging import get_logger
 
 logger = get_logger()
 

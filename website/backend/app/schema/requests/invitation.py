@@ -1,9 +1,9 @@
 """Request schemas for invitation operations."""
 
-from typing import Optional
 from pydantic import EmailStr
-from app.schema.common.base import CustomBaseModel
+
 from app.model.enums import ProjectPermission
+from app.schema.common.base import CustomBaseModel
 
 
 class InvitationSendRequest(CustomBaseModel):
@@ -14,7 +14,7 @@ class InvitationSendRequest(CustomBaseModel):
     project_permission: ProjectPermission = ProjectPermission.READ
     expires_in_days: int = 7
     language: str = "en"
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class InvitationAcceptRequest(CustomBaseModel):

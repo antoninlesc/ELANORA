@@ -136,8 +136,7 @@ class EmailService:
         custom_message: str | None = None,
         language: str = "en",
     ) -> bool:
-        """
-        Send an invitation email with registration link.
+        """Send an invitation email with registration link.
 
         Args:
             email (str): The email address to send the invitation to
@@ -149,6 +148,7 @@ class EmailService:
 
         Returns:
             bool: True if the email was sent successfully, False otherwise
+
         """
         current_year = datetime.datetime.now().year
         contact_url = f"{config.FRONTEND_HOST}/contact"
@@ -253,8 +253,7 @@ class EmailService:
     async def send_email_verification_code(
         self, email: str, username: str, code: str, language: str = "en"
     ) -> bool:
-        """
-        Send an email verification code to verify account.
+        """Send an email verification code to verify account.
 
         Args:
             email (str): The email address to send the verification code to
@@ -264,6 +263,7 @@ class EmailService:
 
         Returns:
             bool: True if the email was sent successfully, False otherwise
+
         """
         current_year = datetime.datetime.now().year
         contact_url = f"{config.FRONTEND_HOST}/contact"

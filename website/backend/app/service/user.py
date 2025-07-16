@@ -22,11 +22,12 @@ from app.crud.user import (
 from app.model.user import User
 from app.schema.common.token import TokenData
 from app.schema.common.user import UserCreateData
-from app.schema.requests.user import ProfileUpdateRequest, AddressRequest, RegistrationRequest
+from app.schema.requests.user import (
+    AddressRequest,
+    ProfileUpdateRequest,
+)
 from app.service.address import AddressService
 from app.service.email_service import EmailService
-from sqlalchemy.ext.asyncio import AsyncSession
-
 
 # Get logger for this module
 logger = get_logger()

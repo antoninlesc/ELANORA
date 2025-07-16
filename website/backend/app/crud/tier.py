@@ -2,10 +2,9 @@
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
 
-from app.model.tier import Tier
 from app.core.centralized_logging import get_logger
+from app.model.tier import Tier
 
 logger = get_logger()
 
@@ -41,10 +40,9 @@ async def create_tier_in_db(
     tier_id: str,
     tier_name: str,
     elan_id: int,
-    parent_tier_id: Optional[str] = None,
+    parent_tier_id: str | None = None,
 ) -> Tier:
     """Create a new tier in the database."""
-
     if elan_id is None:
         raise ValueError(
             "elan_id cannot be None when creating a Tier. This indicates a bug in the calling code."

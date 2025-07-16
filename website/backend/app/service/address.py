@@ -1,9 +1,7 @@
 """Service for address-related operations."""
 
-from typing import Optional
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy import func
 
 from app.model.address import Address
 from app.model.city import City
@@ -20,7 +18,6 @@ class AddressService:
         address_data: AddressRequest,
     ) -> Address:
         """Create a new address. If city_name is provided, create or get the city, then use its id."""
-
         # Find or create city by normalized name and country (case-insensitive, strip)
         normalized_city_name = address_data.city_name.strip().lower()
         stmt = select(City).where(
@@ -57,7 +54,7 @@ class AddressService:
         cls,
         db: AsyncSession,
         address_id: int,
-    ) -> Optional[Address]:
+    ) -> Address | None:
         """Get an address by its ID.
 
         Args:
@@ -66,6 +63,7 @@ class AddressService:
 
         Returns:
             Optional[Address]: The address object if found, None otherwise.
+
         """
         result = await db.execute(
             select(Address).where(Address.address_id == address_id)
@@ -88,8 +86,8 @@ class AddressService:
 
         Returns:
             Address: The updated address object.
-        """
 
+        """
         # Find or create city by name and country
         stmt = select(City).where(
             City.city_name == address_data.city_name.strip(),

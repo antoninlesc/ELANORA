@@ -1,25 +1,25 @@
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.dependency.database import get_db_dep
 from app.dependency.elan_validation import validate_multiple_elan_files
 from app.dependency.user import get_admin_dep
-from app.dependency.database import get_db_dep
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from app.model.user import User
 from app.schema.requests.git import (
     CommitRequest,
-    ProjectCreateRequest,
     ProjectCheckoutRequest,
+    ProjectCreateRequest,
     ProjectRenameRequest,
 )
-
 from app.schema.responses.git import (
     BatchFileUploadResponse,
     CommitResponse,
     GitStatusResponse,
-    ProjectCreateResponse,
-    ProjectStatusResponse,
     ProjectCheckoutResponse,
+    ProjectCreateResponse,
     ProjectListResponse,
     ProjectRenameResponse,
+    ProjectStatusResponse,
 )
 from app.service.git import GitService
 
@@ -215,9 +215,7 @@ async def checkout_project_branch(
     checkout_data: ProjectCheckoutRequest,
     user: User = get_admin_dep,
 ):
-    """
-    Switch to a different branch in the given project.
-    """
+    """Switch to a different branch in the given project."""
     try:
         result = git_service.checkout_branch(project_name, checkout_data.branch_name)
         return ProjectCheckoutResponse(**result)
@@ -246,9 +244,7 @@ async def init_project_from_folder_upload(
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
-    """
-    Initialize a project by uploading a folder (only .eaf files and structure are kept).
-    """
+    """Initialize a project by uploading a folder (only .eaf files and structure are kept)."""
     try:
         result = await git_service.init_project_from_folder_upload(
             project_name, description, files, db, user.user_id
@@ -264,9 +260,7 @@ async def get_project_files(
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
-    """
-    List all .eaf files and folders containing .eaf files in a project as a tree.
-    """
+    """List all .eaf files and folders containing .eaf files in a project as a tree."""
     try:
         result = await git_service.list_project_files(project_name)
         return result  # Should be { "tree": ... }
@@ -282,9 +276,7 @@ async def synchronize_project(
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
-    """
-    Synchronize the project's elan_files folder with the git repo and database.
-    """
+    """Synchronize the project's elan_files folder with the git repo and database."""
     try:
         result = await git_service.synchronize_project(project_name, db, user.user_id)
         return {"status": "success", "detail": result}
@@ -298,9 +290,7 @@ async def delete_project(
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
-    """
-    Delete a project, its files, and all associated database artifacts.
-    """
+    """Delete a project, its files, and all associated database artifacts."""
     try:
         await git_service.delete_project(project_name, db, user.user_id)
         return {"status": "success", "detail": f"Project '{project_name}' deleted."}
@@ -318,9 +308,7 @@ async def rename_project(
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
-    """
-    Rename a project (folder and DB).
-    """
+    """Rename a project (folder and DB)."""
     try:
         result = await git_service.rename_project(
             project_name, req.new_project_name, db

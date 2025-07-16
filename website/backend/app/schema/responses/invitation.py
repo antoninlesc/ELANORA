@@ -1,9 +1,9 @@
 """Response schemas for invitation operations."""
 
 from datetime import datetime
-from typing import Optional
-from app.schema.common.base import CustomBaseModel
+
 from app.model.enums import InvitationStatus, ProjectPermission
+from app.schema.common.base import CustomBaseModel
 
 
 class InvitationResponse(CustomBaseModel):
@@ -16,9 +16,9 @@ class InvitationResponse(CustomBaseModel):
     status: InvitationStatus
     created_at: datetime
     expires_at: datetime
-    responded_at: Optional[datetime] = None
-    sender_username: Optional[str] = None
-    project_name: Optional[str] = None
+    responded_at: datetime | None = None
+    sender_username: str | None = None
+    project_name: str | None = None
 
 
 class InvitationSendResponse(CustomBaseModel):
@@ -26,7 +26,7 @@ class InvitationSendResponse(CustomBaseModel):
 
     success: bool
     message: str
-    invitation_id: Optional[str] = None
+    invitation_id: str | None = None
 
 
 class InvitationListResponse(CustomBaseModel):
@@ -40,5 +40,5 @@ class InvitationValidationResponse(CustomBaseModel):
     """Schema for invitation validation response."""
 
     valid: bool
-    invitation: Optional[InvitationResponse] = None
+    invitation: InvitationResponse | None = None
     message: str

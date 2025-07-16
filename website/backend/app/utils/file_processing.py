@@ -1,9 +1,9 @@
 """File processing utilities for ELAN files."""
 
-from lxml import etree as ET
-from pathlib import Path
 from decimal import Decimal
 from pathlib import Path
+
+from lxml import etree as ET
 
 
 class ElanFileProcessor:
