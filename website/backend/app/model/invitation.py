@@ -38,7 +38,7 @@ class Invitation(Base):
         Integer, ForeignKey("USER.user_id"), nullable=False
     )
     project_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("PROJECT.project_id"), nullable=False
+        Integer, ForeignKey("PROJECT.project_id", ondelete="CASCADE"), nullable=False
     )
 
     # Relationships

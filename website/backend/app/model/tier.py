@@ -1,13 +1,12 @@
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
 
 if TYPE_CHECKING:
     from .annotation import Annotation
-    from .elan_file import ElanFile
 
 
 class Tier(Base):
@@ -15,13 +14,10 @@ class Tier(Base):
 
     __tablename__ = "TIER"
 
-    tier_id: Mapped[str] = mapped_column(String(50), primary_key=True)
-    tier_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    parent_tier_id: Mapped[str | None] = mapped_column(
-        String(50), ForeignKey("TIER.tier_id"), nullable=True
-    )
-    elan_id: Mapped[int] = mapped_column(
-        ForeignKey("ELAN_FILE.elan_id", ondelete="CASCADE"), nullable=False
+    tier_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tier_name: Mapped[str] = mapped_column(String)
+    parent_tier_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("TIER.tier_id", ondelete="CASCADE"), nullable=True
     )
 
     # Relationships
@@ -34,10 +30,7 @@ class Tier(Base):
     annotations: Mapped[list["Annotation"]] = relationship(
         "Annotation", back_populates="tier"
     )
-    elan_file: Mapped[Optional["ElanFile"]] = relationship(
-        "ElanFile", back_populates="tiers"
-    )
 
     def __repr__(self) -> str:
         """Return a string representation of the Tier."""
-        return f"<Tier(tier_id='{self.tier_id}', tier_name='{self.tier_name}', elan_id='{self.elan_id}')>"
+        return f"<Tier(tier_id='{self.tier_id}', tier_name='{self.tier_name}')>"

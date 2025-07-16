@@ -25,7 +25,7 @@ from app.schema.requests.user import (
     ResetPasswordRequest,
 )
 from app.schema.responses.user import LoginResponse, UserResponse
-from app.service.email_service import EmailService
+from app.service.email import EmailService
 from app.service.user import UserService
 
 router = APIRouter()

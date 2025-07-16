@@ -7,10 +7,8 @@ from typing import Any, Dict
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
-from app.db.database import get_session_maker
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from app.crud.project import (
     create_project_db,
@@ -763,7 +761,8 @@ class GitService:
             f"Synchronized {len(elan_files)} .eaf files for project '{project_name}'."
         )
 
-    async def delete_project(self, project_name: str, db: AsyncSession, user_id: int):
+    async def delete_project(self, project_name: str, db: AsyncSession):
+        """Delete a project by its ID."""
         logger.info(f"Starting deletion of project: {project_name}")
         # Remove all DB artifacts (project, files, annotations, etc.)
         try:
@@ -776,6 +775,9 @@ class GitService:
             raise
 
         # Remove the project folder from disk
+        if not project_name:
+            logger.error(f"Project name not found for project_name: {project_name}")
+            raise ValueError(f"Project name not found for project_name: {project_name}")
         project_path = self.base_path / project_name
         delete_project_folder(project_path)
 

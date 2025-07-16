@@ -19,9 +19,6 @@ from app.core.exception_handler import (
 from app.core.limiter import limiter
 from app.middleware.csrf import CSRFMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
-from slowapi.errors import RateLimitExceeded
-from starlette.middleware.gzip import GZipMiddleware
-from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 # Get logger (this will automatically call setup_application_logging)
 logger = get_logger()

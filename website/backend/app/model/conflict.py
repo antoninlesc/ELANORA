@@ -47,7 +47,7 @@ class Conflict(Base):
         Integer, ForeignKey("USER.user_id"), nullable=True
     )
     project_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("PROJECT.project_id"), nullable=False
+        Integer, ForeignKey("PROJECT.project_id", ondelete="CASCADE"), nullable=False
     )
 
     # Relationships
