@@ -135,10 +135,14 @@
             v-model="form.email"
             type="email"
             class="form-input"
+            :class="{ 'error': emailAvailable === false }"
             :placeholder="t('register.email_placeholder')"
             required
             :disabled="!!invitationInfo?.receiver_email"
           />
+          <div v-if="emailCheckLoading" class="info-message">{{ t('register.checking_email') }}</div>
+          <div v-if="emailAvailable === true" class="success-message">{{ emailCheckMessage }}</div>
+          <div v-if="emailAvailable === false" class="error-message">{{ emailCheckMessage }}</div>
         </div>
         <div class="form-group">
           <label for="confirm-email" class="form-label">
@@ -331,7 +335,7 @@ import { useEventMessageStore } from '@stores/eventMessage';
 import { validateInvitation } from '@/api/service/invitationService';
 import { registerWithInvitation } from '@/api/service/authService';
 import { getCountries } from '@/api/service/locationService';
-import { checkUsernameAvailability } from '@/api/service/userService';
+import { checkUsernameAvailability, checkEmailAvailability } from '@/api/service/userService';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -373,6 +377,13 @@ const usernameAvailable = ref(null);
 const usernameCheckLoading = ref(false);
 const usernameCheckMessage = ref('');
 let usernameCheckTimeout = null;
+
+// Email availability check
+const emailAvailable = ref(null);
+const emailCheckLoading = ref(false);
+const emailCheckMessage = ref('');
+let emailCheckTimeout = null;
+
 
 // Check for invitation code in URL params
 onMounted(async () => {
@@ -525,6 +536,28 @@ watch(() => form.value.username, (newUsername) => {
       usernameCheckMessage.value = t('register.username_check_error');
     } finally {
       usernameCheckLoading.value = false;
+    }
+  }, 500);
+});
+
+// Email availability check
+watch(() => form.value.email, (newEmail) => {
+  emailAvailable.value = null;
+  emailCheckMessage.value = '';
+  if (emailCheckTimeout) clearTimeout(emailCheckTimeout);
+  if (!newEmail || newEmail.length < 3) return;
+  emailCheckLoading.value = true;
+  emailCheckTimeout = setTimeout(async () => {
+    try {
+      const res = await checkEmailAvailability(newEmail);
+      emailAvailable.value = res.available;
+      emailCheckMessage.value = res.message;
+    } catch (e) {
+      console.error('Email check error:', e);
+      emailAvailable.value = null;
+      emailCheckMessage.value = t('register.email_check_error');
+    } finally {
+      emailCheckLoading.value = false;
     }
   }, 500);
 });
