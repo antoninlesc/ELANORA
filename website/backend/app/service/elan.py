@@ -72,10 +72,8 @@ class ElanService:
             tier_info["annotations"] = self._extract_annotations(
                 tier_element, file_info["time_slots"]
             )
-
-            if tier_info["annotations"]:
-                file_info["tiers"].append(tier_info)
-                tier_count += 1
+            file_info["tiers"].append(tier_info)
+            tier_count += 1
 
         logger.debug(f"Extracted {tier_count} tiers with annotations")
 
