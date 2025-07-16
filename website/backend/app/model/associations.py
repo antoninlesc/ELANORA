@@ -1,4 +1,3 @@
-from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -63,7 +62,7 @@ class UserToProject(Base):
         Integer, ForeignKey("USER.user_id"), primary_key=True
     )
     permission: Mapped[ProjectPermission] = mapped_column(
-        SQLEnum(ProjectPermission), nullable=False, default=ProjectPermission.READ
+        String(20), nullable=False, default=ProjectPermission.READ
     )
 
 

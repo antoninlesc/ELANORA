@@ -12,6 +12,12 @@ from app.crud.comment import delete_project_comments
 from app.crud.elan_file import get_elan_files_by_project, delete_elan_file
 from app.crud.tier import delete_tiers_for_elan_file
 from app.crud.annotation import delete_unused_annotation_values
+from app.model.associations import (
+    UserToProject,
+)
+from app.model.enums import ProjectPermission
+from app.model.project import Project
+
 
 logger = get_logger()
 

@@ -3,7 +3,10 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
+
+from fastapi import UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
@@ -13,17 +16,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.project import (
     create_project_db,
     delete_project_db,
+    get_project_by_name,
     list_projects_by_instance,
     project_exists_by_name,
-    get_project_by_name,
 )
-
 from app.service.elan import ElanService
 from app.service.git_diff_parser import GitDiffParser
 from app.service.git_operations import (
-    GitCommandRunner,
-    GitBranchManager,
     FileUploadProcessor,
+    GitBranchManager,
+    GitCommandRunner,
     GitDiffAnalyzer,
     GitMerger,
     delete_project_folder,
@@ -133,7 +135,7 @@ class GitService:
                     hook_dest = hooks_dir / hook_name
 
                     # Read template and substitute variables
-                    with open(hook_file, "r", encoding="utf-8") as f:
+                    with open(hook_file, encoding="utf-8") as f:
                         hook_content = f.read()
                     hook_content = (
                         hook_content.replace("{{REPO_NAME}}", project_name)
@@ -656,9 +658,8 @@ class GitService:
         except Exception as e:
             raise RuntimeError(f"Failed to checkout branch: {e}") from e
 
-    async def list_project_files(self, project_name: str) -> Dict[str, Any]:
-        """
-        Return a tree of .eaf files and folders containing .eaf files for the given project,
+    async def list_project_files(self, project_name: str) -> dict[str, Any]:
+        """Return a tree of .eaf files and folders containing .eaf files for the given project,
         always from the master branch. Restore the previous branch after listing.
         """
         project_path = self.base_path / project_name
@@ -715,8 +716,7 @@ class GitService:
     async def synchronize_project(
         self, project_name: str, db: AsyncSession, user_id: int
     ):
-        """
-        - Checkout master branch
+        """- Checkout master branch
         - Add/commit new/changed .eaf files in elan_files/
         - Parse all .eaf files and update the DB
         """

@@ -1,7 +1,6 @@
 """ELAN File CRUD operations - Simplified using utilities."""
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
 from app.model.elan_file import ElanFile
 from app.utils.database import DatabaseUtils
