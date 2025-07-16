@@ -103,6 +103,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import gitService from '@/api/service/gitService';
+import "@/assets/css/upload-page.css";
 
 const projects = ref([]);
 const selectedProject = ref('');
@@ -151,12 +152,13 @@ function handleDrop(event) {
 
 function addFiles(files) {
   const eafFiles = files.filter(file => file.name.toLowerCase().endsWith('.eaf'));
-  
+  //TODO : use env variable
+
   if (eafFiles.length !== files.length) {
     error.value = 'Only .eaf files are allowed';
     setTimeout(() => error.value = '', 3000);
   }
-  
+  //TODO : use env variable
   // Check file sizes
   const oversizedFiles = eafFiles.filter(file => file.size > 50 * 1024 * 1024);
   if (oversizedFiles.length > 0) {
@@ -222,4 +224,4 @@ function formatFileSize(bytes) {
 }
 </script>
 
-<style src="@/assets/css/upload-page.css"></style>
+<style></style>

@@ -19,6 +19,8 @@ from app.crud.project import (
     project_exists_by_name,
     get_project_by_name,
 )
+from app.crud.conflicts import save_git_conflicts, get_git_conflicts_for_branch
+from app.model.enums import ConflictStatus
 
 from app.service.elan import ElanService
 from app.service.git_diff_parser import GitDiffParser
@@ -410,6 +412,24 @@ class GitService:
         analysis = diff_analyzer.analyze_merge_differences(branch_name, diff_parser)
         merge_result = merger.auto_merge_if_safe(branch_name, analysis)
 
+        if (
+            merge_result.get("has_conflicts", False)
+            or merge_result["status"] == "changes_detected"
+        ):
+            conflicts = self._extract_conflicts_from_merge_result(
+                merge_result, project_path
+            )
+            if conflicts:
+                # Get project_id from project_name
+                project = await get_project_by_name(db, project_path.name)
+                if project:
+                    await save_git_conflicts(
+                        db, project.project_id, branch_name, conflicts
+                    )
+                    logger.info(
+                        f"Saved {len(conflicts)} git conflicts for branch {branch_name}"
+                    )
+
         if merge_result["status"] == "merged_successfully":
             branch_manager.delete_branch(branch_name)
             # --- Sync DB with merged ELAN files ---
@@ -420,6 +440,177 @@ class GitService:
 
         logger.info(f"Merge result: {merge_result['status']}")
         return merge_result
+
+    async def get_conflicts(
+        self,
+        project_name: str,
+        branch_name: str,
+        db: AsyncSession,
+        force_refresh: bool = False,
+    ) -> dict[str, Any]:
+        """Get git conflicts for a specific branch (hybrid approach)."""
+        try:
+            # Get project_id from project_name
+            project = await get_project_by_name(db, project_name)
+            if not project:
+                raise FileNotFoundError(f"Project '{project_name}' not found")
+
+            # First, try to get conflicts from database (unless force refresh)
+            if not force_refresh:
+                db_conflicts = await get_git_conflicts_for_branch(
+                    db, project.project_id, branch_name, status=ConflictStatus.DETECTED
+                )
+
+                if db_conflicts:
+                    # Check if conflicts are recent (less than 1 hour old)
+                    latest_conflict = max(db_conflicts, key=lambda c: c.detected_at)
+                    age_hours = (
+                        datetime.now() - latest_conflict.detected_at
+                    ).total_seconds() / 3600
+
+                    if age_hours < 1:  # Use cached conflicts if less than 1 hour old
+                        conflicts = []
+                        for db_conflict in db_conflicts:
+                            conflicts.append(
+                                {
+                                    "conflict_id": db_conflict.conflict_id,
+                                    "filename": db_conflict.filename,
+                                    "type": db_conflict.conflict_type.value,
+                                    "details": db_conflict.conflict_description,
+                                    "git_details": db_conflict.git_details,
+                                    "severity": db_conflict.severity.value,
+                                    "detected_at": db_conflict.detected_at.isoformat()
+                                    if db_conflict.detected_at
+                                    else None,
+                                }
+                            )
+
+                        return {
+                            "project_name": project_name,
+                            "branch_name": branch_name,
+                            "conflicts": conflicts,
+                            "has_conflicts": len(conflicts) > 0,
+                            "source": "database",
+                            "total_conflicts": len(conflicts),
+                            "cache_age_hours": round(age_hours, 2),
+                        }
+
+            # If no conflicts in database or force refresh, do live detection
+            live_result = self._detect_live_conflicts(project_name, branch_name)
+
+            # Update database with fresh conflicts
+            if live_result["conflicts"]:
+                await save_git_conflicts(
+                    db, project.project_id, branch_name, live_result["conflicts"]
+                )
+                logger.info(
+                    f"Updated database with {len(live_result['conflicts'])} fresh git conflicts"
+                )
+
+            live_result["source"] = "live_detection"
+            return live_result
+
+        except Exception as e:
+            logger.error(f"Error getting git conflicts: {e}")
+            # Fallback to live detection
+            fallback_result = self._detect_live_conflicts(project_name, branch_name)
+            fallback_result["source"] = "fallback"
+            fallback_result["error"] = str(e)
+            return fallback_result
+
+    def _detect_live_conflicts(
+        self, project_name: str, branch_name: str
+    ) -> dict[str, Any]:
+        """Detect conflicts live from git (your existing implementation enhanced)."""
+        project_path = self.base_path / project_name
+
+        if not project_path.exists():
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+
+        try:
+            runner = GitCommandRunner(project_path)
+
+            # Store current branch
+            current_branch = None
+            try:
+                branches_raw = runner.get_branches()
+                for line in branches_raw:
+                    line = line.strip()
+                    if line.startswith("* "):
+                        current_branch = line[2:]
+                        break
+            except Exception:
+                current_branch = None
+
+            # Switch to master to check differences
+            runner.checkout("master")
+
+            # Analyze differences between master and the branch
+            diff_analyzer = GitDiffAnalyzer(project_path)
+            diff_parser = GitDiffParser()
+            analysis = diff_analyzer.analyze_merge_differences(branch_name, diff_parser)
+
+            conflicts = []
+
+            # Check if there are actual merge conflicts by attempting a test merge
+            try:
+                test_branch = f"test_merge_{branch_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                runner.run(["checkout", "-b", test_branch], check=True)
+
+                merge_result = runner.run(
+                    ["merge", branch_name, "--no-commit"], check=False
+                )
+
+                if merge_result.returncode != 0:
+                    conflicted_files = runner.get_conflicted_files()
+
+                    for filename in conflicted_files:
+                        conflict_details = runner.get_conflict_details(filename)
+                        conflicts.append(
+                            {
+                                "filename": filename,
+                                "type": "merge_conflict",
+                                "details": f"Merge conflict with {conflict_details.get('conflict_markers_count', 0)} conflict markers",
+                                "conflict_info": conflict_details,
+                            }
+                        )
+
+                # Clean up test branch
+                runner.checkout("master")
+                runner.run(["branch", "-D", test_branch], check=False)
+
+            except Exception as e:
+                logger.error(f"Error during conflict detection: {e}")
+                # Fallback to analyzing modified files
+                for modified_file in analysis.modified_files:
+                    conflicts.append(
+                        {
+                            "filename": modified_file,
+                            "type": "content_conflict",
+                            "details": f"File modified in branch '{branch_name}' - requires review",
+                        }
+                    )
+
+            # Restore original branch
+            if current_branch and current_branch != "master":
+                try:
+                    runner.checkout(current_branch)
+                except Exception:
+                    pass
+
+            return {
+                "project_name": project_name,
+                "branch_name": branch_name,
+                "conflicts": conflicts,
+                "has_conflicts": len(conflicts) > 0,
+                "new_files": analysis.new_files,
+                "modified_files": analysis.modified_files,
+                "deleted_files": analysis.deleted_files,
+                "total_conflicts": len(conflicts),
+            }
+
+        except Exception as e:
+            raise RuntimeError(f"Failed to get conflicts: {e}") from e
 
     def _build_upload_response(
         self,
@@ -820,3 +1011,47 @@ class GitService:
         )
 
         return {"new_project_name": new_project_name}
+
+    def _extract_conflicts_from_merge_result(
+        self, merge_result: dict, project_path: Path
+    ) -> list[dict]:
+        """Extract detailed conflict information from merge result."""
+        conflicts = []
+
+        # Get conflicts from the merge result
+        if "file_changes" in merge_result:
+            for change in merge_result["file_changes"]:
+                conflict_details = self._get_conflict_details(
+                    project_path, change["filename"]
+                )
+                conflicts.append(
+                    {
+                        "filename": change["filename"],
+                        "type": "merge_conflict",
+                        "details": {
+                            "change_type": change.get("change_type", "unknown"),
+                            "conflict_info": conflict_details,
+                            "branch_content": change.get("branch_content", ""),
+                            "master_content": change.get("master_content", ""),
+                            "additions": change.get("total_additions", 0),
+                            "deletions": change.get("total_deletions", 0),
+                        },
+                    }
+                )
+
+        # Also check for actual git conflict markers
+        runner = GitCommandRunner(project_path)
+        conflicted_files = runner.get_conflicted_files()
+
+        for filename in conflicted_files:
+            if not any(c["filename"] == filename for c in conflicts):
+                conflict_details = runner.get_conflict_details(filename)
+                conflicts.append(
+                    {
+                        "filename": filename,
+                        "type": "content_conflict",
+                        "details": conflict_details,
+                    }
+                )
+
+        return conflicts

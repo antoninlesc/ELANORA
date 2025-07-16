@@ -72,7 +72,7 @@ class UserWorkOnConflict(Base):
 
     __tablename__ = "USER_WORK_ON_CONFLICT"
 
-    conflict_id: Mapped[str] = mapped_column(
+    conflict_id: Mapped[int] = mapped_column(
         String(50), ForeignKey(CONFLICT_CONFLICTID_FK), primary_key=True
     )
     user_id: Mapped[int] = mapped_column(
@@ -85,8 +85,8 @@ class ConflictOfElanFile(Base):
 
     __tablename__ = "CONFLICT_OF_ELAN_FILE"
 
-    conflict_id: Mapped[str] = mapped_column(
-        String(50), ForeignKey(CONFLICT_CONFLICTID_FK), primary_key=True
+    conflict_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(CONFLICT_CONFLICTID_FK), primary_key=True
     )
     elan_id: Mapped[int] = mapped_column(
         Integer, ForeignKey(ELAN_FILE_ELANID_FK), primary_key=True
@@ -127,6 +127,6 @@ class CommentConflict(Base):
     comment_id: Mapped[str] = mapped_column(
         String(50), ForeignKey(COMMENT_COMMENTID_FK), primary_key=True
     )
-    conflict_id: Mapped[str] = mapped_column(
+    conflict_id: Mapped[int] = mapped_column(
         String(50), ForeignKey(CONFLICT_CONFLICTID_FK), nullable=False
     )

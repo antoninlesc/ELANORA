@@ -39,6 +39,9 @@ class ConflictType(str, Enum):
     VALUE_DIFFERENCE = "value_difference"
     STRUCTURAL = "structural"
     OTHER = "other"
+    GIT_MERGE_CONFLICT = "GIT_MERGE_CONFLICT"
+    GIT_CONTENT_CONFLICT = "GIT_CONTENT_CONFLICT"
+    GIT_FILE_CONFLICT = "GIT_FILE_CONFLICT"
 
 
 class ConflictSeverity(str, Enum):

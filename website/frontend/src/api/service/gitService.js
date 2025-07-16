@@ -72,19 +72,42 @@ const gitService = {
   },
 
   // Resolve conflicts and merge a branch
+  async getConflicts(projectName, branchName, forceRefresh = false) {
+    const params = new URLSearchParams();
+    if (forceRefresh) {
+      params.append('force_refresh', 'true');
+    }
+    
+    const { data } = await axiosInstance.get(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts?${params.toString()}`
+    );
+    return data;
+  },
+
+  // Resolve conflicts (all or specific file)
   async resolveConflicts(
     projectName,
     branchName,
-    resolutionStrategy = 'accept_incoming'
+    resolutionStrategy = 'accept_incoming',
+    filename = null
   ) {
     const params = new URLSearchParams({
-      branch_name: branchName,
       resolution_strategy: resolutionStrategy,
     });
+    
+    if (filename) {
+      params.append('filename', filename);
+    }
+    
     const { data } = await axiosInstance.post(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/resolve-conflicts?${params.toString()}`
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/resolve-conflicts?${params.toString()}`
     );
     return data;
+  },
+
+  // Force refresh conflicts from git
+  async refreshConflicts(projectName, branchName) {
+    return this.getConflicts(projectName, branchName, true);
   },
 
   // List files in a project (recursive structure)

@@ -45,13 +45,13 @@ const routes = [
         component: HTTPStatus,
       },
       {
-        path: '/upload',
+        path: 'upload',
         name: 'UploadPage',
         component: UploadPage,
         meta: { requiresAuth: true },
       },
       {
-        path: '/conflicts',
+        path: 'conflicts',
         name: 'Conflicts',
         component: ConflictsPage,
         meta: { requiresAuth: true },

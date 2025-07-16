@@ -28,9 +28,6 @@ class Project(Base):
 
     # Relationships - use string references
     instance: Mapped["Instance"] = relationship("Instance", back_populates="projects")
-    conflicts: Mapped[list["Conflict"]] = relationship(
-        "Conflict", back_populates="project"
-    )
     invitations: Mapped[list["Invitation"]] = relationship(
         "Invitation", back_populates="project"
     )

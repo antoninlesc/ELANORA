@@ -187,26 +187,6 @@ async def get_project_branches(project_name: str):
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/projects/{project_name}/resolve-conflicts")
-async def resolve_conflicts(
-    project_name: str,
-    branch_name: str,
-    resolution_strategy: str = "accept_incoming",
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Resolve conflicts and merge a branch."""
-    try:
-        result = await git_service.resolve_conflicts(
-            project_name, branch_name, resolution_strategy, db, user.user_id
-        )
-        return result
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
 @router.post(
     "/projects/{project_name}/checkout", response_model=ProjectCheckoutResponse
 )
@@ -330,5 +310,47 @@ async def rename_project(
         raise HTTPException(status_code=404, detail=str(e)) from e
     except FileExistsError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/projects/{project_name}/branches/{branch_name}/conflicts")
+async def get_branch_conflicts(
+    project_name: str,
+    branch_name: str,
+    force_refresh: bool = False,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Get conflicts for a specific branch."""
+    try:
+        result = await git_service.get_conflicts(
+            project_name, branch_name, db, force_refresh
+        )
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+# TODO: Implement conflict resolution logic as for now it was AI generated
+@router.post("/projects/{project_name}/branches/{branch_name}/resolve-conflicts")
+async def resolve_branch_conflicts(
+    project_name: str,
+    branch_name: str,
+    resolution_strategy: str = "accept_incoming",
+    filename: str = None,  # Optional query parameter
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Resolve conflicts for a branch (all or specific file)."""
+    try:
+        result = await git_service.resolve_conflicts(
+            project_name, branch_name, resolution_strategy, db, user.user_id, filename
+        )
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

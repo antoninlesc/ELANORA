@@ -7,6 +7,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    JSON,
     func,
 )
 from sqlalchemy import (
@@ -28,7 +29,9 @@ class Conflict(Base):
 
     __tablename__ = "CONFLICT"
 
-    conflict_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    conflict_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
     conflict_type: Mapped[ConflictType] = mapped_column(
         SQLEnum(ConflictType), nullable=False
     )
@@ -46,12 +49,10 @@ class Conflict(Base):
     resolved_by: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("USER.user_id"), nullable=True
     )
-    project_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("PROJECT.project_id"), nullable=False
-    )
+    branch_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    git_details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Relationships
-    project: Mapped["Project"] = relationship("Project", back_populates="conflicts")
     resolver: Mapped[Optional["User"]] = relationship(
         "User", foreign_keys=[resolved_by], back_populates="resolved_conflicts"
     )

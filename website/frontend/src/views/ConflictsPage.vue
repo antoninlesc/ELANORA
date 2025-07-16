@@ -45,9 +45,9 @@
             <button 
               @click="refreshConflicts" 
               class="refresh-btn"
-              :disabled="conflictsLoading"
+              :disabled="conflictsLoading || refreshing"
             >
-              🔄 Refresh
+              {{ refreshing ? '🔄 Refreshing...' : '🔄 Refresh' }}
             </button>
             <button 
               v-if="conflicts.length > 0"
@@ -100,6 +100,16 @@
               <p>{{ conflict.details }}</p>
             </div>
           </div>
+        </div>
+
+        <!-- Cache Info Display -->
+        <div v-if="conflicts.length > 0" class="cache-info">
+          <small class="cache-status">
+            Source: {{ conflicts.source || 'unknown' }}
+            <span v-if="conflicts.cache_age_hours">
+              (cached {{ conflicts.cache_age_hours }}h ago)
+            </span>
+          </small>
         </div>
       </div>
 
@@ -229,6 +239,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import gitService from '@/api/service/gitService';
+import "@/assets/css/conflicts-page.css";
 
 const projects = ref([]);
 const branches = ref([]);
@@ -250,6 +261,9 @@ const resolving = ref(false);
 const showBatchResolution = ref(false);
 const batchResolutionStrategy = ref('');
 const batchResolving = ref(false);
+
+// Add a refresh indicator
+const refreshing = ref(false);
 
 onMounted(async () => {
   await fetchProjects();
@@ -292,34 +306,41 @@ async function fetchConflicts() {
   
   try {
     conflictsLoading.value = true;
-    // This would need to be implemented in your git service
-    // For now, we'll simulate some conflicts
-    const response = await gitService.getConflicts?.(selectedProject.value, selectedBranch.value) || 
-                     { conflicts: [] };
+    const response = await gitService.getConflicts(
+      selectedProject.value, 
+      selectedBranch.value.name || selectedBranch.value
+    );
     conflicts.value = response.conflicts || [];
+    
+    // Show cache info if available
+    if (response.source === 'database' && response.cache_age_hours !== undefined) {
+      console.log(`Loaded conflicts from cache (${response.cache_age_hours}h old)`);
+    }
   } catch (e) {
     error.value = 'Failed to load conflicts';
     console.error('Error fetching conflicts:', e);
-    // Simulate some conflicts for demo
-    conflicts.value = [
-      {
-        filename: 'example1.eaf',
-        type: 'content_conflict',
-        details: 'Conflicting annotations in tier T1'
-      },
-      {
-        filename: 'example2.eaf',
-        type: 'merge_conflict',
-        details: 'Different time slot values'
-      }
-    ];
+    conflicts.value = [];
   } finally {
     conflictsLoading.value = false;
   }
 }
 
-function refreshConflicts() {
-  fetchConflicts();
+async function refreshConflicts() {
+  if (!selectedProject.value || !selectedBranch.value) return;
+  
+  try {
+    refreshing.value = true;
+    const response = await gitService.refreshConflicts(
+      selectedProject.value, 
+      selectedBranch.value.name || selectedBranch.value
+    );
+    conflicts.value = response.conflicts || [];
+  } catch (e) {
+    error.value = 'Failed to refresh conflicts';
+    console.error('Error refreshing conflicts:', e);
+  } finally {
+    refreshing.value = false;
+  }
 }
 
 function viewConflictDetails(conflict) {
@@ -347,8 +368,9 @@ async function applyResolution() {
     
     await gitService.resolveConflicts(
       selectedProject.value,
-      selectedBranch.value,
-      resolutionStrategy.value
+      selectedBranch.value.name || selectedBranch.value,
+      resolutionStrategy.value,
+      currentConflict.value.filename  // Resolve specific file
     );
     
     // Remove resolved conflict from list
@@ -374,8 +396,9 @@ async function applyBatchResolution() {
     
     await gitService.resolveConflicts(
       selectedProject.value,
-      selectedBranch.value,
+      selectedBranch.value.name || selectedBranch.value,
       batchResolutionStrategy.value
+      // No filename = resolve all conflicts
     );
     
     // Clear all conflicts
@@ -401,4 +424,4 @@ function formatConflictType(type) {
 }
 </script>
 
-<style src="@/assets/css/conflicts-page.css"></style>
+<style></style>
