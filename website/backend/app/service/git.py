@@ -30,6 +30,12 @@ from app.service.git_operations import (
     GitMerger,
     delete_project_folder,
 )
+from app.utils.project_setup_utils import (
+    create_project_structure,
+    create_gitignore,
+    create_readme,
+    copy_githooks,
+)
 
 logger = get_logger()
 
@@ -96,28 +102,18 @@ class GitService:
             raise ValueError(f"Project '{project_name}' already exists")
 
         try:
-            # Create project directory
-            project_path.mkdir(parents=True, exist_ok=True)
+            # Create project directory and structure
+            create_project_structure(project_path)
 
             runner = GitCommandRunner(project_path)
-
-            # Initialize Git repository
             runner.init_repo()
 
-            # Create project structure
-            (project_path / "elan_files").mkdir(exist_ok=True)
+            # Create .gitignore and README
+            create_gitignore(project_path)
+            create_readme(project_path, project_name)
 
-            # Create .gitignore to only track .eaf files in elan_files/
-            gitignore_content = (
-                "*\n!.gitignore\n!README.md\n!elan_files/\n!elan_files/*.eaf\n"
-            )
-            with open(project_path / ".gitignore", "w", encoding="utf-8") as f:
-                f.write(gitignore_content)
-
-            # Create README
-            readme_content = self._create_readme(project_name)
-            with open(project_path / "README.md", "w", encoding="utf-8") as f:
-                f.write(readme_content)
+            # Copy githooks
+            copy_githooks(project_path, project_name)
 
             # Initial commit
             runner.add_all()
@@ -310,7 +306,7 @@ class GitService:
         db: AsyncSession,
         user_id: int,
     ) -> dict:
-        # 1. Create the project at the usual path
+        # Create the project at the usual path
         project_path = self.base_path / project_name
         elan_files_dir = project_path / "elan_files"
         if project_path.exists():
@@ -318,17 +314,16 @@ class GitService:
         project_path.mkdir(parents=True, exist_ok=True)
         elan_files_dir.mkdir(parents=True, exist_ok=True)
 
-        # 2. Save only .eaf files, preserving folder structure
+        # Save only .eaf files, preserving folder structure
         for file in files:
             if not file.filename or not file.filename.lower().endswith(".eaf"):
                 continue
             # file.filename is the relative path (e.g., "subfolder/file.eaf")
-            dest_path = elan_files_dir / file.filename
-            dest_path.parent.mkdir(parents=True, exist_ok=True)
+            dest_path = elan_files_dir / Path(file.filename).name
             with open(dest_path, "wb") as f:
                 shutil.copyfileobj(file.file, f)
 
-        # 3. Initialize git repo, commit, and register in DB (reuse your existing logic)
+        # Initialize git repo, commit, and register in DB (reuse your existing logic)
         runner = GitCommandRunner(project_path)
         runner.init_repo()
         runner.add_all()
@@ -343,7 +338,7 @@ class GitService:
             creator_user_id=user_id,
         )
 
-        # 4. Parse and store ELAN files in DB
+        # Parse and store ELAN files in DB
         elan_service = ElanService(db)
         elan_files = list(elan_files_dir.rglob("*.eaf"))
         for elan_file in elan_files:

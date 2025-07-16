@@ -1,9 +1,14 @@
 import os
 from pathlib import Path
-
 from app.core.centralized_logging import get_logger
 
 logger = get_logger()
+
+
+def create_project_structure(project_path: Path):
+    project_path.mkdir(parents=True, exist_ok=True)
+    (project_path / "elan_files").mkdir(exist_ok=True)
+    logger.info(f"Created project structure at {project_path}")
 
 
 def create_gitignore(project_path: Path):
