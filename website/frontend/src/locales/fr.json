@@ -231,6 +231,7 @@
     "submit": "Créer le compte",
     "registering": "Création du compte...",
     "success": "Compte créé avec succès ! Vous pouvez maintenant vous connecter.",
+    "success_needs_verification": "Compte créé avec succès ! Veuillez vérifier votre email pour activer votre compte.",
     "error": "Échec de la création du compte. Veuillez réessayer.",
     "already_have_account": "Vous avez déjà un compte ?",
     "login_here": "Connectez-vous ici",
@@ -259,5 +260,31 @@
   },
   "project": {
     "load_error": "Échec du chargement des projets"
+  },
+  "emailVerification": {
+    "title": "Vérification d'email",
+    "subtitle": "Nous avons envoyé un code de vérification à votre adresse email",
+    "codeLabel": "Code de vérification",
+    "codePlaceholder": "Entrez le code à 6 chiffres",
+    "verifyButton": "Vérifier l'email",
+    "verifying": "Vérification en cours...",
+    "noCodeReceived": "Vous n'avez pas reçu le code ?",
+    "resendButton": "Renvoyer le code",
+    "resending": "Envoi en cours...",
+    "resendCooldown": "Renvoyer dans {seconds}s",
+    "resendSuccess": "Code de vérification renvoyé avec succès",
+    "success": "Email vérifié avec succès ! Redirection en cours...",
+    "helpTitle": "Besoin d'aide ?",
+    "helpCheck1": "Vérifiez votre dossier spam/courrier indésirable",
+    "helpCheck2": "Assurez-vous que l'adresse email est correcte",
+    "helpCheck3": "Le code expire après 15 minutes",
+    "helpContact": "Si vous rencontrez toujours des problèmes,",
+    "contactSupport": "contactez le support",
+    "errors": {
+      "invalidCodeLength": "Le code doit contenir exactement 6 chiffres",
+      "invalidCode": "Code de vérification invalide",
+      "verificationFailed": "Échec de la vérification de l'email",
+      "resendFailed": "Échec de l'envoi du code de vérification"
+    }
   }
 }

@@ -20,6 +20,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 TEMPLATES_DIR = Path(__file__).parent.parent / "template" / "emails"
 PASSWORD_VERIFICATION_TEMPLATE_EN = TEMPLATES_DIR / "password_verification_en.html"
 PASSWORD_VERIFICATION_TEMPLATE_FR = TEMPLATES_DIR / "password_verification_fr.html"
+EMAIL_VERIFICATION_TEMPLATE_EN = TEMPLATES_DIR / "email_verification_en.html"
+EMAIL_VERIFICATION_TEMPLATE_FR = TEMPLATES_DIR / "email_verification_fr.html"
 INVITATION_TEMPLATE_EN = TEMPLATES_DIR / "invitation_en.html"
 INVITATION_TEMPLATE_FR = TEMPLATES_DIR / "invitation_fr.html"
 
@@ -249,4 +251,84 @@ class EmailService:
             return True
         except Exception as e:
             print(f"[EmailService] Failed to send invitation email: {e}")
+            raise e
+
+    async def send_email_verification_code(
+        self, email: str, username: str, code: str, language: str = "en"
+    ) -> bool:
+        """
+        Send an email verification code to verify account.
+
+        Args:
+            email (str): The email address to send the verification code to
+            username (str): The username to personalize the email
+            code (str): The verification code
+            language (str): The language for the email template ("en" or "fr")
+
+        Returns:
+            bool: True if the email was sent successfully, False otherwise
+        """
+        current_year = datetime.datetime.now().year
+        contact_url = f"{config.FRONTEND_HOST}/contact"
+
+        # Determine email template and subject based on language
+        if language.lower() == "fr":
+            subject = "ELANORA - Vérification de votre adresse email"
+            template_path = EMAIL_VERIFICATION_TEMPLATE_FR
+        else:
+            subject = "ELANORA - Email Address Verification"
+            template_path = EMAIL_VERIFICATION_TEMPLATE_EN
+
+        # Load and format the email template
+        try:
+            template = self.load_template(template_path)
+            email_body = template.format(
+                username=username,
+                code=code,
+                year=current_year,
+                contact_url=contact_url,
+            )
+        except Exception as e:
+            print(f"[EmailService] Failed to load or format template: {e}")
+            # Fallback template in case of error
+            if language.lower() == "en":
+                email_body = f"""
+                <html>
+                  <body>
+                    <h1>Email Verification</h1>
+                    <p>Hello {username},</p>
+                    <p>Please verify your email address by entering this code:</p>
+                    <div style="font-size: 24px; font-weight: bold; color: #2563eb; font-family: monospace; margin: 20px 0; text-align: center; padding: 20px; background: #f0f4ff; border-radius: 8px;">{code}</div>
+                    <p>This code will expire in 10 minutes.</p>
+                    <p><a href=\"{contact_url}\">Click here to contact support</a></p>
+                  </body>
+                </html>
+                """
+            else:
+                email_body = f"""
+                <html>
+                  <body>
+                    <h1>Vérification de votre adresse email</h1>
+                    <p>Bonjour {username},</p>
+                    <p>Veuillez vérifier votre adresse email en saisissant ce code :</p>
+                    <div style="font-size: 24px; font-weight: bold; color: #2563eb; font-family: monospace; margin: 20px 0; text-align: center; padding: 20px; background: #f0f4ff; border-radius: 8px;">{code}</div>
+                    <p>Ce code expirera dans 10 minutes.</p>
+                    <p><a href=\"{contact_url}\">Cliquez ici pour contacter le support</a></p>
+                  </body>
+                </html>
+                """
+
+        message = MessageSchema(
+            subject=subject,
+            recipients=[email],
+            body=email_body,
+            subtype=MessageType.html,
+        )
+
+        try:
+            fm = FastMail(self.conf)
+            await fm.send_message(message)
+            return True
+        except Exception as e:
+            print(f"[EmailService] Failed to send email verification code: {e}")
             raise e

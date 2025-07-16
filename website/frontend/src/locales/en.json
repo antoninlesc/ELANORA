@@ -239,6 +239,7 @@
     "submit": "Create Account",
     "registering": "Creating account...",
     "success": "Account created successfully! You can now log in.",
+    "success_needs_verification": "Account created successfully! Please verify your email to activate your account.",
     "error": "Failed to create account. Please try again.",
     "please_fix_errors": "Please fix the errors in the form before submitting.",
     "passwords_match": "Passwords match",
@@ -267,5 +268,31 @@
   },
   "project": {
     "load_error": "Failed to load projects"
+  },
+  "emailVerification": {
+    "title": "Email Verification",
+    "subtitle": "We've sent a verification code to your email address",
+    "codeLabel": "Verification Code",
+    "codePlaceholder": "Enter the 6-digit code",
+    "verifyButton": "Verify Email",
+    "verifying": "Verifying...",
+    "noCodeReceived": "Didn't receive the code?",
+    "resendButton": "Resend Code",
+    "resending": "Sending...",
+    "resendCooldown": "Resend in {seconds}s",
+    "resendSuccess": "Verification code resent successfully",
+    "success": "Email verified successfully! Redirecting...",
+    "helpTitle": "Need help?",
+    "helpCheck1": "Check your spam/junk folder",
+    "helpCheck2": "Make sure the email address is correct",
+    "helpCheck3": "Code expires after 15 minutes",
+    "helpContact": "If you're still having trouble,",
+    "contactSupport": "contact support",
+    "errors": {
+      "invalidCodeLength": "Code must be exactly 6 digits",
+      "invalidCode": "Invalid verification code",
+      "verificationFailed": "Failed to verify email",
+      "resendFailed": "Failed to send verification code"
+    }
   }
 }

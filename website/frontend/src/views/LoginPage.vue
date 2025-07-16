@@ -173,6 +173,15 @@ const handleLogin = async () => {
         response.message || 'Vérifiez votre email avant de vous connecter.',
         'warning'
       );
+      
+      // Redirect to email verification page
+      router.push({
+        name: 'EmailVerificationPage',
+        query: { 
+          email: response.email,
+          freshCode: 'true'
+        }
+      });
       return;
     }
     if (!userStore.user) {

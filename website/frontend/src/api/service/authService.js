@@ -62,3 +62,27 @@ export async function resetPassword(email, code, newPassword) {
 export async function registerWithInvitation(data) {
   return await axiosInstance.post('/auth/register', data);
 }
+
+/**
+ * Send email verification code.
+ * @param {string} email
+ * @param {string} [language]
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function sendVerificationEmail(email, language = 'en') {
+  const payload = { email, language };
+  console.log('Sending verification email for:', email, 'with language:', language);
+  return await axiosInstance.post('/auth/send-verification-email', payload);
+}
+
+/**
+ * Verify email with verification code.
+ * @param {string} email
+ * @param {string} code
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function verifyEmail(email, code) {
+  const payload = { email, code };
+  console.log('Verifying email for:', email);
+  return await axiosInstance.post('/auth/verify-email', payload);
+}

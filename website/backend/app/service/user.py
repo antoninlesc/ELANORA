@@ -22,7 +22,9 @@ from app.schema.common.token import TokenData
 from app.schema.common.user import UserCreateData
 from app.schema.requests.user import ProfileUpdateRequest, AddressRequest
 from app.service.address import AddressService
+from app.service.email_service import EmailService
 from sqlalchemy.ext.asyncio import AsyncSession
+
 
 # Get logger for this module
 logger = get_logger()
@@ -537,15 +539,19 @@ class UserService:
             verification_code (str): Verification code to include.
 
         """
-        # TODO: Implement email sending logic
-        # This would typically use an email service like:
-        # - SendGrid
-        # - AWS SES
-        # - SMTP server
-        # - Mailgun
-
-        logger.info(f"Verification email queued for {email} (user: {username})")
-        logger.debug(f"Verification code for {email}: {verification_code}")
+        try:
+            email_service = EmailService()
+            await email_service.send_email_verification_code(
+                email=email,
+                username=username,
+                code=verification_code,
+                language="fr",  # Default to French, could be made configurable
+            )
+            logger.info(f"Verification email sent successfully to {email}")
+        except Exception as e:
+            logger.error(f"Failed to send verification email to {email}: {e}")
+            # Don't raise the exception to prevent registration/login failure
+            # The user can still request a new verification code manually
 
         # Example implementation structure:
         # await email_service.send_verification_email(

@@ -93,3 +93,17 @@ class ResetPasswordRequest(CustomBaseModel):
     email: str
     code: str
     new_password: str
+
+
+class SendVerificationEmailRequest(CustomBaseModel):
+    """Schema for sending email verification code."""
+
+    email: EmailStr
+    language: str = "en"
+
+
+class VerifyEmailRequest(CustomBaseModel):
+    """Schema for verifying email with code."""
+
+    email: EmailStr
+    code: str

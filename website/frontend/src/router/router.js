@@ -7,6 +7,7 @@ import LoginPage from '@views/LoginPage.vue';
 import RegisterPage from '@views/RegisterPage.vue';
 import ForgotPassword from '@views/ForgotPassword.vue';
 import ResetPassword from '@views/ResetPassword.vue';
+import EmailVerificationPage from '@views/EmailVerificationPage.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
 
 // Define routes
@@ -50,6 +51,11 @@ const routes = [
     name: 'ResetPassword',
     component: ResetPassword,
     
+  },
+  {
+    path: '/verify-email',
+    name: 'EmailVerificationPage',
+    component: EmailVerificationPage,
   },
   {
     path: '/error/:statusCode',

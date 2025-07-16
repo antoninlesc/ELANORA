@@ -968,9 +968,27 @@ const handleRegister = async () => {
       department: form.value.department,
       address: address
     };
-    await registerWithInvitation(payload);
-    eventMessageStore.addMessage(t('register.success'), 'success');
-    router.push({ name: 'LoginPage' });
+    const response = await registerWithInvitation(payload);
+    
+    // Check if email verification is needed
+    if (response.data && response.data.requires_activation) {
+      eventMessageStore.addMessage(
+        t('register.success_needs_verification'), 
+        'success'
+      );
+      
+      // Redirect to email verification page
+      router.push({
+        name: 'EmailVerificationPage',
+        query: { 
+          email: form.value.email,
+          freshCode: 'true'
+        }
+      });
+    } else {
+      eventMessageStore.addMessage(t('register.success'), 'success');
+      router.push({ name: 'LoginPage' });
+    }
   } catch (error) {
     console.error('Registration error:', error);
     eventMessageStore.addMessage(
