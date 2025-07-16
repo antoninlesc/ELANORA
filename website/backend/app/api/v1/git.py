@@ -231,7 +231,7 @@ async def list_projects(
     user: User = get_admin_dep,
 ):
     """List all project names for the current instance."""
-    instance_id = 1  # Replace with actual logic
+    instance_id = 1
     project_names = await git_service.list_projects(db, instance_id)
     return ProjectListResponse(projects=project_names)
 

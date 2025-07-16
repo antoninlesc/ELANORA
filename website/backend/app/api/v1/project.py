@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.project import get_project_by_id
+from app.service.git import list_projects_by_instance
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
 from app.model.user import User
@@ -19,7 +20,7 @@ async def get_projects(
 ) -> list[ProjectResponse]:
     """Get all projects (authenticated users only)."""
     try:
-        projects = await get_all_projects(db)
+        projects = await list_projects_by_instance(db, user.user_id)
         return [ProjectResponse.model_validate(project) for project in projects]
     except Exception as e:
         raise HTTPException(

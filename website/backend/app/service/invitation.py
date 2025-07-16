@@ -13,7 +13,7 @@ from app.crud.invitation import (
 )
 from app.crud.project import get_project_by_id
 from app.crud.user import get_user_by_id
-from app.model.enums import InvitationStatus
+from app.model.enums import InvitationStatus, ProjectPermission
 from app.model.invitation import Invitation
 from app.schema.requests.invitation import InvitationSendRequest
 from app.schema.responses.invitation import (
@@ -22,7 +22,7 @@ from app.schema.responses.invitation import (
     InvitationSendResponse,
     InvitationValidationResponse,
 )
-from app.service.email_service import EmailService
+from app.service.email import EmailService
 
 # Get logger for this module
 logger = get_logger()
@@ -273,7 +273,7 @@ class InvitationService:
         # Ensure project_permission is always lowercase to match the Pydantic enum
         project_permission = invitation.project_permission
         if isinstance(project_permission, str):
-            project_permission = project_permission.lower()
+            project_permission = ProjectPermission(project_permission)
         else:
             project_permission = project_permission.value.lower()
 

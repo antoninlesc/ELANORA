@@ -216,3 +216,36 @@ class DatabaseUtils:
             logger.error(f"bulk_delete: error={e}")
             await db.rollback()
             raise
+
+    @staticmethod
+    async def bulk_update(
+        db: AsyncSession,
+        model: type[ModelType],
+        data: list[dict],
+        pk_field: str,
+    ) -> int:
+        """
+        Bulk update records for the given model.
+        Each dict in data must include the primary key field.
+        Returns the number of updated rows.
+        """
+        if not data:
+            return 0
+        try:
+            total = 0
+            for row in data:
+                pk_value = row[pk_field]
+                update_data = {k: v for k, v in row.items() if k != pk_field}
+                result = await db.execute(
+                    update(model)
+                    .where(getattr(model, pk_field) == pk_value)
+                    .values(**update_data)
+                )
+                total += result.rowcount if result.rowcount else 0
+            await db.commit()
+            logger.info(f"bulk_update: model={model.__name__} updated={total}")
+            return total
+        except Exception as e:
+            logger.error(f"bulk_update: error={e}")
+            await db.rollback()
+            raise

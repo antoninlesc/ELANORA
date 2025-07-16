@@ -6,12 +6,12 @@ from app.model.enums import ProjectPermission
 from app.model.project import Project
 from app.utils.database import DatabaseUtils
 from app.crud.associations import delete_project_associations
-from app.crud.invitation import delete_project_invitations
 from app.crud.conflict import delete_project_conflicts
 from app.crud.comment import delete_project_comments
 from app.crud.elan_file import get_elan_files_by_project, delete_elan_file
 from app.crud.tier import delete_tiers_for_elan_file
 from app.crud.annotation import delete_unused_annotation_values
+from app.crud.invitation import delete_project_invitations
 from app.model.associations import (
     UserToProject,
 )

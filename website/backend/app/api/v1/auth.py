@@ -28,7 +28,7 @@ from app.schema.requests.user import (
     VerifyEmailRequest,
 )
 from app.schema.responses.user import LoginResponse, RegistrationResponse, UserResponse
-from app.service.email_service import EmailService
+from app.service.email import EmailService
 from app.service.invitation import InvitationService
 from app.service.user import UserService
 

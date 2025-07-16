@@ -27,7 +27,7 @@ from app.schema.requests.user import (
     ProfileUpdateRequest,
 )
 from app.service.address import AddressService
-from app.service.email_service import EmailService
+from app.service.email import EmailService
 
 # Get logger for this module
 logger = get_logger()
