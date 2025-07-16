@@ -103,15 +103,19 @@ function handleNotAuthenticated(eventMessageStore, to, next) {
 }
 
 // Global route guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const eventMessageStore = useEventMessageStore();
   const userStore = useUserStore();
-  console.log('userStore', userStore);
-  console.log(
-    'userStore.authState.initialized',
-    userStore.authState.initialized
-  );
-  console.log('userStore.isAuthenticated', userStore.isAuthenticated);
+  
+  // Check if authentication verification is needed for this route
+  const needsAuthCheck = to.meta.requiresAuth || to.meta.requiresAdmin || to.name === 'LoginPage';
+  
+  // Only verify authentication if we need it for this route
+  if (needsAuthCheck && !userStore.authState.initialized) {
+    console.log('Authentication verification needed, verifying...');
+    await userStore.verifyAuthentication();
+  }
+
   // Handle login route: redirect if already authenticated
   if (to.name === 'LoginPage' && userStore.isAuthenticated) {
     eventMessageStore.addMessage('event_messages.already_logged_in', 'warning');
@@ -119,16 +123,21 @@ router.beforeEach((to, from, next) => {
     return next({ name: 'HomePage' });
   }
 
-  // Only check auth if required
+  // Check auth for protected routes
   if (to.meta.requiresAuth) {
-    if (!userStore.authState.initialized) {
-      // Let App.vue handle the loading spinner, just allow navigation to continue
-      return next();
-    }
     if (!userStore.isAuthenticated) {
       return handleNotAuthenticated(eventMessageStore, to, next);
     }
   }
+
+  // Check admin role for admin routes
+  if (to.meta.requiresAdmin) {
+    if (!userStore.user?.role || userStore.user.role !== 'admin') {
+      eventMessageStore.addMessage('http_status.403', 'error');
+      return next({ name: 'HomePage' });
+    }
+  }
+
   next();
 });
 
