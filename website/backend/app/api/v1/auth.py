@@ -1,6 +1,9 @@
 import secrets
 from typing import Any
 
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.config import (
     ACCESS_TOKEN_COOKIE_NAME,
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -14,12 +17,11 @@ from app.core.jwt import create_access_token, create_refresh_token
 from app.core.limiter import limiter
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
 from app.model.user import User
 from app.schema.common.token import TokenData
 from app.schema.requests.user import (
-    LoginRequest,
     ForgotPasswordRequest,
+    LoginRequest,
     ResetPasswordRequest,
     SendVerificationEmailRequest,
     VerifyEmailRequest,
@@ -308,7 +310,7 @@ async def forgot_password(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"An error occurred while processing your request: {str(e)}",
+            detail=f"An error occurred while processing your request: {e!s}",
         ) from e
 
 
@@ -358,7 +360,7 @@ async def reset_password(
             raise e
         raise HTTPException(
             status_code=500,
-            detail=f"An error occurred while resetting your password: {str(e)}",
+            detail=f"An error occurred while resetting your password: {e!s}",
         ) from e
 
 

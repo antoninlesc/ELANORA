@@ -4,6 +4,10 @@ import secrets
 from datetime import UTC, datetime
 from typing import Any
 
+from fastapi import BackgroundTasks
+from passlib.context import CryptContext
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.centralized_logging import get_logger
 from app.core.jwt import create_access_token, create_refresh_token, verify_refresh_token
 from app.crud.user import (
@@ -15,12 +19,10 @@ from app.crud.user import (
     update_user_password,
     update_user_profile,
 )
-from fastapi import BackgroundTasks
 from app.model.user import User
-from passlib.context import CryptContext
 from app.schema.common.token import TokenData
 from app.schema.common.user import UserCreateData
-from app.schema.requests.user import ProfileUpdateRequest, AddressRequest
+from app.schema.requests.user import ProfileUpdateRequest, AddressRequest, RegistrationRequest
 from app.service.address import AddressService
 from app.service.email_service import EmailService
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -306,7 +308,6 @@ class UserService:
             bool: True if current password is correct.
 
         """
-
         if not user.hashed_password:
             logger.warning(
                 f"Password verification failed - no password set: {user.username}"

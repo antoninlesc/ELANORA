@@ -127,3 +127,17 @@ class ProjectCheckoutResponse(CustomBaseModel):
 
 class ProjectListResponse(CustomBaseModel):
     projects: list[str]
+
+
+class ProjectRenameResponse(CustomBaseModel):
+    """Schema for project rename response."""
+
+    new_project_name: str
+
+
+class ProjectDeleteResponse(CustomBaseModel):
+    """Schema for project delete response."""
+
+    project_id: int
+    status: str
+    message: str | None = None

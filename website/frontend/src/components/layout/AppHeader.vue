@@ -1,17 +1,26 @@
 <template>
-  <header class="elanora-header">
-    <div class="elanora-header-container">
+  <header>
+    <div class="navbar-container">
       <div class="elanora-header-left">
-        <img src="/images/ELANora-logo.png" alt="ELANORA Logo" class="elanora-header-logo" />
+        <img
+          src="@logos/ELANora-logo.png"
+          alt="ELANORA Logo"
+          class="elanora-header-logo"
+        />
       </div>
       <div class="elanora-header-right">
-        <a
-          href="/projects"
-          class="elanora-header-menu-link"
-        >
+        <a href="/projects" class="elanora-header-menu-link">
           {{ t('navigation.projects') }}
         </a>
-        <span v-if="instanceName" class="elanora-header-instance-label">{{ instanceName }}</span>
+        <a href="/upload" class="elanora-header-menu-link">
+          {{ t('navigation.upload') }}
+        </a>
+        <a href="/conflicts" class="elanora-header-menu-link">
+          {{ t('navigation.conflicts') }}
+        </a>
+        <span v-if="instanceName" class="elanora-header-instance-label">{{
+          instanceName
+        }}</span>
         <button
           v-if="user"
           class="elanora-header-btn-logout"
@@ -26,22 +35,17 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useAppInfoStore } from '@/stores/appInfo';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUserStore } from '@/stores/user';
-import { useEventMessageStore } from '@stores/eventMessage';
 
-defineProps({
-  instanceName: {
-    type: String,
-    default: 'elanora',
-  },
-});
+const appInfo = useAppInfoStore();
+const instanceName = computed(() => appInfo.instanceName);
 
 const router = useRouter();
 const { t } = useI18n();
 const userStore = useUserStore();
-const eventMessageStore = useEventMessageStore();
 const user = computed(() => userStore.user);
 
 const handleLogout = async () => {
@@ -57,25 +61,6 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
-.elanora-header {
-  background: white;
-  border-bottom: 1px solid #e1e8ed;
-  padding: 1rem 0;
-  box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.elanora-header-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .elanora-header-left {
   display: flex;
   align-items: center;
@@ -132,11 +117,12 @@ const handleLogout = async () => {
   background: #e8f0fe;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .elanora-header-container {
     flex-direction: column;
     gap: 1rem;
   }
+
   .elanora-header-right {
     margin-left: 0;
   }

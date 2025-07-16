@@ -1,8 +1,5 @@
 <template>
   <div class="home-page">
-    <!-- Header -->
-    <AppHeader :instance-name="instanceInfo.name" :show-navigation="true" />
-
     <!-- Hero Section -->
     <section class="hero-section">
       <div class="hero-container">
@@ -93,28 +90,15 @@
         </div>
       </div>
     </section>
-
-    <!-- Footer -->
-    <AppFooter :instance-name="instanceInfo.name" :version="appVersion" />
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import AppHeader from '@/components/layout/AppHeader.vue';
-import AppFooter from '@/components/layout/AppFooter.vue';
 import StatCard from '@/components/common/StatCard.vue';
 
 const { t } = useI18n();
-
-// Instance info (could come from a store later)
-const instanceInfo = ref({
-  name: 'LSFB Lab',
-  institution: 'Belgian French Sign Language Laboratory',
-});
-
-const appVersion = ref('1.0.0');
 
 // Features data
 const features = ref([

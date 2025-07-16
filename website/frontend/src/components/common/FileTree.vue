@@ -6,7 +6,18 @@
         :style="{ marginLeft: `${level * 18}px` }"
         class="filetree-file"
       >
-        <span style="color: #1976d2">📄</span>
+        <img
+          v-if="isEafFile(tree.name)"
+          src="/images/icons/ELAN.svg"
+          alt="ELAN file"
+          style="
+            width: 18px;
+            height: 18px;
+            margin-right: 4px;
+            vertical-align: middle;
+          "
+        />
+        <font-awesome-icon v-else icon="file" style="color: #1976d2" />
         <span>{{ tree.name }}</span>
       </div>
       <div
@@ -15,7 +26,10 @@
         class="filetree-folder"
       >
         <div class="filetree-folder-header" @click="toggle">
-          <span style="color: #388e3c">{{ open ? '📂' : '📁' }}</span>
+          <font-awesome-icon
+            :icon="open ? 'folder-open' : 'folder'"
+            style="color: #388e3c"
+          />
           <span style="font-weight: 600">{{ tree.name }}</span>
         </div>
         <div v-show="open">
@@ -39,10 +53,14 @@ const props = defineProps({
   level: { type: Number, default: 0 },
 });
 
-const open = ref(props.level === 0); // root open by default
+const open = ref(props.level === 0);
 
 function toggle() {
   open.value = !open.value;
+}
+
+function isEafFile(name) {
+  return name.toLowerCase().endsWith('.eaf');
 }
 </script>
 

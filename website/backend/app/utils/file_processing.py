@@ -1,9 +1,9 @@
 """File processing utilities for ELAN files."""
 
-import xml.etree.ElementTree as ET
+from lxml import etree as ET
 from pathlib import Path
-from typing import Dict, List, Optional
 from decimal import Decimal
+from pathlib import Path
 
 
 class ElanFileProcessor:
@@ -23,7 +23,7 @@ class ElanFileProcessor:
         return file_path_obj
 
     @staticmethod
-    def get_file_info(file_path_obj: Path) -> Dict:
+    def get_file_info(file_path_obj: Path) -> dict:
         """Extract basic file information."""
         return {
             "filename": file_path_obj.name,
@@ -32,18 +32,18 @@ class ElanFileProcessor:
         }
 
     @staticmethod
-    def extract_time_slots(root: ET.Element) -> Dict[str, int]:
+    def extract_time_slots(root: ET._Element) -> dict[str, int]:
         """Extract time slots from ELAN XML root."""
         time_slots = {}
-        for time_slot in root.findall(".//TIME_SLOT"):
-            slot_id = time_slot.get("TIME_SLOT_ID")
+        for time_slot in root.findall(".//TIME_SLOT", namespaces=None):
+            slot_id = time_slot.get("TIME_SLOT_ID", None)
             time_value = int(time_slot.get("TIME_VALUE", 0))
             if slot_id:
                 time_slots[slot_id] = time_value
         return time_slots
 
     @staticmethod
-    def safe_get_text(element: Optional[ET.Element]) -> Optional[str]:
+    def safe_get_text(element: ET._Element | None) -> str | None:
         """Safely get text from XML element."""
         if element is None or not element.text:
             return None
@@ -57,7 +57,7 @@ class ElanFileProcessor:
     @staticmethod
     def find_files_in_directory(
         directory_path: str, pattern: str = "**/*.eaf"
-    ) -> List[Path]:
+    ) -> list[Path]:
         """Find all ELAN files in directory."""
         directory = Path(directory_path)
 
@@ -71,55 +71,57 @@ class XmlAttributeExtractor:
     """Utilities for extracting attributes from XML elements."""
 
     @staticmethod
-    def get_tier_attributes(tier_element: ET.Element) -> Dict:
+    def get_tier_attributes(tier_element: ET._Element) -> dict:
         """Extract tier attributes from XML element."""
         return {
-            "tier_id": tier_element.get("TIER_ID"),
-            "tier_name": tier_element.get("TIER_ID"),
-            "parent_tier_id": tier_element.get("PARENT_REF"),
-            "linguistic_type": tier_element.get("LINGUISTIC_TYPE_REF"),
+            "tier_id": tier_element.get("TIER_ID", None),
+            "tier_name": tier_element.get("TIER_ID", None),
+            "parent_tier_id": tier_element.get("PARENT_REF", None),
+            "linguistic_type": tier_element.get("LINGUISTIC_TYPE_REF", None),
         }
 
     @staticmethod
-    def get_annotation_attributes(annotation: ET.Element) -> Dict:
+    def get_annotation_attributes(annotation: ET._Element) -> dict:
         """Extract annotation attributes from XML element."""
         return {
-            "annotation_id": annotation.get("ANNOTATION_ID"),
-            "time_slot_ref1": annotation.get("TIME_SLOT_REF1"),
-            "time_slot_ref2": annotation.get("TIME_SLOT_REF2"),
+            "annotation_id": annotation.get("ANNOTATION_ID", None),
+            "time_slot_ref1": annotation.get("TIME_SLOT_REF1", None),
+            "time_slot_ref2": annotation.get("TIME_SLOT_REF2", None),
         }
 
     @staticmethod
     def get_alignable_annotation_attributes(
-        annotation: ET.Element, time_slots: Dict[str, int]
-    ) -> Optional[Dict]:
+        annotation: ET._Element, time_slots: dict[str, int]
+    ) -> dict | None:
         """Extract information from an alignable annotation."""
-        annotation_value_elem = annotation.find("ANNOTATION_VALUE")
+        annotation_value_elem = annotation.find("ANNOTATION_VALUE", namespaces=None)
         if annotation_value_elem is None or not annotation_value_elem.text:
             return None
 
-        start_ref = annotation.get("TIME_SLOT_REF1")
-        end_ref = annotation.get("TIME_SLOT_REF2")
+        start_ref = annotation.get("TIME_SLOT_REF1", None)
+        end_ref = annotation.get("TIME_SLOT_REF2", None)
 
         start_time = time_slots.get(start_ref, 0) if start_ref else 0
         end_time = time_slots.get(end_ref, 0) if end_ref else 0
 
         return {
-            "annotation_id": annotation.get("ANNOTATION_ID"),
+            "annotation_id": annotation.get("ANNOTATION_ID", None),
             "annotation_value": annotation_value_elem.text.strip(),
             "start_time": Decimal(start_time) / 1000,
             "end_time": Decimal(end_time) / 1000,
         }
 
     @staticmethod
-    def get_ref_annotation_attributes(annotation: ET.Element) -> Optional[Dict]:
+    def get_ref_annotation_attributes(
+        annotation: ET._Element,
+    ) -> dict | None:
         """Extract information from a reference annotation."""
-        annotation_value_elem = annotation.find("ANNOTATION_VALUE")
+        annotation_value_elem = annotation.find("ANNOTATION_VALUE", namespaces=None)
         if annotation_value_elem is None or not annotation_value_elem.text:
             return None
 
         return {
-            "annotation_id": annotation.get("ANNOTATION_ID"),
+            "annotation_id": annotation.get("ANNOTATION_ID", None),
             "annotation_value": annotation_value_elem.text.strip(),
             "start_time": Decimal(0),
             "end_time": Decimal(0),

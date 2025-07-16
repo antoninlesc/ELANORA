@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from app.db.database import Base
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -14,6 +13,8 @@ from sqlalchemy import (
     Enum as SQLEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.database import Base
 
 from .enums import UserRole
 

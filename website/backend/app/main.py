@@ -1,4 +1,11 @@
 # Import API routers
+from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
+from starlette.middleware.gzip import GZipMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+
 from app.api.v1.auth import router as auth_router
 from app.api.v1.git import router as git_router
 from app.api.v1.user import router as user_router
@@ -14,17 +21,11 @@ from app.core.exception_handler import (
     validation_exception_handler,
 )
 from app.core.limiter import limiter
-from fastapi import FastAPI
-from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
 from app.middleware.csrf import CSRFMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
-
-# Get logger (this will automatically call setup_application_logging)
-logger = get_logger()
 
 # Get logger (this will automatically call setup_application_logging)
 logger = get_logger()
@@ -83,6 +84,7 @@ app.include_router(project_router, prefix=f"{API_V1_PREFIX}/project", tags=["PRO
 app.include_router(
     location_router, prefix=f"{API_V1_PREFIX}/location", tags=["LOCATION"]
 )
+
 
 
 # Root endpoint

@@ -1,5 +1,6 @@
-from app.dependency.user import get_user_dep
 from fastapi import APIRouter
+
+from app.dependency.user import get_user_dep
 from app.model.user import User
 from app.schema.responses.user import UserResponse
 

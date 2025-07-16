@@ -111,6 +111,31 @@ const gitService = {
     );
     return data;
   },
+
+  // Synchronize a project
+  async synchronizeProject(projectName) {
+    const { data } = await axiosInstance.post(
+      `/git/projects/${encodeURIComponent(projectName)}/synchronize`
+    );
+    return data;
+  },
+
+  // Delete a project
+  async deleteProject(projectName) {
+    const { data } = await axiosInstance.delete(
+      `/git/projects/${encodeURIComponent(projectName)}`
+    );
+    return data;
+  },
+
+  // Rename a project
+  async renameProject(oldProjectName, newProjectName) {
+    const { data } = await axiosInstance.post(
+      `/git/projects/${encodeURIComponent(oldProjectName)}/rename`,
+      { new_project_name: newProjectName }
+    );
+    return data;
+  },
 };
 
 export default gitService;

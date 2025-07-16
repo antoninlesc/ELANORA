@@ -1,186 +1,178 @@
 <template>
-  <div class="project-page-root">
-    <h1 class="project-page-title">Projects</h1>
+  <div>
+    <div class="project-page-root">
+      <h1 class="project-page-title">Projects</h1>
 
-    <!-- Create Project Section -->
-    <form class="project-page-create-form" @submit.prevent="createProject">
-      <div class="project-page-create-fields">
-        <input
-          v-model="newProjectName"
-          class="project-page-create-input"
-          type="text"
-          placeholder="Project name"
-          required
-        />
-        <input
-          v-model="newProjectDescription"
-          class="project-page-create-input"
-          type="text"
-          placeholder="Description"
-          required
-        />
-        <button class="project-page-create-btn" :disabled="creating">
-          {{ creating ? 'Creating...' : 'Create Project' }}
-        </button>
-        <button
-          class="project-page-create-btn"
-          type="button"
-          style="margin-left: 8px"
-          @click="showInitDialog = true"
-        >
-          Init from Folder
-        </button>
-      </div>
-      <div v-if="createError" class="project-page-create-error">
-        {{ createError }}
-      </div>
-    </form>
+      <!-- Create Project Section -->
+      <form class="project-page-create-form" @submit.prevent="createProject">
+        <div class="project-page-create-fields">
+          <input
+            v-model="newProjectName"
+            class="project-page-create-input"
+            type="text"
+            placeholder="Project name"
+            required
+          />
+          <input
+            v-model="newProjectDescription"
+            class="project-page-create-input"
+            type="text"
+            placeholder="Description"
+            required
+          />
+          <button class="project-page-create-btn" :disabled="creating">
+            {{ creating ? 'Creating...' : 'Create Project' }}
+          </button>
+          <button
+            class="project-page-create-btn"
+            type="button"
+            style="margin-left: 8px"
+            @click="showInitDialog = true"
+          >
+            Init from Folder
+          </button>
+        </div>
+        <div v-if="createError" class="project-page-create-error">
+          {{ createError }}
+        </div>
+      </form>
 
-    <div v-if="loading" class="project-page-loading">Loading projects...</div>
-    <div v-else class="project-page-list">
-      <div
-        v-for="project in projects"
-        :key="project"
-        :class="[
-          'project-page-project-box',
-          { 'project-page-active': project === currentProjectName },
-        ]"
-        @click="selectProject(project)"
-      >
-        <span class="project-page-project-name">{{ project }}</span>
-        <span
-          v-if="project === currentProjectName"
-          class="project-page-feedback"
-          >Active</span
-        >
-      </div>
-    </div>
-    <div v-if="feedback" class="project-page-feedback-message">
-      {{ feedback }}
-    </div>
-
-    <!-- Initialize Project from Folder Section -->
-    <div class="project-page-init-section">
-      <button
-        v-if="!showInitDialog"
-        class="project-page-init-btn"
-        @click="showInitDialog = true"
-      >
-        Initialize Project from Folder
-      </button>
-
-      <!-- Modal for initializing from folder -->
-      <div
-        v-if="showInitDialog"
-        class="project-page-root"
-        style="
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          background: rgb(0 0 0 / 25%);
-          z-index: 1000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        "
-      >
+      <div v-if="loading" class="project-page-loading">Loading projects...</div>
+      <div v-else class="project-page-list">
+        <!-- Replace your project list loop with this -->
         <div
-          style="
-            background: #fff;
-            padding: 32px 24px;
-            border-radius: 16px;
-            box-shadow: 0 2px 16px rgb(0 0 0 / 8%);
-            min-width: 320px;
-          "
+          v-for="project in projects"
+          :key="project"
+          :class="[
+            'project-page-project-box',
+            { 'project-page-active': project === currentProjectName },
+          ]"
+          @click="selectProject(project)"
         >
-          <h2 style="margin-bottom: 18px">Init Project from Folder</h2>
-          <form @submit.prevent="initFromFolder">
+          <div style="display: flex; align-items: center">
+            <span class="project-page-project-name">{{ project }}</span>
+            <span
+              v-if="project === currentProjectName"
+              class="project-page-feedback"
+              >Active</span
+            >
+          </div>
+          <div class="project-page-actions">
+            <button
+              class="project-page-edit-btn"
+              title="Rename Project"
+              @click.stop="openRenameDialog(project)"
+            >
+              <font-awesome-icon icon="fa-regular fa-pen-to-square" />
+            </button>
+            <button
+              class="project-page-delete-btn"
+              title="Delete Project"
+              @click.stop="deleteProject(project)"
+            >
+              <font-awesome-icon icon="trash" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Initialize Project from Folder Section -->
+      <div class="project-page-init-section">
+        <!-- Modal for initializing from folder -->
+        <div v-if="showInitDialog" class="project-page-modal-overlay">
+          <div class="project-page-modal-content">
+            <h2 class="project-page-modal-title">Init Project from Folder</h2>
+            <form @submit.prevent="initFromFolder">
+              <input
+                v-model="initProjectName"
+                class="project-page-create-input"
+                type="text"
+                placeholder="Project name"
+                required
+              />
+              <input
+                v-model="initProjectDescription"
+                class="project-page-create-input"
+                type="text"
+                placeholder="Description"
+                required
+                style="margin-top: 8px"
+              />
+              <UploadFolder v-model="selectedFiles" />
+              <div style="margin-top: 16px; display: flex; gap: 12px">
+                <button class="project-page-create-btn" :disabled="initing">
+                  {{ initing ? 'Initializing...' : 'Init' }}
+                </button>
+                <button
+                  class="project-page-create-btn"
+                  type="button"
+                  style="background: #bdbdbd"
+                  @click="showInitDialog = false"
+                >
+                  Cancel
+                </button>
+              </div>
+              <div v-if="initError" class="project-page-create-error">
+                {{ initError }}
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rename Project Section -->
+      <div v-if="renameDialogVisible" class="project-page-modal-overlay">
+        <div class="project-page-modal-content">
+          <h2 class="project-page-modal-title">Rename Project</h2>
+          <form @submit.prevent="renameProject">
             <input
-              v-model="initProjectName"
+              v-model="renameInput"
               class="project-page-create-input"
               type="text"
-              placeholder="Project name"
+              placeholder="New project name"
               required
-            />
-            <input
-              v-model="initProjectDescription"
-              class="project-page-create-input"
-              type="text"
-              placeholder="Description"
-              required
-              style="margin-top: 8px"
-            />
-            <input
-              ref="folderInput"
-              type="file"
-              webkitdirectory
-              directory
-              multiple
-              style="margin-top: 8px"
-              required
-              @change="onFolderChange"
             />
             <div style="margin-top: 16px; display: flex; gap: 12px">
-              <button class="project-page-create-btn" :disabled="initing">
-                {{ initing ? 'Initializing...' : 'Init' }}
+              <button class="project-page-create-btn" :disabled="renaming">
+                {{ renaming ? 'Renaming...' : 'Rename' }}
               </button>
               <button
                 class="project-page-create-btn"
                 type="button"
                 style="background: #bdbdbd"
-                @click="showInitDialog = false"
+                @click="closeRenameDialog"
               >
                 Cancel
               </button>
             </div>
-            <div v-if="initError" class="project-page-create-error">
-              {{ initError }}
+            <div v-if="renameError" class="project-page-create-error">
+              {{ renameError }}
             </div>
           </form>
         </div>
       </div>
-    </div>
 
-    <!-- Project Files Section -->
-    <div class="project-page-files-section">
-      <h2 class="project-page-files-title">Project Files</h2>
-      <div v-if="filesLoading" class="project-page-files-loading">
-        Loading files...
-      </div>
-      <div
-        v-else-if="!projectFiles || projectFiles.length === 0"
-        class="project-page-no-files"
-      >
-        No files found in this project.
-      </div>
-      <div v-else class="project-page-files-list">
-        <div
-          v-for="file in projectFiles"
-          :key="file.path"
-          class="project-page-file-item"
-        >
-          <span class="project-page-file-name">{{ file.path }}</span>
-          <span class="project-page-file-type">{{ file.type }}</span>
+      <!-- Project Files Section -->
+      <!-- Project Files Tree -->
+      <div v-if="currentProjectName" class="project-page-files-tree-section">
+        <div class="project-page-files-tree-title">
+          Files in "{{ currentProjectName }}"
+          <button
+            class="project-page-create-btn"
+            style="float: right; margin-left: 16px"
+            :disabled="syncing"
+            @click="synchronizeProject"
+          >
+            {{ syncing ? 'Synchronizing...' : 'Synchronize' }}
+          </button>
         </div>
-      </div>
-    </div>
-
-    <!-- Project Files Tree -->
-    <div v-if="currentProjectName" style="margin-top: 32px">
-      <h2
-        class="project-page-title"
-        style="font-size: 1.3rem; margin-bottom: 12px"
-      >
-        Files in "{{ currentProjectName }}"
-      </h2>
-      <div v-if="filesLoading" class="project-page-loading">
-        Loading files...
-      </div>
-      <div v-else>
-        <FileTree v-if="projectFiles" :tree="projectFiles" :level="0" />
-        <div v-else class="project-page-loading">No files found.</div>
+        <div v-if="filesLoading" class="project-page-loading">
+          Loading files...
+        </div>
+        <div v-else>
+          <FileTree v-if="projectFiles" :tree="projectFiles" :level="0" />
+          <div v-else class="project-page-loading">No files found.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -188,14 +180,14 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import { useProjectStore } from '@/stores/project';
-import gitService from '@/api/service/gitService';
-import FileTree from '@/components/common/FileTree.vue';
+import { useProjectStore } from '@stores/project';
+import gitService from '@api/service/gitService';
+import FileTree from '@components/common/FileTree.vue';
+import UploadFolder from '@components/common/UploadFolder.vue';
 
 const projectStore = useProjectStore();
 const projects = ref([]);
 const loading = ref(true);
-const feedback = ref('');
 
 const newProjectName = ref('');
 const newProjectDescription = ref('');
@@ -211,7 +203,6 @@ const initError = ref('');
 const projectFiles = ref(null);
 const filesLoading = ref(false);
 
-const folderInput = ref(null);
 const selectedFiles = ref([]);
 
 const currentProjectName = computed(
@@ -221,13 +212,19 @@ const currentProjectName = computed(
     projectStore.currentProject
 );
 
+const syncing = ref(false);
+
+const renameDialogVisible = ref(false);
+const renameInput = ref('');
+const renaming = ref(false);
+const renameError = ref('');
+const renamingProject = ref(null);
+
 async function fetchProjects() {
   loading.value = true;
   try {
     const res = await gitService.listProjects();
     projects.value = res.projects;
-  } catch {
-    feedback.value = 'Failed to load projects.';
   } finally {
     loading.value = false;
   }
@@ -235,7 +232,6 @@ async function fetchProjects() {
 
 function selectProject(project) {
   projectStore.setCurrentProject(project);
-  feedback.value = `Switched to project: ${project}`;
 }
 
 async function createProject() {
@@ -250,7 +246,6 @@ async function createProject() {
       project_name: newProjectName.value.trim(),
       description: newProjectDescription.value.trim(),
     });
-    feedback.value = `Project "${newProjectName.value}" created!`;
     newProjectName.value = '';
     newProjectDescription.value = '';
     await fetchProjects();
@@ -271,8 +266,6 @@ async function fetchProjectFiles() {
   try {
     const res = await gitService.listProjectFiles(currentProjectName.value);
     projectFiles.value = res.tree || null;
-  } catch {
-    projectFiles.value = null;
   } finally {
     filesLoading.value = false;
   }
@@ -295,7 +288,6 @@ async function initFromFolder() {
       description: initProjectDescription.value.trim(),
       files: selectedFiles.value,
     });
-    feedback.value = `Project "${initProjectName.value}" initialized from folder!`;
     showInitDialog.value = false;
     initProjectName.value = '';
     initProjectDescription.value = '';
@@ -308,12 +300,96 @@ async function initFromFolder() {
   }
 }
 
-function onFolderChange(e) {
-  selectedFiles.value = Array.from(e.target.files);
+async function synchronizeProject() {
+  if (!currentProjectName.value) return;
+  syncing.value = true;
+  try {
+    await gitService.synchronizeProject(currentProjectName.value);
+    await fetchProjectFiles();
+    await fetchProjects();
+  } catch {
+    syncing.value = false;
+    console.error('Failed to synchronize project:', currentProjectName.value);
+  } finally {
+    syncing.value = false;
+  }
+}
+
+async function deleteProject(projectName) {
+  if (
+    !confirm(
+      `Are you sure you want to delete project "${projectName}"? This cannot be undone.`
+    )
+  )
+    return;
+  try {
+    await gitService.deleteProject(projectName);
+    await fetchProjects();
+    if (currentProjectName.value === projectName) {
+      projectStore.clearCurrentProject();
+      projectFiles.value = null;
+    }
+  } catch {
+    console.error('Failed to delete project:', projectName);
+  } finally {
+    await fetchProjects();
+  }
+}
+
+function openRenameDialog(project) {
+  renamingProject.value = project;
+  renameInput.value = project;
+  renameError.value = '';
+  renameDialogVisible.value = true;
+}
+
+function closeRenameDialog() {
+  renamingProject.value = null;
+  renameInput.value = '';
+  renameError.value = '';
+  renameDialogVisible.value = false;
+}
+
+async function renameProject() {
+  renameError.value = '';
+  if (!renameInput.value.trim()) {
+    renameError.value = 'Please enter a new project name.';
+    return;
+  }
+  renaming.value = true;
+  try {
+    await gitService.renameProject(
+      renamingProject.value,
+      renameInput.value.trim()
+    );
+    // Update project list and current project reactively
+    await fetchProjects();
+    if (currentProjectName.value === renamingProject.value) {
+      projectStore.renameCurrentProject(renameInput.value.trim());
+    }
+    closeRenameDialog();
+  } catch (e) {
+    renameError.value =
+      e?.response?.data?.detail || 'Failed to rename project.';
+  } finally {
+    renaming.value = false;
+  }
 }
 
 // Fetch files when current project changes
-watch(currentProjectName, fetchProjectFiles);
+watch(
+  [projects, currentProjectName],
+  ([projectsVal, currentProjectVal]) => {
+    if (
+      projectsVal.length > 0 &&
+      currentProjectVal &&
+      projectsVal.includes(currentProjectVal)
+    ) {
+      fetchProjectFiles();
+    }
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
   fetchProjects();

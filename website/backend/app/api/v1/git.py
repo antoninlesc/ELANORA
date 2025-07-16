@@ -8,6 +8,7 @@ from app.schema.requests.git import (
     CommitRequest,
     ProjectCreateRequest,
     ProjectCheckoutRequest,
+    ProjectRenameRequest,
 )
 
 from app.schema.responses.git import (
@@ -18,6 +19,7 @@ from app.schema.responses.git import (
     ProjectStatusResponse,
     ProjectCheckoutResponse,
     ProjectListResponse,
+    ProjectRenameResponse,
 )
 from app.service.git import GitService
 
@@ -74,6 +76,7 @@ async def create_project(
             project_data.project_name,
             project_data.description,
             db,
+            user.user_id,
         )
         return ProjectCreateResponse(**result)
     except ValueError as e:
@@ -269,5 +272,63 @@ async def get_project_files(
         return result  # Should be { "tree": ... }
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/projects/{project_name}/synchronize")
+async def synchronize_project(
+    project_name: str,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """
+    Synchronize the project's elan_files folder with the git repo and database.
+    """
+    try:
+        result = await git_service.synchronize_project(project_name, db, user.user_id)
+        return {"status": "success", "detail": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.delete("/projects/{project_name}")
+async def delete_project(
+    project_name: str,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """
+    Delete a project, its files, and all associated database artifacts.
+    """
+    try:
+        await git_service.delete_project(project_name, db, user.user_id)
+        return {"status": "success", "detail": f"Project '{project_name}' deleted."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post(
+    "/projects/{project_name}/rename",
+    response_model=ProjectRenameResponse,
+)
+async def rename_project(
+    project_name: str,
+    req: ProjectRenameRequest,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """
+    Rename a project (folder and DB).
+    """
+    try:
+        result = await git_service.rename_project(
+            project_name, req.new_project_name, db
+        )
+        return ProjectRenameResponse(**result)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except FileExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

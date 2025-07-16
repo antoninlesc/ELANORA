@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
 
+import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import HomePage from '@views/HomePage.vue';
 import LoginPage from '@views/LoginPage.vue';
 import RegisterPage from '@views/RegisterPage.vue';
@@ -9,19 +10,17 @@ import ForgotPassword from '@views/ForgotPassword.vue';
 import ResetPassword from '@views/ResetPassword.vue';
 import EmailVerificationPage from '@views/EmailVerificationPage.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
+import ProjectsPage from '@views/ProjectsPage.vue';
+import UploadPage from '@views/UploadPage.vue';
+import ConflictsPage from '@views/ConflictsPage.vue';
 
 // Define routes
 const routes = [
+  // Public routes
   {
     path: '/',
     name: 'LoginPage',
     component: LoginPage,
-  },
-  {
-    path: '/homePage',
-    name: 'HomePage',
-    component: HomePage,
-    meta: { requiresAuth: true },
   },
   {
     path: '/register',
@@ -29,47 +28,70 @@ const routes = [
     component: RegisterPage,
   },
   {
-    path: '/projects',
-    name: 'ProjectsPage',
-    component: () => import('@views/ProjectsPage.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/admin/invitations',
-    name: 'AdminInvitationsPage',
-    component: () => import('@views/AdminInvitationsPage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true },
-  },
-  {
     path: '/forgot-password',
     name: 'ForgotPassword',
     component: ForgotPassword,
-
   },
   {
     path: '/reset-password',
     name: 'ResetPassword',
     component: ResetPassword,
-    
   },
   {
     path: '/verify-email',
     name: 'EmailVerificationPage',
     component: EmailVerificationPage,
   },
+  // Authenticated routes with layout
   {
-    path: '/error/:statusCode',
-    name: 'HTTPStatus',
-    props: (route) => ({
-      statusCode: String(route.params.statusCode),
-      message: getErrorMessage(route.params.statusCode),
-    }),
-    component: HTTPStatus,
-  },
-  {
-    // Catch-all to redirect to 404 page when no route matches
-    path: '/:catchAll(.*)',
-    redirect: '/error/404',
+    path: '/',
+    component: DefaultLayout,
+    children: [
+      {
+        path: 'homePage',
+        name: 'HomePage',
+        component: HomePage,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'projects',
+        name: 'ProjectsPage',
+        component: () => import('@views/ProjectsPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'admin/invitations',
+        name: 'AdminInvitationsPage',
+        component: () => import('@views/AdminInvitationsPage.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true },
+      },
+      {
+        path: 'upload',
+        name: 'UploadPage',
+        component: UploadPage,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'conflicts',
+        name: 'Conflicts',
+        component: ConflictsPage,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'error/:statusCode',
+        name: 'HTTPStatus',
+        props: (route) => ({
+          statusCode: String(route.params.statusCode),
+          message: getErrorMessage(route.params.statusCode),
+        }),
+        component: HTTPStatus,
+      },
+      {
+        // Catch-all to redirect to 404 page when no route matches
+        path: '/:catchAll(.*)',
+        redirect: '/error/404',
+      },
+    ],
   },
 ];
 
@@ -106,7 +128,7 @@ function handleNotAuthenticated(eventMessageStore, to, next) {
 router.beforeEach(async (to, from, next) => {
   const eventMessageStore = useEventMessageStore();
   const userStore = useUserStore();
-  
+
   // Check if authentication verification is needed for this route
   const needsAuthCheck = to.meta.requiresAuth || to.meta.requiresAdmin || to.name === 'LoginPage';
   
@@ -118,7 +140,7 @@ router.beforeEach(async (to, from, next) => {
 
   // Handle login route: redirect if already authenticated
   if (to.name === 'LoginPage' && userStore.isAuthenticated) {
-    eventMessageStore.addMessage('event_messages.already_logged_in', 'warning');
+    eventMessageStore.addMessage('event_messages.already_logged_in', 'info');
     if (from.name) return next(false);
     return next({ name: 'HomePage' });
   }

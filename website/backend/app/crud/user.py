@@ -1,11 +1,12 @@
 """User CRUD operations - Pure database access layer."""
 
-from app.model.user import User, UserRole
-from app.schema.common.user import UserCreateData
 from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+
+from app.model.user import User, UserRole
+from app.schema.common.user import UserCreateData
 
 ROLE_ADMIN = UserRole.ADMIN
 

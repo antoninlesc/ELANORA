@@ -3,17 +3,21 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any, Dict
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
+from app.db.database import get_session_maker
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from app.crud.project import (
     create_project_db,
+    delete_project_db,
     list_projects_by_instance,
+    project_exists_by_name,
+    get_project_by_name,
 )
 
 from app.service.elan import ElanService
@@ -24,6 +28,7 @@ from app.service.git_operations import (
     FileUploadProcessor,
     GitDiffAnalyzer,
     GitMerger,
+    delete_project_folder,
 )
 
 logger = get_logger()
@@ -71,12 +76,23 @@ class GitService:
         project_name: str,
         description: str,
         db: AsyncSession,
+        user_id: int,
         instance_id: int = 1,
     ) -> dict[str, Any]:
         """Create a new project with Git repository and description."""
         project_path = self.base_path / project_name
 
+        logger.info(f"Checking if project folder exists: {project_path}")
+        logger.info(f"Folder exists? {project_path.exists()}")
+
         if project_path.exists():
+            logger.warning(f"Project folder '{project_path}' already exists.")
+            raise ValueError(f"Project '{project_name}' already exists")
+
+        exists = await project_exists_by_name(db, project_name)
+        logger.info(f"Checking if project exists in DB: {project_name} -> {exists}")
+        if exists:
+            logger.warning(f"Project '{project_name}' already exists in the database.")
             raise ValueError(f"Project '{project_name}' already exists")
 
         try:
@@ -137,6 +153,7 @@ class GitService:
                 description=description,
                 project_path=str(project_path),
                 instance_id=instance_id,
+                creator_user_id=user_id,
             )
 
             return {
@@ -323,6 +340,7 @@ class GitService:
             description=description,
             project_path=str(project_path),
             instance_id=1,
+            creator_user_id=user_id,
         )
 
         # 4. Parse and store ELAN files in DB
@@ -654,7 +672,7 @@ class GitService:
 
         runner = GitCommandRunner(project_path)
 
-        # 1. Detect current branch
+        # Detect current branch
         current_branch = None
         try:
             branches_raw = runner.get_branches()
@@ -664,9 +682,9 @@ class GitService:
                     current_branch = line[2:]
                     break
         except Exception:
-            current_branch = None  # fallback: don't restore if detection fails
+            current_branch = None
 
-        # 2. Checkout master branch before listing files
+        # Checkout master branch before listing files
         runner.checkout("master")
 
         def build_tree(path: Path) -> dict | None:
@@ -687,11 +705,118 @@ class GitService:
 
         tree = build_tree(elan_files_dir)
 
-        # 3. Restore previous branch if needed
+        # Restore previous branch if needed
         if current_branch and current_branch != "master":
             try:
                 runner.checkout(current_branch)
             except Exception:
-                pass  # Don't fail if we can't restore
+                pass
 
         return {"tree": tree}
+
+    async def synchronize_project(
+        self, project_name: str, db: AsyncSession, user_id: int
+    ):
+        """
+        - Checkout master branch
+        - Add/commit new/changed .eaf files in elan_files/
+        - Parse all .eaf files and update the DB
+        """
+        project_path = self.base_path / project_name
+        elan_files_dir = project_path / "elan_files"
+        runner = GitCommandRunner(project_path)
+
+        # Work on master branch
+        current_branch = None
+        try:
+            branches_raw = runner.get_branches()
+            for line in branches_raw:
+                line = line.strip()
+                if line.startswith("* "):
+                    current_branch = line[2:]
+                    break
+        except Exception:
+            pass
+        if current_branch != "master":
+            runner.checkout("master")
+
+        # Add and commit new/changed .eaf files
+        runner.add_all()
+        if runner.get_status().strip():
+            runner.commit("Synchronize .eaf files from filesystem")
+
+        elan_service = ElanService(db)
+        elan_files = list(elan_files_dir.rglob("*.eaf"))
+        for elan_file in elan_files:
+            await elan_service.process_single_file(
+                str(elan_file), user_id, project_name
+            )
+
+        # Restore previous branch
+        if current_branch and current_branch != "master":
+            try:
+                runner.checkout(current_branch)
+            except Exception:
+                pass
+
+        return (
+            f"Synchronized {len(elan_files)} .eaf files for project '{project_name}'."
+        )
+
+    async def delete_project(self, project_name: str, db: AsyncSession, user_id: int):
+        logger.info(f"Starting deletion of project: {project_name}")
+        # Remove all DB artifacts (project, files, annotations, etc.)
+        try:
+            await delete_project_db(db, project_name)
+            logger.info(f"Database records deleted for project: {project_name}")
+        except Exception as db_exc:
+            logger.error(
+                f"Failed to delete project from DB: {project_name} | Error: {db_exc}"
+            )
+            raise
+
+        # Remove the project folder from disk
+        project_path = self.base_path / project_name
+        delete_project_folder(project_path)
+
+    async def rename_project(
+        self,
+        old_project_name: str,
+        new_project_name: str,
+        db: AsyncSession,
+    ) -> dict:
+        logger.info(
+            f"Starting rename of project: '{old_project_name}' to '{new_project_name}'"
+        )
+        project = await get_project_by_name(db, old_project_name)
+        if not project:
+            logger.error(f"Project '{old_project_name}' not found in DB")
+            raise ValueError(f"Project '{old_project_name}' not found in DB")
+
+        old_path = Path(self.base_path) / old_project_name
+        new_path = Path(self.base_path) / new_project_name
+        if not old_path.exists():
+            logger.error(f"Project folder '{old_project_name}' not found at {old_path}")
+            raise FileNotFoundError(f"Project folder '{old_project_name}' not found")
+        if new_path.exists():
+            logger.error(
+                f"Target project folder '{new_project_name}' already exists at {new_path}"
+            )
+            raise FileExistsError(
+                f"Target project folder '{new_project_name}' already exists"
+            )
+        try:
+            os.rename(old_path, new_path)
+            logger.info(f"Renamed folder from '{old_path}' to '{new_path}'")
+        except Exception as e:
+            logger.error(f"Failed to rename folder: {e}")
+            raise
+
+        project.project_name = new_project_name
+        project.project_path = str(new_path)
+        await db.commit()
+        logger.info(
+            f"Renamed project in DB: '{old_project_name}' -> '{new_project_name}'"
+        )
+
+        return {"new_project_name": new_project_name}
