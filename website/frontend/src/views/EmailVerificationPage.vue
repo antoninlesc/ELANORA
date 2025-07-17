@@ -142,7 +142,7 @@ export default {
       userEmail.value = route.query.email || localStorage.getItem('pendingVerificationEmail') || ''
       
       if (!userEmail.value) {
-        router.push('/login')
+        router.push({ name: 'LoginPage' })
       }
       
       // Start initial cooldown if this is a fresh verification request
@@ -197,7 +197,7 @@ export default {
           
           // Redirect to login after a short delay
           setTimeout(() => {
-            router.push('/login?verified=true')
+            router.push({ name: 'LoginPage', query: { verified: 'true' } })
           }, 2000)
         } else {
           validationMessage.value = response.data.message || t('emailVerification.errors.invalidCode')
