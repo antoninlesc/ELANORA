@@ -7,6 +7,9 @@ from app.model.elan_file import ElanFile
 from app.model.associations import ConflictOfElanFile, ElanFileToProject
 from app.model.enums import ConflictType, ConflictSeverity, ConflictStatus
 from typing import List, Optional
+from app.core.centralized_logging import get_logger
+
+logger = get_logger()
 
 
 async def save_git_conflicts(
