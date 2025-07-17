@@ -1,83 +1,70 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
-import asyncio
-from app.model.annotation_value import AnnotationValue
+
 from app.core.centralized_logging import get_logger
-from sqlalchemy.dialects.mysql import insert as mysql_insert
+from app.model.annotation_value import AnnotationValue
+from app.utils.database import DatabaseUtils
 
 logger = get_logger()
 
 
 async def get_or_create_annotation_value(db: AsyncSession, value: str) -> int:
-    result = await db.execute(
-        select(AnnotationValue).where(AnnotationValue.annotation_value == value)
+    """Get the ID of an annotation value, or create it if it doesn't exist."""
+    filters = {"annotation_value": value}
+    annotation_value = await DatabaseUtils.get_one_by_filter(
+        db, AnnotationValue, filters
     )
-    annotation_value = result.scalars().first()
     if annotation_value:
         return annotation_value.value_id
     annotation_value = AnnotationValue(annotation_value=value)
-    db.add(annotation_value)
-    await db.flush()
+    await DatabaseUtils.create_and_commit(db, annotation_value)
     return annotation_value.value_id
 
 
 async def get_annotation_value_by_id(db: AsyncSession, value_id: int) -> str | None:
-    result = await db.execute(
-        select(AnnotationValue).where(AnnotationValue.value_id == value_id)
+    """Get the annotation value string by its ID."""
+    annotation_value = await DatabaseUtils.get_by_id(
+        db, AnnotationValue, "value_id", value_id
     )
-    annotation_value = result.scalars().first()
     return annotation_value.annotation_value if annotation_value else None
 
 
 async def bulk_get_or_create_annotation_values(
     db: AsyncSession, tiers_data: list[dict]
 ) -> dict[str, int]:
+    """Bulk get or create annotation values, returning a mapping from value to ID."""
     all_ann_values = set(
         ann["annotation_value"]
         for tier_data in tiers_data
         for ann in tier_data["annotations"]
     )
+    logger.info(f"Extracted unique values: {all_ann_values}")
     value_map = {}
-    logger.info(
-        f"[bulk_get_or_create_annotation_values] Start. Total unique values: {len(all_ann_values)}"
-    )
+    logger.info(f"Start. Total unique values: {len(all_ann_values)}")
     if all_ann_values:
-        # Fetch existing values
-        result = await db.execute(
-            select(AnnotationValue).where(
-                AnnotationValue.annotation_value.in_(all_ann_values)
-            )
+        # Fetch existing values using DatabaseUtils
+        filters = {"annotation_value": list(all_ann_values)}
+        existing_values = await DatabaseUtils.get_by_filter(
+            db, AnnotationValue, filters
         )
-        for obj in result.scalars():
+        for obj in existing_values:
             value_map[obj.annotation_value] = obj.value_id
         missing_values = [v for v in all_ann_values if v not in value_map]
         logger.info(
-            f"[bulk_get_or_create_annotation_values] Existing values in DB: {len(value_map)}. Missing: {len(missing_values)}"
+            f"Existing values in DB: {len(value_map)}. Missing: {len(missing_values)}"
         )
         if missing_values:
-            # Use MySQL ON DUPLICATE KEY UPDATE for idempotent insert
-            stmt = mysql_insert(AnnotationValue).values(
-                [{"annotation_value": v} for v in missing_values]
+            # Bulk insert missing values using DatabaseUtils
+            await DatabaseUtils.bulk_insert(
+                db,
+                AnnotationValue,
+                [{"annotation_value": v} for v in missing_values],
+                ignore_duplicates=True,
             )
-            # Do nothing if duplicate (no-op update)
-            stmt = stmt.on_duplicate_key_update(
-                annotation_value=stmt.inserted.annotation_value
-            )
-            await db.execute(stmt)
-            await db.commit()
-            logger.info(
-                f"[bulk_get_or_create_annotation_values] Inserted or ignored {len(missing_values)} values."
-            )
-            # Re-fetch to get IDs
-            result = await db.execute(
-                select(AnnotationValue).where(
-                    AnnotationValue.annotation_value.in_(missing_values)
-                )
-            )
-            for obj in result.scalars():
+            logger.info(f"Inserted or ignored {len(missing_values)} values.")
+            # Fetch all values again to update the map
+            filters = {"annotation_value": list(missing_values)}
+            new_values = await DatabaseUtils.get_by_filter(db, AnnotationValue, filters)
+            for obj in new_values:
                 value_map[obj.annotation_value] = obj.value_id
-    logger.info(
-        f"[bulk_get_or_create_annotation_values] Completed. Returning value_map with {len(value_map)} entries."
-    )
+    logger.info(f"Completed. Returning value_map with {len(value_map)} entries.")
     return value_map

@@ -49,10 +49,16 @@ class Conflict(Base):
     resolved_by: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("USER.user_id"), nullable=True
     )
-    branch_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    branch_name: Mapped[str | None] = mapped_column(
+        String(255, ondelete="CASCADE"), nullable=True
+    )
     git_details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    project_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("PROJECT.project_id", ondelete="CASCADE"), nullable=False
+    )
 
     # Relationships
+    project: Mapped["Project"] = relationship("Project", back_populates="conflicts")
     resolver: Mapped[Optional["User"]] = relationship(
         "User", foreign_keys=[resolved_by], back_populates="resolved_conflicts"
     )

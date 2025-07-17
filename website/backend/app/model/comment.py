@@ -36,10 +36,10 @@ class Comment(Base):
         DateTime, default=func.current_timestamp()
     )
     user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("USER.user_id"), nullable=False
+        Integer, ForeignKey("USER.user_id", ondelete="CASCADE"), nullable=False
     )
     parent_comment_id: Mapped[str | None] = mapped_column(
-        String(50), ForeignKey("COMMENT.comment_id"), nullable=True
+        String(50), ForeignKey("COMMENT.comment_id", ondelete="CASCADE"), nullable=True
     )
 
     # Relationships

@@ -47,7 +47,7 @@ export const useUserStore = defineStore('user', {
           this.authState.isAuthenticated = true;
           this.authState.initialized = true;
           console.log(
-            'verifyAuthentication:',
+            'verifyAuthentication successful:',
             userResponse.data,
             this.authState.isAuthenticated
           );
@@ -58,7 +58,12 @@ export const useUserStore = defineStore('user', {
           return false;
         }
       } catch (error) {
-        console.error('Error verifying authentication:', error);
+        // Only log error if it's not a 401 (which is expected when not authenticated)
+        if (error.response?.status !== 401) {
+          console.error('Error verifying authentication:', error);
+        } else {
+          console.log('User not authenticated (401 response expected)');
+        }
         this.clearAuth();
         this.authState.initialized = true;
         return false;

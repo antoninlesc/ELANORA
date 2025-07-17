@@ -15,9 +15,9 @@ from sqlalchemy.future import select
 from app.crud.project import (
     create_project_db,
     delete_project_db,
+    get_project_by_name,
     list_projects_by_instance,
     project_exists_by_name,
-    get_project_by_name,
 )
 from app.crud.conflicts import save_git_conflicts, get_git_conflicts_for_branch
 from app.model.enums import ConflictStatus
@@ -25,12 +25,18 @@ from app.model.enums import ConflictStatus
 from app.service.elan import ElanService
 from app.service.git_diff_parser import GitDiffParser
 from app.service.git_operations import (
-    GitCommandRunner,
-    GitBranchManager,
     FileUploadProcessor,
+    GitBranchManager,
+    GitCommandRunner,
     GitDiffAnalyzer,
     GitMerger,
     delete_project_folder,
+)
+from app.utils.project_setup_utils import (
+    copy_githooks,
+    create_gitignore,
+    create_project_structure,
+    create_readme,
 )
 
 logger = get_logger()
@@ -98,28 +104,18 @@ class GitService:
             raise ValueError(f"Project '{project_name}' already exists")
 
         try:
-            # Create project directory
-            project_path.mkdir(parents=True, exist_ok=True)
+            # Create project directory and structure
+            create_project_structure(project_path)
 
             runner = GitCommandRunner(project_path)
-
-            # Initialize Git repository
             runner.init_repo()
 
-            # Create project structure
-            (project_path / "elan_files").mkdir(exist_ok=True)
+            # Create .gitignore and README
+            create_gitignore(project_path)
+            create_readme(project_path, project_name)
 
-            # Create .gitignore to only track .eaf files in elan_files/
-            gitignore_content = (
-                "*\n!.gitignore\n!README.md\n!elan_files/\n!elan_files/*.eaf\n"
-            )
-            with open(project_path / ".gitignore", "w", encoding="utf-8") as f:
-                f.write(gitignore_content)
-
-            # Create README
-            readme_content = self._create_readme(project_name)
-            with open(project_path / "README.md", "w", encoding="utf-8") as f:
-                f.write(readme_content)
+            # Copy githooks
+            copy_githooks(project_path, project_name)
 
             # Initial commit
             runner.add_all()
@@ -137,7 +133,7 @@ class GitService:
                     hook_dest = hooks_dir / hook_name
 
                     # Read template and substitute variables
-                    with open(hook_file, "r", encoding="utf-8") as f:
+                    with open(hook_file, encoding="utf-8") as f:
                         hook_content = f.read()
                     hook_content = (
                         hook_content.replace("{{REPO_NAME}}", project_name)
@@ -312,7 +308,7 @@ class GitService:
         db: AsyncSession,
         user_id: int,
     ) -> dict:
-        # 1. Create the project at the usual path
+        # Create the project at the usual path
         project_path = self.base_path / project_name
         elan_files_dir = project_path / "elan_files"
         if project_path.exists():
@@ -320,17 +316,16 @@ class GitService:
         project_path.mkdir(parents=True, exist_ok=True)
         elan_files_dir.mkdir(parents=True, exist_ok=True)
 
-        # 2. Save only .eaf files, preserving folder structure
+        # Save only .eaf files, preserving folder structure
         for file in files:
             if not file.filename or not file.filename.lower().endswith(".eaf"):
                 continue
             # file.filename is the relative path (e.g., "subfolder/file.eaf")
-            dest_path = elan_files_dir / file.filename
-            dest_path.parent.mkdir(parents=True, exist_ok=True)
+            dest_path = elan_files_dir / Path(file.filename).name
             with open(dest_path, "wb") as f:
                 shutil.copyfileobj(file.file, f)
 
-        # 3. Initialize git repo, commit, and register in DB (reuse your existing logic)
+        # Initialize git repo, commit, and register in DB (reuse your existing logic)
         runner = GitCommandRunner(project_path)
         runner.init_repo()
         runner.add_all()
@@ -345,7 +340,7 @@ class GitService:
             creator_user_id=user_id,
         )
 
-        # 4. Parse and store ELAN files in DB
+        # Parse and store ELAN files in DB
         elan_service = ElanService(db)
         elan_files = list(elan_files_dir.rglob("*.eaf"))
         for elan_file in elan_files:
@@ -849,9 +844,8 @@ class GitService:
         except Exception as e:
             raise RuntimeError(f"Failed to checkout branch: {e}") from e
 
-    async def list_project_files(self, project_name: str) -> Dict[str, Any]:
-        """
-        Return a tree of .eaf files and folders containing .eaf files for the given project,
+    async def list_project_files(self, project_name: str) -> dict[str, Any]:
+        """Return a tree of .eaf files and folders containing .eaf files for the given project,
         always from the master branch. Restore the previous branch after listing.
         """
         project_path = self.base_path / project_name
@@ -908,8 +902,7 @@ class GitService:
     async def synchronize_project(
         self, project_name: str, db: AsyncSession, user_id: int
     ):
-        """
-        - Checkout master branch
+        """- Checkout master branch
         - Add/commit new/changed .eaf files in elan_files/
         - Parse all .eaf files and update the DB
         """
@@ -954,7 +947,8 @@ class GitService:
             f"Synchronized {len(elan_files)} .eaf files for project '{project_name}'."
         )
 
-    async def delete_project(self, project_name: str, db: AsyncSession, user_id: int):
+    async def delete_project(self, project_name: str, db: AsyncSession):
+        """Delete a project by its ID."""
         logger.info(f"Starting deletion of project: {project_name}")
         # Remove all DB artifacts (project, files, annotations, etc.)
         try:
@@ -967,6 +961,9 @@ class GitService:
             raise
 
         # Remove the project folder from disk
+        if not project_name:
+            logger.error(f"Project name not found for project_name: {project_name}")
+            raise ValueError(f"Project name not found for project_name: {project_name}")
         project_path = self.base_path / project_name
         delete_project_folder(project_path)
 

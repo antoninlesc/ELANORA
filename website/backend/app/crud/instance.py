@@ -1,12 +1,11 @@
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.model.instance import Instance
+from app.utils.database import DatabaseUtils
 
 
 async def get_instance_count(db: AsyncSession) -> int:
-    result = await db.execute(select(func.count()).select_from(Instance))
-    return result.scalar_one()
+    return await DatabaseUtils.count(db, Instance, None)
 
 
 async def create_instance(
@@ -26,7 +25,4 @@ async def create_instance(
         timezone=timezone,
         default_language=language,
     )
-    db.add(instance)
-    await db.commit()
-    await db.refresh(instance)
-    return instance
+    return await DatabaseUtils.create_and_commit(db, instance)

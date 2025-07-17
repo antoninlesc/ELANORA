@@ -1,4 +1,3 @@
-from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -33,8 +32,8 @@ class ElanFileToTier(Base):
     elan_id: Mapped[int] = mapped_column(
         Integer, ForeignKey(ELAN_FILE_ELANID_FK), primary_key=True
     )
-    tier_id: Mapped[str] = mapped_column(
-        String(50), ForeignKey("TIER.tier_id"), primary_key=True
+    tier_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("TIER.tier_id"), primary_key=True
     )
 
 
@@ -63,7 +62,7 @@ class UserToProject(Base):
         Integer, ForeignKey("USER.user_id"), primary_key=True
     )
     permission: Mapped[ProjectPermission] = mapped_column(
-        SQLEnum(ProjectPermission), nullable=False, default=ProjectPermission.READ
+        String(20), nullable=False, default=ProjectPermission.READ
     )
 
 

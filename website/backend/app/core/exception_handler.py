@@ -14,6 +14,8 @@ from app.core.logging import get_rotating_logger
 try:
     from app.core.config import (
         EXCEPTION_LOG_DIR as CONFIG_LOG_DIR,
+    )
+    from app.core.config import (
         EXCEPTION_LOG_LEVEL as CONFIG_LOG_LEVEL,
     )
 
