@@ -19,13 +19,12 @@ class ElanFile(Base):
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("USER.user_id"), nullable=False
+    user_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("USER.user_id", ondelete="SET NULL"), nullable=True
     )
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="elan_files")
-    tiers: Mapped[list["Tier"]] = relationship("Tier", back_populates="elan_file")
 
     def __repr__(self) -> str:
         """Return a string representation of the ElanFile."""

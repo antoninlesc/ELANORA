@@ -22,7 +22,7 @@ class Project(Base):
     project_name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     instance_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("INSTANCE.instance_id"), nullable=False
+        Integer, ForeignKey("INSTANCE.instance_id", ondelete="CASCADE"), nullable=False
     )
     project_path: Mapped[str] = mapped_column(String(512), nullable=False, unique=True)
 

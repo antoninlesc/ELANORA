@@ -20,6 +20,7 @@ from app.dependency.user import get_user_dep
 from app.model.user import User
 from app.schema.common.token import TokenData
 from app.schema.requests.register_with_invitation import RegisterWithInvitationRequest
+from app.schema.requests.register_with_invitation import RegisterWithInvitationRequest
 from app.schema.requests.user import (
     ForgotPasswordRequest,
     LoginRequest,
@@ -28,7 +29,7 @@ from app.schema.requests.user import (
     VerifyEmailRequest,
 )
 from app.schema.responses.user import LoginResponse, RegistrationResponse, UserResponse
-from app.service.email_service import EmailService
+from app.service.email import EmailService
 from app.service.invitation import InvitationService
 from app.service.user import UserService
 

@@ -231,7 +231,7 @@ async def list_projects(
     user: User = get_admin_dep,
 ):
     """List all project names for the current instance."""
-    instance_id = 1  # Replace with actual logic
+    instance_id = 1
     project_names = await git_service.list_projects(db, instance_id)
     return ProjectListResponse(projects=project_names)
 
@@ -263,7 +263,7 @@ async def get_project_files(
     """List all .eaf files and folders containing .eaf files in a project as a tree."""
     try:
         result = await git_service.list_project_files(project_name)
-        return result  # Should be { "tree": ... }
+        return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
@@ -292,7 +292,7 @@ async def delete_project(
 ):
     """Delete a project, its files, and all associated database artifacts."""
     try:
-        await git_service.delete_project(project_name, db, user.user_id)
+        await git_service.delete_project(project_name, db)
         return {"status": "success", "detail": f"Project '{project_name}' deleted."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

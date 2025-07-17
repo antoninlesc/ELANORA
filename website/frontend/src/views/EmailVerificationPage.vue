@@ -4,9 +4,18 @@
       <!-- Header -->
       <div class="verification-header">
         <div class="icon-container">
-          <svg class="verification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                  d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          <svg
+            class="verification-icon"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+            />
           </svg>
         </div>
         <h1 class="verification-title">{{ $t('emailVerification.title') }}</h1>
@@ -67,7 +76,9 @@
             class="btn-primary verify-button"
             :disabled="!verificationCode || verificationCode.length !== 6 || isLoading"
           >
-            <span v-if="!isLoading">{{ $t('emailVerification.verifyButton') }}</span>
+            <span v-if="!isLoading">{{
+              $t('emailVerification.verifyButton')
+            }}</span>
             <span v-else>{{ $t('emailVerification.verifying') }}</span>
           </button>
         </form>
@@ -114,141 +125,166 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { sendVerificationEmail, verifyEmail } from '@api/service/authService.js'
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
+import {
+  sendVerificationEmail,
+  verifyEmail,
+} from '@api/service/authService.js';
 
 export default {
   name: 'EmailVerificationPage',
   setup() {
-    const router = useRouter()
-    const route = useRoute()
-    const { t } = useI18n()
+    const router = useRouter();
+    const route = useRoute();
+    const { t } = useI18n();
 
     // Reactive data
-    const verificationCode = ref('')
-    const userEmail = ref('')
-    const isLoading = ref(false)
-    const isResending = ref(false)
-    const validationMessage = ref('')
-    const successMessage = ref('')
-    const resendCooldown = ref(0)
-    
-    let cooldownInterval = null
+    const verificationCode = ref('');
+    const userEmail = ref('');
+    const isLoading = ref(false);
+    const isResending = ref(false);
+    const validationMessage = ref('');
+    const successMessage = ref('');
+    const resendCooldown = ref(0);
+
+    let cooldownInterval = null;
 
     // Get email from route query or localStorage
     onMounted(() => {
-      userEmail.value = route.query.email || localStorage.getItem('pendingVerificationEmail') || ''
-      
+      userEmail.value =
+        route.query.email ||
+        localStorage.getItem('pendingVerificationEmail') ||
+        '';
+
       if (!userEmail.value) {
         router.push({ name: 'LoginPage' })
       }
-      
+
       // Start initial cooldown if this is a fresh verification request
       if (route.query.freshCode) {
-        startResendCooldown()
+        startResendCooldown();
       }
-    })
+    });
 
     onUnmounted(() => {
       if (cooldownInterval) {
-        clearInterval(cooldownInterval)
+        clearInterval(cooldownInterval);
       }
-    })
+    });
 
     // Handle code input
     const onCodeInput = () => {
       // Clear validation messages when user types
-      validationMessage.value = ''
-      successMessage.value = ''
-      
+      validationMessage.value = '';
+      successMessage.value = '';
+
       // Auto-format to digits only and limit to 6 characters
-      verificationCode.value = verificationCode.value.replace(/\D/g, '').slice(0, 6)
-    }
+      verificationCode.value = verificationCode.value
+        .replace(/\D/g, '')
+        .slice(0, 6);
+    };
 
     // Handle key press
     const onKeyPress = (event) => {
       // Only allow digits
-      if (!/\d/.test(event.key) && !['Backspace', 'Delete', 'Tab', 'Enter'].includes(event.key)) {
-        event.preventDefault()
+      if (
+        !/\d/.test(event.key) &&
+        !['Backspace', 'Delete', 'Tab', 'Enter'].includes(event.key)
+      ) {
+        event.preventDefault();
       }
-    }
+    };
 
     // Handle verification
     const handleVerification = async () => {
       if (!verificationCode.value || verificationCode.value.length !== 6) {
-        validationMessage.value = t('emailVerification.errors.invalidCodeLength')
-        return
+        validationMessage.value = t(
+          'emailVerification.errors.invalidCodeLength'
+        );
+        return;
       }
 
-      isLoading.value = true
-      validationMessage.value = ''
-      successMessage.value = ''
+      isLoading.value = true;
+      validationMessage.value = '';
+      successMessage.value = '';
 
       try {
-        const response = await verifyEmail(userEmail.value, verificationCode.value)
+        const response = await verifyEmail(
+          userEmail.value,
+          verificationCode.value
+        );
 
         if (response.data.success) {
-          successMessage.value = t('emailVerification.success')
-          
+          successMessage.value = t('emailVerification.success');
+
           // Clear pending verification email
-          localStorage.removeItem('pendingVerificationEmail')
-          
+          localStorage.removeItem('pendingVerificationEmail');
+
           // Redirect to login after a short delay
           setTimeout(() => {
             router.push({ name: 'LoginPage', query: { verified: 'true' } })
           }, 2000)
         } else {
-          validationMessage.value = response.data.message || t('emailVerification.errors.invalidCode')
+          validationMessage.value =
+            response.data.message || t('emailVerification.errors.invalidCode');
         }
       } catch (error) {
-        console.error('Email verification error:', error)
-        validationMessage.value = error.response?.data?.detail || t('emailVerification.errors.verificationFailed')
+        console.error('Email verification error:', error);
+        validationMessage.value =
+          error.response?.data?.detail ||
+          t('emailVerification.errors.verificationFailed');
       } finally {
-        isLoading.value = false
+        isLoading.value = false;
       }
-    }
+    };
 
     // Resend verification code
     const resendVerificationCode = async () => {
       if (resendCooldown.value > 0 || isResending.value) {
-        return
+        return;
       }
 
-      isResending.value = true
-      validationMessage.value = ''
-      successMessage.value = ''
+      isResending.value = true;
+      validationMessage.value = '';
+      successMessage.value = '';
 
       try {
-        const response = await sendVerificationEmail(userEmail.value, localStorage.getItem('language') || 'en')
+        const response = await sendVerificationEmail(
+          userEmail.value,
+          localStorage.getItem('language') || 'en'
+        );
 
         if (response.data.success) {
-          successMessage.value = t('emailVerification.resendSuccess')
-          startResendCooldown()
+          successMessage.value = t('emailVerification.resendSuccess');
+          startResendCooldown();
         } else {
-          validationMessage.value = response.data.message || t('emailVerification.errors.resendFailed')
+          validationMessage.value =
+            response.data.message || t('emailVerification.errors.resendFailed');
         }
       } catch (error) {
-        console.error('Resend verification error:', error)
-        validationMessage.value = error.response?.data?.detail || t('emailVerification.errors.resendFailed')
+        console.error('Resend verification error:', error);
+        validationMessage.value =
+          error.response?.data?.detail ||
+          t('emailVerification.errors.resendFailed');
       } finally {
-        isResending.value = false
+        isResending.value = false;
       }
-    }
+    };
 
     // Start resend cooldown
     const startResendCooldown = () => {
-      resendCooldown.value = 60 // 60 seconds cooldown
-      
+      resendCooldown.value = 60; // 60 seconds cooldown
+
       cooldownInterval = setInterval(() => {
-        resendCooldown.value--
+        resendCooldown.value--;
         if (resendCooldown.value <= 0) {
-          clearInterval(cooldownInterval)
-          cooldownInterval = null
+          clearInterval(cooldownInterval);
+          cooldownInterval = null;
         }
-      }, 1000)
-    }
+      }, 1000);
+    };
 
     return {
       verificationCode,
@@ -261,11 +297,10 @@ export default {
       handleVerification,
       resendVerificationCode,
       onCodeInput,
-      onKeyPress
-    }
-  }
-}
+      onKeyPress,
+    };
+  },
+};
 </script>
 
-<style scoped src="@/assets/css/email-verification.css">
-</style>
+<style scoped src="@/assets/css/email-verification.css"></style>

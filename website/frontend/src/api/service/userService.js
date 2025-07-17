@@ -14,7 +14,9 @@ export async function fetchUser() {
  * @returns {Promise<{ available: boolean, message: string }>}
  */
 export async function checkUsernameAvailability(username) {
-  const response = await axiosInstance.get(`/auth/check-username/${encodeURIComponent(username)}`);
+  const response = await axiosInstance.get(
+    `/auth/check-username/${encodeURIComponent(username)}`
+  );
   return response.data;
 }
 
@@ -24,6 +26,8 @@ export async function checkUsernameAvailability(username) {
  * @returns {Promise<{ available: boolean, message: string }>}
  */
 export async function checkEmailAvailability(email) {
-  const response = await axiosInstance.get(`/auth/check-email/${encodeURIComponent(email)}`);
+  const response = await axiosInstance.get(
+    `/auth/check-email/${encodeURIComponent(email)}`
+  );
   return response.data;
 }

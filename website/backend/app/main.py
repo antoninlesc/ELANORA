@@ -8,7 +8,6 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.auth import router as auth_router
 from app.api.v1.git import router as git_router
-
 from app.api.v1.invitation import router as invitation_router
 from app.api.v1.location import router as location_router
 from app.api.v1.user import router as user_router
@@ -72,7 +71,6 @@ app.add_middleware(
 app.include_router(git_router, prefix=f"{API_V1_PREFIX}/git", tags=["GIT"])
 app.include_router(user_router, prefix=f"{API_V1_PREFIX}/user", tags=["USER"])
 app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["AUTHENTICATION"])
-# app.include_router(tier_router, prefix=f"{API_V1_PREFIX}/tier", tags=["TIER"])
 app.include_router(
     invitation_router, prefix=f"{API_V1_PREFIX}/invitation", tags=["INVITATION"]
 )

@@ -40,7 +40,7 @@ class Invitation(Base):
     )
     receiver_email: Mapped[str] = mapped_column(String(100), nullable=False)
     project_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("PROJECT.project_id"), nullable=False
+        Integer, ForeignKey("PROJECT.project_id", ondelete="CASCADE"), nullable=False
     )
 
     # Relationships

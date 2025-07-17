@@ -5,7 +5,12 @@
         <img src="/images/logos/ELANora-logo.png" alt="ELANORA Logo" class="register-logo" />
         <h1 class="register-title">{{ t('register.title') }}</h1>
         <p v-if="invitationValid" class="register-subtitle invitation-welcome">
-          {{ t('register.invitation_welcome', { senderName: invitationInfo?.sender_username || 'Un administrateur' }) }}
+          {{
+            t('register.invitation_welcome', {
+              senderName:
+                invitationInfo?.sender_username || 'Un administrateur',
+            })
+          }}
         </p>
         <p v-else class="register-subtitle">
           {{ t('register.subtitle') }}
@@ -19,16 +24,18 @@
             {{ t('register.invitation_code_label') }}
             <span class="required">*</span>
           </label>
-          <input 
+          <input
             id="invitation-code"
             v-model="invitationCode"
             type="text"
             class="form-input"
-            :class="{ 'error': invitationError }"
+            :class="{ error: invitationError }"
             :placeholder="t('register.invitation_code_placeholder')"
             @input="validateInvitationCode"
           />
-          <div v-if="invitationError" class="error-message">{{ invitationError }}</div>
+          <div v-if="invitationError" class="error-message">
+            {{ invitationError }}
+          </div>
           <div v-if="invitationValidating" class="info-message">
             {{ t('register.validating_invitation') }}
           </div>
@@ -39,43 +46,67 @@
       </div>
 
       <!-- Registration Form -->
-      <form v-if="invitationValid" @submit.prevent="handleRegister" class="register-form">
+      <form
+        v-if="invitationValid"
+        class="register-form"
+        @submit.prevent="handleRegister"
+      >
         <div class="form-row">
           <div class="form-group">
             <label for="first-name" class="form-label">
               {{ t('register.first_name_label') }}
               <span class="required">*</span>
             </label>
-            <input 
+            <input
               id="first-name"
               v-model="form.firstName"
               type="text"
               class="form-input"
-              :class="{ 'error': validationErrors.firstName, 'valid': form.firstName && !validationErrors.firstName }"
+              :class="{
+                error: validationErrors.firstName,
+                valid: form.firstName && !validationErrors.firstName,
+              }"
               :placeholder="t('register.first_name_placeholder')"
               required
               @blur="validateField('firstName')"
             />
-            <div v-if="validationErrors.firstName" class="error-message">{{ validationErrors.firstName }}</div>
-            <div v-else-if="form.firstName && !validationErrors.firstName" class="success-message">✓</div>
+            <div v-if="validationErrors.firstName" class="error-message">
+              {{ validationErrors.firstName }}
+            </div>
+            <div
+              v-else-if="form.firstName && !validationErrors.firstName"
+              class="success-message"
+            >
+              ✓
+            </div>
           </div>
           <div class="form-group">
             <label for="last-name" class="form-label">
               {{ t('register.last_name_label') }}
               <span class="required">*</span>
             </label>
-            <input 
+            <input
               id="last-name"
               v-model="form.lastName"
               type="text"
               class="form-input"
-              :class="{ 'error': validationErrors.lastName, 'valid': form.lastName && !validationErrors.lastName }"
+              :class="{
+                error: validationErrors.lastName,
+                valid: form.lastName && !validationErrors.lastName,
+              }"
               :placeholder="t('register.last_name_placeholder')"
               required
               @blur="validateField('lastName')"
             />
-            <div v-if="validationErrors.lastName" class="error-message">{{ validationErrors.lastName }}</div>
-            <div v-else-if="form.lastName && !validationErrors.lastName" class="success-message">✓</div>
+            <div v-if="validationErrors.lastName" class="error-message">
+              {{ validationErrors.lastName }}
+            </div>
+            <div
+              v-else-if="form.lastName && !validationErrors.lastName"
+              class="success-message"
+            >
+              ✓
+            </div>
           </div>
         </div>
 
@@ -83,31 +114,50 @@
           <label for="username" class="form-label">
             {{ t('register.username_label') }}
             <span class="required">*</span>
-            <span class="field-requirements">• 3-20 characters • Letters, numbers, and underscores only</span>
+            <span class="field-requirements"
+              >• 3-20 characters • Letters, numbers, and underscores only</span
+            >
           </label>
           <div class="input-with-indicator">
-            <input 
+            <input
               id="username"
               v-model="form.username"
               type="text"
               class="form-input"
-              :class="{ 
-                'error': validationErrors.username || usernameAvailable === false,
-                'valid': usernameAvailable === true && !validationErrors.username,
-                'loading': usernameCheckLoading
+              :class="{
+                error: validationErrors.username || usernameAvailable === false,
+                valid: usernameAvailable === true && !validationErrors.username,
+                loading: usernameCheckLoading,
               }"
               :placeholder="t('register.username_placeholder')"
               required
               autocomplete="username"
               maxlength="20"
               @focus="usernameInputFocused = true"
-              @blur="usernameInputFocused = false; validateField('username')"
+              @blur="
+                usernameInputFocused = false;
+                validateField('username');
+              "
               @input="onUsernameInput"
             />
             <div class="input-indicator">
               <div v-if="usernameCheckLoading" class="loading-spinner"></div>
-              <div v-else-if="usernameAvailable === true && !validationErrors.username" class="success-icon">✓</div>
-              <div v-else-if="usernameAvailable === false || validationErrors.username" class="error-icon">✗</div>
+              <div
+                v-else-if="
+                  usernameAvailable === true && !validationErrors.username
+                "
+                class="success-icon"
+              >
+                ✓
+              </div>
+              <div
+                v-else-if="
+                  usernameAvailable === false || validationErrors.username
+                "
+                class="error-icon"
+              >
+                ✗
+              </div>
             </div>
           </div>
           <div class="validation-messages">
@@ -115,7 +165,8 @@
               <i class="error-icon-small">⚠</i>{{ validationErrors.username }}
             </div>
             <div v-else-if="usernameCheckLoading" class="info-message">
-              <div class="loading-dot"></div>{{ t('register.checking_username') }}
+              <div class="loading-dot"></div>
+              {{ t('register.checking_username') }}
             </div>
             <div v-else-if="usernameAvailable === true" class="success-message">
               <i class="success-icon-small">✓</i>{{ usernameCheckMessage }}
@@ -135,63 +186,97 @@
               <span class="required">*</span>
             </label>
             <div class="password-input-container">
-              <input 
+              <input
                 id="password"
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
                 class="form-input"
-                :class="{ 
-                  'error': validationErrors.password,
-                  'valid': form.password && !validationErrors.password && passwordStrength !== 'weak'
+                :class="{
+                  error: validationErrors.password,
+                  valid:
+                    form.password &&
+                    !validationErrors.password &&
+                    passwordStrength !== 'weak',
                 }"
                 :placeholder="t('register.password_placeholder')"
                 required
                 autocomplete="new-password"
                 @focus="passwordInputFocused = true"
-                @blur="passwordInputFocused = false; validateField('password')"
+                @blur="
+                  passwordInputFocused = false;
+                  validateField('password');
+                "
                 @input="onPasswordInput"
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="password-toggle"
-                @click="showPassword = !showPassword"
                 :title="showPassword ? 'Hide password' : 'Show password'"
+                @click="showPassword = !showPassword"
               >
                 {{ showPassword ? '👁️' : '👁️‍🗨️' }}
               </button>
             </div>
             <div v-if="form.password" class="password-strength">
               <div class="strength-bar">
-                <div 
-                  class="strength-fill" 
+                <div
+                  class="strength-fill"
                   :class="`strength-${passwordStrength}`"
                   :style="{ width: passwordStrengthWidth }"
                 ></div>
               </div>
-              <span class="strength-text" :class="`strength-${passwordStrength}`">
+              <span
+                class="strength-text"
+                :class="`strength-${passwordStrength}`"
+              >
                 {{ t(`register.password_strength_${passwordStrength}`) }}
               </span>
             </div>
             <div v-if="passwordInputFocused" class="password-requirements">
               <div class="requirements-title">Password Requirements:</div>
-              <div class="requirement-item" :class="{ 'met': passwordChecks.length }">
-                <span class="check-icon">{{ passwordChecks.length ? '✓' : '✗' }}</span>
+              <div
+                class="requirement-item"
+                :class="{ met: passwordChecks.length }"
+              >
+                <span class="check-icon">{{
+                  passwordChecks.length ? '✓' : '✗'
+                }}</span>
                 At least 8 characters
               </div>
-              <div class="requirement-item" :class="{ 'met': passwordChecks.lowercase }">
-                <span class="check-icon">{{ passwordChecks.lowercase ? '✓' : '✗' }}</span>
+              <div
+                class="requirement-item"
+                :class="{ met: passwordChecks.lowercase }"
+              >
+                <span class="check-icon">{{
+                  passwordChecks.lowercase ? '✓' : '✗'
+                }}</span>
                 One lowercase letter
               </div>
-              <div class="requirement-item" :class="{ 'met': passwordChecks.uppercase }">
-                <span class="check-icon">{{ passwordChecks.uppercase ? '✓' : '✗' }}</span>
+              <div
+                class="requirement-item"
+                :class="{ met: passwordChecks.uppercase }"
+              >
+                <span class="check-icon">{{
+                  passwordChecks.uppercase ? '✓' : '✗'
+                }}</span>
                 One uppercase letter
               </div>
-              <div class="requirement-item" :class="{ 'met': passwordChecks.number }">
-                <span class="check-icon">{{ passwordChecks.number ? '✓' : '✗' }}</span>
+              <div
+                class="requirement-item"
+                :class="{ met: passwordChecks.number }"
+              >
+                <span class="check-icon">{{
+                  passwordChecks.number ? '✓' : '✗'
+                }}</span>
                 One number
               </div>
-              <div class="requirement-item" :class="{ 'met': passwordChecks.special }">
-                <span class="check-icon">{{ passwordChecks.special ? '✓' : '✗' }}</span>
+              <div
+                class="requirement-item"
+                :class="{ met: passwordChecks.special }"
+              >
+                <span class="check-icon">{{
+                  passwordChecks.special ? '✓' : '✗'
+                }}</span>
                 One special character
               </div>
             </div>
@@ -205,34 +290,44 @@
               <span class="required">*</span>
             </label>
             <div class="password-input-container">
-              <input 
+              <input
                 id="confirm-password"
                 v-model="form.confirmPassword"
                 :type="showConfirmPassword ? 'text' : 'password'"
                 class="form-input"
-                :class="{ 
-                  'error': validationErrors.confirmPassword,
-                  'valid': form.confirmPassword && !validationErrors.confirmPassword && form.password === form.confirmPassword
+                :class="{
+                  error: validationErrors.confirmPassword,
+                  valid:
+                    form.confirmPassword &&
+                    !validationErrors.confirmPassword &&
+                    form.password === form.confirmPassword,
                 }"
                 :placeholder="t('register.confirm_password_placeholder')"
                 required
                 autocomplete="new-password"
                 @blur="validateField('confirmPassword')"
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="password-toggle"
-                @click="showConfirmPassword = !showConfirmPassword"
                 :title="showConfirmPassword ? 'Hide password' : 'Show password'"
+                @click="showConfirmPassword = !showConfirmPassword"
               >
                 {{ showConfirmPassword ? '👁️' : '👁️‍🗨️' }}
               </button>
             </div>
             <div v-if="validationErrors.confirmPassword" class="error-message">
-              <i class="error-icon-small">⚠</i>{{ validationErrors.confirmPassword }}
+              <i class="error-icon-small">⚠</i
+              >{{ validationErrors.confirmPassword }}
             </div>
-            <div v-else-if="form.confirmPassword && form.password === form.confirmPassword" class="success-message">
-              <i class="success-icon-small">✓</i>{{ t('register.passwords_match') }}
+            <div
+              v-else-if="
+                form.confirmPassword && form.password === form.confirmPassword
+              "
+              class="success-message"
+            >
+              <i class="success-icon-small">✓</i
+              >{{ t('register.passwords_match') }}
             </div>
           </div>
         </div>
@@ -247,22 +342,35 @@
               v-model="form.email"
               type="email"
               class="form-input"
-              :class="{ 
-                'error': validationErrors.email || emailAvailable === false,
-                'valid': emailAvailable === true && !validationErrors.email,
-                'loading': emailCheckLoading
+              :class="{
+                error: validationErrors.email || emailAvailable === false,
+                valid: emailAvailable === true && !validationErrors.email,
+                loading: emailCheckLoading,
               }"
               :placeholder="t('register.email_placeholder')"
               required
               :disabled="!!invitationInfo?.receiver_email"
               @focus="emailInputFocused = true"
-              @blur="emailInputFocused = false; validateField('email')"
+              @blur="
+                emailInputFocused = false;
+                validateField('email');
+              "
               @input="onEmailInput"
             />
             <div class="input-indicator">
               <div v-if="emailCheckLoading" class="loading-spinner"></div>
-              <div v-else-if="emailAvailable === true && !validationErrors.email" class="success-icon">✓</div>
-              <div v-else-if="emailAvailable === false || validationErrors.email" class="error-icon">✗</div>
+              <div
+                v-else-if="emailAvailable === true && !validationErrors.email"
+                class="success-icon"
+              >
+                ✓
+              </div>
+              <div
+                v-else-if="emailAvailable === false || validationErrors.email"
+                class="error-icon"
+              >
+                ✗
+              </div>
             </div>
           </div>
           <div class="validation-messages">
@@ -270,7 +378,8 @@
               <i class="error-icon-small">⚠</i>{{ validationErrors.email }}
             </div>
             <div v-else-if="emailCheckLoading" class="info-message">
-              <div class="loading-dot"></div>{{ t('register.checking_email') }}
+              <div class="loading-dot"></div>
+              {{ t('register.checking_email') }}
             </div>
             <div v-else-if="emailAvailable === true" class="success-message">
               <i class="success-icon-small">✓</i>{{ emailCheckMessage }}
@@ -290,9 +399,12 @@
             v-model="form.confirmEmail"
             type="email"
             class="form-input"
-            :class="{ 
-              'error': validationErrors.confirmEmail,
-              'valid': form.confirmEmail && !validationErrors.confirmEmail && form.email === form.confirmEmail
+            :class="{
+              error: validationErrors.confirmEmail,
+              valid:
+                form.confirmEmail &&
+                !validationErrors.confirmEmail &&
+                form.email === form.confirmEmail,
             }"
             :placeholder="t('register.confirm_email_placeholder')"
             required
@@ -300,9 +412,13 @@
             @blur="validateField('confirmEmail')"
           />
           <div v-if="validationErrors.confirmEmail" class="error-message">
-            <i class="error-icon-small">⚠</i>{{ validationErrors.confirmEmail }}
+            <i class="error-icon-small">⚠</i
+            >{{ validationErrors.confirmEmail }}
           </div>
-          <div v-else-if="form.confirmEmail && form.email === form.confirmEmail" class="success-message">
+          <div
+            v-else-if="form.confirmEmail && form.email === form.confirmEmail"
+            class="success-message"
+          >
             <i class="success-icon-small">✓</i>{{ t('register.emails_match') }}
           </div>
         </div>
@@ -311,19 +427,21 @@
           <label for="phone" class="form-label">
             {{ t('register.phone_label') }}
           </label>
-          <input 
+          <input
             id="phone"
             v-model="form.phoneNumber"
             type="tel"
             class="form-input"
-            :class="{ 
-              'error': validationErrors.phoneNumber,
-              'valid': form.phoneNumber && !validationErrors.phoneNumber
+            :class="{
+              error: validationErrors.phoneNumber,
+              valid: form.phoneNumber && !validationErrors.phoneNumber,
             }"
             :placeholder="t('register.phone_placeholder')"
             @blur="validateField('phoneNumber')"
           />
-          <div v-if="validationErrors.phoneNumber" class="error-message">{{ validationErrors.phoneNumber }}</div>
+          <div v-if="validationErrors.phoneNumber" class="error-message">
+            {{ validationErrors.phoneNumber }}
+          </div>
         </div>
 
         <div class="form-group">
@@ -331,74 +449,82 @@
             {{ t('register.affiliation_label') }}
             <span class="required">*</span>
           </label>
-          <input 
+          <input
             id="affiliation"
             v-model="form.affiliation"
             type="text"
             class="form-input"
-            :class="{ 
-              'error': validationErrors.affiliation,
-              'valid': form.affiliation && !validationErrors.affiliation
+            :class="{
+              error: validationErrors.affiliation,
+              valid: form.affiliation && !validationErrors.affiliation,
             }"
             :placeholder="t('register.affiliation_placeholder')"
             required
             @blur="validateField('affiliation')"
           />
-          <div v-if="validationErrors.affiliation" class="error-message">{{ validationErrors.affiliation }}</div>
+          <div v-if="validationErrors.affiliation" class="error-message">
+            {{ validationErrors.affiliation }}
+          </div>
         </div>
         <div class="form-group">
           <label for="department" class="form-label">
             {{ t('register.department_label') }}
             <span class="required">*</span>
           </label>
-          <input 
+          <input
             id="department"
             v-model="form.department"
             type="text"
             class="form-input"
-            :class="{ 
-              'error': validationErrors.department,
-              'valid': form.department && !validationErrors.department
+            :class="{
+              error: validationErrors.department,
+              valid: form.department && !validationErrors.department,
             }"
             :placeholder="t('register.department_placeholder')"
             required
             @blur="validateField('department')"
           />
-          <div v-if="validationErrors.department" class="error-message">{{ validationErrors.department }}</div>
+          <div v-if="validationErrors.department" class="error-message">
+            {{ validationErrors.department }}
+          </div>
         </div>
 
         <!-- Address Section -->
         <div class="address-section">
           <h3 class="section-title">{{ t('register.address_section') }}</h3>
-          
+
           <div class="form-row">
             <div class="form-group">
               <label for="country" class="form-label">
                 {{ t('register.country_label') }}
                 <span class="required">*</span>
               </label>
-              <select 
+              <select
                 id="country"
                 v-model="form.address.countryId"
                 class="form-select"
-                :class="{ 
-                  'error': validationErrors.countryId,
-                  'valid': form.address.countryId && !validationErrors.countryId
+                :class="{
+                  error: validationErrors.countryId,
+                  valid: form.address.countryId && !validationErrors.countryId,
                 }"
+                required
                 @change="onCountryChange"
                 @blur="validateField('countryId')"
-                required
               >
-                <option value="">{{ t('register.country_placeholder') }}</option>
-                <option 
-                  v-for="country in countries" 
-                  :key="country.country_id" 
+                <option value="">
+                  {{ t('register.country_placeholder') }}
+                </option>
+                <option
+                  v-for="country in countries"
+                  :key="country.country_id"
                   :value="country.country_id"
                 >
                   {{ country.country_name }}
                 </option>
               </select>
-              <div v-if="validationErrors.countryId" class="error-message">{{ validationErrors.countryId }}</div>
+              <div v-if="validationErrors.countryId" class="error-message">
+                {{ validationErrors.countryId }}
+              </div>
             </div>
 
             <div class="form-group">
@@ -406,20 +532,22 @@
                 {{ t('register.city_label') }}
                 <span class="required">*</span>
               </label>
-              <input 
+              <input
                 id="city"
                 v-model="form.address.cityName"
                 type="text"
                 class="form-input"
-                :class="{ 
-                  'error': validationErrors.cityName,
-                  'valid': form.address.cityName && !validationErrors.cityName
+                :class="{
+                  error: validationErrors.cityName,
+                  valid: form.address.cityName && !validationErrors.cityName,
                 }"
                 :placeholder="t('register.city_placeholder')"
                 required
                 @blur="validateField('cityName')"
               />
-              <div v-if="validationErrors.cityName" class="error-message">{{ validationErrors.cityName }}</div>
+              <div v-if="validationErrors.cityName" class="error-message">
+                {{ validationErrors.cityName }}
+              </div>
             </div>
           </div>
 
@@ -429,33 +557,38 @@
                 {{ t('register.street_name_label') }}
                 <span class="required">*</span>
               </label>
-              <input 
+              <input
                 id="streetName"
                 v-model="form.address.streetName"
                 type="text"
                 class="form-input"
-                :class="{ 
-                  'error': validationErrors.streetName,
-                  'valid': form.address.streetName && !validationErrors.streetName
+                :class="{
+                  error: validationErrors.streetName,
+                  valid:
+                    form.address.streetName && !validationErrors.streetName,
                 }"
                 :placeholder="t('register.street_name_placeholder')"
                 required
                 @blur="validateField('streetName')"
               />
-              <div v-if="validationErrors.streetName" class="error-message">{{ validationErrors.streetName }}</div>
+              <div v-if="validationErrors.streetName" class="error-message">
+                {{ validationErrors.streetName }}
+              </div>
             </div>
 
             <div class="form-group">
               <label for="streetNumber" class="form-label">
                 {{ t('register.street_number_label') }}
               </label>
-              <input 
+              <input
                 id="streetNumber"
                 v-model="form.address.streetNumber"
                 type="text"
                 class="form-input"
-                :class="{ 
-                  'valid': form.address.streetNumber && form.address.streetNumber.length > 0
+                :class="{
+                  valid:
+                    form.address.streetNumber &&
+                    form.address.streetNumber.length > 0,
                 }"
                 :placeholder="t('register.street_number_placeholder')"
               />
@@ -468,33 +601,38 @@
                 {{ t('register.postal_code_label') }}
                 <span class="required">*</span>
               </label>
-              <input 
+              <input
                 id="postalCode"
                 v-model="form.address.postalCode"
                 type="text"
                 class="form-input"
-                :class="{ 
-                  'error': validationErrors.postalCode,
-                  'valid': form.address.postalCode && !validationErrors.postalCode
+                :class="{
+                  error: validationErrors.postalCode,
+                  valid:
+                    form.address.postalCode && !validationErrors.postalCode,
                 }"
                 :placeholder="t('register.postal_code_placeholder')"
                 required
                 @blur="validateField('postalCode')"
               />
-              <div v-if="validationErrors.postalCode" class="error-message">{{ validationErrors.postalCode }}</div>
+              <div v-if="validationErrors.postalCode" class="error-message">
+                {{ validationErrors.postalCode }}
+              </div>
             </div>
 
             <div class="form-group">
               <label for="addressLine2" class="form-label">
                 {{ t('register.address_line2_label') }}
               </label>
-              <input 
+              <input
                 id="addressLine2"
                 v-model="form.address.addressLine2"
                 type="text"
                 class="form-input"
-                :class="{ 
-                  'valid': form.address.addressLine2 && form.address.addressLine2.length > 0
+                :class="{
+                  valid:
+                    form.address.addressLine2 &&
+                    form.address.addressLine2.length > 0,
                 }"
                 :placeholder="t('register.address_line2_placeholder')"
               />
@@ -502,9 +640,9 @@
           </div>
         </div>
 
-        <button 
-          type="submit" 
-          class="btn-primary register-btn" 
+        <button
+          type="submit"
+          class="btn-primary register-btn"
           :disabled="loading || !invitationValid || !isFormValid"
         >
           <span v-if="loading">{{ t('register.registering') }}</span>
@@ -515,7 +653,9 @@
       <div class="register-footer">
         <p>
           {{ t('register.already_have_account') }}
-          <router-link to="/" class="link">{{ t('register.login_here') }}</router-link>
+          <router-link to="/" class="link">{{
+            t('register.login_here')
+          }}</router-link>
         </p>
       </div>
     </div>
@@ -530,7 +670,10 @@ import { useEventMessageStore } from '@stores/eventMessage';
 import { validateInvitation } from '@/api/service/invitationService';
 import { registerWithInvitation } from '@/api/service/authService';
 import { getCountries } from '@/api/service/locationService';
-import { checkUsernameAvailability, checkEmailAvailability } from '@/api/service/userService';
+import {
+  checkUsernameAvailability,
+  checkEmailAvailability,
+} from '@/api/service/userService';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -563,8 +706,8 @@ const form = ref({
     streetName: '',
     streetNumber: '',
     postalCode: '',
-    addressLine2: ''
-  }
+    addressLine2: '',
+  },
 });
 
 // Username availability check
@@ -593,14 +736,14 @@ const passwordInputFocused = ref(false);
 const passwordStrength = computed(() => {
   const password = form.value.password;
   if (!password) return 'weak';
-  
+
   let score = 0;
   if (password.length >= 8) score++;
   if (/[a-z]/.test(password)) score++;
   if (/[A-Z]/.test(password)) score++;
   if (/\d/.test(password)) score++;
   if (/[^A-Za-z0-9]/.test(password)) score++;
-  
+
   if (score < 3) return 'weak';
   if (score < 5) return 'medium';
   return 'strong';
@@ -621,34 +764,44 @@ const passwordChecks = computed(() => {
     lowercase: password && /[a-z]/.test(password),
     uppercase: password && /[A-Z]/.test(password),
     number: password && /\d/.test(password),
-    special: password && /[^A-Za-z0-9]/.test(password)
+    special: password && /[^A-Za-z0-9]/.test(password),
   };
 });
 
 const isFormValid = computed(() => {
   const requiredFields = [
-    'firstName', 'lastName', 'username', 'email', 'confirmEmail',
-    'password', 'confirmPassword', 'affiliation', 'department'
+    'firstName',
+    'lastName',
+    'username',
+    'email',
+    'confirmEmail',
+    'password',
+    'confirmPassword',
+    'affiliation',
+    'department',
   ];
-  
+
   const requiredAddressFields = [
-    'countryId', 'cityName', 'streetName', 'postalCode'
+    'countryId',
+    'cityName',
+    'streetName',
+    'postalCode',
   ];
-  
+
   // Check required fields
   for (const field of requiredFields) {
     if (!form.value[field] || validationErrors.value[field]) {
       return false;
     }
   }
-  
+
   // Check required address fields
   for (const field of requiredAddressFields) {
     if (!form.value.address[field] || validationErrors.value[field]) {
       return false;
     }
   }
-  
+
   // Check availability checks
   return !(usernameAvailable.value === false || emailAvailable.value === false);
 });
@@ -676,7 +829,7 @@ const onPasswordInput = () => {
 // Validation functions
 const validateField = (fieldName) => {
   validationErrors.value[fieldName] = '';
-  
+
   switch (fieldName) {
     case 'firstName':
       if (!form.value.firstName) {
@@ -684,36 +837,41 @@ const validateField = (fieldName) => {
       } else if (form.value.firstName.length < 2) {
         validationErrors.value.firstName = t('register.first_name_too_short');
       } else if (form.value.firstName.length > 50) {
-        validationErrors.value.firstName = 'First name must be less than 50 characters';
+        validationErrors.value.firstName =
+          'First name must be less than 50 characters';
       } else if (!/^[a-zA-ZÀ-ÿ\s-']+$/.test(form.value.firstName)) {
-        validationErrors.value.firstName = 'First name can only contain letters, spaces, hyphens, and apostrophes';
+        validationErrors.value.firstName =
+          'First name can only contain letters, spaces, hyphens, and apostrophes';
       }
       break;
-      
+
     case 'lastName':
       if (!form.value.lastName) {
         validationErrors.value.lastName = t('register.last_name_required');
       } else if (form.value.lastName.length < 2) {
         validationErrors.value.lastName = t('register.last_name_too_short');
       } else if (form.value.lastName.length > 50) {
-        validationErrors.value.lastName = 'Last name must be less than 50 characters';
+        validationErrors.value.lastName =
+          'Last name must be less than 50 characters';
       } else if (!/^[a-zA-ZÀ-ÿ\s-']+$/.test(form.value.lastName)) {
-        validationErrors.value.lastName = 'Last name can only contain letters, spaces, hyphens, and apostrophes';
+        validationErrors.value.lastName =
+          'Last name can only contain letters, spaces, hyphens, and apostrophes';
       }
       break;
-      
+
     case 'username':
       if (!form.value.username) {
         validationErrors.value.username = t('register.username_required');
       } else if (form.value.username.length < 3) {
         validationErrors.value.username = t('register.username_too_short');
       } else if (form.value.username.length > 20) {
-        validationErrors.value.username = 'Username must be less than 20 characters';
+        validationErrors.value.username =
+          'Username must be less than 20 characters';
       } else if (!/^\w+$/.test(form.value.username)) {
         validationErrors.value.username = t('register.username_invalid');
       }
       break;
-      
+
     case 'email':
       if (!form.value.email) {
         validationErrors.value.email = t('register.email_required');
@@ -721,7 +879,7 @@ const validateField = (fieldName) => {
         validationErrors.value.email = t('register.email_invalid');
       }
       break;
-      
+
     case 'confirmEmail':
       if (!form.value.confirmEmail) {
         validationErrors.value.confirmEmail = t('register.email_required');
@@ -729,7 +887,7 @@ const validateField = (fieldName) => {
         validationErrors.value.confirmEmail = t('register.emails_no_match');
       }
       break;
-      
+
     case 'password':
       if (!form.value.password) {
         validationErrors.value.password = t('register.password_required');
@@ -739,15 +897,19 @@ const validateField = (fieldName) => {
         validationErrors.value.password = t('register.password_weak');
       }
       break;
-      
+
     case 'confirmPassword':
       if (!form.value.confirmPassword) {
-        validationErrors.value.confirmPassword = t('register.password_required');
+        validationErrors.value.confirmPassword = t(
+          'register.password_required'
+        );
       } else if (form.value.password !== form.value.confirmPassword) {
-        validationErrors.value.confirmPassword = t('register.passwords_no_match');
+        validationErrors.value.confirmPassword = t(
+          'register.passwords_no_match'
+        );
       }
       break;
-      
+
     case 'phoneNumber':
       if (form.value.phoneNumber) {
         const cleaned = form.value.phoneNumber.replace(/[\s\-()]/g, '');
@@ -756,59 +918,70 @@ const validateField = (fieldName) => {
         }
       }
       break;
-      
+
     case 'affiliation':
       if (!form.value.affiliation) {
         validationErrors.value.affiliation = t('register.affiliation_required');
       } else if (form.value.affiliation.length < 2) {
-        validationErrors.value.affiliation = 'Affiliation must be at least 2 characters';
+        validationErrors.value.affiliation =
+          'Affiliation must be at least 2 characters';
       } else if (form.value.affiliation.length > 100) {
-        validationErrors.value.affiliation = 'Affiliation must be less than 100 characters';
+        validationErrors.value.affiliation =
+          'Affiliation must be less than 100 characters';
       }
       break;
-      
+
     case 'department':
       if (!form.value.department) {
         validationErrors.value.department = t('register.department_required');
       } else if (form.value.department.length < 2) {
-        validationErrors.value.department = 'Department must be at least 2 characters';
+        validationErrors.value.department =
+          'Department must be at least 2 characters';
       } else if (form.value.department.length > 100) {
-        validationErrors.value.department = 'Department must be less than 100 characters';
+        validationErrors.value.department =
+          'Department must be less than 100 characters';
       }
       break;
-      
+
     case 'countryId':
       if (!form.value.address.countryId) {
         validationErrors.value.countryId = t('register.country_required');
       }
       break;
-      
+
     case 'cityName':
       if (!form.value.address.cityName) {
         validationErrors.value.cityName = t('register.city_required');
       } else if (form.value.address.cityName.length < 2) {
-        validationErrors.value.cityName = 'City name must be at least 2 characters';
+        validationErrors.value.cityName =
+          'City name must be at least 2 characters';
       } else if (form.value.address.cityName.length > 50) {
-        validationErrors.value.cityName = 'City name must be less than 50 characters';
+        validationErrors.value.cityName =
+          'City name must be less than 50 characters';
       } else if (!/^[a-zA-ZÀ-ÿ\s-']+$/.test(form.value.address.cityName)) {
-        validationErrors.value.cityName = 'City name can only contain letters, spaces, hyphens, and apostrophes';
+        validationErrors.value.cityName =
+          'City name can only contain letters, spaces, hyphens, and apostrophes';
       }
       break;
-      
+
     case 'streetName':
       if (!form.value.address.streetName) {
         validationErrors.value.streetName = t('register.street_name_required');
       } else if (form.value.address.streetName.length < 3) {
-        validationErrors.value.streetName = 'Street name must be at least 3 characters';
+        validationErrors.value.streetName =
+          'Street name must be at least 3 characters';
       } else if (form.value.address.streetName.length > 100) {
-        validationErrors.value.streetName = 'Street name must be less than 100 characters';
+        validationErrors.value.streetName =
+          'Street name must be less than 100 characters';
       }
       break;
-      
+
     case 'postalCode':
       if (!form.value.address.postalCode) {
         validationErrors.value.postalCode = t('register.postal_code_required');
-      } else if (!/^[A-Za-z0-9\s-]{3,10}$/.test(form.value.address.postalCode)) {
+      } else if (
+        !/^[A-Za-z0-9\s-]{3,10}$/.test(form.value.address.postalCode)
+      ) {
         validationErrors.value.postalCode = t('register.postal_code_invalid');
       }
       break;
@@ -817,12 +990,23 @@ const validateField = (fieldName) => {
 
 const validateAllFields = () => {
   const fieldsToValidate = [
-    'firstName', 'lastName', 'username', 'email', 'confirmEmail',
-    'password', 'confirmPassword', 'phoneNumber', 'affiliation', 'department',
-    'countryId', 'cityName', 'streetName', 'postalCode'
+    'firstName',
+    'lastName',
+    'username',
+    'email',
+    'confirmEmail',
+    'password',
+    'confirmPassword',
+    'phoneNumber',
+    'affiliation',
+    'department',
+    'countryId',
+    'cityName',
+    'streetName',
+    'postalCode',
   ];
-  
-  fieldsToValidate.forEach(field => validateField(field));
+
+  fieldsToValidate.forEach((field) => validateField(field));
 };
 
 const onCountryChange = () => {
@@ -836,7 +1020,7 @@ onMounted(async () => {
     invitationCode.value = invitationParam;
     validateInvitationCode();
   }
-  
+
   // Load countries
   await loadCountries();
 });
@@ -863,7 +1047,7 @@ const validateInvitationCode = async () => {
     if (response.data.valid) {
       invitationValid.value = true;
       invitationInfo.value = response.data.invitation;
-      
+
       // Pre-fill email if available and disable editing
       if (invitationInfo.value?.receiver_email) {
         form.value.email = invitationInfo.value.receiver_email;
@@ -872,15 +1056,17 @@ const validateInvitationCode = async () => {
         form.value.email = '';
         form.value.confirmEmail = '';
       }
-      
+
       eventMessageStore.addMessage(t('register.invitation_valid'), 'success');
     } else {
       invitationValid.value = false;
-      invitationError.value = response.data.message || t('register.invitation_invalid');
+      invitationError.value =
+        response.data.message || t('register.invitation_invalid');
     }
   } catch (error) {
     invitationValid.value = false;
-    invitationError.value = error.response?.data?.detail || t('register.invitation_validation_error');
+    invitationError.value =
+      error.response?.data?.detail || t('register.invitation_validation_error');
   } finally {
     invitationValidating.value = false;
   }
@@ -893,20 +1079,28 @@ const loadCountries = async () => {
     if (response.success) {
       countries.value = response.data;
     } else {
-      eventMessageStore.addMessage(t('register.error_loading_countries'), 'error');
+      eventMessageStore.addMessage(
+        t('register.error_loading_countries'),
+        'error'
+      );
     }
   } catch (error) {
     console.error('Error loading countries:', error);
-    eventMessageStore.addMessage(t('register.error_loading_countries'), 'error');
+    eventMessageStore.addMessage(
+      t('register.error_loading_countries'),
+      'error'
+    );
   }
 };
 
 const handleRegister = async () => {
   // Validate all fields first
   validateAllFields();
-  
+
   // Check if form has any validation errors
-  const hasErrors = Object.values(validationErrors.value).some(error => error);
+  const hasErrors = Object.values(validationErrors.value).some(
+    (error) => error
+  );
   if (hasErrors) {
     eventMessageStore.addMessage(t('register.please_fix_errors'), 'error');
     return;
@@ -933,7 +1127,7 @@ const handleRegister = async () => {
     eventMessageStore.addMessage(t('register.username_taken'), 'error');
     return;
   }
-  
+
   if (emailAvailable.value === false) {
     eventMessageStore.addMessage(t('register.email_taken'), 'error');
     return;
@@ -944,14 +1138,19 @@ const handleRegister = async () => {
   try {
     // Prepare address object if fields are filled
     let address = null;
-    if (form.value.address.streetName && form.value.address.cityName && form.value.address.postalCode && form.value.address.countryId) {
+    if (
+      form.value.address.streetName &&
+      form.value.address.cityName &&
+      form.value.address.postalCode &&
+      form.value.address.countryId
+    ) {
       address = {
         street_name: form.value.address.streetName,
         street_number: form.value.address.streetNumber || null,
         city_name: form.value.address.cityName,
         country_id: parseInt(form.value.address.countryId),
         postal_code: form.value.address.postalCode,
-        address_line_2: form.value.address.addressLine2 || null
+        address_line_2: form.value.address.addressLine2 || null,
       };
     }
 
@@ -966,24 +1165,24 @@ const handleRegister = async () => {
       phone_number: form.value.phoneNumber || null,
       affiliation: form.value.affiliation,
       department: form.value.department,
-      address: address
+      address: address,
     };
     const response = await registerWithInvitation(payload);
-    
+
     // Check if email verification is needed
     if (response.data && response.data.requires_activation) {
       eventMessageStore.addMessage(
-        t('register.success_needs_verification'), 
+        t('register.success_needs_verification'),
         'success'
       );
-      
+
       // Redirect to email verification page
       router.push({
         name: 'EmailVerificationPage',
-        query: { 
+        query: {
           email: form.value.email,
-          freshCode: 'true'
-        }
+          freshCode: 'true',
+        },
       });
     } else {
       eventMessageStore.addMessage(t('register.success'), 'success');
@@ -1001,50 +1200,61 @@ const handleRegister = async () => {
 };
 
 // Username availability check
-watch(() => form.value.username, (newUsername) => {
-  usernameAvailable.value = null;
-  usernameCheckMessage.value = '';
-  if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
-  validateField('username');
-  if (!newUsername || newUsername.length < 3 || validationErrors.value.username) return;
-  usernameCheckLoading.value = true;
-  usernameCheckTimeout = setTimeout(async () => {
-    try {
-      const res = await checkUsernameAvailability(newUsername);
-      usernameAvailable.value = res.available;
-      usernameCheckMessage.value = res.message;
-    } catch (e) {
-      console.error('Username check error:', e);
-      usernameAvailable.value = null;
-      usernameCheckMessage.value = t('register.username_check_error');
-    } finally {
-      usernameCheckLoading.value = false;
-    }
-  }, 500);
-});
+watch(
+  () => form.value.username,
+  (newUsername) => {
+    usernameAvailable.value = null;
+    usernameCheckMessage.value = '';
+    if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
+    validateField('username');
+    if (
+      !newUsername ||
+      newUsername.length < 3 ||
+      validationErrors.value.username
+    )
+      return;
+    usernameCheckLoading.value = true;
+    usernameCheckTimeout = setTimeout(async () => {
+      try {
+        const res = await checkUsernameAvailability(newUsername);
+        usernameAvailable.value = res.available;
+        usernameCheckMessage.value = res.message;
+      } catch (e) {
+        console.error('Username check error:', e);
+        usernameAvailable.value = null;
+        usernameCheckMessage.value = t('register.username_check_error');
+      } finally {
+        usernameCheckLoading.value = false;
+      }
+    }, 500);
+  }
+);
 
 // Email availability check
-watch(() => form.value.email, (newEmail) => {
-  emailAvailable.value = null;
-  emailCheckMessage.value = '';
-  if (emailCheckTimeout) clearTimeout(emailCheckTimeout);
-  validateField('email');
-  if (!newEmail || validationErrors.value.email) return;
-  emailCheckLoading.value = true;
-  emailCheckTimeout = setTimeout(async () => {
-    try {
-      const res = await checkEmailAvailability(newEmail);
-      emailAvailable.value = res.available;
-      emailCheckMessage.value = res.message;
-    } catch (e) {
-      console.error('Email check error:', e);
-      emailAvailable.value = null;
-      emailCheckMessage.value = t('register.email_check_error');
-    } finally {
-      emailCheckLoading.value = false;
-    }
-  }, 500);
-});
+watch(
+  () => form.value.email,
+  (newEmail) => {
+    emailAvailable.value = null;
+    emailCheckMessage.value = '';
+    if (emailCheckTimeout) clearTimeout(emailCheckTimeout);
+    validateField('email');
+    if (!newEmail || validationErrors.value.email) return;
+    emailCheckLoading.value = true;
+    emailCheckTimeout = setTimeout(async () => {
+      try {
+        const res = await checkEmailAvailability(newEmail);
+        emailAvailable.value = res.available;
+        emailCheckMessage.value = res.message;
+      } catch (e) {
+        console.error('Email check error:', e);
+        emailAvailable.value = null;
+        emailCheckMessage.value = t('register.email_check_error');
+      } finally {
+        emailCheckLoading.value = false;
+      }
+    }, 500);
+  }
+);
 </script>
 
 <style scoped src="@/assets/css/register.css"></style>

@@ -5,7 +5,6 @@ from decimal import Decimal
 from pathlib import Path
 
 from lxml import etree as ET
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -13,7 +12,6 @@ from app.crud import annotation, elan_file, tier
 from app.crud.annotation import bulk_create_annotations
 from app.crud.annotation_value import bulk_get_or_create_annotation_values
 from app.crud.project import get_project_by_name
-from app.model.annotation import Annotation
 from app.model.tier import Tier
 from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
 
@@ -124,14 +122,40 @@ class ElanService:
         t_val_end = time.perf_counter()
         logger.info(f"AnnotationValue creation took {t_val_end - t_val_start:.3f}s")
 
-        # 2. Ensure all tiers exist (still need to do this one by one)
+        # 2. First pass: create all tiers without parent references
+        tier_name_to_id = {}
         t_tier_start = time.perf_counter()
         for tier_data in tiers_data:
-            tier_obj = await self._get_or_create_tier(tier_data, elan_id)
-            tier_data["tier_id"] = tier_obj.tier_id  # ensure DB id is set
+            tier_obj = await tier.get_tier_by_name(self.db, tier_data["tier_name"])
+            if not tier_obj:
+                tier_obj = await tier.create_tier_in_db(
+                    db=self.db,
+                    tier_name=tier_data["tier_name"],
+                    parent_tier_id=None,  # No parent yet
+                )
+                logger.debug(
+                    f"Created new tier: {tier_data['tier_name']} (ID: {tier_obj.tier_id})"
+                )
+            else:
+                logger.debug(
+                    f"Using existing tier: {tier_data['tier_name']} (ID: {tier_obj.tier_id})"
+                )
+            tier_data["tier_id"] = tier_obj.tier_id
+            tier_name_to_id[tier_data["tier_name"]] = tier_obj.tier_id
         t_tier_end = time.perf_counter()
+        logger.info(f"Tier creation took {t_tier_end - t_tier_start:.3f}s")
 
-        # 3. Bulk create all annotations for all tiers
+        # 3. Second pass: update parent_tier_id for child tiers using CRUD
+        for tier_data in tiers_data:
+            parent_name = tier_data.get("parent_tier_name")
+            if parent_name:
+                parent_id = tier_name_to_id.get(parent_name)
+                if parent_id and tier_data.get("parent_tier_id") != parent_id:
+                    await tier.update_parent_tier(
+                        self.db, tier_data["tier_id"], parent_id
+                    )
+
+        # 4. Bulk create all annotations for all tiers
         t_ann_start = time.perf_counter()
         await bulk_create_annotations(self.db, tiers_data, elan_id, value_map)
         t_ann_end = time.perf_counter()
@@ -145,20 +169,18 @@ class ElanService:
         total_time = time.perf_counter() - t0
         logger.info(f"Total _store_tiers_and_annotations time: {total_time:.3f}s")
 
-    async def _get_or_create_tier(self, tier_data: dict, elan_id: int) -> Tier:
+    async def _get_or_create_tier(self, tier_data: dict) -> Tier:
         """Get existing tier or create new one using CRUD."""
-        tier_obj = await tier.get_tier_by_id(self.db, tier_data["tier_id"])
+        tier_obj = await tier.get_tier_by_name(self.db, tier_data["tier_name"])
 
         if not tier_obj:
             tier_obj = await tier.create_tier_in_db(
                 db=self.db,
-                tier_id=tier_data["tier_id"],
                 tier_name=tier_data["tier_name"],
-                elan_id=elan_id,
                 parent_tier_id=tier_data.get("parent_tier_id"),
             )
             logger.debug(
-                f"Created new tier: {tier_data['tier_name']} (ID: {tier_data['tier_id']})"
+                f"Created new tier: {tier_data['tier_name']} (ID: {tier_obj.tier_id})"
             )
         else:
             logger.debug(
@@ -168,7 +190,7 @@ class ElanService:
         return tier_obj
 
     async def store_elan_file_data(
-        self, file_info: dict, user_id: int, project_ids: list[int]
+        self, file_info: dict, user_id: int, project_id: int
     ) -> int:
         """Store parsed ELAN file data in the database and sync associations."""
         logger.info(f"Storing ELAN file data: {file_info['filename']}")
@@ -183,8 +205,8 @@ class ElanService:
             if existing_file:
                 logger.info(f"File {file_info['filename']} already exists. Skipping.")
                 # Always sync associations even if file exists
-                await elan_file.sync_elan_file_to_projects(
-                    self.db, existing_file.elan_id, project_ids
+                await elan_file.add_elan_file_to_project(
+                    self.db, existing_file.elan_id, project_id
                 )
                 return existing_file.elan_id
 
@@ -195,6 +217,7 @@ class ElanService:
             file_path=file_info["file_path"],
             file_size=file_info["file_size"],
             user_id=user_id,
+            project_id=project_id,
         )
 
         # Store tiers and annotations using CRUD
@@ -209,8 +232,8 @@ class ElanService:
         )
 
         # Always sync ELAN_FILE_TO_PROJECT associations
-        await elan_file.sync_elan_file_to_projects(
-            self.db, elan_file_obj.elan_id, project_ids
+        await elan_file.add_elan_file_to_project(
+            self.db, elan_file_obj.elan_id, project_id
         )
 
         logger.info(
@@ -228,10 +251,11 @@ class ElanService:
         project = await get_project_by_name(self.db, project_name)
         if not project:
             raise ValueError(f"Project '{project_name}' not found")
-        project_ids = [project.project_id]
 
         file_info = self.parse_elan_file(file_path)
-        elan_id = await self.store_elan_file_data(file_info, user_id, project_ids)
+        elan_id = await self.store_elan_file_data(
+            file_info, user_id, project.project_id
+        )
         logger.info(f"Completed processing file: {file_path} (ID: {elan_id})")
         return elan_id
 
@@ -272,20 +296,13 @@ class ElanService:
         """Get all files with their associated tier names."""
         logger.debug("Retrieving all files with their tier names")
 
-        # Get all unique tiers that have annotations
-        result = await self.db.execute(
-            select(Tier.tier_name).join(Annotation).distinct()
-        )
-        tier_names = [row[0] for row in result]
-
-        # Get all files using CRUD
+        tier_names = await tier.get_all_tier_names_with_annotations(self.db)
         files = await elan_file.get_all_elan_files(self.db)
 
         logger.debug(
             f"Found {len(files)} files with {len(tier_names)} unique tier types"
         )
 
-        # Return all tiers for all files (you might want to refine this logic)
         return {f.filename: tier_names for f in files}
 
     async def get_file_structure(self, filename: str) -> dict | None:
@@ -316,7 +333,6 @@ class ElanService:
             annotations_list = await annotation.get_annotations_by_tier(
                 self.db, tier_obj.tier_id
             )
-
             tier_data = {
                 "tier_id": tier_obj.tier_id,
                 "tier_name": tier_obj.tier_name,
@@ -342,8 +358,7 @@ class ElanService:
 
     async def _get_tiers_with_annotations(self) -> list[Tier]:
         """Get all tiers that have at least one annotation."""
-        result = await self.db.execute(select(Tier).join(Annotation).distinct())
-        tiers = list(result.scalars().all())
+        tiers = await tier.get_tiers_with_annotations(self.db)
         logger.debug(f"Found {len(tiers)} tiers with annotations")
         return tiers
 
@@ -351,20 +366,11 @@ class ElanService:
         """Get statistics about tiers across all files."""
         logger.debug("Generating tier statistics")
 
-        result = await self.db.execute(
-            select(
-                Tier.tier_name,
-                func.count(Annotation.annotation_id).label("annotation_count"),
-            )
-            .join(Annotation)
-            .group_by(Tier.tier_name)
-            .order_by(func.count(Annotation.annotation_id).desc())
-        )
-
+        stats_list = await tier.get_tier_statistics(self.db)
         stats = {
             "tier_statistics": [
                 {"tier_name": tier_name, "annotation_count": ann_count}
-                for tier_name, ann_count in result
+                for tier_name, ann_count in stats_list
             ]
         }
 
@@ -407,7 +413,7 @@ class ElanService:
         return success
 
     async def get_annotations_in_time_range(
-        self, tier_id: str, start_time: Decimal, end_time: Decimal
+        self, tier_id: int, start_time: Decimal, end_time: Decimal
     ) -> list[dict]:
         """Get annotations within a specific time range for a tier."""
         logger.debug(
@@ -431,7 +437,7 @@ class ElanService:
             for ann in annotations_list
         ]
 
-    async def delete_tier_annotations(self, tier_id: str) -> int:
+    async def delete_tier_annotations(self, tier_id: int) -> int:
         """Delete all annotations for a specific tier."""
         logger.info(f"Deleting all annotations for tier ID: {tier_id}")
 

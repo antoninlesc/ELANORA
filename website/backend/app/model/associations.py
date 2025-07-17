@@ -32,8 +32,8 @@ class ElanFileToTier(Base):
     elan_id: Mapped[int] = mapped_column(
         Integer, ForeignKey(ELAN_FILE_ELANID_FK), primary_key=True
     )
-    tier_id: Mapped[str] = mapped_column(
-        String(50), ForeignKey("TIER.tier_id"), primary_key=True
+    tier_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("TIER.tier_id"), primary_key=True
     )
 
 

@@ -1,4 +1,4 @@
-@import './style.css';
+@import url('./style.css');
 
 .register-page {
   min-height: 100vh;
@@ -12,7 +12,7 @@
 .register-container {
   background: white;
   border-radius: 1rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px rgb(0 0 0 / 10%);
   padding: 3rem;
   max-width: 600px;
   width: 100%;
@@ -95,10 +95,10 @@
 .form-input:focus {
   outline: none;
   border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
 }
 
-.form-input:readonly {
+.form-input:read-only {
   background: #f9fafb;
   color: #6b7280;
 }
@@ -110,7 +110,7 @@
 
 .form-input.error {
   border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 0 3px rgb(239 68 68 / 10%);
 }
 
 .form-input.loading {
@@ -133,7 +133,7 @@
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 4px 12px rgb(37 99 235 / 40%);
 }
 
 .btn-primary:disabled {
@@ -284,7 +284,7 @@
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .register-container {
     padding: 2rem;
     margin: 1rem;
@@ -334,7 +334,7 @@
 .form-select:focus {
   outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 10%);
 }
 
 .form-select:disabled {
@@ -350,7 +350,7 @@
 
 .form-select.error {
   border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 0 3px rgb(239 68 68 / 10%);
 }
 
 .form-select option {

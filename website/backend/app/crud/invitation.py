@@ -8,11 +8,27 @@ from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.centralized_logging import get_logger
 from app.model.enums import InvitationStatus, ProjectPermission
 from app.model.invitation import Invitation
 
 # Password context for hashing codes
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+from app.utils.database import DatabaseUtils
+
+logger = get_logger()
+
+
+async def delete_project_invitations(db: AsyncSession, project_id: int):
+    logger.info(f"Deleting invitations for project_id={project_id}")
+    try:
+        count = await DatabaseUtils.bulk_delete(
+            db, Invitation, Invitation.project_id == project_id
+        )
+        logger.info(f"Deleted {count} invitations for project_id={project_id}")
+    except Exception as e:
+        logger.error(f"Failed to delete invitations for project_id={project_id}: {e}")
 
 
 async def create_invitation(
@@ -131,18 +147,16 @@ async def expire_old_invitations(db: AsyncSession) -> int:
         .filter(Invitation.status == InvitationStatus.PENDING)
         .filter(Invitation.expires_at <= datetime.now())
     )
-
     expired_invitations = list(result.scalars().all())
-    count = 0
+    if not expired_invitations:
+        return 0
 
-    for invitation in expired_invitations:
-        invitation.status = InvitationStatus.EXPIRED
-        count += 1
-
-    if count > 0:
-        await db.commit()
-
-    return count
+    updates = [
+        {"invitation_id": inv.invitation_id, "status": InvitationStatus.EXPIRED}
+        for inv in expired_invitations
+    ]
+    await DatabaseUtils.bulk_update(db, Invitation, updates, pk_field="invitation_id")
+    return len(updates)
 
 
 async def verify_invitation_code(

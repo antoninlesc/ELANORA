@@ -1,6 +1,5 @@
 """ELAN File CRUD operations - Simplified using utilities."""
 
-from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -10,6 +9,67 @@ from app.utils.database import DatabaseUtils
 from app.utils.validation import ValidationUtils
 
 logger = get_logger()
+
+
+async def get_orphan_elan_files_by_project(
+    db: AsyncSession, project_id: int
+) -> list[ElanFile]:
+    logger.info(f"Fetching ELAN files for project_id={project_id}")
+    filters = {"project_id": project_id}
+    links = await DatabaseUtils.get_by_filter(db, ElanFileToProject, filters)
+    logger.info(
+        f"Found {len(links)} ElanFileToProject links for project_id={project_id}"
+    )
+    orphaned_elan_files = await DatabaseUtils.get_orphaned_by_association(
+        db,
+        ElanFile,
+        ElanFileToProject,
+        "elan_id",
+        "elan_id",
+        "project_id",
+        project_id,
+    )
+    logger.info(
+        f"Found {len(orphaned_elan_files)} ELAN files for project_id={project_id}"
+    )
+    return orphaned_elan_files
+
+
+async def delete_elan_file_associations(db: AsyncSession, elan_id: int):
+    logger.info(f"Attempting to delete ELAN file associations for elan_id={elan_id}")
+    try:
+        await DatabaseUtils.bulk_delete(
+            db, ElanFileToTier, ElanFileToTier.elan_id == elan_id
+        )
+        await DatabaseUtils.bulk_delete(
+            db, ElanFileToProject, ElanFileToProject.elan_id == elan_id
+        )
+        logger.info(f"Deleted ELAN file associations for elan_id={elan_id}")
+    except Exception as e:
+        logger.error(
+            f"Failed to delete ELAN file associations for elan_id={elan_id}: {e}"
+        )
+
+
+async def delete_elan_file(db: AsyncSession, elan_file):
+    logger.info(
+        f"Deleting ELAN file and all related data for elan_id={elan_file.elan_id}"
+    )
+    try:
+        await delete_elan_file_associations(db, elan_file.elan_id)
+        remaining_projects = await get_projects_for_elan_file(db, elan_file.elan_id)
+        if not remaining_projects:
+            logger.info(
+                f"Attempting to delete ELAN file row for elan_id={elan_file.elan_id}"
+            )
+            await db.delete(elan_file)
+            logger.info(f"Deleted ELAN file elan_id={elan_file.elan_id}")
+        else:
+            logger.info(
+                f"ELAN file elan_id={elan_file.elan_id} still associated with projects {remaining_projects}, not deleting file row."
+            )
+    except Exception as e:
+        logger.error(f"Failed to delete ELAN file elan_id={elan_file.elan_id}: {e}")
 
 
 async def get_elan_file_by_id(db: AsyncSession, elan_id: int) -> ElanFile | None:
@@ -24,8 +84,8 @@ async def get_elan_file_by_filename(db: AsyncSession, filename: str) -> ElanFile
 
 async def get_elan_files_by_user(db: AsyncSession, user_id: int) -> list[ElanFile]:
     """Get all ELAN files for a specific user."""
-    result = await db.execute(select(ElanFile).filter(ElanFile.user_id == user_id))
-    return list(result.scalars().all())
+    filters = {"user_id": user_id}
+    return await DatabaseUtils.get_by_filter(db, ElanFile, filters)
 
 
 async def check_elan_file_exists_by_filename(db: AsyncSession, filename: str) -> bool:
@@ -34,10 +94,14 @@ async def check_elan_file_exists_by_filename(db: AsyncSession, filename: str) ->
 
 
 async def create_elan_file_in_db(
-    db: AsyncSession, filename: str, file_path: str, file_size: int, user_id: int
+    db: AsyncSession,
+    filename: str,
+    file_path: str,
+    file_size: int,
+    user_id: int,
+    project_id: int,
 ) -> ElanFile:
     """Create a new ELAN file record in the database."""
-    # Validate inputs
     ValidationUtils.validate_user_id(user_id)
     sanitized_filename = ValidationUtils.sanitize_filename(filename)
 
@@ -48,18 +112,16 @@ async def create_elan_file_in_db(
         user_id=user_id,
     )
 
-    return await DatabaseUtils.create_and_commit(db, elan_file)
+    elan_file = await DatabaseUtils.create_and_commit(db, elan_file)
+    await add_elan_file_to_project(db, elan_file.elan_id, project_id)
+    return elan_file
 
 
 async def delete_elan_file_by_id(db: AsyncSession, elan_id: int) -> bool:
     """Delete an ELAN file by ID."""
     try:
-        elan_file = await get_elan_file_by_id(db, elan_id)
-        if elan_file:
-            await db.delete(elan_file)
-            await db.commit()
-            return True
-        return False
+        count = await DatabaseUtils.delete_by_filter(db, ElanFile, elan_id=elan_id)
+        return count > 0
     except Exception:
         await db.rollback()
         return False
@@ -73,60 +135,49 @@ async def get_all_elan_files(db: AsyncSession) -> list[ElanFile]:
 # --- ELAN_FILE_TO_TIER ASSOCIATION CRUD ---
 
 
-async def get_tiers_for_elan_file(db: AsyncSession, elan_id: int) -> list[str]:
+async def get_tiers_for_elan_file(db: AsyncSession, elan_id: int) -> list[int]:
     """Get all tier_ids associated with an ELAN file."""
-    result = await db.execute(
-        select(ElanFileToTier.tier_id).where(ElanFileToTier.elan_id == elan_id)
-    )
-    return [row[0] for row in result]
+    filters = {"elan_id": elan_id}
+    associations = await DatabaseUtils.get_by_filter(db, ElanFileToTier, filters)
+    return [assoc.tier_id for assoc in associations]
 
 
-async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: str) -> None:
+async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: int) -> None:
     """Add association between ELAN file and tier if not exists."""
-    exists = await db.execute(
-        select(ElanFileToTier).where(
-            ElanFileToTier.elan_id == elan_id,
-            ElanFileToTier.tier_id == tier_id,
-        )
-    )
-    if not exists.scalar_one_or_none():
-        db.add(ElanFileToTier(elan_id=elan_id, tier_id=tier_id))
-        await db.commit()
+    filters = {"elan_id": elan_id, "tier_id": tier_id}
+    exists = await DatabaseUtils.get_one_by_filter(db, ElanFileToTier, filters)
+    if not exists:
+        assoc = ElanFileToTier(elan_id=elan_id, tier_id=tier_id)
+        await DatabaseUtils.create_and_commit(db, assoc)
 
 
 async def remove_elan_file_to_tier(
-    db: AsyncSession, elan_id: int, tier_id: str
+    db: AsyncSession, elan_id: int, tier_id: int
 ) -> None:
     """Remove association between ELAN file and tier."""
-    await db.execute(
-        delete(ElanFileToTier).where(
-            ElanFileToTier.elan_id == elan_id,
-            ElanFileToTier.tier_id == tier_id,
-        )
+    await DatabaseUtils.bulk_delete(
+        db,
+        ElanFileToTier,
+        (ElanFileToTier.elan_id == elan_id) & (ElanFileToTier.tier_id == tier_id),
     )
-    await db.commit()
 
 
 async def sync_elan_file_to_tiers(
-    db: AsyncSession, elan_id: int, new_tier_ids: list[str]
+    db: AsyncSession, elan_id: int, new_tier_ids: list[int]
 ) -> None:
-    """Synchronize ELAN_FILE_TO_TIER associations for a file."""
     current_tier_ids = set(await get_tiers_for_elan_file(db, elan_id))
     new_tier_ids_set = set(new_tier_ids)
 
     # Add new associations
     for tier_id in new_tier_ids_set - current_tier_ids:
-        db.add(ElanFileToTier(elan_id=elan_id, tier_id=tier_id))
+        assoc = ElanFileToTier(elan_id=elan_id, tier_id=tier_id)
+        await DatabaseUtils.create_and_commit(db, assoc)
 
     # Remove old associations
     for tier_id in current_tier_ids - new_tier_ids_set:
-        await db.execute(
-            delete(ElanFileToTier).where(
-                ElanFileToTier.elan_id == elan_id,
-                ElanFileToTier.tier_id == tier_id,
-            )
+        await DatabaseUtils.delete_by_filter(
+            db, ElanFileToTier, elan_id=elan_id, tier_id=tier_id
         )
-    await db.commit()
 
 
 # --- ELAN_FILE_TO_PROJECT ASSOCIATION CRUD ---
@@ -134,70 +185,17 @@ async def sync_elan_file_to_tiers(
 
 async def get_projects_for_elan_file(db: AsyncSession, elan_id: int) -> list[int]:
     """Get all project_ids associated with an ELAN file."""
-    result = await db.execute(
-        select(ElanFileToProject.project_id).where(ElanFileToProject.elan_id == elan_id)
-    )
-    return [row[0] for row in result]
+    filters = {"elan_id": elan_id}
+    associations = await DatabaseUtils.get_by_filter(db, ElanFileToProject, filters)
+    return [assoc.project_id for assoc in associations]
 
 
 async def add_elan_file_to_project(
     db: AsyncSession, elan_id: int, project_id: int
 ) -> None:
     """Add association between ELAN file and project if not exists."""
-    exists = await db.execute(
-        select(ElanFileToProject).where(
-            ElanFileToProject.elan_id == elan_id,
-            ElanFileToProject.project_id == project_id,
-        )
-    )
-    if not exists.scalar_one_or_none():
-        db.add(ElanFileToProject(elan_id=elan_id, project_id=project_id))
-        await db.commit()
-
-
-async def remove_elan_file_to_project(
-    db: AsyncSession, elan_id: int, project_id: int
-) -> None:
-    """Remove association between ELAN file and project."""
-    await db.execute(
-        delete(ElanFileToProject).where(
-            ElanFileToProject.elan_id == elan_id,
-            ElanFileToProject.project_id == project_id,
-        )
-    )
-    await db.commit()
-
-
-async def sync_elan_file_to_projects(
-    db: AsyncSession, elan_id: int, new_project_ids: list[int]
-) -> None:
-    """Synchronize ELAN_FILE_TO_PROJECT associations for a file."""
-    from app.core.centralized_logging import get_logger
-
-    logger = get_logger()
-    logger.info(
-        f"sync_elan_file_to_projects called for elan_id={elan_id} with new_project_ids={new_project_ids}"
-    )
-    current_project_ids = set(await get_projects_for_elan_file(db, elan_id))
-    new_project_ids_set = set(new_project_ids)
-
-    # Add new associations
-    for project_id in new_project_ids_set - current_project_ids:
-        logger.info(
-            f"Adding ELAN_FILE_TO_PROJECT association: elan_id={elan_id}, project_id={project_id}"
-        )
-        db.add(ElanFileToProject(elan_id=elan_id, project_id=project_id))
-
-    # Remove old associations
-    for project_id in current_project_ids - new_project_ids_set:
-        logger.info(
-            f"Removing ELAN_FILE_TO_PROJECT association: elan_id={elan_id}, project_id={project_id}"
-        )
-        await db.execute(
-            delete(ElanFileToProject).where(
-                ElanFileToProject.elan_id == elan_id,
-                ElanFileToProject.project_id == project_id,
-            )
-        )
-    await db.commit()
-    logger.info(f"Finished syncing ELAN_FILE_TO_PROJECT for elan_id={elan_id}")
+    filters = {"elan_id": elan_id, "project_id": project_id}
+    exists = await DatabaseUtils.get_one_by_filter(db, ElanFileToProject, filters)
+    if not exists:
+        assoc = ElanFileToProject(elan_id=elan_id, project_id=project_id)
+        await DatabaseUtils.create_and_commit(db, assoc)

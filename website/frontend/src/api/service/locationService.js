@@ -13,13 +13,13 @@ export const getCountries = async () => {
     const response = await axiosClient.get('/location/countries');
     return {
       success: true,
-      data: response.data
+      data: response.data,
     };
   } catch (error) {
     console.error('Error fetching countries:', error);
     return {
       success: false,
-      error: error.response?.data?.detail || error.message
+      error: error.response?.data?.detail || error.message,
     };
   }
 };
@@ -31,16 +31,18 @@ export const getCountries = async () => {
  */
 export const getCitiesByCountry = async (countryId) => {
   try {
-    const response = await axiosClient.get(`/location/cities?country_id=${countryId}`);
+    const response = await axiosClient.get(
+      `/location/cities?country_id=${countryId}`
+    );
     return {
       success: true,
-      data: response.data
+      data: response.data,
     };
   } catch (error) {
     console.error('Error fetching cities:', error);
     return {
       success: false,
-      error: error.response?.data?.detail || error.message
+      error: error.response?.data?.detail || error.message,
     };
   }
 };
@@ -54,13 +56,13 @@ export const getAllCities = async () => {
     const response = await axiosClient.get('/location/cities/all');
     return {
       success: true,
-      data: response.data
+      data: response.data,
     };
   } catch (error) {
     console.error('Error fetching all cities:', error);
     return {
       success: false,
-      error: error.response?.data?.detail || error.message
+      error: error.response?.data?.detail || error.message,
     };
   }
 };

@@ -9,18 +9,18 @@
 
       <!-- Send Invitation Form -->
       <div class="invitation-form-card">
-        <form        @submit.prevent="handleSendInvitation" class="invitation-form">
+        <form class="invitation-form" @submit.prevent="handleSendInvitation">
           <div class="form-group">
             <label for="email" class="form-label">
               {{ t('invitation.email_label') }}
               <span class="required">*</span>
             </label>
-            <input 
+            <input
               id="email"
               v-model="form.email"
               type="email"
               class="form-input"
-              :class="{ 'error': emailError }"
+              :class="{ error: emailError }"
               :placeholder="t('invitation.email_placeholder')"
               required
             />
@@ -32,11 +32,11 @@
               {{ t('invitation.project_label') }}
               <span class="required">*</span>
             </label>
-            <select 
+            <select
               id="project"
               v-model="form.projectName"
               class="form-select"
-              :class="{ 'error': projectError }"
+              :class="{ error: projectError }"
               required
             >
               <option value="">{{ t('invitation.select_project') }}</option>
@@ -48,14 +48,16 @@
                 {{ project }}
               </option>
             </select>
-            <div v-if="projectError" class="error-message">{{ projectError }}</div>
+            <div v-if="projectError" class="error-message">
+              {{ projectError }}
+            </div>
           </div>
 
           <div class="form-group">
             <label for="message" class="form-label">
               {{ t('invitation.message_label') }}
             </label>
-            <textarea 
+            <textarea
               id="message"
               v-model="form.message"
               class="form-textarea"
@@ -68,11 +70,7 @@
             <label for="language" class="form-label">
               {{ t('invitation.language_label') }}
             </label>
-            <select 
-              id="language"
-              v-model="form.language"
-              class="form-select"
-            >
+            <select id="language" v-model="form.language" class="form-select">
               <option value="en">English</option>
               <option value="fr">Français</option>
             </select>
@@ -92,23 +90,25 @@
       <!-- Sent Invitations List -->
       <div class="sent-invitations-card">
         <h2 class="section-title">Recently Sent Invitations</h2>
-        
+
         <div v-if="loadingInvitations" class="loading-message">
           Loading invitations...
         </div>
-        
+
         <div v-else-if="sentInvitations.length === 0" class="empty-message">
           No invitations sent yet.
         </div>
-        
+
         <div v-else class="invitations-list">
-          <div 
-            v-for="invitation in sentInvitations" 
+          <div
+            v-for="invitation in sentInvitations"
             :key="invitation.invitation_id"
             class="invitation-item"
           >
             <div class="invitation-details">
-              <div class="invitation-email">{{ invitation.receiver_email }}</div>
+              <div class="invitation-email">
+                {{ invitation.receiver_email }}
+              </div>
               <div class="invitation-meta">
                 <span class="invitation-status" :class="invitation.status">
                   {{ invitation.status }}
@@ -143,7 +143,7 @@ const form = ref({
   email: '',
   projectName: '',
   message: '',
-  language: 'en'
+  language: 'en',
 });
 
 const sending = ref(false);
@@ -155,10 +155,7 @@ const projects = ref([]);
 
 // Load data on mount
 onMounted(async () => {
-  await Promise.all([
-    loadSentInvitations(),
-    loadProjects()
-  ]);
+  await Promise.all([loadSentInvitations(), loadProjects()]);
 });
 
 const loadProjects = async () => {
@@ -200,17 +197,17 @@ const handleSendInvitation = async () => {
       project_name: form.value.projectName,  // Utiliser directement le nom du projet
       message: form.value.message || null,
       expires_in_days: 7,
-      language: form.value.language || 'en'
+      language: form.value.language || 'en',
     });
 
     if (response.data.success) {
       eventMessageStore.addMessage(t('invitation.success'), 'success');
-      
+
       // Reset form
       form.value.email = '';
       form.value.projectName = '';
       form.value.message = '';
-      
+
       // Reload sent invitations
       await loadSentInvitations();
     } else {
@@ -232,7 +229,7 @@ const handleSendInvitation = async () => {
 
 const loadSentInvitations = async () => {
   loadingInvitations.value = true;
-  
+
   try {
     const response = await getSentInvitations();
     sentInvitations.value = response.data.invitations || [];

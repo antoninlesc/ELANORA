@@ -12,6 +12,7 @@ import EmailVerificationPage from '@views/EmailVerificationPage.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
 import UploadPage from '@views/UploadPage.vue';
 import ConflictsPage from '@views/ConflictsPage.vue';
+import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 
 // Define routes
 const routes = [
@@ -55,13 +56,13 @@ const routes = [
       {
         path: 'projects',
         name: 'ProjectsPage',
-        component: () => import('@views/ProjectsPage.vue'),
+        component: ProjectsPage,
         meta: { requiresAuth: true },
       },
       {
         path: 'admin/invitations',
         name: 'AdminInvitationsPage',
-        component: () => import('@views/AdminInvitationsPage.vue'),
+        component: AdminInvitationsPage,
         meta: { requiresAuth: true, requiresAdmin: true },
       },
       {
@@ -129,8 +130,9 @@ router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
 
   // Check if authentication verification is needed for this route
-  const needsAuthCheck = to.meta.requiresAuth || to.meta.requiresAdmin || to.name === 'LoginPage';
-  
+  const needsAuthCheck =
+    to.meta.requiresAuth || to.meta.requiresAdmin || to.name === 'LoginPage';
+
   // Only verify authentication if we need it for this route
   if (needsAuthCheck && !userStore.authState.initialized) {
     console.log('Authentication verification needed, verifying...');

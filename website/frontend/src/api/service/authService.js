@@ -37,7 +37,12 @@ export async function logout(csrfToken) {
 export async function forgotPassword(email, language) {
   const payload = { email };
   if (language) payload.language = language;
-  console.log('Sending forgot password request for:', email, 'with language:', language);
+  console.log(
+    'Sending forgot password request for:',
+    email,
+    'with language:',
+    language
+  );
   return await axiosInstance.post('/auth/forgot-password', payload);
 }
 
@@ -71,7 +76,12 @@ export async function registerWithInvitation(data) {
  */
 export async function sendVerificationEmail(email, language = 'en') {
   const payload = { email, language };
-  console.log('Sending verification email for:', email, 'with language:', language);
+  console.log(
+    'Sending verification email for:',
+    email,
+    'with language:',
+    language
+  );
   return await axiosInstance.post('/auth/send-verification-email', payload);
 }
 

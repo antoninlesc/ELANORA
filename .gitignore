@@ -56,4 +56,6 @@ coverage/
 *.pfsx
 
 # Ignore project (ELAN) specific files
-elanora_projects/
+elanora_projects/*
+!elanora_projects/.githooks/
+!elanora_projects/.githooks/**
