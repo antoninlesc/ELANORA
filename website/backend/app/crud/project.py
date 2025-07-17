@@ -1,6 +1,4 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.centralized_logging import get_logger
 from app.crud.annotation import delete_unused_annotation_values
 from app.crud.associations import delete_project_associations
 from app.crud.comment import delete_project_comments
@@ -12,6 +10,8 @@ from app.model.associations import UserToProject
 from app.model.enums import ProjectPermission
 from app.model.project import Project
 from app.utils.database import DatabaseUtils
+
+from app.core.centralized_logging import get_logger
 
 logger = get_logger()
 
