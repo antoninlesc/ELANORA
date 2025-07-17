@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
-from app.model.associations import ConflictOfElanFile
+from app.model.association import ConflictOfElanFile
 from app.model.conflict import Conflict
 from app.utils.database import DatabaseUtils
 

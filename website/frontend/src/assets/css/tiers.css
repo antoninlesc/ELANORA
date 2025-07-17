@@ -1,0 +1,32 @@
+.tiers-page-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #4f46e5;
+  margin-bottom: 2rem;
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+
+.tiers-page-group {
+  margin-bottom: 2.5rem;
+}
+
+.tiers-page-loading,
+.tiers-page-error {
+  text-align: center;
+  font-size: 1.2rem;
+  margin-top: 2rem;
+}
+
+.tiers-page-error {
+  color: #dc2626;
+}
+
+.tiers-tree-main-block {
+  background: #f9fafb;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px 0 #e0e7ef;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+}

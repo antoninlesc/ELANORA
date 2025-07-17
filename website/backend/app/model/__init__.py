@@ -12,7 +12,7 @@ from .annotation import Annotation
 from .annotation_standard import AnnotationStandard
 
 # Association tables (import last)
-from .associations import (
+from .association import (
     CommentConflict,
     CommentElanFile,
     CommentProject,
