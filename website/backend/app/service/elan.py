@@ -205,7 +205,7 @@ class ElanService:
             if existing_file:
                 logger.info(f"File {file_info['filename']} already exists. Skipping.")
                 # Always sync associations even if file exists
-                await elan_file.sync_elan_file_to_projects(
+                await elan_file.add_elan_file_to_project(
                     self.db, existing_file.elan_id, project_id
                 )
                 return existing_file.elan_id
@@ -232,7 +232,7 @@ class ElanService:
         )
 
         # Always sync ELAN_FILE_TO_PROJECT associations
-        await elan_file.sync_elan_file_to_projects(
+        await elan_file.add_elan_file_to_project(
             self.db, elan_file_obj.elan_id, project_id
         )
 

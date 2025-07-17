@@ -1,4 +1,3 @@
-from sqlalchemy import func, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -6,7 +5,6 @@ from app.model.associations import (
     ElanFileToProject,
     ProjectAnnotStandard,
     UserToProject,
-    ElanFileToTier,
 )
 from app.utils.database import DatabaseUtils
 

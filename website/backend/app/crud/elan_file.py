@@ -2,17 +2,16 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.model.elan_file import ElanFile
-from app.utils.database import DatabaseUtils
-from app.utils.validation import ValidationUtils
 from app.core.centralized_logging import get_logger
 from app.model.associations import ElanFileToProject, ElanFileToTier
 from app.model.elan_file import ElanFile
+from app.utils.database import DatabaseUtils
+from app.utils.validation import ValidationUtils
 
 logger = get_logger()
 
 
-async def get_elan_files_by_project(
+async def get_orphan_elan_files_by_project(
     db: AsyncSession, project_id: int
 ) -> list[ElanFile]:
     logger.info(f"Fetching ELAN files for project_id={project_id}")
@@ -21,19 +20,19 @@ async def get_elan_files_by_project(
     logger.info(
         f"Found {len(links)} ElanFileToProject links for project_id={project_id}"
     )
-    elan_ids = [link.elan_id for link in links]
-    files = []
-    missing_ids = []
-    for elan_id in elan_ids:
-        ef = await DatabaseUtils.get_by_id(db, ElanFile, "elan_id", elan_id)
-        if ef:
-            files.append(ef)
-        else:
-            missing_ids.append(elan_id)
-    logger.info(f"Found {len(files)} ELAN files for project_id={project_id}")
-    if missing_ids:
-        logger.warning(f"Missing ELAN files for elan_ids={missing_ids}")
-    return files
+    orphaned_elan_files = await DatabaseUtils.get_orphaned_by_association(
+        db,
+        ElanFile,
+        ElanFileToProject,
+        "elan_id",
+        "elan_id",
+        "project_id",
+        project_id,
+    )
+    logger.info(
+        f"Found {len(orphaned_elan_files)} ELAN files for project_id={project_id}"
+    )
+    return orphaned_elan_files
 
 
 async def delete_elan_file_associations(db: AsyncSession, elan_id: int):
@@ -58,11 +57,17 @@ async def delete_elan_file(db: AsyncSession, elan_file):
     )
     try:
         await delete_elan_file_associations(db, elan_file.elan_id)
-        logger.info(
-            f"Attempting to delete ELAN file row for elan_id={elan_file.elan_id}"
-        )
-        await db.delete(elan_file)
-        logger.info(f"Deleted ELAN file elan_id={elan_file.elan_id}")
+        remaining_projects = await get_projects_for_elan_file(db, elan_file.elan_id)
+        if not remaining_projects:
+            logger.info(
+                f"Attempting to delete ELAN file row for elan_id={elan_file.elan_id}"
+            )
+            await db.delete(elan_file)
+            logger.info(f"Deleted ELAN file elan_id={elan_file.elan_id}")
+        else:
+            logger.info(
+                f"ELAN file elan_id={elan_file.elan_id} still associated with projects {remaining_projects}, not deleting file row."
+            )
     except Exception as e:
         logger.error(f"Failed to delete ELAN file elan_id={elan_file.elan_id}: {e}")
 
@@ -194,33 +199,3 @@ async def add_elan_file_to_project(
     if not exists:
         assoc = ElanFileToProject(elan_id=elan_id, project_id=project_id)
         await DatabaseUtils.create_and_commit(db, assoc)
-
-
-async def remove_elan_file_to_project(
-    db: AsyncSession, elan_id: int, project_id: int
-) -> None:
-    """Remove association between ELAN file and project."""
-    await DatabaseUtils.bulk_delete(
-        db,
-        ElanFileToProject,
-        (ElanFileToProject.elan_id == elan_id)
-        & (ElanFileToProject.project_id == project_id),
-    )
-
-
-async def sync_elan_file_to_projects(
-    db: AsyncSession, elan_id: int, project_id: int
-) -> None:
-    current_project_ids = set(await get_projects_for_elan_file(db, elan_id))
-    new_project_ids_set = {project_id}
-
-    # Add new association if needed
-    if project_id not in current_project_ids:
-        assoc = ElanFileToProject(elan_id=elan_id, project_id=project_id)
-        await DatabaseUtils.create_and_commit(db, assoc)
-
-    # Remove old associations
-    for old_project_id in current_project_ids - new_project_ids_set:
-        await DatabaseUtils.delete_by_filter(
-            db, ElanFileToProject, elan_id=elan_id, project_id=old_project_id
-        )

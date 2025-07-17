@@ -10,9 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
-from fastapi import UploadFile
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.crud.project import (
     create_project_db,
     delete_project_db,
@@ -31,10 +28,10 @@ from app.service.git_operations import (
     delete_project_folder,
 )
 from app.utils.project_setup_utils import (
-    create_project_structure,
-    create_gitignore,
-    create_readme,
     copy_githooks,
+    create_gitignore,
+    create_project_structure,
+    create_readme,
 )
 
 logger = get_logger()

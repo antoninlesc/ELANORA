@@ -2,7 +2,7 @@
 
 from typing import Any, TypeVar
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
@@ -186,8 +186,6 @@ class DatabaseUtils:
         db: AsyncSession, model: type[ModelType], filters: dict | None
     ) -> int:
         """Count records matching optional filters."""
-        from sqlalchemy import func
-
         query = select(func.count()).select_from(model)
         filters = filters or {}
         for field, value in filters.items():
@@ -202,8 +200,7 @@ class DatabaseUtils:
     async def bulk_delete(
         db: AsyncSession, model: type[ModelType], where_clause
     ) -> int:
-        """
-        Bulk delete records matching the given where_clause.
+        """Bulk delete records matching the given where_clause.
         Returns the number of deleted rows.
         """
         try:
@@ -224,8 +221,7 @@ class DatabaseUtils:
         data: list[dict],
         pk_field: str,
     ) -> int:
-        """
-        Bulk update records for the given model.
+        """Bulk update records for the given model.
         Each dict in data must include the primary key field.
         Returns the number of updated rows.
         """
@@ -249,3 +245,32 @@ class DatabaseUtils:
             logger.error(f"bulk_update: error={e}")
             await db.rollback()
             raise
+
+    @staticmethod
+    async def get_orphaned_by_association(
+        db: AsyncSession,
+        main_model: type[ModelType],
+        assoc_model: type[ModelType],
+        main_id_field: str,
+        assoc_main_id_field: str,
+        assoc_parent_field: str,
+        parent_id: int,
+    ) -> list[ModelType]:
+        """Fetch instances from main_model that are linked in assoc_model
+        only to the given parent_id (via assoc_parent_field), and to no other parent.
+        """
+        main_id_col = getattr(main_model, main_id_field)
+        assoc_main_id_col = getattr(assoc_model, assoc_main_id_field)
+        assoc_parent_col = getattr(assoc_model, assoc_parent_field)
+
+        stmt = (
+            select(main_model)
+            .join(assoc_model, assoc_main_id_col == main_id_col)
+            .group_by(main_id_col)
+            .having(
+                func.count(assoc_parent_col) == 1,
+                func.max(assoc_parent_col) == parent_id,
+            )
+        )
+        result = await db.execute(stmt)
+        return list(result.scalars().all())

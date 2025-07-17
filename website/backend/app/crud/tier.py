@@ -1,15 +1,13 @@
 """Tier CRUD operations - Pure database access layer."""
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.centralized_logging import get_logger
+from app.model.annotation import Annotation
 from app.model.associations import ElanFileToTier
 from app.model.tier import Tier
 from app.utils.database import DatabaseUtils
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.centralized_logging import get_logger
-from app.model.annotation import Annotation
-
 
 logger = get_logger()
 

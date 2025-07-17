@@ -8,10 +8,9 @@ from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.centralized_logging import get_logger
 from app.model.enums import InvitationStatus, ProjectPermission
 from app.model.invitation import Invitation
-
-from app.core.centralized_logging import get_logger
 
 # Password context for hashing codes
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

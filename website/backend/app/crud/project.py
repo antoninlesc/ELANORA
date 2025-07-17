@@ -1,23 +1,17 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.crud.annotation import delete_unused_annotation_values
+from app.crud.associations import delete_project_associations
+from app.crud.comment import delete_project_comments
+from app.crud.conflict import delete_project_conflicts
+from app.crud.elan_file import delete_elan_file, get_orphan_elan_files_by_project
+from app.crud.invitation import delete_project_invitations
+from app.crud.tier import delete_tiers_for_elan_file
 from app.model.associations import UserToProject
 from app.model.enums import ProjectPermission
 from app.model.project import Project
 from app.utils.database import DatabaseUtils
-from app.crud.associations import delete_project_associations
-from app.crud.conflict import delete_project_conflicts
-from app.crud.comment import delete_project_comments
-from app.crud.elan_file import get_elan_files_by_project, delete_elan_file
-from app.crud.tier import delete_tiers_for_elan_file
-from app.crud.annotation import delete_unused_annotation_values
-from app.crud.invitation import delete_project_invitations
-from app.model.associations import (
-    UserToProject,
-)
-from app.model.enums import ProjectPermission
-from app.model.project import Project
-
 
 logger = get_logger()
 
@@ -65,11 +59,13 @@ async def get_project_by_id(db: AsyncSession, project_id: int) -> Project | None
 async def delete_project_db(db: AsyncSession, project_name: str) -> None:
     project = await get_project_by_name(db, project_name)
     if project:
-        # Delete ELAN files and all related tiers/annotations FIRST
-        elan_files = await get_elan_files_by_project(db, project.project_id)
-        for elan_file in elan_files:
-            await delete_tiers_for_elan_file(db, elan_file.elan_id)
-            await delete_elan_file(db, elan_file)
+        # Delete ELAN files and all related tiers/annotations that are associated with the only this project
+        orphan_elan_files = await get_orphan_elan_files_by_project(
+            db, project.project_id
+        )
+        for orphan_elan_file in orphan_elan_files:
+            await delete_tiers_for_elan_file(db, orphan_elan_file.elan_id)
+            await delete_elan_file(db, orphan_elan_file)
         # Now delete project associations (users, standards, file links)
         await delete_project_associations(db, project.project_id)
         await delete_project_invitations(db, project.project_id)

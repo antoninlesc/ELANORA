@@ -1,9 +1,11 @@
 """Annotation CRUD operations - Pure database access layer."""
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from decimal import Decimal
+
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import and_, delete, select
+
 from app.core.centralized_logging import get_logger
 from app.model.annotation import Annotation
 from app.model.annotation_value import AnnotationValue

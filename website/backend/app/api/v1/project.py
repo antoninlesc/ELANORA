@@ -4,11 +4,11 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.project import get_project_by_id
-from app.service.git import list_projects_by_instance
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
 from app.model.user import User
 from app.schema.responses.project import ProjectResponse
+from app.service.git import list_projects_by_instance
 
 router = APIRouter()
 
