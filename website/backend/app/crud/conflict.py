@@ -183,42 +183,8 @@ async def get_git_conflicts_for_branch(
     project_id: int,
     branch_name: str,
     status: Optional[ConflictStatus] = None,
-) -> List[Conflict]:
-    """Get git conflicts for a specific branch via ELAN file associations."""
-    stmt = (
-        select(Conflict)
-        .join(
-            ConflictOfElanFile, Conflict.conflict_id == ConflictOfElanFile.conflict_id
-        )
-        .join(ElanFile, ConflictOfElanFile.elan_id == ElanFile.elan_id)
-        .join(ElanFileToProject, ElanFile.elan_id == ElanFileToProject.elan_id)
-        .where(
-            ElanFileToProject.project_id == project_id,
-            Conflict.branch_name == branch_name,
-            Conflict.conflict_type.in_(
-                [
-                    ConflictType.GIT_MERGE_CONFLICT,
-                    ConflictType.GIT_CONTENT_CONFLICT,
-                    ConflictType.GIT_FILE_CONFLICT,
-                ]
-            ),
-        )
-    )
-
-    if status:
-        stmt = stmt.where(Conflict.status == status)
-
-    result = await db.execute(stmt)
-    return result.scalars().all()
-
-
-async def get_conflicts_with_file_info(
-    db: AsyncSession,
-    project_id: int,
-    branch_name: str,
-    status: Optional[ConflictStatus] = None,
-) -> List[dict]:
-    """Get conflicts with associated ELAN file information via joins."""
+) -> dict:
+    """Get git conflicts for a specific branch with detailed information."""
     stmt = (
         select(Conflict, ElanFile)
         .join(
@@ -237,6 +203,7 @@ async def get_conflicts_with_file_info(
                 ]
             ),
         )
+        .order_by(Conflict.detected_at.desc())
     )
 
     if status:
@@ -245,25 +212,126 @@ async def get_conflicts_with_file_info(
     result = await db.execute(stmt)
     rows = result.all()
 
-    conflicts_info = []
+    conflicts = []
     for conflict, elan_file in rows:
+        # Extract git details
+        git_details = conflict.git_details or {}
+        details_info = git_details.get("details", {})
+
+        # Build conflict information
         conflict_info = {
-            "conflict_id": conflict.conflict_id,
+            "filename": elan_file.filename,
             "type": conflict.conflict_type.value,
-            "description": conflict.conflict_description,
-            "severity": conflict.severity.value,
+            "details": conflict.conflict_description,
             "status": conflict.status.value,
+            "severity": conflict.severity.value,
             "detected_at": conflict.detected_at.isoformat()
             if conflict.detected_at
             else None,
+            "resolved_at": conflict.resolved_at.isoformat()
+            if conflict.resolved_at
+            else None,
             "branch_name": conflict.branch_name,
-            "git_details": conflict.git_details,
-            "filename": elan_file.filename,
+            "conflict_id": conflict.conflict_id,
             "elan_file_id": elan_file.elan_id,
+            # Enhanced details from git_details
+            "git_info": {
+                "change_type": git_details.get("change_type", "unknown"),
+                "conflict_branch": git_details.get("isolated_in_branch"),
+                "file_size": details_info.get("file_size"),
+                "has_binary_conflict": details_info.get("has_binary_conflict", False),
+                "conflict_markers": details_info.get("conflict_markers_count", 0),
+                "additions": details_info.get("additions", 0),
+                "deletions": details_info.get("deletions", 0),
+            },
+            # Resolution info
+            "resolution_info": {
+                "can_auto_resolve": _can_auto_resolve(
+                    conflict.conflict_type, details_info
+                ),
+                "suggested_action": _get_suggested_action(
+                    conflict.conflict_type, git_details
+                ),
+                "requires_manual_review": _requires_manual_review(
+                    conflict.conflict_type, details_info
+                ),
+            },
         }
-        conflicts_info.append(conflict_info)
+        conflicts.append(conflict_info)
 
-    return conflicts_info
+    return {
+        "conflicts": conflicts,
+        "total_count": len(conflicts),
+        "by_status": _group_conflicts_by_status(conflicts),
+        "by_type": _group_conflicts_by_type(conflicts),
+        "source": "database",
+        "branch_name": branch_name,
+    }
+
+
+def _can_auto_resolve(conflict_type: ConflictType, details: dict) -> bool:
+    """Determine if conflict can be automatically resolved."""
+    if conflict_type == ConflictType.GIT_MERGE_CONFLICT:
+        return not details.get("has_binary_conflict", False)
+    elif conflict_type == ConflictType.GIT_CONTENT_CONFLICT:
+        return details.get("conflict_markers_count", 0) < 10  # Arbitrary threshold
+    return False
+
+
+def _get_suggested_action(conflict_type: ConflictType, git_details: dict) -> str:
+    """Get suggested resolution action."""
+    change_type = git_details.get("change_type", "unknown")
+
+    if conflict_type == ConflictType.GIT_MERGE_CONFLICT:
+        if change_type == "modified":
+            return "Review changes and choose version to keep"
+        elif change_type == "deleted":
+            return "Decide whether to keep or remove file"
+        elif change_type == "added":
+            return "Review new content before merging"
+
+    elif conflict_type == ConflictType.GIT_CONTENT_CONFLICT:
+        return "Manually resolve content conflicts"
+
+    return "Manual review required"
+
+
+def _requires_manual_review(conflict_type: ConflictType, details: dict) -> bool:
+    """Determine if conflict requires manual review."""
+    if conflict_type == ConflictType.GIT_CONTENT_CONFLICT:
+        return True
+
+    if details.get("has_binary_conflict", False):
+        return True
+
+    # Large files might need manual review
+    file_size = details.get("file_size", 0)
+    if file_size > 1000000:  # 1MB threshold
+        return True
+
+    return False
+
+
+def _group_conflicts_by_status(conflicts: list) -> dict:
+    """Group conflicts by status."""
+    status_groups = {}
+    for conflict in conflicts:
+        status = conflict["status"]
+        if status not in status_groups:
+            status_groups[status] = 0
+        status_groups[status] += 1
+    return status_groups
+
+
+def _group_conflicts_by_type(conflicts: list) -> dict:
+    """Group conflicts by type."""
+    type_groups = {}
+    for conflict in conflicts:
+        conflict_type = conflict["type"]
+        if conflict_type not in type_groups:
+            type_groups[conflict_type] = 0
+        type_groups[conflict_type] += 1
+    return type_groups
 
 
 async def resolve_git_conflict_by_filename(

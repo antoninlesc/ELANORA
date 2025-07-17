@@ -344,8 +344,42 @@ async function refreshConflicts() {
 }
 
 function viewConflictDetails(conflict) {
-  // This would open a detailed view of the conflict
-  alert(`Viewing details for ${conflict.filename}:\n\n${conflict.details}\n\nIn a real implementation, this would show a side-by-side comparison of the conflicting content.`);
+  const details = [];
+  
+  details.push(`File: ${conflict.filename}`);
+  details.push(`Type: ${formatConflictType(conflict.type)}`);
+  details.push(`Status: ${conflict.status.toUpperCase()}`);
+  details.push(`Detected: ${new Date(conflict.detected_at).toLocaleString()}`);
+  
+  if (conflict.git_info) {
+    details.push(`\nGit Information:`);
+    details.push(`- Change Type: ${conflict.git_info.change_type}`);
+    
+    if (conflict.git_info.conflict_branch) {
+      details.push(`- Isolated in Branch: ${conflict.git_info.conflict_branch}`);
+    }
+    
+    if (conflict.git_info.file_size) {
+      details.push(`- File Size: ${(conflict.git_info.file_size / 1024).toFixed(1)} KB`);
+    }
+    
+    if (conflict.git_info.conflict_markers > 0) {
+      details.push(`- Conflict Markers: ${conflict.git_info.conflict_markers}`);
+    }
+    
+    if (conflict.git_info.additions > 0 || conflict.git_info.deletions > 0) {
+      details.push(`- Changes: +${conflict.git_info.additions || 0} -${conflict.git_info.deletions || 0}`);
+    }
+  }
+  
+  if (conflict.resolution_info) {
+    details.push(`\nResolution Information:`);
+    details.push(`- Can Auto-Resolve: ${conflict.resolution_info.can_auto_resolve ? 'Yes' : 'No'}`);
+    details.push(`- Suggested Action: ${conflict.resolution_info.suggested_action}`);
+    details.push(`- Requires Manual Review: ${conflict.resolution_info.requires_manual_review ? 'Yes' : 'No'}`);
+  }
+  
+  alert(details.join('\n'));
 }
 
 function resolveConflict(conflict) {
@@ -415,6 +449,9 @@ async function applyBatchResolution() {
 
 function formatConflictType(type) {
   const types = {
+    'GIT_CONTENT_CONFLICT': 'Content Conflict',
+    'GIT_MERGE_CONFLICT': 'Merge Conflict',
+    'GIT_FILE_CONFLICT': 'File Conflict',
     'content_conflict': 'Content Conflict',
     'merge_conflict': 'Merge Conflict',
     'annotation_conflict': 'Annotation Conflict',
