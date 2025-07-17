@@ -27,6 +27,9 @@ class Project(Base):
     project_path: Mapped[str] = mapped_column(String(512), nullable=False, unique=True)
 
     # Relationships - use string references
+    conflicts: Mapped[list["Conflict"]] = relationship(
+        "Conflict", back_populates="project", cascade="all, delete-orphan"
+    )
     instance: Mapped["Instance"] = relationship("Instance", back_populates="projects")
     invitations: Mapped[list["Invitation"]] = relationship(
         "Invitation", back_populates="project"
