@@ -10,9 +10,9 @@ import ForgotPassword from '@views/ForgotPassword.vue';
 import ResetPassword from '@views/ResetPassword.vue';
 import EmailVerificationPage from '@views/EmailVerificationPage.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
-import ProjectsPage from '@views/ProjectsPage.vue';
 import UploadPage from '@views/UploadPage.vue';
 import ConflictsPage from '@views/ConflictsPage.vue';
+import ProjectsPage from '@views/ProjectsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 
 // Define routes

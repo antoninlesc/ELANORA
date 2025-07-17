@@ -1,6 +1,4 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.centralized_logging import get_logger
 from app.crud.annotation import delete_unused_annotation_values
 from app.crud.associations import delete_project_associations
 from app.crud.comment import delete_project_comments
@@ -12,6 +10,8 @@ from app.model.associations import UserToProject
 from app.model.enums import ProjectPermission
 from app.model.project import Project
 from app.utils.database import DatabaseUtils
+
+from app.core.centralized_logging import get_logger
 
 logger = get_logger()
 
@@ -87,3 +87,21 @@ async def list_projects_by_instance(
 
 async def project_exists_by_name(db: AsyncSession, project_name: str) -> bool:
     return await DatabaseUtils.exists(db, Project, "project_name", project_name)
+
+
+async def add_user_to_project(
+    db: AsyncSession,
+    user_id: int,
+    project_id: int,
+    permission: ProjectPermission = ProjectPermission.READ,
+) -> UserToProject:
+    """Add a user to a project with specified permission."""
+    user_to_project = UserToProject(
+        user_id=user_id,
+        project_id=project_id,
+        permission=permission,
+    )
+    db.add(user_to_project)
+    await db.commit()
+    await db.refresh(user_to_project)
+    return user_to_project

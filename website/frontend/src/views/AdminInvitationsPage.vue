@@ -1,7 +1,6 @@
 <template>
   <div class="admin-invitation-page">
-    <AppHeader instance-name="ELANORA Admin" />
-
+    
     <div class="admin-container">
       <div class="admin-header">
         <h1 class="admin-title">{{ t('invitation.send_title') }}</h1>
@@ -35,18 +34,18 @@
             </label>
             <select
               id="project"
-              v-model="form.projectId"
+              v-model="form.projectName"
               class="form-select"
               :class="{ error: projectError }"
               required
             >
               <option value="">{{ t('invitation.select_project') }}</option>
-              <option
-                v-for="project in projects"
-                :key="project.project_id"
-                :value="project.project_id"
+              <option 
+                v-for="project in projects" 
+                :key="project" 
+                :value="project"
               >
-                {{ project.project_name }}
+                {{ project }}
               </option>
             </select>
             <div v-if="projectError" class="error-message">
@@ -77,10 +76,10 @@
             </select>
           </div>
 
-          <button
-            type="submit"
-            class="btn-primary send-btn"
-            :disabled="sending || !form.email || !form.projectId"
+          <button 
+            type="submit" 
+            class="btn-primary send-btn" 
+            :disabled="sending || !form.email || !form.projectName"
           >
             <span v-if="sending">{{ t('invitation.sending') }}</span>
             <span v-else>{{ t('invitation.send_button') }}</span>
@@ -133,12 +132,8 @@
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
-import {
-  sendInvitation,
-  getSentInvitations,
-} from '@/api/service/invitationService';
-import { getProjects } from '@/api/service/projectService';
-import AppHeader from '@components/layout/AppHeader.vue';
+import { sendInvitation, getSentInvitations } from '@/api/service/invitationService';
+import gitService from '@/api/service/gitService';
 
 const { t } = useI18n();
 const eventMessageStore = useEventMessageStore();
@@ -146,7 +141,7 @@ const eventMessageStore = useEventMessageStore();
 // Reactive data
 const form = ref({
   email: '',
-  projectId: '',
+  projectName: '',
   message: '',
   language: 'en',
 });
@@ -165,8 +160,8 @@ onMounted(async () => {
 
 const loadProjects = async () => {
   try {
-    const response = await getProjects();
-    projects.value = response.data || [];
+    const response = await gitService.listProjects();
+    projects.value = response.projects || [];
   } catch (error) {
     console.error('Failed to load projects:', error);
     eventMessageStore.addMessage(t('project.load_error'), 'error');
@@ -189,7 +184,7 @@ const handleSendInvitation = async () => {
   }
 
   // Validate project selection
-  if (!form.value.projectId) {
+  if (!form.value.projectName) {
     projectError.value = t('invitation.project_required');
     return;
   }
@@ -199,7 +194,7 @@ const handleSendInvitation = async () => {
   try {
     const response = await sendInvitation({
       receiver_email: form.value.email,
-      project_id: parseInt(form.value.projectId),
+      project_name: form.value.projectName,  // Utiliser directement le nom du projet
       message: form.value.message || null,
       expires_in_days: 7,
       language: form.value.language || 'en',
@@ -210,7 +205,7 @@ const handleSendInvitation = async () => {
 
       // Reset form
       form.value.email = '';
-      form.value.projectId = '';
+      form.value.projectName = '';
       form.value.message = '';
 
       // Reload sent invitations
@@ -252,232 +247,4 @@ const formatDate = (dateString) => {
 };
 </script>
 
-<style scoped>
-.admin-invitation-page {
-  min-height: 100vh;
-  background: #f8fafc;
-}
-
-.admin-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.admin-header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.admin-title {
-  color: #1f2937;
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-.admin-description {
-  color: #6b7280;
-  font-size: 1.125rem;
-  margin: 0;
-}
-
-.invitation-form-card,
-.sent-invitations-card {
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 4px 6px rgb(0 0 0 / 5%);
-  padding: 2rem;
-  margin-bottom: 2rem;
-}
-
-.section-title {
-  color: #1f2937;
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-}
-
-.invitation-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.form-label {
-  color: #374151;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-}
-
-.required {
-  color: #ef4444;
-  margin-left: 0.25rem;
-}
-
-.form-input,
-.form-textarea,
-.form-select {
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  transition: all 0.2s;
-  background: white;
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.form-input:focus,
-.form-textarea:focus,
-.form-select:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
-}
-
-.form-input.error {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgb(239 68 68 / 10%);
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: white;
-  border: none;
-  padding: 0.875rem 2rem;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgb(37 99 235 / 40%);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.send-btn {
-  align-self: flex-start;
-}
-
-.error-message {
-  color: #ef4444;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
-}
-
-.loading-message,
-.empty-message {
-  text-align: center;
-  color: #6b7280;
-  padding: 2rem;
-  font-style: italic;
-}
-
-.invitations-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.invitation-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  background: #f9fafb;
-}
-
-.invitation-details {
-  flex: 1;
-}
-
-.invitation-email {
-  font-weight: 500;
-  color: #1f2937;
-  margin-bottom: 0.25rem;
-}
-
-.invitation-meta {
-  display: flex;
-  gap: 1rem;
-  font-size: 0.875rem;
-}
-
-.invitation-status {
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.invitation-status.pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.invitation-status.accepted {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.invitation-status.expired {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.invitation-date {
-  color: #6b7280;
-}
-
-.invitation-code {
-  font-family: 'Courier New', monospace;
-  background: #f3f4f6;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.875rem;
-}
-
-@media (width <= 768px) {
-  .admin-container {
-    padding: 1rem;
-  }
-
-  .invitation-form-card,
-  .sent-invitations-card {
-    padding: 1.5rem;
-  }
-
-  .invitation-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .invitation-code {
-    align-self: stretch;
-    text-align: center;
-  }
-}
-</style>
+<style src="@/assets/css/admin-invitations.css"></style>

@@ -6,15 +6,17 @@ from app.core.centralized_logging import get_logger
 from app.crud.invitation import (
     create_invitation,
     get_invitation_by_code,
+    get_invitation_by_id,
     get_invitations_by_email,
     get_invitations_by_sender,
     get_pending_invitations_by_email,
     update_invitation_status,
 )
-from app.crud.project import get_project_by_id
 from app.crud.user import get_user_by_id
-from app.model.enums import InvitationStatus, ProjectPermission
+from app.crud.project import get_project_by_id, add_user_to_project, get_project_by_name
 from app.model.invitation import Invitation
+from app.model.enums import InvitationStatus, ProjectPermission
+from app.service.email import EmailService
 from app.schema.requests.invitation import InvitationSendRequest
 from app.schema.responses.invitation import (
     InvitationListResponse,
@@ -22,7 +24,6 @@ from app.schema.responses.invitation import (
     InvitationSendResponse,
     InvitationValidationResponse,
 )
-from app.service.email import EmailService
 
 # Get logger for this module
 logger = get_logger()
@@ -48,7 +49,7 @@ class InvitationService:
                 return InvitationSendResponse(success=False, message="Sender not found")
 
             # Get project information (now required)
-            project = await get_project_by_id(db, request.project_id)
+            project = await get_project_by_name(db, request.project_name)
             if not project:
                 return InvitationSendResponse(
                     success=False, message="Project not found"
@@ -70,7 +71,7 @@ class InvitationService:
                 db=db,
                 sender_id=sender_id,
                 receiver_email=str(request.receiver_email),
-                project_id=request.project_id,
+                project_id=project.project_id,  # Utiliser l'ID du projet trouvé
                 project_permission=request.project_permission,
                 expires_in_days=request.expires_in_days,
             )
@@ -94,7 +95,7 @@ class InvitationService:
                         "sender_id": sender_id,
                         "receiver_email": str(request.receiver_email),
                         "invitation_id": invitation.invitation_id,
-                        "project_id": request.project_id,
+                        "project_id": project.project_id,  # Utiliser l'ID du projet trouvé
                     },
                 )
                 return InvitationSendResponse(
@@ -164,8 +165,18 @@ class InvitationService:
         invitation_id: str,
         user_id: int,
     ) -> bool:
-        """Mark an invitation as accepted."""
+        """Mark an invitation as accepted and add user to project."""
         try:
+            # Get invitation details first
+            invitation = await get_invitation_by_id(db, invitation_id)
+            if not invitation:
+                logger.warning(
+                    "Invitation not found",
+                    extra={"invitation_id": invitation_id},
+                )
+                return False
+
+            # Update invitation status
             success = await update_invitation_status(
                 db=db,
                 invitation_id=invitation_id,
@@ -174,6 +185,38 @@ class InvitationService:
             )
 
             if success:
+                # Add user to project with the permission specified in the invitation
+                try:
+                    await add_user_to_project(
+                        db=db,
+                        user_id=user_id,
+                        project_id=invitation.project_id,
+                        permission=invitation.project_permission,
+                    )
+                    logger.info(
+                        "User added to project via invitation",
+                        extra={
+                            "invitation_id": invitation_id,
+                            "user_id": user_id,
+                            "project_id": invitation.project_id,
+                            "permission": invitation.project_permission,
+                        },
+                    )
+                except Exception as project_error:
+                    logger.error(
+                        "Failed to add user to project",
+                        extra={
+                            "invitation_id": invitation_id,
+                            "user_id": user_id,
+                            "project_id": invitation.project_id,
+                            "error": str(project_error),
+                        },
+                        exc_info=True,
+                    )
+                    # Note: invitation status is already updated,
+                    # but user was not added to project
+                    return False
+
                 logger.info(
                     "Invitation accepted",
                     extra={
@@ -273,7 +316,7 @@ class InvitationService:
         # Ensure project_permission is always lowercase to match the Pydantic enum
         project_permission = invitation.project_permission
         if isinstance(project_permission, str):
-            project_permission = ProjectPermission(project_permission)
+            project_permission = project_permission.lower()
         else:
             project_permission = project_permission.value.lower()
 

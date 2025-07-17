@@ -2,10 +2,11 @@
 
 from decimal import Decimal
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, delete, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.centralized_logging import get_logger
 from app.core.centralized_logging import get_logger
 from app.model.annotation import Annotation
 from app.model.annotation_value import AnnotationValue
@@ -44,8 +45,16 @@ async def get_annotations_by_tier(db: AsyncSession, tier_id: int) -> list[Annota
 
 
 async def get_annotations_with_value_by_tier(db: AsyncSession, tier_id: int):
-    """Get all annotations with their values for a specific tier."""
-    # Ordering and eager loading not supported by DatabaseUtils, so use direct SQL
+    """Get all annotations with their values for a specific tier.
+
+    Args:
+        db: Database session.
+        tier_id: The tier ID to filter by.
+
+    Returns:
+        List of annotations with their values for the tier, ordered by start time.
+
+    """
     result = await db.execute(
         select(Annotation)
         .options(selectinload(Annotation.annotation_value))

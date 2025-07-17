@@ -1,8 +1,8 @@
 <template>
   <div class="email-verification-container">
-    <!-- Header -->
-    <div class="verification-header">
-      <div class="header-content">
+    <div class="verification-wrapper">
+      <!-- Header -->
+      <div class="verification-header">
         <div class="icon-container">
           <svg
             class="verification-icon"
@@ -18,122 +18,107 @@
             />
           </svg>
         </div>
-        <h1>{{ $t('emailVerification.title') }}</h1>
-        <p class="subtitle">{{ $t('emailVerification.subtitle') }}</p>
+        <h1 class="verification-title">{{ $t('emailVerification.title') }}</h1>
+        <p class="verification-subtitle">{{ $t('emailVerification.subtitle') }}</p>
         <div class="email-display">
           <span class="email-text">{{ userEmail }}</span>
         </div>
       </div>
-    </div>
 
-    <!-- Verification Form -->
-    <div class="verification-form">
-      <form @submit.prevent="handleVerification">
-        <div class="form-group">
-          <label for="verificationCode" class="form-label">
-            {{ $t('emailVerification.codeLabel') }}
-          </label>
-          <div class="code-input-container">
-            <input
-              id="verificationCode"
-              v-model="verificationCode"
-              type="text"
-              class="code-input"
-              :class="{ error: validationMessage }"
-              :placeholder="$t('emailVerification.codePlaceholder')"
-              maxlength="6"
-              autocomplete="off"
-              @input="onCodeInput"
-              @keypress="onKeyPress"
-            />
-            <div v-if="isLoading" class="loading-spinner">
-              <div class="spinner"></div>
+      <!-- Verification Form Card -->
+      <div class="verification-card">
+        <form @submit.prevent="handleVerification" class="verification-form">
+          <div class="form-group">
+            <label for="verificationCode" class="form-label">
+              {{ $t('emailVerification.codeLabel') }}
+            </label>
+            <div class="code-input-container">
+              <input
+                id="verificationCode"
+                v-model="verificationCode"
+                type="text"
+                class="code-input"
+                :class="{ 'error': validationMessage, 'loading': isLoading }"
+                :placeholder="$t('emailVerification.codePlaceholder')"
+                maxlength="6"
+                autocomplete="off"
+                @input="onCodeInput"
+                @keypress="onKeyPress"
+              />
+              <div v-if="isLoading" class="input-loading-spinner">
+                <div class="spinner"></div>
+              </div>
+            </div>
+            
+            <!-- Validation Messages -->
+            <div v-if="validationMessage" class="validation-message error">
+              <svg class="message-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" 
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" 
+                      clip-rule="evenodd" />
+              </svg>
+              {{ validationMessage }}
+            </div>
+
+            <div v-if="successMessage" class="validation-message success">
+              <svg class="message-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" 
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" 
+                      clip-rule="evenodd" />
+              </svg>
+              {{ successMessage }}
             </div>
           </div>
 
-          <!-- Validation Message -->
-          <div v-if="validationMessage" class="validation-message error">
-            <svg class="message-icon" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fill-rule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            {{ validationMessage }}
-          </div>
-
-          <!-- Success Message -->
-          <div v-if="successMessage" class="validation-message success">
-            <svg class="message-icon" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fill-rule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            {{ successMessage }}
-          </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="button-group">
+          <!-- Verify Button -->
           <button
             type="submit"
-            class="verify-button"
-            :disabled="
-              !verificationCode || verificationCode.length !== 6 || isLoading
-            "
+            class="btn-primary verify-button"
+            :disabled="!verificationCode || verificationCode.length !== 6 || isLoading"
           >
             <span v-if="!isLoading">{{
               $t('emailVerification.verifyButton')
             }}</span>
             <span v-else>{{ $t('emailVerification.verifying') }}</span>
           </button>
-        </div>
-      </form>
+        </form>
 
-      <!-- Resend Section -->
-      <div class="resend-section">
-        <p class="resend-text">{{ $t('emailVerification.noCodeReceived') }}</p>
-        <button
-          type="button"
-          class="resend-button"
-          :disabled="resendCooldown > 0 || isResending"
-          @click="resendVerificationCode"
-        >
-          <span v-if="!isResending && resendCooldown === 0">
-            {{ $t('emailVerification.resendButton') }}
-          </span>
-          <span v-else-if="isResending">
-            {{ $t('emailVerification.resending') }}
-          </span>
-          <span v-else>
-            {{
-              $t('emailVerification.resendCooldown', {
-                seconds: resendCooldown,
-              })
-            }}
-          </span>
-        </button>
+        <!-- Resend Section -->
+        <div class="resend-section">
+          <p class="resend-text">{{ $t('emailVerification.noCodeReceived') }}</p>
+          <button
+            type="button"
+            class="resend-button"
+            :disabled="resendCooldown > 0 || isResending"
+            @click="resendVerificationCode"
+          >
+            <span v-if="!isResending && resendCooldown === 0">
+              {{ $t('emailVerification.resendButton') }}
+            </span>
+            <span v-else-if="isResending">
+              {{ $t('emailVerification.resending') }}
+            </span>
+            <span v-else>
+              {{ $t('emailVerification.resendCooldown', { seconds: resendCooldown }) }}
+            </span>
+          </button>
+        </div>
       </div>
 
       <!-- Help Section -->
-      <div class="help-section">
-        <div class="help-content">
-          <h3>{{ $t('emailVerification.helpTitle') }}</h3>
-          <ul class="help-list">
-            <li>{{ $t('emailVerification.helpCheck1') }}</li>
-            <li>{{ $t('emailVerification.helpCheck2') }}</li>
-            <li>{{ $t('emailVerification.helpCheck3') }}</li>
-          </ul>
-          <p class="help-contact">
-            {{ $t('emailVerification.helpContact') }}
-            <router-link to="/contact" class="contact-link">
-              {{ $t('emailVerification.contactSupport') }}
-            </router-link>
-          </p>
-        </div>
+      <div class="help-card">
+        <h3 class="help-title">{{ $t('emailVerification.helpTitle') }}</h3>
+        <ul class="help-list">
+          <li>{{ $t('emailVerification.helpCheck1') }}</li>
+          <li>{{ $t('emailVerification.helpCheck2') }}</li>
+          <li>{{ $t('emailVerification.helpCheck3') }}</li>
+        </ul>
+        <p class="help-contact">
+          {{ $t('emailVerification.helpContact') }}
+          <router-link to="/contact" class="contact-link">
+            {{ $t('emailVerification.contactSupport') }}
+          </router-link>
+        </p>
       </div>
     </div>
   </div>
@@ -174,7 +159,7 @@ export default {
         '';
 
       if (!userEmail.value) {
-        router.push('/login');
+        router.push({ name: 'LoginPage' })
       }
 
       // Start initial cooldown if this is a fresh verification request
@@ -239,8 +224,8 @@ export default {
 
           // Redirect to login after a short delay
           setTimeout(() => {
-            router.push('/login?verified=true');
-          }, 2000);
+            router.push({ name: 'LoginPage', query: { verified: 'true' } })
+          }, 2000)
         } else {
           validationMessage.value =
             response.data.message || t('emailVerification.errors.invalidCode');
