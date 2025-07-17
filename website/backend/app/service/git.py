@@ -19,7 +19,7 @@ from app.crud.project import (
     list_projects_by_instance,
     project_exists_by_name,
 )
-from app.crud.conflicts import save_git_conflicts, get_git_conflicts_for_branch
+from app.crud.conflict import save_git_conflicts, get_git_conflicts_for_branch
 from app.model.enums import ConflictStatus
 
 from app.service.elan import ElanService
@@ -405,11 +405,32 @@ class GitService:
         diff_parser = GitDiffParser()
         branch_manager.switch_to_master()
         analysis = diff_analyzer.analyze_merge_differences(branch_name, diff_parser)
-        merge_result = merger.auto_merge_if_safe(branch_name, analysis)
+
+        # Use selective merge instead of auto_merge_if_safe
+        merge_result = merger.selective_merge_with_conflict_isolation(
+            branch_name, analysis
+        )
+
+        if (
+            merge_result["status"] == "merged_successfully"
+            or merge_result["status"] == "selective_merge_completed"
+        ):
+            # Only delete the original branch if it was successfully processed
+            if (
+                "conflict_branch" not in merge_result
+            ):  # Don't delete if we created a conflict branch
+                branch_manager.delete_branch(branch_name)
+
+            # Sync DB with merged ELAN files
+            if db and user_id and project_path:
+                await self._sync_elan_files_with_db(
+                    project_path, db, user_id, project_name=project_path.name
+                )
 
         if (
             merge_result.get("has_conflicts", False)
             or merge_result["status"] == "changes_detected"
+            or merge_result["status"] == "selective_merge_completed"
         ):
             conflicts = self._extract_conflicts_from_merge_result(
                 merge_result, project_path
@@ -419,19 +440,14 @@ class GitService:
                 project = await get_project_by_name(db, project_path.name)
                 if project:
                     await save_git_conflicts(
-                        db, project.project_id, branch_name, conflicts
+                        db,
+                        project.project_id,
+                        merge_result.get("conflict_branch"),
+                        conflicts,
                     )
                     logger.info(
                         f"Saved {len(conflicts)} git conflicts for branch {branch_name}"
                     )
-
-        if merge_result["status"] == "merged_successfully":
-            branch_manager.delete_branch(branch_name)
-            # --- Sync DB with merged ELAN files ---
-            if db and user_id and project_path:
-                await self._sync_elan_files_with_db(
-                    project_path, db, user_id, project_name=branch_name
-                )
 
         logger.info(f"Merge result: {merge_result['status']}")
         return merge_result
@@ -1015,7 +1031,41 @@ class GitService:
         """Extract detailed conflict information from merge result."""
         conflicts = []
 
-        # Get conflicts from the merge result
+        # Handle selective merge conflicts
+        if merge_result.get("status") == "selective_merge_completed":
+            # Files that were isolated in conflict branch
+            conflict_files = merge_result.get("conflict_files", [])
+            for filename in conflict_files:
+                conflict_details = self._get_conflict_details(project_path, filename)
+                conflicts.append(
+                    {
+                        "filename": filename,
+                        "type": "selective_merge_conflict",
+                        "details": {
+                            "change_type": "modified",
+                            "conflict_info": conflict_details,
+                            "isolated_in_branch": merge_result.get("conflict_branch"),
+                            "status": "requires_review",
+                        },
+                    }
+                )
+
+            # Files that were deleted
+            deleted_files = merge_result.get("deleted_files", [])
+            for filename in deleted_files:
+                conflicts.append(
+                    {
+                        "filename": filename,
+                        "type": "selective_merge_conflict",
+                        "details": {
+                            "change_type": "deleted",
+                            "status": "file_deleted_in_branch",
+                            "isolated_in_branch": merge_result.get("conflict_branch"),
+                        },
+                    }
+                )
+
+        # Handle regular merge conflicts
         if "file_changes" in merge_result:
             for change in merge_result["file_changes"]:
                 conflict_details = self._get_conflict_details(

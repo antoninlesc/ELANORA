@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.model.annotation import Annotation
-from app.model.associations import ElanFileToTier
+from app.model.association import ElanFileToTier
 from app.model.tier import Tier
 from app.utils.database import DatabaseUtils
 

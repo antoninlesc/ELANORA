@@ -1,12 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.annotation import delete_unused_annotation_values
-from app.crud.associations import delete_project_associations
+from app.crud.association import delete_project_associations
 from app.crud.comment import delete_project_comments
 from app.crud.conflict import delete_project_conflicts
 from app.crud.elan_file import delete_elan_file, get_orphan_elan_files_by_project
 from app.crud.invitation import delete_project_invitations
 from app.crud.tier import delete_tiers_for_elan_file
-from app.model.associations import UserToProject
+from app.model.association import UserToProject
 from app.model.enums import ProjectPermission
 from app.model.project import Project
 from app.utils.database import DatabaseUtils

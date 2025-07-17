@@ -49,9 +49,7 @@ class Conflict(Base):
     resolved_by: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("USER.user_id"), nullable=True
     )
-    branch_name: Mapped[str | None] = mapped_column(
-        String(255, ondelete="CASCADE"), nullable=True
-    )
+    branch_name: Mapped[str | None] = mapped_column(String, nullable=True)
     git_details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     project_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PROJECT.project_id", ondelete="CASCADE"), nullable=False
@@ -65,4 +63,4 @@ class Conflict(Base):
 
     def __repr__(self) -> str:
         """Return a string representation of the Conflict."""
-        return f"<Conflict(conflict_id='{self.conflict_id}', conflict_type='{self.conflict_type}', status='{self.status}')>"
+        return f"<Conflict(conflict_id='{self.conflict_id}', conflict_type='{self.conflict_type}', status='{self.status}', detected_at='{self.detected_at}', project_id='{self.project_id}', branch_name='{self.branch_name}')>"
