@@ -316,7 +316,7 @@ class InvitationService:
         # Ensure project_permission is always lowercase to match the Pydantic enum
         project_permission = invitation.project_permission
         if isinstance(project_permission, str):
-            project_permission = ProjectPermission(project_permission)
+            project_permission = project_permission.lower()
         else:
             project_permission = project_permission.value.lower()
 
