@@ -1,6 +1,5 @@
 <template>
   <div class="admin-invitation-page">
-    <AppHeader instance-name="ELANORA Admin" />
     
     <div class="admin-container">
       <div class="admin-header">
@@ -143,7 +142,7 @@ const eventMessageStore = useEventMessageStore();
 // Reactive data
 const form = ref({
   email: '',
-  projectName: '', // Changé de projectId à projectName
+  projectName: '',
   message: '',
   language: 'en'
 });
