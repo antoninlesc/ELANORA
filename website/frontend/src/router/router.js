@@ -14,6 +14,7 @@ import ProjectsPage from '@views/ProjectsPage.vue';
 import UploadPage from '@views/UploadPage.vue';
 import ConflictsPage from '@views/ConflictsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
+import TiersPage from '@views/TiersPage.vue';
 
 // Define routes
 const routes = [
@@ -76,6 +77,12 @@ const routes = [
         path: 'conflicts',
         name: 'Conflicts',
         component: ConflictsPage,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'tiers',
+        name: 'TiersPage',
+        component: TiersPage,
         meta: { requiresAuth: true },
       },
       {

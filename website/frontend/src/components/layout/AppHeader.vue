@@ -2,106 +2,78 @@
   <header>
     <div class="navbar-container">
       <div class="elanora-header-left">
-        <img
-          src="@logos/ELANora-logo.png"
-          alt="ELANORA Logo"
-          class="elanora-header-logo"
-        />
+        <router-link to="/homePage" class="elanora-header-logo-link">
+          <img
+            src="@logos/ELANora-logo.png"
+            alt="ELANORA Logo"
+            class="elanora-header-logo"
+          />
+        </router-link>
+        <InstanceSection />
+        <nav class="elanora-header-nav">
+          <a href="/projects" class="elanora-header-menu-link">
+            {{ t('navigation.projects') }}
+          </a>
+          <a href="/upload" class="elanora-header-menu-link">
+            {{ t('navigation.upload') }}
+          </a>
+          <a href="/conflicts" class="elanora-header-menu-link">
+            {{ t('navigation.conflicts') }}
+          </a>
+          <router-link
+            :to="{
+              name: 'TiersPage',
+              params: { projectName: currentProjectName },
+            }"
+            class="elanora-header-menu-link"
+          >
+            {{ t('navigation.tiers') || 'Tiers' }}
+          </router-link>
+        </nav>
       </div>
       <div class="elanora-header-right">
-        <a href="/projects" class="elanora-header-menu-link">
-          {{ t('navigation.projects') }}
-        </a>
-        <a href="/upload" class="elanora-header-menu-link">
-          {{ t('navigation.upload') }}
-        </a>
-        <a href="/conflicts" class="elanora-header-menu-link">
-          {{ t('navigation.conflicts') }}
-        </a>
-        <span v-if="instanceName" class="elanora-header-instance-label">{{
-          instanceName
-        }}</span>
-        <button
-          v-if="user"
-          class="elanora-header-btn-logout"
-          @click="handleLogout"
-        >
-          {{ t('common.logout') }}
-        </button>
+        <ProjectSection />
+        <div class="elanora-header-instance-logo-container">
+          <img
+            src="/instance/images/logos/instance-logo.png"
+            alt="Instance Logo"
+            class="elanora-header-instance-logo"
+          />
+        </div>
       </div>
     </div>
   </header>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useAppInfoStore } from '@/stores/appInfo';
-import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { useUserStore } from '@/stores/user';
+import InstanceSection from '@/components/common/InstanceSection.vue';
+import ProjectSection from '@/components/common/ProjectSection.vue';
 
-const appInfo = useAppInfoStore();
-const instanceName = computed(() => appInfo.instanceName);
-
-const router = useRouter();
 const { t } = useI18n();
-const userStore = useUserStore();
-const user = computed(() => userStore.user);
-
-const handleLogout = async () => {
-  try {
-    await userStore.logout();
-    localStorage.setItem('logoutMessage', t('auth.logout_success'));
-  } catch (error) {
-    console.error('Logout failed:', error);
-    localStorage.setItem('logoutMessage', t('auth.logout_error'));
-  }
-  router.push('/');
-};
 </script>
 
 <style scoped>
 .elanora-header-left {
   display: flex;
   align-items: center;
+  gap: 1.5rem;
 }
 
 .elanora-header-logo {
-  height: 80px;
-  width: auto;
+  height: 5rem;
+  width: 5rem;
+  box-shadow: 0 1px 4px 0 #c9dbef;
 }
 
-.elanora-header-right {
+.elanora-header-logo-link {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-left: auto;
-}
-
-.elanora-header-instance-label {
-  background: #e8f0fe;
-  color: #1a73e8;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.elanora-header-btn-logout {
-  background: none;
-  border: 1px solid #dadce0;
-  color: #5f6368;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-  display: inline-block;
 }
 
-.elanora-header-btn-logout:hover {
-  background-color: #f8f9fa;
+.elanora-header-nav {
+  display: flex;
 }
 
 .elanora-header-menu-link {
@@ -117,14 +89,56 @@ const handleLogout = async () => {
   background: #e8f0fe;
 }
 
-@media (width <= 768px) {
-  .elanora-header-container {
+.elanora-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.elanora-header-instance-logo-container {
+  height: 5rem;
+  width: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fbf9f6;
+  box-shadow: 0 1px 4px 0 #c9dbef;
+  overflow: hidden;
+}
+
+.elanora-header-instance-logo {
+  max-height: 90%;
+  max-width: 90%;
+  object-fit: contain;
+  display: block;
+}
+
+.elanora-header-project-label {
+  background: #f3e8ff;
+  color: #7c3aed;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+@media (width <= 900px) {
+  .navbar-container {
     flex-direction: column;
     gap: 1rem;
+    padding: 0 0.5rem;
   }
 
+  .elanora-header-left,
   .elanora-header-right {
-    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .elanora-header-nav {
+    flex-wrap: wrap;
+    gap: 0.2rem;
   }
 }
 </style>
