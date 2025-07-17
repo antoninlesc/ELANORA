@@ -12,7 +12,7 @@ from app.crud.invitation import (
     get_pending_invitations_by_email,
     update_invitation_status,
 )
-from app.crud.project import add_user_to_project, get_project_by_id
+from app.crud.project import add_user_to_project, get_project_by_name, get_project_by_id
 from app.crud.user import get_user_by_id
 from app.model.enums import InvitationStatus
 from app.model.invitation import Invitation
@@ -49,7 +49,7 @@ class InvitationService:
                 return InvitationSendResponse(success=False, message="Sender not found")
 
             # Get project information (now required)
-            project = await get_project_by_id(db, request.project_id)
+            project = await get_project_by_name(db, request.project_name)
             if not project:
                 return InvitationSendResponse(
                     success=False, message="Project not found"
@@ -71,7 +71,7 @@ class InvitationService:
                 db=db,
                 sender_id=sender_id,
                 receiver_email=str(request.receiver_email),
-                project_id=request.project_id,
+                project_id=project.project_id,  # Utiliser l'ID du projet trouvé
                 project_permission=request.project_permission,
                 expires_in_days=request.expires_in_days,
             )
@@ -95,7 +95,7 @@ class InvitationService:
                         "sender_id": sender_id,
                         "receiver_email": str(request.receiver_email),
                         "invitation_id": invitation.invitation_id,
-                        "project_id": request.project_id,
+                        "project_id": project.project_id,  # Utiliser l'ID du projet trouvé
                     },
                 )
                 return InvitationSendResponse(

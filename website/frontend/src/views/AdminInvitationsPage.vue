@@ -35,7 +35,7 @@
             </label>
             <select 
               id="project"
-              v-model="form.projectId"
+              v-model="form.projectName"
               class="form-select"
               :class="{ 'error': projectError }"
               required
@@ -43,10 +43,10 @@
               <option value="">{{ t('invitation.select_project') }}</option>
               <option 
                 v-for="project in projects" 
-                :key="project.project_id" 
-                :value="project.project_id"
+                :key="project" 
+                :value="project"
               >
-                {{ project.project_name }}
+                {{ project }}
               </option>
             </select>
             <div v-if="projectError" class="error-message">{{ projectError }}</div>
@@ -82,7 +82,7 @@
           <button 
             type="submit" 
             class="btn-primary send-btn" 
-            :disabled="sending || !form.email || !form.projectId"
+            :disabled="sending || !form.email || !form.projectName"
           >
             <span v-if="sending">{{ t('invitation.sending') }}</span>
             <span v-else>{{ t('invitation.send_button') }}</span>
@@ -134,7 +134,7 @@ import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { sendInvitation, getSentInvitations } from '@/api/service/invitationService';
-import { getProjects } from '@/api/service/projectService';
+import gitService from '@/api/service/gitService';
 import AppHeader from '@components/layout/AppHeader.vue';
 
 const { t } = useI18n();
@@ -143,7 +143,7 @@ const eventMessageStore = useEventMessageStore();
 // Reactive data
 const form = ref({
   email: '',
-  projectId: '',
+  projectName: '', // Changé de projectId à projectName
   message: '',
   language: 'en'
 });
@@ -165,8 +165,8 @@ onMounted(async () => {
 
 const loadProjects = async () => {
   try {
-    const response = await getProjects();
-    projects.value = response.data || [];
+    const response = await gitService.listProjects();
+    projects.value = response.projects || [];
   } catch (error) {
     console.error('Failed to load projects:', error);
     eventMessageStore.addMessage(t('project.load_error'), 'error');
@@ -189,7 +189,7 @@ const handleSendInvitation = async () => {
   }
 
   // Validate project selection
-  if (!form.value.projectId) {
+  if (!form.value.projectName) {
     projectError.value = t('invitation.project_required');
     return;
   }
@@ -199,7 +199,7 @@ const handleSendInvitation = async () => {
   try {
     const response = await sendInvitation({
       receiver_email: form.value.email,
-      project_id: parseInt(form.value.projectId),
+      project_name: form.value.projectName,  // Utiliser directement le nom du projet
       message: form.value.message || null,
       expires_in_days: 7,
       language: form.value.language || 'en'
@@ -210,7 +210,7 @@ const handleSendInvitation = async () => {
       
       // Reset form
       form.value.email = '';
-      form.value.projectId = '';
+      form.value.projectName = '';
       form.value.message = '';
       
       // Reload sent invitations

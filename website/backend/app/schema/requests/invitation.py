@@ -10,7 +10,7 @@ class InvitationSendRequest(CustomBaseModel):
     """Schema for sending an invitation."""
 
     receiver_email: EmailStr
-    project_id: int
+    project_name: str
     project_permission: ProjectPermission = ProjectPermission.READ
     expires_in_days: int = 7
     language: str = "en"
