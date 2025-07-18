@@ -538,15 +538,24 @@
                 type="text"
                 class="form-input"
                 :class="{
-                  error: validationErrors.cityName,
-                  valid: form.address.cityName && !validationErrors.cityName,
+                  error: addressValidation.city.isValid === false,
+                  valid: addressValidation.city.isValid === true,
+                  loading: addressValidation.city.loading,
                 }"
                 :placeholder="t('register.city_placeholder')"
+                :disabled="!form.address.countryId"
                 required
-                @blur="validateField('cityName')"
+                @blur="validateCityField"
+                @input="addressValidation.city = { isValid: null, message: '', loading: false }"
               />
-              <div v-if="validationErrors.cityName" class="error-message">
-                {{ validationErrors.cityName }}
+              <div v-if="addressValidation.city.loading" class="info-message">
+                {{ t('register.validating_city') }}
+              </div>
+              <div v-else-if="addressValidation.city.isValid === false" class="error-message">
+                {{ addressValidation.city.message }}
+              </div>
+              <div v-else-if="addressValidation.city.isValid === true" class="success-message">
+                {{ addressValidation.city.message }}
               </div>
             </div>
           </div>
@@ -563,16 +572,19 @@
                 type="text"
                 class="form-input"
                 :class="{
-                  error: validationErrors.streetName,
-                  valid:
-                    form.address.streetName && !validationErrors.streetName,
+                  error: addressValidation.streetName.isValid === false,
+                  valid: addressValidation.streetName.isValid === true,
                 }"
                 :placeholder="t('register.street_name_placeholder')"
                 required
-                @blur="validateField('streetName')"
+                @blur="validateStreetNameField"
+                @input="addressValidation.streetName = { isValid: null, message: '' }"
               />
-              <div v-if="validationErrors.streetName" class="error-message">
-                {{ validationErrors.streetName }}
+              <div v-if="addressValidation.streetName.isValid === false" class="error-message">
+                {{ addressValidation.streetName.message }}
+              </div>
+              <div v-else-if="addressValidation.streetName.isValid === true" class="success-message">
+                {{ addressValidation.streetName.message }}
               </div>
             </div>
 
@@ -586,12 +598,19 @@
                 type="text"
                 class="form-input"
                 :class="{
-                  valid:
-                    form.address.streetNumber &&
-                    form.address.streetNumber.length > 0,
+                  error: addressValidation.streetNumber.isValid === false,
+                  valid: addressValidation.streetNumber.isValid === true,
                 }"
                 :placeholder="t('register.street_number_placeholder')"
+                @blur="validateStreetNumberField"
+                @input="addressValidation.streetNumber = { isValid: null, message: '' }"
               />
+              <div v-if="addressValidation.streetNumber.isValid === false" class="error-message">
+                {{ addressValidation.streetNumber.message }}
+              </div>
+              <div v-else-if="addressValidation.streetNumber.isValid === true" class="success-message">
+                {{ addressValidation.streetNumber.message }}
+              </div>
             </div>
           </div>
 
@@ -607,16 +626,24 @@
                 type="text"
                 class="form-input"
                 :class="{
-                  error: validationErrors.postalCode,
-                  valid:
-                    form.address.postalCode && !validationErrors.postalCode,
+                  error: addressValidation.postalCode.isValid === false,
+                  valid: addressValidation.postalCode.isValid === true,
+                  loading: addressValidation.postalCode.loading,
                 }"
                 :placeholder="t('register.postal_code_placeholder')"
+                :disabled="!form.address.countryId"
                 required
-                @blur="validateField('postalCode')"
+                @blur="validatePostalCodeField"
+                @input="addressValidation.postalCode = { isValid: null, message: '', loading: false }"
               />
-              <div v-if="validationErrors.postalCode" class="error-message">
-                {{ validationErrors.postalCode }}
+              <div v-if="addressValidation.postalCode.loading" class="info-message">
+                {{ t('register.validating_postal_code') }}
+              </div>
+              <div v-else-if="addressValidation.postalCode.isValid === false" class="error-message">
+                {{ addressValidation.postalCode.message }}
+              </div>
+              <div v-else-if="addressValidation.postalCode.isValid === true" class="success-message">
+                {{ addressValidation.postalCode.message }}
               </div>
             </div>
 
@@ -669,7 +696,13 @@ import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { validateInvitation } from '@/api/service/invitationService';
 import { registerWithInvitation } from '@/api/service/authService';
-import { getCountries } from '@/api/service/locationService';
+import { 
+  getCountries, 
+  validateCity, 
+  validatePostalCode, 
+  validateStreetName, 
+  validateStreetNumber 
+} from '@/api/service/locationService';
 import {
   checkUsernameAvailability,
   checkEmailAvailability,
@@ -726,6 +759,14 @@ let emailCheckTimeout = null;
 const validationErrors = ref({});
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
+
+// Address validation states
+const addressValidation = ref({
+  city: { isValid: null, message: '', loading: false },
+  postalCode: { isValid: null, message: '', loading: false },
+  streetName: { isValid: null, message: '' },
+  streetNumber: { isValid: null, message: '' },
+});
 
 // Focus management
 const usernameInputFocused = ref(false);
@@ -1009,8 +1050,103 @@ const validateAllFields = () => {
   fieldsToValidate.forEach((field) => validateField(field));
 };
 
+// Address validation functions
+const validateCityField = async () => {
+  if (!form.value.address.cityName || !form.value.address.countryId) {
+    addressValidation.value.city = { isValid: false, message: t('register.city_required'), loading: false };
+    return;
+  }
+
+  addressValidation.value.city.loading = true;
+  
+  try {
+    const result = await validateCity(form.value.address.cityName, form.value.address.countryId);
+    if (result.success) {
+      addressValidation.value.city = {
+        isValid: result.data.isValid,
+        message: result.data.isValid ? t('register.city_valid') : result.data.message,
+        loading: false
+      };
+    } else {
+      addressValidation.value.city = {
+        isValid: false,
+        message: t('register.city_validation_error'),
+        loading: false
+      };
+    }
+  } catch (error) {
+    console.error('Error validating city:', error);
+    addressValidation.value.city = {
+      isValid: false,
+      message: t('register.city_validation_error'),
+      loading: false
+    };
+  }
+};
+
+const validatePostalCodeField = async () => {
+  if (!form.value.address.postalCode || !form.value.address.countryId) {
+    addressValidation.value.postalCode = { isValid: false, message: t('register.postal_code_required'), loading: false };
+    return;
+  }
+
+  addressValidation.value.postalCode.loading = true;
+
+  try {
+    const result = await validatePostalCode(form.value.address.postalCode, form.value.address.countryId);
+    if (result.success) {
+      addressValidation.value.postalCode = {
+        isValid: result.data.isValid,
+        message: result.data.message,
+        loading: false
+      };
+    } else {
+      addressValidation.value.postalCode = {
+        isValid: false,
+        message: t('register.postal_code_validation_error'),
+        loading: false
+      };
+    }
+  } catch (error) {
+    console.error('Error validating postal code:', error);
+    addressValidation.value.postalCode = {
+      isValid: false,
+      message: t('register.postal_code_validation_error'),
+      loading: false
+    };
+  }
+};
+
+const validateStreetNameField = () => {
+  const result = validateStreetName(form.value.address.streetName);
+  addressValidation.value.streetName = {
+    isValid: result.isValid,
+    message: result.message
+  };
+};
+
+const validateStreetNumberField = () => {
+  const result = validateStreetNumber(form.value.address.streetNumber);
+  addressValidation.value.streetNumber = {
+    isValid: result.isValid,
+    message: result.message
+  };
+};
+
 const onCountryChange = () => {
   validateField('countryId');
+  
+  // Reset city and postal code validation when country changes
+  addressValidation.value.city = { isValid: null, message: '', loading: false };
+  addressValidation.value.postalCode = { isValid: null, message: '', loading: false };
+  
+  // Clear city and postal code values if they exist
+  if (form.value.address.cityName) {
+    form.value.address.cityName = '';
+  }
+  if (form.value.address.postalCode) {
+    form.value.address.postalCode = '';
+  }
 };
 
 // Check for invitation code in URL params
