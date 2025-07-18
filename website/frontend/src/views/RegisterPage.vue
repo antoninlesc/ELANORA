@@ -546,7 +546,7 @@
                 :disabled="!form.address.countryId"
                 required
                 @blur="validateCityField"
-                @input="addressValidation.city = { isValid: null, message: '', loading: false }"
+                @input="addressValidation.city = { isValid: null, message: '', loading: false }; addressValidation.streetInCity = { isValid: null, message: '', loading: false }; addressValidation.postalCodeInCity = { isValid: null, message: '', loading: false }"
               />
               <div v-if="addressValidation.city.loading" class="info-message">
                 {{ t('register.validating_city') }}
@@ -578,13 +578,24 @@
                 :placeholder="t('register.street_name_placeholder')"
                 required
                 @blur="validateStreetNameField"
-                @input="addressValidation.streetName = { isValid: null, message: '' }"
+                @input="addressValidation.streetName = { isValid: null, message: '' }; addressValidation.streetInCity = { isValid: null, message: '', loading: false }"
               />
               <div v-if="addressValidation.streetName.isValid === false" class="error-message">
                 {{ addressValidation.streetName.message }}
               </div>
               <div v-else-if="addressValidation.streetName.isValid === true" class="success-message">
                 {{ addressValidation.streetName.message }}
+              </div>
+              
+              <!-- Cross-validation: Street in City -->
+              <div v-if="addressValidation.streetInCity.loading" class="info-message">
+                {{ t('register.validating_street_in_city') }}
+              </div>
+              <div v-else-if="addressValidation.streetInCity.isValid === false" class="warning-message">
+                {{ addressValidation.streetInCity.message }}
+              </div>
+              <div v-else-if="addressValidation.streetInCity.isValid === true" class="success-message">
+                {{ addressValidation.streetInCity.message }}
               </div>
             </div>
 
@@ -597,20 +608,8 @@
                 v-model="form.address.streetNumber"
                 type="text"
                 class="form-input"
-                :class="{
-                  error: addressValidation.streetNumber.isValid === false,
-                  valid: addressValidation.streetNumber.isValid === true,
-                }"
                 :placeholder="t('register.street_number_placeholder')"
-                @blur="validateStreetNumberField"
-                @input="addressValidation.streetNumber = { isValid: null, message: '' }"
               />
-              <div v-if="addressValidation.streetNumber.isValid === false" class="error-message">
-                {{ addressValidation.streetNumber.message }}
-              </div>
-              <div v-else-if="addressValidation.streetNumber.isValid === true" class="success-message">
-                {{ addressValidation.streetNumber.message }}
-              </div>
             </div>
           </div>
 
@@ -634,7 +633,7 @@
                 :disabled="!form.address.countryId"
                 required
                 @blur="validatePostalCodeField"
-                @input="addressValidation.postalCode = { isValid: null, message: '', loading: false }"
+                @input="addressValidation.postalCode = { isValid: null, message: '', loading: false }; addressValidation.postalCodeInCity = { isValid: null, message: '', loading: false }"
               />
               <div v-if="addressValidation.postalCode.loading" class="info-message">
                 {{ t('register.validating_postal_code') }}
@@ -644,6 +643,17 @@
               </div>
               <div v-else-if="addressValidation.postalCode.isValid === true" class="success-message">
                 {{ addressValidation.postalCode.message }}
+              </div>
+              
+              <!-- Cross-validation: Postal Code in City -->
+              <div v-if="addressValidation.postalCodeInCity.loading" class="info-message">
+                {{ t('register.validating_postal_code_in_city') }}
+              </div>
+              <div v-else-if="addressValidation.postalCodeInCity.isValid === false" class="warning-message">
+                {{ addressValidation.postalCodeInCity.message }}
+              </div>
+              <div v-else-if="addressValidation.postalCodeInCity.isValid === true" class="success-message">
+                {{ addressValidation.postalCodeInCity.message }}
               </div>
             </div>
 
@@ -700,8 +710,7 @@ import {
   getCountries, 
   validateCity, 
   validatePostalCode, 
-  validateStreetName, 
-  validateStreetNumber 
+  validateStreetName
 } from '@/api/service/locationService';
 import {
   checkUsernameAvailability,
@@ -765,7 +774,9 @@ const addressValidation = ref({
   city: { isValid: null, message: '', loading: false },
   postalCode: { isValid: null, message: '', loading: false },
   streetName: { isValid: null, message: '' },
-  streetNumber: { isValid: null, message: '' },
+  streetInCity: { isValid: null, message: '', loading: false },
+  postalCodeInCity: { isValid: null, message: '', loading: false },
+  fullAddress: { isValid: null, message: '', loading: false, confidence: null }
 });
 
 // Focus management
@@ -844,7 +855,33 @@ const isFormValid = computed(() => {
   }
 
   // Check availability checks
-  return !(usernameAvailable.value === false || emailAvailable.value === false);
+  if (usernameAvailable.value === false || emailAvailable.value === false) {
+    return false;
+  }
+
+  // Check address validations - basic validations must be valid
+  if (addressValidation.value.city.isValid === false || 
+      addressValidation.value.postalCode.isValid === false ||
+      addressValidation.value.streetName.isValid === false) {
+    return false;
+  }
+
+  // Check cross-validations - they must be either valid or null (not checked yet)
+  // If they are false, it means validation failed
+  // For streets, if both street name and city are provided, street-in-city validation must be valid
+  if (form.value.address.streetName && form.value.address.cityName && form.value.address.countryId) {
+    if (addressValidation.value.streetInCity.isValid === false) {
+      return false;
+    }
+  }
+  
+  if (form.value.address.postalCode && form.value.address.cityName && form.value.address.countryId) {
+    if (addressValidation.value.postalCodeInCity.isValid === false) {
+      return false;
+    }
+  }
+
+  return true;
 });
 
 // Input handlers
@@ -1067,6 +1104,19 @@ const validateCityField = async () => {
         message: result.data.isValid ? t('register.city_valid') : result.data.message,
         loading: false
       };
+      
+      // If city is valid, trigger cross-validation with postal code and street
+      if (result.data.isValid) {
+        // Re-validate street in city if street name is provided
+        if (form.value.address.streetName) {
+          await validateStreetInCityField();
+        }
+        
+        // Re-validate postal code in city if postal code is provided
+        if (form.value.address.postalCode) {
+          await validatePostalCodeInCityField();
+        }
+      }
     } else {
       addressValidation.value.city = {
         isValid: false,
@@ -1097,9 +1147,27 @@ const validatePostalCodeField = async () => {
     if (result.success) {
       addressValidation.value.postalCode = {
         isValid: result.data.isValid,
-        message: result.data.message,
+        message: result.data.isValid ? '' : result.data.message, // Only show message if there's an error
         loading: false
       };
+      
+      // If postal code is valid and city is provided, validate postal code against city
+      if (result.data.isValid && form.value.address.cityName) {
+        await validatePostalCodeInCityField();
+        
+        // Update postal code validation based on cross-validation result
+        if (addressValidation.value.postalCodeInCity.isValid === false) {
+          addressValidation.value.postalCode = {
+            isValid: false,
+            message: 'Postal code does not match the specified city'
+          };
+        } else if (addressValidation.value.postalCodeInCity.isValid === true) {
+          addressValidation.value.postalCode = {
+            isValid: true,
+            message: '' // No message, only show cross-validation message
+          };
+        }
+      }
     } else {
       addressValidation.value.postalCode = {
         isValid: false,
@@ -1117,28 +1185,179 @@ const validatePostalCodeField = async () => {
   }
 };
 
-const validateStreetNameField = () => {
+const validateStreetNameField = async () => {
   const result = validateStreetName(form.value.address.streetName);
+  
+  // Set initial validation result (only for basic format validation)
   addressValidation.value.streetName = {
     isValid: result.isValid,
-    message: result.message
+    message: result.isValid ? '' : result.message // Only show message if there's an error
   };
+  
+  // If street name is valid and city is provided, validate street against city
+  if (result.isValid && form.value.address.cityName && form.value.address.countryId) {
+    await validateStreetInCityField();
+    
+    // Update streetName validation based on cross-validation result
+    // The street is only truly valid if both format AND existence in city are valid
+    if (addressValidation.value.streetInCity.isValid === false) {
+      addressValidation.value.streetName = {
+        isValid: false,
+        message: 'Street name not found in the specified city'
+      };
+    } else if (addressValidation.value.streetInCity.isValid === true) {
+      addressValidation.value.streetName = {
+        isValid: true,
+        message: '' // No message, only show cross-validation message
+      };
+    }
+    // If streetInCity.isValid is null, keep the basic validation result
+  }
 };
 
-const validateStreetNumberField = () => {
-  const result = validateStreetNumber(form.value.address.streetNumber);
-  addressValidation.value.streetNumber = {
-    isValid: result.isValid,
-    message: result.message
-  };
+// Advanced validation functions
+const validateStreetInCityField = async () => {
+  if (!form.value.address.streetName || !form.value.address.cityName || !form.value.address.countryId) {
+    addressValidation.value.streetInCity = { isValid: null, message: '', loading: false };
+    return;
+  }
+
+  addressValidation.value.streetInCity.loading = true;
+
+  try {
+    // Import the function dynamically to avoid unused import linting errors
+    const { validateStreetInCity } = await import('@/api/service/locationService');
+    const result = await validateStreetInCity(
+      form.value.address.streetName,
+      form.value.address.cityName,
+      form.value.address.countryId
+    );
+    
+    if (result.success) {
+      addressValidation.value.streetInCity = {
+        isValid: result.data.isValid,
+        message: result.data.message,
+        loading: false,
+        suggestions: result.data.suggestions || []
+      };
+    } else {
+      addressValidation.value.streetInCity = {
+        isValid: false,
+        message: t('register.street_validation_error'),
+        loading: false
+      };
+    }
+  } catch (error) {
+    console.error('Error validating street in city:', error);
+    addressValidation.value.streetInCity = {
+      isValid: false,
+      message: t('register.street_validation_error'),
+      loading: false
+    };
+  }
+};
+
+const validatePostalCodeInCityField = async () => {
+  if (!form.value.address.postalCode || !form.value.address.cityName || !form.value.address.countryId) {
+    addressValidation.value.postalCodeInCity = { isValid: null, message: '', loading: false };
+    return;
+  }
+
+  addressValidation.value.postalCodeInCity.loading = true;
+
+  try {
+    // Import the function dynamically to avoid unused import linting errors
+    const { validatePostalCodeInCity } = await import('@/api/service/locationService');
+    const result = await validatePostalCodeInCity(
+      form.value.address.postalCode,
+      form.value.address.cityName,
+      form.value.address.countryId
+    );
+    
+    if (result.success) {
+      addressValidation.value.postalCodeInCity = {
+        isValid: result.data.isValid,
+        message: result.data.message,
+        loading: false,
+        suggestions: result.data.suggestions || []
+      };
+    } else {
+      addressValidation.value.postalCodeInCity = {
+        isValid: false,
+        message: t('register.postal_code_city_validation_error'),
+        loading: false
+      };
+    }
+  } catch (error) {
+    console.error('Error validating postal code in city:', error);
+    addressValidation.value.postalCodeInCity = {
+      isValid: false,
+      message: t('register.postal_code_city_validation_error'),
+      loading: false
+    };
+  }
+};
+
+const validateFullAddressField = async () => {
+  if (!form.value.address.streetName || !form.value.address.cityName || !form.value.address.countryId) {
+    addressValidation.value.fullAddress = { isValid: null, message: '', loading: false, confidence: null };
+    return;
+  }
+
+  addressValidation.value.fullAddress.loading = true;
+
+  try {
+    // Import the function dynamically to avoid unused import linting errors
+    const { validateAndGeocodeAddress } = await import('@/api/service/locationService');
+    const result = await validateAndGeocodeAddress({
+      streetNumber: form.value.address.streetNumber,
+      streetName: form.value.address.streetName,
+      cityName: form.value.address.cityName,
+      postalCode: form.value.address.postalCode,
+      countryId: form.value.address.countryId
+    });
+    
+    if (result.success) {
+      const data = result.data;
+      addressValidation.value.fullAddress = {
+        isValid: data.isValid,
+        message: data.isValid ? 
+          `Address validated with ${data.confidence} confidence` : 
+          (data.message || 'Address could not be verified'),
+        loading: false,
+        confidence: data.confidence,
+        coordinates: data.coordinates,
+        standardized: data.standardized,
+        matches: data.matches
+      };
+    } else {
+      addressValidation.value.fullAddress = {
+        isValid: false,
+        message: t('register.full_address_validation_error'),
+        loading: false,
+        confidence: null
+      };
+    }
+  } catch (error) {
+    console.error('Error validating full address:', error);
+    addressValidation.value.fullAddress = {
+      isValid: false,
+      message: t('register.full_address_validation_error'),
+      loading: false,
+      confidence: null
+    };
+  }
 };
 
 const onCountryChange = () => {
   validateField('countryId');
   
-  // Reset city and postal code validation when country changes
+  // Reset all address validations when country changes
   addressValidation.value.city = { isValid: null, message: '', loading: false };
   addressValidation.value.postalCode = { isValid: null, message: '', loading: false };
+  addressValidation.value.streetInCity = { isValid: null, message: '', loading: false };
+  addressValidation.value.postalCodeInCity = { isValid: null, message: '', loading: false };
+  addressValidation.value.fullAddress = { isValid: null, message: '', loading: false, confidence: null };
   
   // Clear city and postal code values if they exist
   if (form.value.address.cityName) {
@@ -1146,6 +1365,51 @@ const onCountryChange = () => {
   }
   if (form.value.address.postalCode) {
     form.value.address.postalCode = '';
+  }
+};
+
+// Trigger cross-validation when relevant fields change
+const onCityChange = async () => {
+  validateField('cityName');
+  
+  if (form.value.address.cityName && form.value.address.countryId) {
+    await validateCityField();
+    
+    // Re-validate street and postal code against new city
+    if (form.value.address.streetName) {
+      await validateStreetInCityField();
+    }
+    if (form.value.address.postalCode) {
+      await validatePostalCodeInCityField();
+    }
+    
+    // Validate full address if all required fields are present
+    if (form.value.address.streetName) {
+      await validateFullAddressField();
+    }
+  }
+};
+
+const onStreetNameChange = async () => {
+  validateField('streetName');
+  validateStreetNameField();
+  
+  if (form.value.address.streetName && form.value.address.cityName && form.value.address.countryId) {
+    await validateStreetInCityField();
+    await validateFullAddressField();
+  }
+};
+
+const onPostalCodeChange = async () => {
+  validateField('postalCode');
+  
+  if (form.value.address.postalCode && form.value.address.countryId) {
+    await validatePostalCodeField();
+    
+    if (form.value.address.cityName) {
+      await validatePostalCodeInCityField();
+      await validateFullAddressField();
+    }
   }
 };
 

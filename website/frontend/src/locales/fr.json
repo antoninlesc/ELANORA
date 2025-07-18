@@ -233,6 +233,8 @@
     "postal_code_invalid": "Veuillez entrer un code postal valide",
     "postal_code_validation_error": "Erreur lors de la validation du code postal",
     "validating_postal_code": "Validation du code postal en cours...",
+    "validating_postal_code_in_city": "Vérification du code postal dans la ville...",
+    "validating_street_in_city": "Vérification de la rue dans la ville...",
     "address_line2_label": "Adresse ligne 2",
     "address_line2_placeholder": "Appartement, suite, etc. (optionnel)",
     "error_loading_countries": "Erreur lors du chargement des pays. Veuillez actualiser la page.",

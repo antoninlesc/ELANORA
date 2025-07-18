@@ -251,6 +251,90 @@ export const validatePostalCode = async (postalCode, countryCode) => {
 };
 
 /**
+ * Validate postal code against city using Nominatim API
+ * @param {string} postalCode - The postal code to validate
+ * @param {string} cityName - The city name
+ * @param {string} countryCode - The country code (ISO 2-letter)
+ * @returns {Promise<Object>} Response with validation result
+ */
+export const validatePostalCodeInCity = async (postalCode, cityName, countryCode) => {
+  if (!postalCode || !cityName || !countryCode) {
+    return { 
+      success: false, 
+      error: 'Postal code, city name, and country code are required' 
+    };
+  }
+
+  try {
+    // Search by postal code first
+    const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+      params: {
+        postalcode: postalCode,
+        countrycodes: countryCode.toLowerCase(),
+        limit: 10,
+        format: 'json',
+        addressdetails: 1
+      },
+      headers: {
+        'User-Agent': 'ELANORA-App/1.0'
+      }
+    });
+
+    if (response.data && response.data.length > 0) {
+      // Check if any result matches our city
+      const validResults = response.data.filter(result => {
+        const address = result.address;
+        if (!address) return false;
+        
+        const resultCity = address.city || address.town || address.village || address.municipality;
+        return resultCity && resultCity.toLowerCase() === cityName.toLowerCase();
+      });
+
+      if (validResults.length > 0) {
+        return {
+          success: true,
+          data: {
+            isValid: true,
+            message: 'Postal code matches the specified city'
+          }
+        };
+      } else {
+        // Get the cities that do match this postal code
+        const actualCities = response.data
+          .map(r => r.address?.city || r.address?.town || r.address?.village || r.address?.municipality)
+          .filter(Boolean)
+          .slice(0, 3);
+
+        return {
+          success: true,
+          data: {
+            isValid: false,
+            message: actualCities.length > 0 
+              ? `Postal code belongs to: ${actualCities.join(', ')}`
+              : 'Postal code does not match the specified city',
+            suggestions: actualCities
+          }
+        };
+      }
+    } else {
+      return {
+        success: true,
+        data: {
+          isValid: false,
+          message: 'Postal code not found'
+        }
+      };
+    }
+  } catch (error) {
+    console.error('Error validating postal code in city:', error);
+    return {
+      success: false,
+      error: 'Unable to validate postal code'
+    };
+  }
+};
+
+/**
  * Validate street name (basic validation)
  * @param {string} streetName - The street name to validate
  * @returns {Object} Validation result
@@ -282,6 +366,203 @@ export const validateStreetName = (streetName) => {
     isValid: true,
     message: 'Valid street name'
   };
+};
+
+/**
+ * Validate street name against city using Nominatim API
+ * @param {string} streetName - The street name to validate
+ * @param {string} cityName - The city name
+ * @param {string} countryCode - The country code (ISO 2-letter)
+ * @returns {Promise<Object>} Response with validation result
+ */
+export const validateStreetInCity = async (streetName, cityName, countryCode) => {
+  if (!streetName || !cityName || !countryCode) {
+    return { 
+      success: false, 
+      error: 'Street name, city name, and country code are required' 
+    };
+  }
+
+  try {
+    // Search for the street in the specific city
+    const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+      params: {
+        q: `${streetName}, ${cityName}`,
+        countrycodes: countryCode.toLowerCase(),
+        limit: 5,
+        format: 'json',
+        addressdetails: 1
+      },
+      headers: {
+        'User-Agent': 'ELANORA-App/1.0'
+      }
+    });
+
+    if (response.data && response.data.length > 0) {
+      // Check if any result matches our city
+      const validResults = response.data.filter(result => {
+        const address = result.address;
+        if (!address) return false;
+        
+        const resultCity = address.city || address.town || address.village || address.municipality;
+        return resultCity && resultCity.toLowerCase() === cityName.toLowerCase();
+      });
+
+      if (validResults.length > 0) {
+        return {
+          success: true,
+          data: {
+            isValid: true,
+            message: 'Street found in the specified city',
+            suggestions: validResults.map(r => r.display_name)
+          }
+        };
+      } else {
+        return {
+          success: true,
+          data: {
+            isValid: false,
+            message: 'Street not found in the specified city',
+            suggestions: response.data.map(r => r.display_name).slice(0, 3)
+          }
+        };
+      }
+    } else {
+      return {
+        success: true,
+        data: {
+          isValid: false,
+          message: 'Street not found'
+        }
+      };
+    }
+  } catch (error) {
+    console.error('Error validating street in city:', error);
+    return {
+      success: false,
+      error: 'Unable to validate street'
+    };
+  }
+};
+
+/**
+ * Validate street number against street and city using Nominatim API
+ * @param {string} streetNumber - The street number to validate
+ * @param {string} streetName - The street name
+ * @param {string} cityName - The city name
+ * @param {string} countryCode - The country code (ISO 2-letter)
+ * @returns {Promise<Object>} Response with validation result
+ */
+export const validateStreetNumberInStreet = async (streetNumber, streetName, cityName, countryCode) => {
+  if (!streetNumber || !streetName || !cityName || !countryCode) {
+    return { 
+      success: true, 
+      data: { 
+        isValid: true, 
+        message: 'Street number validation skipped - missing required fields' 
+      } 
+    };
+  }
+
+  try {
+    // Search for the complete address including street number
+    const fullAddress = `${streetNumber} ${streetName}, ${cityName}`;
+    const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+      params: {
+        q: fullAddress,
+        countrycodes: countryCode.toLowerCase(),
+        limit: 10,
+        format: 'json',
+        addressdetails: 1
+      },
+      headers: {
+        'User-Agent': 'ELANORA-App/1.0'
+      }
+    });
+
+    if (response.data && response.data.length > 0) {
+      // Check if any result matches our complete address
+      const validResults = response.data.filter(result => {
+        const address = result.address;
+        if (!address) return false;
+        
+        const resultCity = address.city || address.town || address.village || address.municipality;
+        const resultStreet = address.road || address.pedestrian || address.footway;
+        const resultNumber = address.house_number;
+        
+        const cityMatches = resultCity && resultCity.toLowerCase() === cityName.toLowerCase();
+        const streetMatches = resultStreet && resultStreet.toLowerCase().includes(streetName.toLowerCase());
+        const numberMatches = resultNumber && resultNumber === streetNumber;
+        
+        return cityMatches && streetMatches && numberMatches;
+      });
+
+      if (validResults.length > 0) {
+        return {
+          success: true,
+          data: {
+            isValid: true,
+            message: 'Street number found at this address',
+            suggestions: validResults.map(r => r.display_name)
+          }
+        };
+      } else {
+        // Check if street exists but number is wrong
+        const streetExistsResults = response.data.filter(result => {
+          const address = result.address;
+          if (!address) return false;
+          
+          const resultCity = address.city || address.town || address.village || address.municipality;
+          const resultStreet = address.road || address.pedestrian || address.footway;
+          
+          const cityMatches = resultCity && resultCity.toLowerCase() === cityName.toLowerCase();
+          const streetMatches = resultStreet && resultStreet.toLowerCase().includes(streetName.toLowerCase());
+          
+          return cityMatches && streetMatches;
+        });
+
+        if (streetExistsResults.length > 0) {
+          const existingNumbers = streetExistsResults
+            .map(r => r.address?.house_number)
+            .filter(Boolean)
+            .slice(0, 5);
+          
+          return {
+            success: true,
+            data: {
+              isValid: false,
+              message: existingNumbers.length > 0 
+                ? `Street number not found. Existing numbers: ${existingNumbers.join(', ')}`
+                : 'Street number not found at this address',
+              suggestions: existingNumbers
+            }
+          };
+        } else {
+          return {
+            success: true,
+            data: {
+              isValid: false,
+              message: 'Street not found for number validation'
+            }
+          };
+        }
+      }
+    } else {
+      return {
+        success: true,
+        data: {
+          isValid: false,
+          message: 'Address not found'
+        }
+      };
+    }
+  } catch (error) {
+    console.error('Error validating street number:', error);
+    return {
+      success: false,
+      error: 'Unable to validate street number'
+    };
+  }
 };
 
 /**
@@ -323,6 +604,10 @@ export const validateCompleteAddress = async (address) => {
     postalCode: { isValid: false },
     streetName: validateStreetName(address.streetName),
     streetNumber: validateStreetNumber(address.streetNumber),
+    crossValidation: {
+      streetInCity: { isValid: null, message: '', loading: false },
+      postalCodeInCity: { isValid: null, message: '', loading: false }
+    }
   };
 
   // Validate city if country and city are provided
@@ -333,7 +618,7 @@ export const validateCompleteAddress = async (address) => {
     }
   }
 
-  // Validate postal code if country and postal code are provided
+  // Validate postal code format if country and postal code are provided
   if (address.countryId && address.postalCode) {
     const postalValidation = await validatePostalCode(address.postalCode, address.countryId);
     if (postalValidation.success) {
@@ -341,8 +626,135 @@ export const validateCompleteAddress = async (address) => {
     }
   }
 
+  // Cross-validation: Street in City
+  if (address.streetName && address.cityName && address.countryId) {
+    const streetInCityValidation = await validateStreetInCity(
+      address.streetName, 
+      address.cityName, 
+      address.countryId
+    );
+    if (streetInCityValidation.success) {
+      results.crossValidation.streetInCity = streetInCityValidation.data;
+    }
+  }
+
+  // Cross-validation: Postal Code in City
+  if (address.postalCode && address.cityName && address.countryId) {
+    const postalInCityValidation = await validatePostalCodeInCity(
+      address.postalCode, 
+      address.cityName, 
+      address.countryId
+    );
+    if (postalInCityValidation.success) {
+      results.crossValidation.postalCodeInCity = postalInCityValidation.data;
+    }
+  }
+
   return {
     success: true,
     data: results
   };
+};
+
+/**
+ * Validate complete address with full geocoding verification
+ * @param {Object} address - The address object to validate
+ * @returns {Promise<Object>} Response with detailed validation and geocoding
+ */
+export const validateAndGeocodeAddress = async (address) => {
+  if (!address.streetName || !address.cityName || !address.countryId) {
+    return {
+      success: false,
+      error: 'Street name, city name, and country code are required for full validation'
+    };
+  }
+
+  try {
+    // Build the full address string
+    const fullAddress = [
+      address.streetNumber,
+      address.streetName,
+      address.cityName,
+      address.postalCode
+    ].filter(Boolean).join(' ');
+
+    const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+      params: {
+        q: fullAddress,
+        countrycodes: address.countryId.toLowerCase(),
+        limit: 1,
+        format: 'json',
+        addressdetails: 1
+      },
+      headers: {
+        'User-Agent': 'ELANORA-App/1.0'
+      }
+    });
+
+    if (response.data && response.data.length > 0) {
+      const result = response.data[0];
+      const resultAddress = result.address;
+      
+      // Extract components from the result
+      const resultStreet = resultAddress.road || resultAddress.pedestrian || resultAddress.footway;
+      const resultCity = resultAddress.city || resultAddress.town || resultAddress.village || resultAddress.municipality;
+      const resultPostalCode = resultAddress.postcode;
+      const resultCountry = resultAddress.country_code?.toUpperCase();
+
+      // Check matches
+      const validation = {
+        isValid: true,
+        confidence: 'high',
+        coordinates: {
+          lat: parseFloat(result.lat),
+          lon: parseFloat(result.lon)
+        },
+        matches: {
+          street: resultStreet ? resultStreet.toLowerCase().includes(address.streetName.toLowerCase()) : false,
+          city: resultCity ? resultCity.toLowerCase() === address.cityName.toLowerCase() : false,
+          postalCode: resultPostalCode ? resultPostalCode === address.postalCode : true, // Don't fail if no postal code in result
+          country: resultCountry === address.countryId.toUpperCase()
+        },
+        standardized: {
+          streetName: resultStreet || address.streetName,
+          cityName: resultCity || address.cityName,
+          postalCode: resultPostalCode || address.postalCode,
+          fullAddress: result.display_name
+        }
+      };
+
+      // Calculate overall validity
+      const matchCount = Object.values(validation.matches).filter(Boolean).length;
+      const totalChecks = Object.keys(validation.matches).length;
+      
+      if (matchCount === totalChecks) {
+        validation.confidence = 'high';
+      } else if (matchCount >= totalChecks * 0.75) {
+        validation.confidence = 'medium';
+      } else {
+        validation.confidence = 'low';
+        validation.isValid = false;
+      }
+
+      return {
+        success: true,
+        data: validation
+      };
+    } else {
+      return {
+        success: true,
+        data: {
+          isValid: false,
+          confidence: 'none',
+          message: 'Address not found'
+        }
+      };
+    }
+  } catch (error) {
+    console.error('Error validating and geocoding address:', error);
+    return {
+      success: false,
+      error: 'Unable to validate address'
+    };
+  }
 };
