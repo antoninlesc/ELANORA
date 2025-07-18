@@ -74,6 +74,7 @@ class InvitationService:
                 project_permission=request.project_permission,
                 expires_in_days=request.expires_in_days,
             )
+            await db.commit()
 
             language = request.language or "en"  # Default to English if not provided
 
@@ -108,6 +109,7 @@ class InvitationService:
                 )
 
         except Exception as e:
+            await db.rollback()
             logger.error(
                 "Failed to send invitation",
                 extra={
@@ -174,6 +176,7 @@ class InvitationService:
             )
 
             if success:
+                await db.commit()
                 logger.info(
                     "Invitation accepted",
                     extra={
@@ -181,10 +184,13 @@ class InvitationService:
                         "user_id": user_id,
                     },
                 )
+            else:
+                await db.rollback()
 
             return success
 
         except Exception as e:
+            await db.rollback()
             logger.error(
                 "Failed to accept invitation",
                 extra={

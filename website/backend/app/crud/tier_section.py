@@ -8,7 +8,7 @@ async def create_tier_section(
     db: AsyncSession, project_id: int, name: str
 ) -> TierSection:
     section = TierSection(project_id=project_id, section_name=name)
-    return await DatabaseUtils.create_and_commit(db, section)
+    return await DatabaseUtils.create(db, section)
 
 
 async def get_tier_section_by_id(

@@ -79,15 +79,33 @@ class TierService:
 class TierSectionService:
     @staticmethod
     async def create_section(db, project_id: int, name: str):
-        return await create_tier_section(db, project_id, name)
+        try:
+            section = await create_tier_section(db, project_id, name)
+            await db.commit()
+            return section
+        except Exception:
+            await db.rollback()
+            raise
 
     @staticmethod
     async def rename_section(db, tier_section_id: int, new_name: str):
-        return await update_tier_section_name(db, tier_section_id, new_name)
+        try:
+            section = await update_tier_section_name(db, tier_section_id, new_name)
+            await db.commit()
+            return section
+        except Exception:
+            await db.rollback()
+            raise
 
     @staticmethod
     async def delete_section(db, tier_section_id: int):
-        return await delete_tier_section(db, tier_section_id)
+        try:
+            result = await delete_tier_section(db, tier_section_id)
+            await db.commit()
+            return result
+        except Exception:
+            await db.rollback()
+            raise
 
     @staticmethod
     async def get_sections_for_project(db, project_id: int):
@@ -126,13 +144,25 @@ class TierSectionService:
 class TierGroupService:
     @staticmethod
     async def assign_group_to_section(db, tier_group_id: int, section_id: int | None):
-        return await update_tier_group_section(db, tier_group_id, section_id)
+        try:
+            result = await update_tier_group_section(db, tier_group_id, section_id)
+            await db.commit()
+            return result
+        except Exception:
+            await db.rollback()
+            raise
 
     @staticmethod
     async def create_group(
         db, section_id: int | None, project_id: int, elan_file_name: str
     ):
-        return await create_tier_group(db, section_id, project_id, elan_file_name)
+        try:
+            group = await create_tier_group(db, section_id, project_id, elan_file_name)
+            await db.commit()
+            return group
+        except Exception:
+            await db.rollback()
+            raise
 
     @staticmethod
     async def get_groups_for_section(db, section_id: int):

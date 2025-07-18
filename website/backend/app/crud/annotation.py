@@ -92,7 +92,7 @@ async def create_annotation_in_db(
         end_time=end_time,
         tier_id=tier_id,
     )
-    return await DatabaseUtils.create_and_commit(db, annotation)
+    return await DatabaseUtils.create(db, annotation)
 
 
 async def check_annotation_exists(

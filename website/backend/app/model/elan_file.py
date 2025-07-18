@@ -1,5 +1,4 @@
-from typing import TYPE_CHECKING
-
+from typing import TYPE_CHECKING, List
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -7,6 +6,7 @@ from app.db.database import Base
 
 if TYPE_CHECKING:
     from .user import User
+    from .association import ElanFileToMedia
 
 
 class ElanFile(Base):
@@ -24,6 +24,9 @@ class ElanFile(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="elan_files")
+    media_links: Mapped[List["ElanFileToMedia"]] = relationship(
+        "ElanFileToMedia", back_populates="elan_file", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         """Return a string representation of the ElanFile."""

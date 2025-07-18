@@ -16,7 +16,7 @@ async def get_or_create_annotation_value(db: AsyncSession, value: str) -> int:
     if annotation_value:
         return annotation_value.value_id
     annotation_value = AnnotationValue(annotation_value=value)
-    await DatabaseUtils.create_and_commit(db, annotation_value)
+    await DatabaseUtils.create(db, annotation_value)
     return annotation_value.value_id
 
 
@@ -60,6 +60,7 @@ async def bulk_get_or_create_annotation_values(
                 [{"annotation_value": v} for v in missing_values],
                 ignore_duplicates=True,
             )
+            await db.flush()
             logger.info(f"Inserted or ignored {len(missing_values)} values.")
             # Fetch all values again to update the map
             filters = {"annotation_value": list(missing_values)}

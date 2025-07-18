@@ -9,7 +9,7 @@ async def create_tier_group(
     group = TierGroup(
         section_id=section_id, project_id=project_id, elan_file_name=elan_file_name
     )
-    return await DatabaseUtils.create_and_commit(db, group)
+    return await DatabaseUtils.create(db, group)
 
 
 async def get_tier_group_by_id(

@@ -271,6 +271,7 @@
     "invalid_email": "Please enter a valid email address"
   },
   "project": {
+    "select_project": "Select a project",
     "load_error": "Failed to load projects"
   },
   "emailVerification": {

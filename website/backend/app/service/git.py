@@ -149,6 +149,7 @@ class GitService:
                 instance_id=instance_id,
                 creator_user_id=user_id,
             )
+            await db.commit()
 
             return {
                 "project_name": project_name,
@@ -159,6 +160,7 @@ class GitService:
             }
 
         except Exception as e:
+            await db.rollback()
             raise RuntimeError(f"Project creation failed: {e}") from e
 
     def get_project_status(self, project_name: str) -> dict[str, Any]:
@@ -309,7 +311,6 @@ class GitService:
         db: AsyncSession,
         user_id: int,
     ) -> dict:
-        # Create the project at the usual path
         project_path = self.base_path / project_name
         elan_files_dir = project_path / "elan_files"
         if project_path.exists():
@@ -321,33 +322,37 @@ class GitService:
         for file in files:
             if not file.filename or not file.filename.lower().endswith(".eaf"):
                 continue
-            # file.filename is the relative path (e.g., "subfolder/file.eaf")
             dest_path = elan_files_dir / Path(file.filename).name
             with open(dest_path, "wb") as f:
                 shutil.copyfileobj(file.file, f)
 
-        # Initialize git repo, commit, and register in DB (reuse your existing logic)
         runner = GitCommandRunner(project_path)
         runner.init_repo()
         runner.add_all()
         runner.commit("Initial commit from uploaded folder")
 
-        await create_project_db(
-            db=db,
-            project_name=project_name,
-            description=description,
-            project_path=str(project_path),
-            instance_id=1,
-            creator_user_id=user_id,
-        )
-
-        # Parse and store ELAN files in DB
-        elan_service = ElanService(db)
-        elan_files = list(elan_files_dir.rglob("*.eaf"))
-        for elan_file in elan_files:
-            await elan_service.process_single_file(
-                str(elan_file), user_id, project_name
+        try:
+            await create_project_db(
+                db=db,
+                project_name=project_name,
+                description=description,
+                project_path=str(project_path),
+                instance_id=1,
+                creator_user_id=user_id,
             )
+            await db.commit()
+
+            elan_service = ElanService(db)
+            elan_files = list(elan_files_dir.rglob("*.eaf"))
+            for elan_file in elan_files:
+                await elan_service.process_single_file(
+                    str(elan_file), user_id, project_name
+                )
+            await db.commit()
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Failed to initialize project from folder: {e}")
+            raise
 
         return {
             "project_name": project_name,
@@ -766,7 +771,9 @@ class GitService:
         try:
             await delete_project_db(db, project_name)
             logger.info(f"Database records deleted for project: {project_name}")
+            await db.commit()
         except Exception as db_exc:
+            await db.rollback()
             logger.error(
                 f"Failed to delete project from DB: {project_name} | Error: {db_exc}"
             )

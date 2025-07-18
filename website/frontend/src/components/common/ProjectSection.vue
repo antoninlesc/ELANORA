@@ -66,11 +66,13 @@ const { t } = useI18n();
 
 const projects = computed(() => projectStore.projects || []);
 const currentProject = computed(() => projectStore.currentProject);
-const currentProjectName = computed(() =>
-  typeof currentProject.value === 'object'
-    ? currentProject.value.project_name
-    : currentProject.value || ''
-);
+const currentProjectName = computed(() => {
+  if (!currentProject.value) return '';
+  if (typeof currentProject.value === 'object') {
+    return currentProject.value.project_name || '';
+  }
+  return currentProject.value || '';
+});
 
 const dropdownOpen = ref(false);
 const dropdownRoot = ref(null);

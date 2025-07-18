@@ -263,6 +263,7 @@
     "invalid_email": "Veuillez saisir une adresse email valide"
   },
   "project": {
+    "select_project": "Sélectionnez un projet",
     "load_error": "Échec du chargement des projets"
   },
   "emailVerification": {

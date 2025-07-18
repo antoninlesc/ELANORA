@@ -7,6 +7,7 @@ Models are imported based on their dependencies, with base models first.
 # Import enums first
 from .address import Address
 from .annotation import Annotation
+from .annotation_value import AnnotationValue
 
 # Base models with no dependencies
 from .annotation_standard import AnnotationStandard
@@ -29,6 +30,8 @@ from .city import City
 from .comment import Comment
 from .conflict import Conflict
 from .country import Country
+from .elan_file_media import ElanFileMedia
+from .association import ElanFileToMedia
 
 # Models with dependencies on user/project
 from .elan_file import ElanFile
@@ -49,6 +52,8 @@ from .project import Project
 
 # Tier and annotation models
 from .tier import Tier
+from .tier_group import TierGroup
+from .tier_section import TierSection
 
 # User model (depends on address)
 from .user import User
@@ -57,6 +62,7 @@ __all__ = [
     "Address",
     "Annotation",
     "AnnotationStandard",
+    "AnnotationValue",
     "City",
     "Comment",
     "CommentConflict",
@@ -70,6 +76,8 @@ __all__ = [
     "ConflictType",
     "Country",
     "ElanFile",
+    "ElanFileMedia",
+    "ElanFileToMedia",
     "ElanFileToProject",
     "ElanFileToTier",
     "Instance",
@@ -79,6 +87,8 @@ __all__ = [
     "ProjectAnnotStandard",
     "ProjectPermission",
     "Tier",
+    "TierGroup",
+    "TierSection",
     "User",
     "UserRole",
     "UserToProject",

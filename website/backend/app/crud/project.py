@@ -5,7 +5,8 @@ from app.crud.annotation import delete_unused_annotation_values
 from app.crud.association import delete_project_associations
 from app.crud.comment import delete_project_comments
 from app.crud.conflict import delete_project_conflicts
-from app.crud.elan_file import delete_elan_file, get_orphan_elan_files_by_project
+from app.crud.elan_file import delete_elan_file_full, get_orphan_elan_files_by_project
+from app.crud.elan_file_media import delete_orphaned_media
 from app.crud.invitation import delete_project_invitations
 from app.crud.tier import delete_tiers_for_elan_file
 from app.model.tier_group import TierGroup
@@ -32,13 +33,15 @@ async def create_project_db(
         project_path=project_path,
         instance_id=instance_id,
     )
-    await DatabaseUtils.create_and_commit(db, project)
+    await DatabaseUtils.create(db, project)
+    await db.flush()
+
     user_to_project = UserToProject(
         project_id=project.project_id,
         user_id=creator_user_id,
         permission=ProjectPermission.OWNER,
     )
-    await DatabaseUtils.create_and_commit(db, user_to_project)
+    await DatabaseUtils.create(db, user_to_project)
     return project
 
 
@@ -74,7 +77,7 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
         )
         for orphan_elan_file in orphan_elan_files:
             await delete_tiers_for_elan_file(db, orphan_elan_file.elan_id)
-            await delete_elan_file(db, orphan_elan_file)
+            await delete_elan_file_full(db, orphan_elan_file.elan_id)
         # Delete all TierGroups and TierSections for this project
         await DatabaseUtils.bulk_delete(
             db, TierGroup, TierGroup.project_id == project.project_id
@@ -87,11 +90,13 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
         await delete_project_invitations(db, project.project_id)
         await delete_project_conflicts(db, project.project_id)
         await delete_project_comments(db, project.project_id)
+        await db.flush()
         # Clean up unused annotation values
         await delete_unused_annotation_values(db)
+        # Clean up orphaned media files
+        await delete_orphaned_media(db)
         # Finally, delete the project itself
         await db.delete(project)
-        await db.commit()
 
 
 async def list_projects_by_instance(

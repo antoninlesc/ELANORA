@@ -14,8 +14,7 @@ from app.crud.annotation_value import bulk_get_or_create_annotation_values
 from app.crud.project import get_project_by_name
 from app.model.tier import Tier
 from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
-from app.model.tier_group import TierGroup
-from app.utils.database import DatabaseUtils
+from app.crud.elan_file import store_elan_file_data_in_db
 
 # Get logger for this module
 logger = get_logger()
@@ -46,7 +45,11 @@ class ElanService:
         t_info_start = time.perf_counter()
         file_info = ElanFileProcessor.get_file_info(file_path_obj)
         file_info.update(
-            {"tiers": [], "time_slots": ElanFileProcessor.extract_time_slots(root)}
+            {
+                "tiers": [],
+                "time_slots": ElanFileProcessor.extract_time_slots(root),
+                "media": ElanFileProcessor.extract_media_descriptors(root),
+            }
         )
         t_info_end = time.perf_counter()
         logger.info(f"File info extraction took {t_info_end - t_info_start:.3f}s")
@@ -118,13 +121,13 @@ class ElanService:
         logger.debug(f"Storing {len(tiers_data)} tiers with annotations")
         t0 = time.perf_counter()
 
-        # 1. Bulk get or create all annotation values, get value_map
+        # Bulk get or create all annotation values, get value_map
         t_val_start = time.perf_counter()
         value_map = await bulk_get_or_create_annotation_values(self.db, tiers_data)
         t_val_end = time.perf_counter()
         logger.info(f"AnnotationValue creation took {t_val_end - t_val_start:.3f}s")
 
-        # 2. First pass: create all tiers without parent references
+        # First pass: create all tiers without parent references
         tier_name_to_id = {}
         t_tier_start = time.perf_counter()
         for tier_data in tiers_data:
@@ -133,7 +136,7 @@ class ElanService:
                 tier_obj = await tier.create_tier_in_db(
                     db=self.db,
                     tier_name=tier_data["tier_name"],
-                    parent_tier_id=None,  # No parent yet
+                    parent_tier_id=None,
                 )
                 logger.debug(
                     f"Created new tier: {tier_data['tier_name']} (ID: {tier_obj.tier_id})"
@@ -147,7 +150,7 @@ class ElanService:
         t_tier_end = time.perf_counter()
         logger.info(f"Tier creation took {t_tier_end - t_tier_start:.3f}s")
 
-        # 3. Second pass: update parent_tier_id for child tiers using CRUD
+        # Second pass: update parent_tier_id for child tiers using CRUD
         for tier_data in tiers_data:
             parent_name = tier_data.get("parent_tier_name")
             if parent_name:
@@ -157,7 +160,7 @@ class ElanService:
                         self.db, tier_data["tier_id"], parent_id
                     )
 
-        # 4. Bulk create all annotations for all tiers
+        # Bulk create all annotations for all tiers
         t_ann_start = time.perf_counter()
         await bulk_create_annotations(self.db, tiers_data, elan_id, value_map)
         t_ann_end = time.perf_counter()
@@ -197,57 +200,21 @@ class ElanService:
         """Store parsed ELAN file data in the database and sync associations."""
         logger.info(f"Storing ELAN file data: {file_info['filename']}")
 
-        # Check if file already exists using CRUD
-        if await elan_file.check_elan_file_exists_by_filename(
-            self.db, file_info["filename"]
-        ):
-            existing_file = await elan_file.get_elan_file_by_filename(
-                self.db, file_info["filename"]
-            )
-            if existing_file:
-                logger.info(f"File {file_info['filename']} already exists. Skipping.")
-                # Always sync associations even if file exists
-                await elan_file.add_elan_file_to_project(
-                    self.db, existing_file.elan_id, project_id
-                )
-                return existing_file.elan_id
-
-        # Create ELAN file record using CRUD
-        elan_file_obj = await elan_file.create_elan_file_in_db(
-            db=self.db,
-            filename=file_info["filename"],
-            file_path=file_info["file_path"],
-            file_size=file_info["file_size"],
-            user_id=user_id,
-            project_id=project_id,
+        # Store all ELAN file data and associations using CRUD
+        elan_id = await store_elan_file_data_in_db(
+            self.db, file_info, user_id, project_id
         )
 
-        # Store tiers and annotations using CRUD
-        await self._store_tiers_and_annotations(
-            file_info["tiers"], elan_file_obj.elan_id
-        )
+        # Store tiers and annotations (this sets tier["tier_id"])
+        await self._store_tiers_and_annotations(file_info["tiers"], elan_id)
 
-        # Sync ELAN_FILE_TO_TIER associations
+        # Now that tiers have IDs, sync associations
         tier_ids = [tier["tier_id"] for tier in file_info["tiers"]]
-        await elan_file.sync_elan_file_to_tiers(
-            self.db, elan_file_obj.elan_id, tier_ids
-        )
+        await elan_file.sync_elan_file_to_tiers(self.db, elan_id, tier_ids)
 
-        # Always sync ELAN_FILE_TO_PROJECT associations
-        await elan_file.add_elan_file_to_project(
-            self.db, elan_file_obj.elan_id, project_id
-        )
-
-        # Create TierGroup entry for this ELAN file and project
-        tier_group = TierGroup(
-            project_id=project_id, elan_file_name=file_info["filename"], section_id=None
-        )
-        await DatabaseUtils.create_and_commit(self.db, tier_group)
-
-        logger.info(
-            f"Successfully stored: {file_info['filename']} (ID: {elan_file_obj.elan_id})"
-        )
-        return elan_file_obj.elan_id
+        await self.db.commit()
+        logger.info(f"Successfully stored: {file_info['filename']} (ID: {elan_id})")
+        return elan_id
 
     async def process_single_file(
         self, file_path: str, user_id: int, project_name: str
@@ -407,17 +374,14 @@ class ElanService:
         ]
 
     async def delete_file(self, elan_id: int) -> bool:
-        """Delete an ELAN file."""
+        """Delete an ELAN file (delegates to CRUD layer)."""
         logger.info(f"Deleting ELAN file with ID: {elan_id}")
-
-        # Use CRUD function
-        success = await elan_file.delete_elan_file_by_id(self.db, elan_id)
-
+        # Delegate all deletion logic to the CRUD layer
+        success = await elan_file.delete_elan_file_full(self.db, elan_id)
         if success:
             logger.info(f"Successfully deleted ELAN file ID: {elan_id}")
         else:
             logger.warning(f"Failed to delete ELAN file ID: {elan_id}")
-
         return success
 
     async def get_annotations_in_time_range(

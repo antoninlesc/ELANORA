@@ -50,7 +50,7 @@ async def create_user_in_db(
         **additional_fields,
     )
     # Use DatabaseUtils for create and commit
-    return await DatabaseUtils.create_and_commit(db, user)
+    return await DatabaseUtils.create(db, user)
 
 
 async def update_user_password(

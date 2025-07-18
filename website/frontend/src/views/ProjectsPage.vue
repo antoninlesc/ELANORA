@@ -334,7 +334,7 @@ async function deleteProject(projectName) {
 
 function openRenameDialog(project) {
   renamingProject.value = project;
-  renameInput.value = project;
+  renameInput.value = project.project_name;
   renameError.value = '';
   renameDialogVisible.value = true;
 }

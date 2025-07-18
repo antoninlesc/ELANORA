@@ -51,41 +51,26 @@ class DatabaseUtils:
         return exists
 
     @staticmethod
-    async def create_and_commit(db: AsyncSession, instance: ModelType) -> ModelType:
-        logger.info(f"create_and_commit: instance={instance}")
-        try:
-            db.add(instance)
-            await db.commit()
-            await db.refresh(instance)
-            logger.info(f"create_and_commit: committed instance={instance}")
-            return instance
-        except Exception as e:
-            logger.error(f"create_and_commit: error={e}")
-            await db.rollback()
-            raise
+    async def create(db: AsyncSession, instance: ModelType) -> ModelType:
+        logger.info(f"create: instance={instance}")
+        db.add(instance)
+        return instance
 
     @staticmethod
     async def delete_by_filter(
         db: AsyncSession, model: type[ModelType], auto_commit: bool = False, **filters
     ) -> int:
         logger.info(f"delete_by_filter: model={model.__name__} filters={filters}")
-        try:
-            query = select(model)
-            for field, value in filters.items():
-                query = query.filter(getattr(model, field) == value)
-            result = await db.execute(query)
-            instances = list(result.scalars().all())
-            count = len(instances)
-            for instance in instances:
-                await db.delete(instance)
-            if auto_commit:
-                await db.commit()
-            logger.info(f"delete_by_filter: deleted count={count}")
-            return count
-        except Exception as e:
-            logger.error(f"delete_by_filter: error={e}")
-            await db.rollback()
-            raise
+        query = select(model)
+        for field, value in filters.items():
+            query = query.filter(getattr(model, field) == value)
+        result = await db.execute(query)
+        instances = list(result.scalars().all())
+        count = len(instances)
+        for instance in instances:
+            await db.delete(instance)
+        logger.info(f"delete_by_filter: deleted count={count}")
+        return count
 
     @staticmethod
     async def bulk_insert(
@@ -99,7 +84,6 @@ class DatabaseUtils:
 
         stmt = mysql_insert(model).values(values)
         if ignore_duplicates:
-            # Exclude auto-increment primary keys from update
             pk_names = [key.name for key in model.__table__.primary_key]
             update_cols = {
                 c.name: stmt.inserted[c.name]
@@ -108,7 +92,6 @@ class DatabaseUtils:
             }
             stmt = stmt.on_duplicate_key_update(**update_cols)
         await db.execute(stmt)
-        await db.commit()
 
     @staticmethod
     async def update_by_filter(
@@ -120,7 +103,6 @@ class DatabaseUtils:
             query = query.where(getattr(model, field) == value)
         query = query.values(**update_fields)
         result = await db.execute(query)
-        await db.commit()
         return result.rowcount
 
     @staticmethod
@@ -203,16 +185,9 @@ class DatabaseUtils:
         """Bulk delete records matching the given where_clause.
         Returns the number of deleted rows.
         """
-        try:
-            result = await db.execute(delete(model).where(where_clause))
-            logger.info(
-                f"bulk_delete: model={model.__name__} deleted={result.rowcount}"
-            )
-            return result.rowcount if result.rowcount is not None else 0
-        except Exception as e:
-            logger.error(f"bulk_delete: error={e}")
-            await db.rollback()
-            raise
+        result = await db.execute(delete(model).where(where_clause))
+        logger.info(f"bulk_delete: model={model.__name__} deleted={result.rowcount}")
+        return result.rowcount if result.rowcount is not None else 0
 
     @staticmethod
     async def bulk_update(
@@ -227,24 +202,18 @@ class DatabaseUtils:
         """
         if not data:
             return 0
-        try:
-            total = 0
-            for row in data:
-                pk_value = row[pk_field]
-                update_data = {k: v for k, v in row.items() if k != pk_field}
-                result = await db.execute(
-                    update(model)
-                    .where(getattr(model, pk_field) == pk_value)
-                    .values(**update_data)
-                )
-                total += result.rowcount if result.rowcount else 0
-            await db.commit()
-            logger.info(f"bulk_update: model={model.__name__} updated={total}")
-            return total
-        except Exception as e:
-            logger.error(f"bulk_update: error={e}")
-            await db.rollback()
-            raise
+        total = 0
+        for row in data:
+            pk_value = row[pk_field]
+            update_data = {k: v for k, v in row.items() if k != pk_field}
+            result = await db.execute(
+                update(model)
+                .where(getattr(model, pk_field) == pk_value)
+                .values(**update_data)
+            )
+            total += result.rowcount if result.rowcount else 0
+        logger.info(f"bulk_update: model={model.__name__} updated={total}")
+        return total
 
     @staticmethod
     async def get_orphaned_by_association(
@@ -274,3 +243,41 @@ class DatabaseUtils:
         )
         result = await db.execute(stmt)
         return list(result.scalars().all())
+
+    @staticmethod
+    async def get_fully_orphaned(
+        db,
+        main_model,
+        assoc_model,
+        main_id_field: str,
+        assoc_ref_field: str,
+    ):
+        """
+        Return all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
+        """
+        main_id_col = getattr(main_model, main_id_field)
+        assoc_ref_col = getattr(assoc_model, assoc_ref_field)
+        subq = select(assoc_ref_col).distinct()
+        query = select(main_model).where(~main_id_col.in_(subq))
+        result = await db.execute(query)
+        return list(result.scalars().all())
+
+    @staticmethod
+    async def delete_fully_orphaned(
+        db,
+        main_model,
+        assoc_model,
+        main_id_field: str,
+        assoc_ref_field: str,
+    ) -> int:
+        """
+        Delete all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
+        Returns the number of deleted rows.
+        """
+        orphans = await DatabaseUtils.get_fully_orphaned(
+            db, main_model, assoc_model, main_id_field, assoc_ref_field
+        )
+        count = len(orphans)
+        for orphan in orphans:
+            await db.delete(orphan)
+        return count

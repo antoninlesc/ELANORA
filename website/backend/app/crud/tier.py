@@ -93,7 +93,9 @@ async def create_tier_in_db(
         tier_name=tier_name,
         parent_tier_id=parent_tier_id,
     )
-    return await DatabaseUtils.create_and_commit(db, tier)
+    await DatabaseUtils.create(db, tier)
+    await db.flush()
+    return tier
 
 
 async def get_tiers_by_elan_id(db: AsyncSession, elan_id: int) -> list[Tier]:
@@ -118,6 +120,7 @@ async def update_parent_tier(
     filters = {"tier_id": tier_id}
     update_fields = {"parent_tier_id": parent_tier_id}
     await DatabaseUtils.update_by_filter(db, Tier, filters, update_fields)
+    await db.flush()
 
 
 async def get_all_tier_names_with_annotations(db: AsyncSession) -> list[str]:
