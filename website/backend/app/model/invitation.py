@@ -19,7 +19,9 @@ class Invitation(Base):
 
     __tablename__ = "INVITATION"
 
-    invitation_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    invitation_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
     project_permission: Mapped[ProjectPermission] = mapped_column(
         String(20), nullable=False, default=ProjectPermission.READ
     )

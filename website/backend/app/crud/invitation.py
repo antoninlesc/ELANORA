@@ -45,7 +45,6 @@ async def create_invitation(
         Tuple[Invitation, str]: The created invitation and the raw code for email
 
     """
-    invitation_id = str(uuid.uuid4())
     expires_at = datetime.now() + timedelta(days=expires_in_days)
 
     # Generate a secure random code (independent of invitation_id)
@@ -53,7 +52,6 @@ async def create_invitation(
     hashed_code = pwd_context.hash(raw_code)
 
     invitation = Invitation(
-        invitation_id=invitation_id,
         sender=sender_id,
         receiver_email=receiver_email,
         project_id=project_id,
@@ -70,7 +68,7 @@ async def create_invitation(
 
 
 async def get_invitation_by_id(
-    db: AsyncSession, invitation_id: str
+    db: AsyncSession, invitation_id: int
 ) -> Invitation | None:
     """Retrieve an invitation by ID."""
     result = await db.execute(
@@ -102,7 +100,7 @@ async def get_pending_invitations_by_email(
 
 async def update_invitation_status(
     db: AsyncSession,
-    invitation_id: str,
+    invitation_id: int,
     status: InvitationStatus,
     receiver_id: int | None = None,
 ) -> bool:
@@ -121,7 +119,7 @@ async def update_invitation_status(
 
 
 async def check_invitation_exists_and_valid(
-    db: AsyncSession, invitation_id: str
+    db: AsyncSession, invitation_id: int
 ) -> bool:
     """Check if invitation exists and is still valid."""
     invitation = await get_invitation_by_id(db, invitation_id)
@@ -160,7 +158,7 @@ async def expire_old_invitations(db: AsyncSession) -> int:
 
 
 async def verify_invitation_code(
-    db: AsyncSession, invitation_id: str, raw_code: str
+    db: AsyncSession, invitation_id: int, raw_code: str
 ) -> bool:
     """Verify if the provided code matches the invitation's hashed code."""
     invitation = await get_invitation_by_id(db, invitation_id)

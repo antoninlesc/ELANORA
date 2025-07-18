@@ -9,7 +9,7 @@ from app.schema.common.base import CustomBaseModel
 class InvitationResponse(CustomBaseModel):
     """Schema for invitation data."""
 
-    invitation_id: str
+    invitation_id: int
     receiver_email: str
     project_id: int
     project_permission: ProjectPermission
@@ -26,7 +26,7 @@ class InvitationSendResponse(CustomBaseModel):
 
     success: bool
     message: str
-    invitation_id: str | None = None
+    invitation_id: int | None = None
 
 
 class InvitationListResponse(CustomBaseModel):
