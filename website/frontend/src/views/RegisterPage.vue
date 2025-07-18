@@ -1280,11 +1280,17 @@ const handleRegister = async () => {
       form.value.address.postalCode &&
       form.value.address.countryId
     ) {
+      // Find the selected country to get its name
+      const selectedCountry = countries.value.find(
+        country => country.country_id === form.value.address.countryId
+      );
+      
       address = {
         street_name: form.value.address.streetName,
         street_number: form.value.address.streetNumber || null,
         city_name: form.value.address.cityName,
-        country_id: parseInt(form.value.address.countryId),
+        country_code: form.value.address.countryId,
+        country_name: selectedCountry?.country_name || '',
         postal_code: form.value.address.postalCode,
         address_line_2: form.value.address.addressLine2 || null,
       };
