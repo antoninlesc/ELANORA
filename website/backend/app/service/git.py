@@ -17,6 +17,7 @@ from app.crud.project import (
     list_projects_by_instance,
     project_exists_by_name,
 )
+from app.schema.responses.git import ProjectInfo
 from app.service.elan import ElanService
 from app.service.git_diff_parser import GitDiffParser
 from app.service.git_operations import (
@@ -291,9 +292,14 @@ class GitService:
             logger.error(f"Batch file operation failed: {e}")
             raise RuntimeError(f"Failed to add ELAN files: {e}") from e
 
-    async def list_projects(self, db: AsyncSession, instance_id: int) -> list[str]:
+    async def list_projects(
+        self, db: AsyncSession, instance_id: int
+    ) -> list[ProjectInfo]:
         projects = await list_projects_by_instance(db, instance_id)
-        return [p.project_name for p in projects]
+        return [
+            ProjectInfo(project_id=p.project_id, project_name=p.project_name)
+            for p in projects
+        ]
 
     async def init_project_from_folder_upload(
         self,

@@ -21,10 +21,7 @@
             {{ t('navigation.conflicts') }}
           </a>
           <router-link
-            :to="{
-              name: 'TiersPage',
-              params: { projectName: currentProjectName },
-            }"
+            :to="{ name: 'TiersPage' }"
             class="elanora-header-menu-link"
           >
             {{ t('navigation.tiers') || 'Tiers' }}
@@ -96,7 +93,7 @@ const { t } = useI18n();
   margin-left: auto;
 }
 
-.elanora-header-instance-logo-container {
+.elanora-header-insdtance-logo-container {
   height: 5rem;
   width: 5rem;
   display: flex;

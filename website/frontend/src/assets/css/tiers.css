@@ -30,3 +30,33 @@
   display: flex;
   flex-direction: column;
 }
+
+.tiers-section-controls {
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.tiers-section-create-form input {
+  padding: 0.3rem 0.7rem;
+  margin-right: 0.5rem;
+}
+
+.dragging-disable-interaction button,
+.dragging-disable-interaction input,
+.dragging-disable-interaction select {
+  pointer-events: none !important;
+}
+
+.tiers-section-block h2 button {
+  margin-left: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.tier-group-draggable {
+  min-height: 1rem;
+}
+
+.tier-group-draggable[aria-grabbed="true"] * {
+  pointer-events: none !important;
+}

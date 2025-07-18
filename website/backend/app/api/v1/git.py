@@ -232,8 +232,8 @@ async def list_projects(
 ):
     """List all project names for the current instance."""
     instance_id = 1
-    project_names = await git_service.list_projects(db, instance_id)
-    return ProjectListResponse(projects=project_names)
+    projects = await git_service.list_projects(db, instance_id)
+    return ProjectListResponse(projects=projects)
 
 
 @router.post("/projects/init-from-folder-upload", response_model=ProjectCreateResponse)

@@ -1,4 +1,4 @@
-import axiosClient from '@/api/apiClient';
+import axiosInstance from '@/api/apiClient';
 
 /**
  * Service for location-related API calls
@@ -10,7 +10,7 @@ import axiosClient from '@/api/apiClient';
  */
 export const getCountries = async () => {
   try {
-    const response = await axiosClient.get('/location/countries');
+    const response = await axiosInstance.get('/location/countries');
     return {
       success: true,
       data: response.data,
@@ -31,7 +31,7 @@ export const getCountries = async () => {
  */
 export const getCitiesByCountry = async (countryId) => {
   try {
-    const response = await axiosClient.get(
+    const response = await axiosInstance.get(
       `/location/cities?country_id=${countryId}`
     );
     return {
@@ -53,7 +53,7 @@ export const getCitiesByCountry = async (countryId) => {
  */
 export const getAllCities = async () => {
   try {
-    const response = await axiosClient.get('/location/cities/all');
+    const response = await axiosInstance.get('/location/cities/all');
     return {
       success: true,
       data: response.data,

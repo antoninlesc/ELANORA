@@ -8,6 +8,8 @@ from app.crud.conflict import delete_project_conflicts
 from app.crud.elan_file import delete_elan_file, get_orphan_elan_files_by_project
 from app.crud.invitation import delete_project_invitations
 from app.crud.tier import delete_tiers_for_elan_file
+from app.model.tier_group import TierGroup
+from app.model.tier_section import TierSection
 from app.model.association import UserToProject
 from app.model.enums import ProjectPermission
 from app.model.project import Project
@@ -66,13 +68,20 @@ async def get_project_id_by_name(db: AsyncSession, project_name: str) -> int | N
 async def delete_project_db(db: AsyncSession, project_name: str) -> None:
     project = await get_project_by_name(db, project_name)
     if project:
-        # Delete ELAN files and all related tiers/annotations that are associated with the only this project
+        # Delete ELAN files and all related tiers/annotations that are associated with only this project
         orphan_elan_files = await get_orphan_elan_files_by_project(
             db, project.project_id
         )
         for orphan_elan_file in orphan_elan_files:
             await delete_tiers_for_elan_file(db, orphan_elan_file.elan_id)
             await delete_elan_file(db, orphan_elan_file)
+        # Delete all TierGroups and TierSections for this project
+        await DatabaseUtils.bulk_delete(
+            db, TierGroup, TierGroup.project_id == project.project_id
+        )
+        await DatabaseUtils.bulk_delete(
+            db, TierSection, TierSection.project_id == project.project_id
+        )
         # Now delete project associations (users, standards, file links)
         await delete_project_associations(db, project.project_id)
         await delete_project_invitations(db, project.project_id)

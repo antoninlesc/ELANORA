@@ -6,14 +6,12 @@
           <span v-if="open">▼</span>
           <span v-else>▶</span>
         </span>
-        <span class="tiers-tree-group-name"
-          >Tier group {{ groupIndex + 1 }}</span
-        >
+        <span class="tiers-tree-group-name">{{ groupLabel }}</span>
       </div>
       <transition name="fade">
         <ul v-if="open" class="tiers-tree-root">
           <li
-            v-for="rootTier in tiers"
+            v-for="rootTier in sortedRootTiers"
             :key="rootTier.tier_id"
             class="tiers-tree-root-group"
           >
@@ -26,15 +24,30 @@
 </template>
 
 <script setup>
-import { defineProps, ref } from 'vue';
+import { defineProps, ref, computed } from 'vue';
 import TierNode from './TierNode.vue';
 
-defineProps({
+const props = defineProps({
   tiers: { type: Array, required: true },
   groupIndex: { type: Number, required: true },
+  groupLabel: { type: String, required: false, default: '' },
 });
 
-const open = ref(true);
+const open = ref(false);
+
+const sortedRootTiers = computed(() => {
+  if (!props.tiers) return [];
+  const folders = props.tiers
+    .filter((tier) => Array.isArray(tier.children) && tier.children.length > 0)
+    .sort((a, b) => a.tier_name.localeCompare(b.tier_name));
+  const files = props.tiers
+    .filter(
+      (tier) => !Array.isArray(tier.children) || tier.children.length === 0
+    )
+    .sort((a, b) => a.tier_name.localeCompare(b.tier_name));
+  return [...folders, ...files];
+});
+
 function toggleGroup() {
   open.value = !open.value;
 }

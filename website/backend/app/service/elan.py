@@ -14,6 +14,8 @@ from app.crud.annotation_value import bulk_get_or_create_annotation_values
 from app.crud.project import get_project_by_name
 from app.model.tier import Tier
 from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
+from app.model.tier_group import TierGroup
+from app.utils.database import DatabaseUtils
 
 # Get logger for this module
 logger = get_logger()
@@ -235,6 +237,12 @@ class ElanService:
         await elan_file.add_elan_file_to_project(
             self.db, elan_file_obj.elan_id, project_id
         )
+
+        # Create TierGroup entry for this ELAN file and project
+        tier_group = TierGroup(
+            project_id=project_id, elan_file_name=file_info["filename"], section_id=None
+        )
+        await DatabaseUtils.create_and_commit(self.db, tier_group)
 
         logger.info(
             f"Successfully stored: {file_info['filename']} (ID: {elan_file_obj.elan_id})"
