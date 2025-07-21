@@ -1335,57 +1335,6 @@ const validatePostalCodeInCityField = async () => {
   }
 };
 
-const validateFullAddressField = async () => {
-  if (!form.value.address.streetName || !form.value.address.cityName || !form.value.address.countryId) {
-    addressValidation.value.fullAddress = { isValid: null, message: '', loading: false, confidence: null };
-    return;
-  }
-
-  addressValidation.value.fullAddress.loading = true;
-
-  try {
-    // Import the function dynamically to avoid unused import linting errors
-    const { validateAndGeocodeAddress } = await import('@/api/service/locationService');
-    const result = await validateAndGeocodeAddress({
-      streetNumber: form.value.address.streetNumber,
-      streetName: form.value.address.streetName,
-      cityName: form.value.address.cityName,
-      postalCode: form.value.address.postalCode,
-      countryId: form.value.address.countryId
-    });
-    
-    if (result.success) {
-      const data = result.data;
-      addressValidation.value.fullAddress = {
-        isValid: data.isValid,
-        message: data.isValid ? 
-          `Address validated with ${data.confidence} confidence` : 
-          (data.message || 'Address could not be verified'),
-        loading: false,
-        confidence: data.confidence,
-        coordinates: data.coordinates,
-        standardized: data.standardized,
-        matches: data.matches
-      };
-    } else {
-      addressValidation.value.fullAddress = {
-        isValid: false,
-        message: t('register.full_address_validation_error'),
-        loading: false,
-        confidence: null
-      };
-    }
-  } catch (error) {
-    console.error('Error validating full address:', error);
-    addressValidation.value.fullAddress = {
-      isValid: false,
-      message: t('register.full_address_validation_error'),
-      loading: false,
-      confidence: null
-    };
-  }
-};
-
 const onCountryChange = () => {
   validateField('countryId');
   
