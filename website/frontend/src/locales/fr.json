@@ -219,6 +219,8 @@
     "city_placeholder": "Entrez votre ville",
     "city_required": "La ville est requise",
     "city_valid": "Ville valide",
+    "city_valid_in_country": "Ville valide pour ce pays",
+    "city_not_found_in_country": "Cette ville n'a pas été trouvée dans le pays sélectionné",
     "city_validation_error": "Erreur lors de la validation de la ville",
     "validating_city": "Validation de la ville en cours...",
     "loading_cities": "Chargement des villes...",

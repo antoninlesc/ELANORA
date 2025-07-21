@@ -47,48 +47,6 @@ export const getCountries = async () => {
   }
 };
 
-/**
- * Get cities by country ID
- * @param {number} countryId - The ID of the country
- * @returns {Promise<Object>} Response with cities data
- */
-export const getCitiesByCountry = async (countryId) => {
-  try {
-    const response = await axiosClient.get(
-      `/location/cities?country_id=${countryId}`
-    );
-    return {
-      success: true,
-      data: response.data,
-    };
-  } catch (error) {
-    console.error('Error fetching cities:', error);
-    return {
-      success: false,
-      error: error.response?.data?.detail || error.message,
-    };
-  }
-};
-
-/**
- * Get all cities
- * @returns {Promise<Object>} Response with all cities data
- */
-export const getAllCities = async () => {
-  try {
-    const response = await axiosClient.get('/location/cities/all');
-    return {
-      success: true,
-      data: response.data,
-    };
-  } catch (error) {
-    console.error('Error fetching all cities:', error);
-    return {
-      success: false,
-      error: error.response?.data?.detail || error.message,
-    };
-  }
-};
 
 /**
  * Validate city name using OpenStreetMap Nominatim API
@@ -102,13 +60,14 @@ export const validateCity = async (cityName, countryCode) => {
   }
 
   try {
+    // Search for the city using Nominatim API
     const response = await axios.get('https://nominatim.openstreetmap.org/search', {
       params: {
-        q: cityName,
+        q: `${cityName}, ${countryCode}`,
         countrycodes: countryCode.toLowerCase(),
-        limit: 1,
+        limit: 10, // Get more results to filter better
         format: 'json',
-        featuretype: 'city'
+        addressdetails: 1 // Get detailed address info for better validation
       },
       headers: {
         'User-Agent': 'ELANORA-App/1.0'
@@ -116,19 +75,52 @@ export const validateCity = async (cityName, countryCode) => {
     });
 
     if (response.data && response.data.length > 0) {
-      const result = response.data[0];
-      return {
-        success: true,
-        data: {
-          isValid: true,
-          cityName: result.display_name.split(',')[0],
-          fullName: result.display_name,
-          coordinates: {
-            lat: parseFloat(result.lat),
-            lon: parseFloat(result.lon)
-          }
+      // Filter results to ensure the city actually belongs to the specified country
+      const validResults = response.data.filter(result => {
+        const address = result.address;
+        if (!address) return false;
+        
+        // Check if the result is actually in the specified country
+        const resultCountryCode = address.country_code?.toUpperCase();
+        if (resultCountryCode !== countryCode.toUpperCase()) {
+          return false;
         }
-      };
+        
+        // Check if it's actually a city/town/village
+        const isCity = address.city || address.town || address.village || address.municipality;
+        if (!isCity) return false;
+        
+        // Check if the city name matches (case insensitive)
+        const resultCityName = address.city || address.town || address.village || address.municipality;
+        return resultCityName && resultCityName.toLowerCase() === cityName.toLowerCase();
+      });
+
+      if (validResults.length > 0) {
+        const bestResult = validResults[0];
+        const address = bestResult.address;
+        const resultCityName = address.city || address.town || address.village || address.municipality;
+        
+        return {
+          success: true,
+          data: {
+            isValid: true,
+            cityName: resultCityName,
+            fullName: bestResult.display_name,
+            coordinates: {
+              lat: parseFloat(bestResult.lat),
+              lon: parseFloat(bestResult.lon)
+            }
+          }
+        };
+      } else {
+        return {
+          success: true,
+          data: {
+            isValid: false,
+            message: 'City not found in the specified country'
+          }
+        };
+      }
     } else {
       return {
         success: true,

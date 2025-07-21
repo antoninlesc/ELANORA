@@ -227,6 +227,8 @@
     "city_placeholder": "Enter your city",
     "city_required": "City is required",
     "city_valid": "City is valid",
+    "city_valid_in_country": "City is valid for this country",
+    "city_not_found_in_country": "This city was not found in the selected country",
     "city_validation_error": "Error validating city",
     "validating_city": "Validating city...",
     "loading_cities": "Loading cities...",
