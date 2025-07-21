@@ -6,10 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
 from app.model.user import User, UserRole
-from app.schema.requests.invitation import (
-    InvitationSendRequest,
-    InvitationGenerateCodeRequest,
-)
+from app.schema.requests.invitation import InvitationSendRequest
 from app.schema.responses.invitation import (
     InvitationListResponse,
     InvitationSendResponse,
@@ -37,28 +34,6 @@ async def send_invitation(
 
     invitation_service = InvitationService()
     return await invitation_service.send_invitation(
-        db=db,
-        sender_id=user.user_id,
-        request=request,
-    )
-
-
-@router.post("/generate-code", response_model=InvitationSendResponse)
-async def generate_invitation_code(
-    request: InvitationGenerateCodeRequest,
-    user: User = get_user_dep,
-    db: AsyncSession = get_db_dep,
-) -> InvitationSendResponse:
-    """Generate an invitation code without sending email (Admin only)."""
-    # Check if user is admin
-    if user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can generate invitation codes",
-        )
-
-    invitation_service = InvitationService()
-    return await invitation_service.generate_invitation_code(
         db=db,
         sender_id=user.user_id,
         request=request,

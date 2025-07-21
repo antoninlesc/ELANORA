@@ -209,8 +209,8 @@ const sendProjectInvitation = async () => {
       message: form.value.message,
       language: form.value.language,
       expires_in_days: 7,
-      project_permission: 'write',  // Utiliser 'write' au lieu de 'READ_WRITE'
-      send_email: true  // Explicitement indiquer qu'on veut envoyer un email
+      project_permission: 'read',
+      send_email: true
     };
 
     const response = await sendInvitationAPI(invitationData);
@@ -236,11 +236,10 @@ const generateInvitationCode = async () => {
   generating.value = true;
   
   try {
-    // Utiliser l'endpoint spécialisé pour générer un code sans email
     const invitationData = {
       project_name: projectName.value,
       expires_in_days: 7,
-      project_permission: 'write'  // Utiliser 'write' au lieu de 'READ_WRITE'
+      project_permission: 'read',
     };
 
     const response = await generateInvitationCodeAPI(invitationData);

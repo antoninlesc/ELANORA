@@ -20,14 +20,6 @@ class InvitationSendRequest(CustomBaseModel):
     )
 
 
-class InvitationGenerateCodeRequest(CustomBaseModel):
-    """Schema for generating an invitation code without email."""
-
-    project_name: str
-    project_permission: ProjectPermission = ProjectPermission.READ
-    expires_in_days: int = 7
-
-
 class InvitationAcceptRequest(CustomBaseModel):
     """Schema for accepting an invitation during registration."""
 

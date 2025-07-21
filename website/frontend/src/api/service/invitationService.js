@@ -31,7 +31,11 @@ export async function sendInvitation(invitationData) {
  * @returns {Promise<import('axios').AxiosResponse>}
  */
 export async function generateInvitationCode(invitationData) {
-  return await axiosInstance.post('/invitation/generate-code', invitationData);
+  // Generate an invitation code without sending email
+  return await axiosInstance.post('/invitation/send', {
+    ...invitationData,
+    send_email: false
+  });
 }
 
 /**

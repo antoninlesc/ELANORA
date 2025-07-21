@@ -17,10 +17,7 @@ from app.crud.project import get_project_by_id, add_user_to_project, get_project
 from app.model.invitation import Invitation
 from app.model.enums import InvitationStatus, ProjectPermission
 from app.service.email import EmailService
-from app.schema.requests.invitation import (
-    InvitationSendRequest,
-    InvitationGenerateCodeRequest,
-)
+from app.schema.requests.invitation import InvitationSendRequest
 from app.schema.responses.invitation import (
     InvitationListResponse,
     InvitationResponse,
@@ -148,66 +145,6 @@ class InvitationService:
                     "receiver_email": str(request.receiver_email)
                     if request.receiver_email
                     else "",
-                    "error": str(e),
-                },
-                exc_info=True,
-            )
-            return InvitationSendResponse(
-                success=False, message="Internal server error"
-            )
-
-    async def generate_invitation_code(
-        self,
-        db: AsyncSession,
-        sender_id: int,
-        request: InvitationGenerateCodeRequest,
-    ) -> InvitationSendResponse:
-        """Generate an invitation code without sending email."""
-        try:
-            # Get sender information
-            sender = await get_user_by_id(db, sender_id)
-            if not sender:
-                return InvitationSendResponse(success=False, message="Sender not found")
-
-            # Get project information
-            project = await get_project_by_name(db, request.project_name)
-            if not project:
-                return InvitationSendResponse(
-                    success=False, message="Project not found"
-                )
-
-            # Create invitation in database without email
-            invitation, raw_code = await create_invitation(
-                db=db,
-                sender_id=sender_id,
-                receiver_email="",  # Empty email for code-only invitations
-                project_id=project.project_id,
-                project_permission=request.project_permission,
-                expires_in_days=request.expires_in_days,
-            )
-
-            logger.info(
-                "Invitation code generated successfully",
-                extra={
-                    "sender_id": sender_id,
-                    "invitation_id": invitation.invitation_id,
-                    "project_id": project.project_id,
-                },
-            )
-
-            return InvitationSendResponse(
-                success=True,
-                message="Invitation code generated successfully",
-                invitation_id=invitation.invitation_id,
-                invitation_code=raw_code,
-            )
-
-        except Exception as e:
-            logger.error(
-                "Failed to generate invitation code",
-                extra={
-                    "sender_id": sender_id,
-                    "project_name": request.project_name,
                     "error": str(e),
                 },
                 exc_info=True,
