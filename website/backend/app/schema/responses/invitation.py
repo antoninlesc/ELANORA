@@ -27,6 +27,7 @@ class InvitationSendResponse(CustomBaseModel):
     success: bool
     message: str
     invitation_id: int | None = None
+    invitation_code: str | None = None
 
 
 class InvitationListResponse(CustomBaseModel):

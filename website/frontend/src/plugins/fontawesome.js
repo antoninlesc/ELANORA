@@ -5,9 +5,10 @@ import {
   faFolder,
   faFolderOpen,
   faFile,
+  faShare,
 } from '@fortawesome/free-solid-svg-icons';
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons';
 
-library.add(faTrash, faFolder, faFolderOpen, faFile, faPenToSquare);
+library.add(faTrash, faFolder, faFolderOpen, faFile, faShare, faPenToSquare);
 
 export default FontAwesomeIcon;

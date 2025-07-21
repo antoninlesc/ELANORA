@@ -10,9 +10,12 @@ import axiosInstance from '@api/apiClient.js';
  * Send an invitation to a specific project.
  * @param {Object} invitationData
  * @param {string} invitationData.receiver_email
- * @param {number} invitationData.project_id
+ * @param {string} invitationData.project_name
  * @param {string} invitationData.message
  * @param {number} invitationData.expires_in_days
+ * @param {string} invitationData.project_permission
+ * @param {string} invitationData.language
+ * @param {boolean} invitationData.send_email
  * @returns {Promise<import('axios').AxiosResponse>}
  */
 export async function sendInvitation(invitationData) {
@@ -20,12 +23,24 @@ export async function sendInvitation(invitationData) {
 }
 
 /**
- * Validate an invitation code.
- * @param {string} invitationId
+ * Generate an invitation code without sending email.
+ * @param {Object} invitationData
+ * @param {string} invitationData.project_name
+ * @param {string} invitationData.project_permission
+ * @param {number} invitationData.expires_in_days
  * @returns {Promise<import('axios').AxiosResponse>}
  */
-export async function validateInvitation(invitationId) {
-  return await axiosInstance.get(`/invitation/validate/${invitationId}`);
+export async function generateInvitationCode(invitationData) {
+  return await axiosInstance.post('/invitation/generate-code', invitationData);
+}
+
+/**
+ * Validate an invitation code.
+ * @param {string} invitationCode
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function validateInvitation(invitationCode) {
+  return await axiosInstance.get(`/invitation/validate/${invitationCode}`);
 }
 
 /**

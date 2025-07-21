@@ -285,7 +285,29 @@
     "invalid_email": "Please enter a valid email address"
   },
   "project": {
-    "load_error": "Failed to load projects"
+    "load_error": "Failed to load projects",
+    "share": {
+      "title": "Share project \"{projectName}\"",
+      "send_by_email": "Send by email",
+      "get_code": "Get code",
+      "email_label": "Email address",
+      "email_placeholder": "Enter recipient's email",
+      "email_required": "Email is required",
+      "message_label": "Personal message (optional)",
+      "message_placeholder": "Add a personal message...",
+      "language_label": "Invitation language",
+      "send_invitation": "Send invitation",
+      "sending": "Sending...",
+      "invitation_sent_success": "Invitation sent successfully to {email}",
+      "invitation_send_error": "Error sending invitation",
+      "generate_code_info": "Generate an invitation code that you can share manually",
+      "generate_code": "Generate code",
+      "generating": "Generating...",
+      "code_ready_info": "Invitation code ready to share:",
+      "code_instructions": "Share this code with the person you want to invite. They can use it to join the project.",
+      "generate_new_code": "Generate new code",
+      "code_generation_error": "Error generating code"
+    }
   },
   "emailVerification": {
     "title": "Email Verification",

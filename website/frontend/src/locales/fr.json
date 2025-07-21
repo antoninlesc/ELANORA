@@ -272,7 +272,29 @@
     "invalid_email": "Veuillez saisir une adresse email valide"
   },
   "project": {
-    "load_error": "Échec du chargement des projets"
+    "load_error": "Échec du chargement des projets",
+    "share": {
+      "title": "Partager le projet \"{projectName}\"",
+      "send_by_email": "Envoyer par email",
+      "get_code": "Obtenir un code",
+      "email_label": "Adresse email",
+      "email_placeholder": "Entrez l'email du destinataire",
+      "email_required": "L'email est requis",
+      "message_label": "Message personnel (optionnel)",
+      "message_placeholder": "Ajoutez un message d'accompagnement...",
+      "language_label": "Langue de l'invitation",
+      "send_invitation": "Envoyer l'invitation",
+      "sending": "Envoi en cours...",
+      "invitation_sent_success": "Invitation envoyée avec succès à {email}",
+      "invitation_send_error": "Erreur lors de l'envoi de l'invitation",
+      "generate_code_info": "Générez un code d'invitation que vous pouvez partager manuellement",
+      "generate_code": "Générer un code",
+      "generating": "Génération...",
+      "code_ready_info": "Code d'invitation prêt à partager :",
+      "code_instructions": "Partagez ce code avec la personne que vous voulez inviter. Elle pourra l'utiliser pour rejoindre le projet.",
+      "generate_new_code": "Générer un nouveau code",
+      "code_generation_error": "Erreur lors de la génération du code"
+    }
   },
   "emailVerification": {
     "title": "Vérification d'email",

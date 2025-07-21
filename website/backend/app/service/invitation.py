@@ -17,7 +17,10 @@ from app.crud.project import get_project_by_id, add_user_to_project, get_project
 from app.model.invitation import Invitation
 from app.model.enums import InvitationStatus, ProjectPermission
 from app.service.email import EmailService
-from app.schema.requests.invitation import InvitationSendRequest
+from app.schema.requests.invitation import (
+    InvitationSendRequest,
+    InvitationGenerateCodeRequest,
+)
 from app.schema.responses.invitation import (
     InvitationListResponse,
     InvitationResponse,
@@ -41,49 +44,74 @@ class InvitationService:
         sender_id: int,
         request: InvitationSendRequest,
     ) -> InvitationSendResponse:
-        """Send an invitation email to a user."""
+        """Send an invitation email to a user or generate code only."""
         try:
             # Get sender information
             sender = await get_user_by_id(db, sender_id)
             if not sender:
                 return InvitationSendResponse(success=False, message="Sender not found")
 
-            # Get project information (now required)
+            # Get project information
             project = await get_project_by_name(db, request.project_name)
             if not project:
                 return InvitationSendResponse(
                     success=False, message="Project not found"
                 )
-            project_name = project.project_name
 
-            # Check for existing invitations
-            existing = await get_pending_invitations_by_email(
-                db, str(request.receiver_email)
-            )
-            if existing:
+            # For email invitations, check receiver_email is provided
+            if request.send_email and not request.receiver_email:
                 return InvitationSendResponse(
-                    success=False,
-                    message="An active invitation already exists for this email.",
+                    success=False, message="Email is required when send_email is True"
                 )
+
+            # Set receiver_email to empty string if not sending email
+            receiver_email = (
+                str(request.receiver_email) if request.receiver_email else ""
+            )
+
+            # Check for existing invitations only if sending by email
+            if request.send_email and receiver_email:
+                existing = await get_pending_invitations_by_email(db, receiver_email)
+                if existing:
+                    return InvitationSendResponse(
+                        success=False,
+                        message="An active invitation already exists for this email.",
+                    )
 
             # Create invitation in database
             invitation, raw_code = await create_invitation(
                 db=db,
                 sender_id=sender_id,
-                receiver_email=str(request.receiver_email),
-                project_id=project.project_id,  # Utiliser l'ID du projet trouvé
+                receiver_email=receiver_email,
+                project_id=project.project_id,
                 project_permission=request.project_permission,
                 expires_in_days=request.expires_in_days,
             )
 
-            language = request.language or "en"  # Default to English if not provided
+            # If not sending email, just return the code
+            if not request.send_email:
+                logger.info(
+                    "Invitation code generated successfully",
+                    extra={
+                        "sender_id": sender_id,
+                        "invitation_id": invitation.invitation_id,
+                        "project_id": project.project_id,
+                    },
+                )
+                return InvitationSendResponse(
+                    success=True,
+                    message="Invitation code generated successfully",
+                    invitation_id=invitation.invitation_id,
+                    invitation_code=raw_code,
+                )
 
             # Send invitation email
+            language = request.language or "en"
             email_sent = await self.email_service.send_invitation_email(
-                email=str(request.receiver_email),
-                invitation_code=raw_code,  # Now the parameter name is clear
+                email=receiver_email,
+                invitation_code=raw_code,
                 sender_name=f"{sender.first_name} {sender.last_name}",
-                project_name=project_name,
+                project_name=project.project_name,
                 custom_message=request.message,
                 language=language,
             )
@@ -93,19 +121,23 @@ class InvitationService:
                     "Invitation sent successfully",
                     extra={
                         "sender_id": sender_id,
-                        "receiver_email": str(request.receiver_email),
+                        "receiver_email": receiver_email,
                         "invitation_id": invitation.invitation_id,
-                        "project_id": project.project_id,  # Utiliser l'ID du projet trouvé
+                        "project_id": project.project_id,
                     },
                 )
                 return InvitationSendResponse(
                     success=True,
                     message="Invitation sent successfully",
                     invitation_id=invitation.invitation_id,
+                    invitation_code=raw_code,
                 )
             else:
                 return InvitationSendResponse(
-                    success=False, message="Failed to send invitation email"
+                    success=False,
+                    message="Failed to send invitation email",
+                    invitation_id=invitation.invitation_id,
+                    invitation_code=raw_code,
                 )
 
         except Exception as e:
@@ -113,7 +145,69 @@ class InvitationService:
                 "Failed to send invitation",
                 extra={
                     "sender_id": sender_id,
-                    "receiver_email": str(request.receiver_email),
+                    "receiver_email": str(request.receiver_email)
+                    if request.receiver_email
+                    else "",
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            return InvitationSendResponse(
+                success=False, message="Internal server error"
+            )
+
+    async def generate_invitation_code(
+        self,
+        db: AsyncSession,
+        sender_id: int,
+        request: InvitationGenerateCodeRequest,
+    ) -> InvitationSendResponse:
+        """Generate an invitation code without sending email."""
+        try:
+            # Get sender information
+            sender = await get_user_by_id(db, sender_id)
+            if not sender:
+                return InvitationSendResponse(success=False, message="Sender not found")
+
+            # Get project information
+            project = await get_project_by_name(db, request.project_name)
+            if not project:
+                return InvitationSendResponse(
+                    success=False, message="Project not found"
+                )
+
+            # Create invitation in database without email
+            invitation, raw_code = await create_invitation(
+                db=db,
+                sender_id=sender_id,
+                receiver_email="",  # Empty email for code-only invitations
+                project_id=project.project_id,
+                project_permission=request.project_permission,
+                expires_in_days=request.expires_in_days,
+            )
+
+            logger.info(
+                "Invitation code generated successfully",
+                extra={
+                    "sender_id": sender_id,
+                    "invitation_id": invitation.invitation_id,
+                    "project_id": project.project_id,
+                },
+            )
+
+            return InvitationSendResponse(
+                success=True,
+                message="Invitation code generated successfully",
+                invitation_id=invitation.invitation_id,
+                invitation_code=raw_code,
+            )
+
+        except Exception as e:
+            logger.error(
+                "Failed to generate invitation code",
+                extra={
+                    "sender_id": sender_id,
+                    "project_name": request.project_name,
                     "error": str(e),
                 },
                 exc_info=True,
