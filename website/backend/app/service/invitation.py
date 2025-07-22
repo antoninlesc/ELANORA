@@ -12,7 +12,7 @@ from app.crud.invitation import (
     get_pending_invitations_by_email,
     update_invitation_status,
 )
-from app.crud.user import get_user_by_id
+from app.crud.user import get_user_by_id, get_user_by_username_or_email
 from app.crud.project import get_project_by_id, add_user_to_project, get_project_by_name
 from app.model.invitation import Invitation
 from app.model.enums import InvitationStatus, ProjectPermission
@@ -158,7 +158,7 @@ class InvitationService:
         db: AsyncSession,
         invitation_code: str,
     ) -> InvitationValidationResponse:
-        """Validate an invitation code."""
+        """Validate an invitation code and auto-accept for existing users."""
         try:
             # Find invitation by code
             invitation = await get_invitation_by_code(db, invitation_code)
@@ -168,13 +168,80 @@ class InvitationService:
                     valid=False, message="Invalid invitation code"
                 )
 
-            # Convert to response format
+            # Check if invitation is already accepted
+            if invitation.status == InvitationStatus.ACCEPTED:
+                return InvitationValidationResponse(
+                    valid=False, message="This invitation has already been accepted"
+                )
+
+            # Check if invitation is expired or rejected
+            if invitation.status in [
+                InvitationStatus.EXPIRED,
+                InvitationStatus.REJECTED,
+            ]:
+                return InvitationValidationResponse(
+                    valid=False, message="This invitation is no longer valid"
+                )
+
+            # Check if the invitation email corresponds to an existing user
+            if invitation.receiver_email:
+                existing_user = await get_user_by_username_or_email(
+                    db, invitation.receiver_email
+                )
+
+                if existing_user:
+                    # Auto-accept invitation for existing user
+                    logger.info(
+                        "Auto-accepting invitation for existing user",
+                        extra={
+                            "invitation_id": invitation.invitation_id,
+                            "user_id": existing_user.user_id,
+                            "email": invitation.receiver_email,
+                        },
+                    )
+
+                    # Accept the invitation
+                    success = await self.accept_invitation(
+                        db=db,
+                        invitation_id=invitation.invitation_id,
+                        user_id=existing_user.user_id,
+                    )
+
+                    if success:
+                        # Convert to response format
+                        invitation_response = await self._convert_to_response(
+                            db, invitation
+                        )
+
+                        return InvitationValidationResponse(
+                            valid=True,
+                            invitation=invitation_response,
+                            message="Invitation automatically accepted for existing user",
+                            auto_accepted=True,
+                            user_exists=True,
+                        )
+                    else:
+                        logger.error(
+                            "Failed to auto-accept invitation",
+                            extra={
+                                "invitation_id": invitation.invitation_id,
+                                "user_id": existing_user.user_id,
+                            },
+                        )
+                        return InvitationValidationResponse(
+                            valid=False,
+                            message="Failed to accept invitation for existing user",
+                        )
+
+            # Convert to response format for new user registration
             invitation_response = await self._convert_to_response(db, invitation)
 
             return InvitationValidationResponse(
                 valid=True,
                 invitation=invitation_response,
                 message="Invitation is valid",
+                auto_accepted=False,
+                user_exists=False,
             )
 
         except Exception as e:

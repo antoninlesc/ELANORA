@@ -1430,6 +1430,19 @@ const validateInvitationCode = async () => {
   try {
     const response = await validateInvitation(invitationCode.value);
     if (response.data.valid) {
+      // Check if invitation was auto-accepted for existing user
+      if (response.data.auto_accepted && response.data.user_exists) {
+        eventMessageStore.addMessage(
+          t('register.invitation_auto_accepted'), 
+          'success'
+        );
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+          router.push({ name: 'LoginPage' });
+        }, 2000);
+        return;
+      }
+
       invitationValid.value = true;
       invitationInfo.value = response.data.invitation;
 

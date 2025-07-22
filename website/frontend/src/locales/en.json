@@ -166,6 +166,7 @@
     "invitation_code_required": "Invitation code is required",
     "validating_invitation": "Validating invitation...",
     "invitation_valid": "Invitation is valid!",
+    "invitation_auto_accepted": "Your account has been added to the project! You will be redirected to the login page.",
     "invitation_invalid": "Invalid or expired invitation code",
     "invitation_validation_error": "Error validating invitation",
     "first_name_label": "First Name",

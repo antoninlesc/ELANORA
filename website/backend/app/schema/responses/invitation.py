@@ -43,3 +43,5 @@ class InvitationValidationResponse(CustomBaseModel):
     valid: bool
     invitation: InvitationResponse | None = None
     message: str
+    auto_accepted: bool = False
+    user_exists: bool = False
