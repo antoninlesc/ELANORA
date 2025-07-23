@@ -13,7 +13,12 @@ from app.crud.invitation import (
     update_invitation_status,
 )
 from app.crud.user import get_user_by_id, get_user_by_username_or_email
-from app.crud.project import get_project_by_id, add_user_to_project, get_project_by_name
+from app.crud.project import (
+    get_project_by_id,
+    add_user_to_project,
+    get_project_by_name,
+    user_in_project,
+)
 from app.model.invitation import Invitation
 from app.model.enums import InvitationStatus, ProjectPermission
 from app.service.email import EmailService
@@ -190,6 +195,39 @@ class InvitationService:
                 )
 
                 if existing_user:
+                    # Check if user is already in the project before auto-accepting
+
+                    existing_membership = await user_in_project(
+                        db, existing_user.user_id, invitation.project_id
+                    )
+
+                    if existing_membership:
+                        # User is already in the project
+                        logger.info(
+                            "User is already a member of the project",
+                            extra={
+                                "invitation_id": invitation.invitation_id,
+                                "user_id": existing_user.user_id,
+                                "email": invitation.receiver_email,
+                                "project_id": invitation.project_id,
+                            },
+                        )
+
+                        # Mark invitation as accepted anyway
+                        await update_invitation_status(
+                            db=db,
+                            invitation_id=invitation.invitation_id,
+                            status=InvitationStatus.ACCEPTED,
+                            receiver_id=existing_user.user_id,
+                        )
+
+                        return InvitationValidationResponse(
+                            valid=False,
+                            message="You are already a member of this project",
+                            auto_accepted=True,
+                            user_exists=True,
+                        )
+
                     # Auto-accept invitation for existing user
                     logger.info(
                         "Auto-accepting invitation for existing user",
@@ -300,6 +338,30 @@ class InvitationService:
                             "permission": invitation.project_permission,
                         },
                     )
+                except ValueError as ve:
+                    # Handle case where user is already in the project
+                    if "already a member" in str(ve):
+                        logger.info(
+                            "User is already a member of the project",
+                            extra={
+                                "invitation_id": invitation_id,
+                                "user_id": user_id,
+                                "project_id": invitation.project_id,
+                            },
+                        )
+                        # We still consider this a success since the goal is achieved
+                        return True
+                    else:
+                        logger.error(
+                            "Failed to add user to project - ValueError",
+                            extra={
+                                "invitation_id": invitation_id,
+                                "user_id": user_id,
+                                "project_id": invitation.project_id,
+                                "error": str(ve),
+                            },
+                        )
+                        return False
                 except Exception as project_error:
                     logger.error(
                         "Failed to add user to project",
