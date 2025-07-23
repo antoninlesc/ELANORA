@@ -27,10 +27,10 @@
                 <!-- Send by Email Tab -->
         <div v-if="activeTab === 'email'" class="tab-content">
           <form @submit.prevent="sendProjectInvitation" class="invitation-form">
-            <div class="form-group">
+            <div class="share-form-group">
               <label for="share-email" class="form-label">
                 {{ t('project.share.email_label') }}
-                <span class="required">*</span>
+                <span class="share-required">*</span>
               </label>
               <input
                 id="share-email"
@@ -41,27 +41,27 @@
                 :placeholder="t('project.share.email_placeholder')"
                 required
               />
-              <div v-if="emailError" class="error-message">{{ emailError }}</div>
+              <div v-if="emailError" class="share-error-message">{{ emailError }}</div>
             </div>
 
-            <div class="form-group">
+            <div class="share-form-group">
               <label for="share-message" class="form-label">
                 {{ t('project.share.message_label') }}
               </label>
               <textarea
                 id="share-message"
                 v-model="form.message"
-                class="form-textarea"
+                class="form-textarea share-form-textarea"
                 :placeholder="t('project.share.message_placeholder')"
                 rows="3"
               ></textarea>
             </div>
 
-            <div class="form-group">
+            <div class="share-form-group">
               <label for="share-language" class="form-label">
                 {{ t('project.share.language_label') }}
               </label>
-              <select id="share-language" v-model="form.language" class="form-select">
+              <select id="share-language" v-model="form.language" class="share-form-select">
                 <option value="en">English</option>
                 <option value="fr">Français</option>
               </select>
@@ -117,12 +117,12 @@
         </div>
 
         <!-- Success Message -->
-        <div v-if="successMessage" class="success-message">
+        <div v-if="successMessage" class="share-success-message">
           {{ successMessage }}
         </div>
 
         <!-- Error Message -->
-        <div v-if="errorMessage" class="error-message">
+        <div v-if="errorMessage" class="share-error-message">
           {{ errorMessage }}
         </div>
       </div>
@@ -134,6 +134,7 @@
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { sendInvitation as sendInvitationAPI, generateInvitationCode as generateInvitationCodeAPI } from '@/api/service/invitationService';
+import '@/assets/css/ProjectShareModal.css';
 
 const props = defineProps({
   show: {
@@ -283,286 +284,3 @@ const copyToClipboard = async () => {
   }
 };
 </script>
-
-<style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.share-modal {
-  background: white;
-  border-radius: 12px;
-  padding: 0;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #6b7280;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-btn:hover {
-  color: #374151;
-  background: #f3f4f6;
-  border-radius: 6px;
-}
-
-.share-options {
-  padding: 24px;
-}
-
-.share-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 12px 16px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 500;
-  color: #6b7280;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-}
-
-.tab-btn.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
-}
-
-.tab-btn:hover:not(.active) {
-  color: #374151;
-  background: #f9fafb;
-}
-
-.tab-icon {
-  font-size: 18px;
-}
-
-.tab-content {
-  animation: fadeIn 0.2s ease-in;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-  color: #374151;
-}
-
-.required {
-  color: #ef4444;
-}
-
-.form-input,
-.form-textarea,
-.form-select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-input:focus,
-.form-textarea:focus,
-.form-select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-input.error {
-  border-color: #ef4444;
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.btn-primary,
-.btn-secondary {
-  padding: 12px 24px;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.btn-primary:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
-}
-
-.send-btn {
-  width: 100%;
-  margin-top: 8px;
-}
-
-.generate-code-section,
-.code-display-section {
-  text-align: center;
-}
-
-.info-message {
-  margin-bottom: 16px;
-  color: #6b7280;
-  line-height: 1.5;
-}
-
-.generate-btn,
-.refresh-btn {
-  margin-top: 8px;
-}
-
-.code-container {
-  display: flex;
-  gap: 8px;
-  margin: 16px 0;
-  align-items: center;
-}
-
-.code-input {
-  flex: 1;
-  padding: 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 6px;
-  background: #f9fafb;
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
-  text-align: center;
-  font-size: 16px;
-  color: #1f2937;
-}
-
-.copy-btn {
-  padding: 12px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 18px;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.copy-btn:hover {
-  background: #2563eb;
-}
-
-.copy-btn.copied {
-  background: #10b981;
-}
-
-.code-instructions {
-  margin-top: 12px;
-  font-size: 14px;
-  color: #6b7280;
-  line-height: 1.4;
-}
-
-.success-message {
-  margin-top: 16px;
-  padding: 12px;
-  background: #dcfce7;
-  border: 1px solid #bbf7d0;
-  border-radius: 6px;
-  color: #166534;
-  font-weight: 500;
-}
-
-.error-message {
-  margin-top: 8px;
-  padding: 12px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 6px;
-  color: #dc2626;
-  font-weight: 500;
-}
-</style>

@@ -1,4 +1,4 @@
-/* Couleurs et styles communs */
+/* Style.css - Global Styles for the Frontend Application */
 :root {
   --main-bg-gradient: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
   --primary-color: #2563eb;
@@ -19,7 +19,7 @@ body {
   background: var(--main-bg-gradient);
 }
 
-/* Utilitaires */
+
 .bg-main-gradient {
   background: var(--main-bg-gradient);
 }
@@ -30,7 +30,7 @@ body {
   background: var(--card-bg);
 }
 
-/* Formulaires globaux */
+
 .form-label {
   display: block;
   margin-bottom: 0.5rem;
