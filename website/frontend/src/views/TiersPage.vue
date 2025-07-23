@@ -21,7 +21,7 @@ import '@/assets/css/tiers.css';
 import { ref, onMounted, computed } from 'vue';
 import { useProjectStore } from '@/stores/project';
 import { fetchProjectTiers } from '@/api/service/tierService';
-import TierTree from '@/components/common/tierTree.vue';
+import TierTree from '@/components/common/TierTree.vue';
 
 const projectStore = useProjectStore();
 const currentProject = computed(() => projectStore.currentProject);
