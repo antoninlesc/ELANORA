@@ -1,14 +1,14 @@
 import pytest
 from sqlalchemy import select
 
-from app.db.database import get_db
+from app.dependency.database import get_db_dep
 from app.model.instance import Instance
 
 
 @pytest.mark.asyncio
 async def test_get_all_instances():
     """Test to verify instance fetching."""
-    async for session in get_db():
+    async for session in get_db_dep():
         try:
             result = await session.execute(select(Instance))
             instances = result.scalars().all()
@@ -30,7 +30,7 @@ async def test_get_all_instances():
 @pytest.mark.asyncio
 async def test_get_instance_by_id():
     """Test to fetch an instance by ID."""
-    async for session in get_db():
+    async for session in get_db_dep():
         try:
             result = await session.execute(
                 select(Instance).where(Instance.instance_id == 1)

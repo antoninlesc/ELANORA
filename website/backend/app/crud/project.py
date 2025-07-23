@@ -1,12 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.annotation import delete_unused_annotation_values
-from app.crud.associations import delete_project_associations
+from app.crud.association import delete_project_associations
 from app.crud.comment import delete_project_comments
 from app.crud.conflict import delete_project_conflicts
 from app.crud.elan_file import delete_elan_file, get_orphan_elan_files_by_project
 from app.crud.invitation import delete_project_invitations
 from app.crud.tier import delete_tiers_for_elan_file
-from app.model.associations import UserToProject
+from app.model.association import UserToProject
 from app.model.enums import ProjectPermission
 from app.model.project import Project
 from app.utils.database import DatabaseUtils
@@ -54,6 +54,13 @@ async def get_project_by_name(db: AsyncSession, project_name: str) -> Project | 
 
 async def get_project_by_id(db: AsyncSession, project_id: int) -> Project | None:
     return await DatabaseUtils.get_by_id(db, Project, "project_id", project_id)
+
+
+async def get_project_id_by_name(db: AsyncSession, project_name: str) -> int | None:
+    project = await get_project_by_name(db, project_name)
+    if project:
+        return project.project_id
+    return None
 
 
 async def delete_project_db(db: AsyncSession, project_name: str) -> None:

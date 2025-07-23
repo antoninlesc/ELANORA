@@ -41,7 +41,7 @@
       <div v-else class="project-page-list">
         <!-- Replace your project list loop with this -->
         <div
-          v-for="project in projects"
+          v-for="project in projectStore.projects"
           :key="project"
           :class="[
             'project-page-project-box',
@@ -251,6 +251,7 @@ async function fetchProjects() {
   try {
     const res = await gitService.listProjects();
     projects.value = res.projects;
+    projectStore.setProjects(res.projects);
   } finally {
     loading.value = false;
   }
