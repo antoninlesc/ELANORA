@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.model.address import Address
 from app.model.city import City
+from app.model.country import Country
 from app.schema.requests.user import AddressRequest
 
 
@@ -18,10 +19,27 @@ class AddressService:
         address_data: AddressRequest,
     ) -> Address:
         """Create a new address. If city_name is provided, create or get the city, then use its id."""
+        # First, find the country by its code, create if not found
+        country_stmt = select(Country).where(
+            Country.country_code == address_data.country_code
+        )
+        country_result = await db.execute(country_stmt)
+        country = country_result.scalar_one_or_none()
+
+        if not country:
+            # Create the country if it doesn't exist
+            country = Country(
+                country_code=address_data.country_code,
+                country_name=address_data.country_name,
+            )
+            db.add(country)
+            await db.flush()
+            await db.refresh(country)
+
         # Find or create city by normalized name and country (case-insensitive, strip)
         normalized_city_name = address_data.city_name.strip().lower()
         stmt = select(City).where(
-            (City.country_id == address_data.country_id)
+            (City.country_id == country.country_id)
             & (func.lower(func.trim(City.city_name)) == normalized_city_name)
         )
         result = await db.execute(stmt)
@@ -29,7 +47,7 @@ class AddressService:
         if not city:
             city = City(
                 city_name=address_data.city_name.strip(),
-                country_id=address_data.country_id,
+                country_id=country.country_id,
             )
             db.add(city)
             await db.flush()
@@ -88,17 +106,34 @@ class AddressService:
             Address: The updated address object.
 
         """
+        # First, find the country by its code, create if not found
+        country_stmt = select(Country).where(
+            Country.country_code == address_data.country_code
+        )
+        country_result = await db.execute(country_stmt)
+        country = country_result.scalar_one_or_none()
+
+        if not country:
+            # Create the country if it doesn't exist
+            country = Country(
+                country_code=address_data.country_code,
+                country_name=address_data.country_name,
+            )
+            db.add(country)
+            await db.flush()
+            await db.refresh(country)
+
         # Find or create city by name and country
         stmt = select(City).where(
             City.city_name == address_data.city_name.strip(),
-            City.country_id == address_data.country_id,
+            City.country_id == country.country_id,
         )
         result = await db.execute(stmt)
         city = result.scalar_one_or_none()
         if not city:
             city = City(
                 city_name=address_data.city_name.strip(),
-                country_id=address_data.country_id,
+                country_id=country.country_id,
             )
             db.add(city)
             await db.flush()

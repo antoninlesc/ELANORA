@@ -96,6 +96,14 @@ async def project_exists_by_name(db: AsyncSession, project_name: str) -> bool:
     return await DatabaseUtils.exists(db, Project, "project_name", project_name)
 
 
+async def user_in_project(
+    db: AsyncSession, user_id: int, project_id: int
+) -> UserToProject | None:
+    """Check if a user is already in a project."""
+    filters = {"user_id": user_id, "project_id": project_id}
+    return await DatabaseUtils.get_one_by_filter(db, UserToProject, filters)
+
+
 async def add_user_to_project(
     db: AsyncSession,
     user_id: int,
@@ -103,6 +111,20 @@ async def add_user_to_project(
     permission: ProjectPermission = ProjectPermission.READ,
 ) -> UserToProject:
     """Add a user to a project with specified permission."""
+    # Check if user is already in the project
+    existing_membership = await user_in_project(db, user_id, project_id)
+    if existing_membership:
+        logger.warning(
+            "User is already in project",
+            extra={
+                "user_id": user_id,
+                "project_id": project_id,
+                "existing_permission": existing_membership.permission,
+                "requested_permission": permission,
+            },
+        )
+        raise ValueError("User is already a member of this project")
+
     user_to_project = UserToProject(
         user_id=user_id,
         project_id=project_id,

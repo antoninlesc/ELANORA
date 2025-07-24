@@ -12,8 +12,13 @@ from app.crud.invitation import (
     get_pending_invitations_by_email,
     update_invitation_status,
 )
-from app.crud.user import get_user_by_id
-from app.crud.project import get_project_by_id, add_user_to_project, get_project_by_name
+from app.crud.user import get_user_by_id, get_user_by_username_or_email
+from app.crud.project import (
+    get_project_by_id,
+    add_user_to_project,
+    get_project_by_name,
+    user_in_project,
+)
 from app.model.invitation import Invitation
 from app.model.enums import InvitationStatus, ProjectPermission
 from app.service.email import EmailService
@@ -41,49 +46,74 @@ class InvitationService:
         sender_id: int,
         request: InvitationSendRequest,
     ) -> InvitationSendResponse:
-        """Send an invitation email to a user."""
+        """Send an invitation email to a user or generate code only."""
         try:
             # Get sender information
             sender = await get_user_by_id(db, sender_id)
             if not sender:
                 return InvitationSendResponse(success=False, message="Sender not found")
 
-            # Get project information (now required)
+            # Get project information
             project = await get_project_by_name(db, request.project_name)
             if not project:
                 return InvitationSendResponse(
                     success=False, message="Project not found"
                 )
-            project_name = project.project_name
 
-            # Check for existing invitations
-            existing = await get_pending_invitations_by_email(
-                db, str(request.receiver_email)
-            )
-            if existing:
+            # For email invitations, check receiver_email is provided
+            if request.send_email and not request.receiver_email:
                 return InvitationSendResponse(
-                    success=False,
-                    message="An active invitation already exists for this email.",
+                    success=False, message="Email is required when send_email is True"
                 )
+
+            # Set receiver_email to empty string if not sending email
+            receiver_email = (
+                str(request.receiver_email) if request.receiver_email else ""
+            )
+
+            # Check for existing invitations only if sending by email
+            if request.send_email and receiver_email:
+                existing = await get_pending_invitations_by_email(db, receiver_email)
+                if existing:
+                    return InvitationSendResponse(
+                        success=False,
+                        message="An active invitation already exists for this email.",
+                    )
 
             # Create invitation in database
             invitation, raw_code = await create_invitation(
                 db=db,
                 sender_id=sender_id,
-                receiver_email=str(request.receiver_email),
-                project_id=project.project_id,  # Utiliser l'ID du projet trouvé
+                receiver_email=receiver_email,
+                project_id=project.project_id,
                 project_permission=request.project_permission,
                 expires_in_days=request.expires_in_days,
             )
 
-            language = request.language or "en"  # Default to English if not provided
+            # If not sending email, just return the code
+            if not request.send_email:
+                logger.info(
+                    "Invitation code generated successfully",
+                    extra={
+                        "sender_id": sender_id,
+                        "invitation_id": invitation.invitation_id,
+                        "project_id": project.project_id,
+                    },
+                )
+                return InvitationSendResponse(
+                    success=True,
+                    message="Invitation code generated successfully",
+                    invitation_id=invitation.invitation_id,
+                    invitation_code=raw_code,
+                )
 
             # Send invitation email
+            language = request.language or "en"
             email_sent = await self.email_service.send_invitation_email(
-                email=str(request.receiver_email),
-                invitation_code=raw_code,  # Now the parameter name is clear
+                email=receiver_email,
+                invitation_code=raw_code,
                 sender_name=f"{sender.first_name} {sender.last_name}",
-                project_name=project_name,
+                project_name=project.project_name,
                 custom_message=request.message,
                 language=language,
             )
@@ -93,19 +123,23 @@ class InvitationService:
                     "Invitation sent successfully",
                     extra={
                         "sender_id": sender_id,
-                        "receiver_email": str(request.receiver_email),
+                        "receiver_email": receiver_email,
                         "invitation_id": invitation.invitation_id,
-                        "project_id": project.project_id,  # Utiliser l'ID du projet trouvé
+                        "project_id": project.project_id,
                     },
                 )
                 return InvitationSendResponse(
                     success=True,
                     message="Invitation sent successfully",
                     invitation_id=invitation.invitation_id,
+                    invitation_code=raw_code,
                 )
             else:
                 return InvitationSendResponse(
-                    success=False, message="Failed to send invitation email"
+                    success=False,
+                    message="Failed to send invitation email",
+                    invitation_id=invitation.invitation_id,
+                    invitation_code=raw_code,
                 )
 
         except Exception as e:
@@ -113,7 +147,9 @@ class InvitationService:
                 "Failed to send invitation",
                 extra={
                     "sender_id": sender_id,
-                    "receiver_email": str(request.receiver_email),
+                    "receiver_email": str(request.receiver_email)
+                    if request.receiver_email
+                    else "",
                     "error": str(e),
                 },
                 exc_info=True,
@@ -127,7 +163,7 @@ class InvitationService:
         db: AsyncSession,
         invitation_code: str,
     ) -> InvitationValidationResponse:
-        """Validate an invitation code."""
+        """Validate an invitation code and auto-accept for existing users."""
         try:
             # Find invitation by code
             invitation = await get_invitation_by_code(db, invitation_code)
@@ -137,13 +173,113 @@ class InvitationService:
                     valid=False, message="Invalid invitation code"
                 )
 
-            # Convert to response format
+            # Check if invitation is already accepted
+            if invitation.status == InvitationStatus.ACCEPTED:
+                return InvitationValidationResponse(
+                    valid=False, message="This invitation has already been accepted"
+                )
+
+            # Check if invitation is expired or rejected
+            if invitation.status in [
+                InvitationStatus.EXPIRED,
+                InvitationStatus.REJECTED,
+            ]:
+                return InvitationValidationResponse(
+                    valid=False, message="This invitation is no longer valid"
+                )
+
+            # Check if the invitation email corresponds to an existing user
+            if invitation.receiver_email:
+                existing_user = await get_user_by_username_or_email(
+                    db, invitation.receiver_email
+                )
+
+                if existing_user:
+                    # Check if user is already in the project before auto-accepting
+
+                    existing_membership = await user_in_project(
+                        db, existing_user.user_id, invitation.project_id
+                    )
+
+                    if existing_membership:
+                        # User is already in the project
+                        logger.info(
+                            "User is already a member of the project",
+                            extra={
+                                "invitation_id": invitation.invitation_id,
+                                "user_id": existing_user.user_id,
+                                "email": invitation.receiver_email,
+                                "project_id": invitation.project_id,
+                            },
+                        )
+
+                        # Mark invitation as accepted anyway
+                        await update_invitation_status(
+                            db=db,
+                            invitation_id=invitation.invitation_id,
+                            status=InvitationStatus.ACCEPTED,
+                            receiver_id=existing_user.user_id,
+                        )
+
+                        return InvitationValidationResponse(
+                            valid=False,
+                            message="You are already a member of this project",
+                            auto_accepted=True,
+                            user_exists=True,
+                        )
+
+                    # Auto-accept invitation for existing user
+                    logger.info(
+                        "Auto-accepting invitation for existing user",
+                        extra={
+                            "invitation_id": invitation.invitation_id,
+                            "user_id": existing_user.user_id,
+                            "email": invitation.receiver_email,
+                        },
+                    )
+
+                    # Accept the invitation
+                    success = await self.accept_invitation(
+                        db=db,
+                        invitation_id=invitation.invitation_id,
+                        user_id=existing_user.user_id,
+                    )
+
+                    if success:
+                        # Convert to response format
+                        invitation_response = await self._convert_to_response(
+                            db, invitation
+                        )
+
+                        return InvitationValidationResponse(
+                            valid=True,
+                            invitation=invitation_response,
+                            message="Invitation automatically accepted for existing user",
+                            auto_accepted=True,
+                            user_exists=True,
+                        )
+                    else:
+                        logger.error(
+                            "Failed to auto-accept invitation",
+                            extra={
+                                "invitation_id": invitation.invitation_id,
+                                "user_id": existing_user.user_id,
+                            },
+                        )
+                        return InvitationValidationResponse(
+                            valid=False,
+                            message="Failed to accept invitation for existing user",
+                        )
+
+            # Convert to response format for new user registration
             invitation_response = await self._convert_to_response(db, invitation)
 
             return InvitationValidationResponse(
                 valid=True,
                 invitation=invitation_response,
                 message="Invitation is valid",
+                auto_accepted=False,
+                user_exists=False,
             )
 
         except Exception as e:
@@ -202,6 +338,30 @@ class InvitationService:
                             "permission": invitation.project_permission,
                         },
                     )
+                except ValueError as ve:
+                    # Handle case where user is already in the project
+                    if "already a member" in str(ve):
+                        logger.info(
+                            "User is already a member of the project",
+                            extra={
+                                "invitation_id": invitation_id,
+                                "user_id": user_id,
+                                "project_id": invitation.project_id,
+                            },
+                        )
+                        # We still consider this a success since the goal is achieved
+                        return True
+                    else:
+                        logger.error(
+                            "Failed to add user to project - ValueError",
+                            extra={
+                                "invitation_id": invitation_id,
+                                "user_id": user_id,
+                                "project_id": invitation.project_id,
+                                "error": str(ve),
+                            },
+                        )
+                        return False
                 except Exception as project_error:
                     logger.error(
                         "Failed to add user to project",

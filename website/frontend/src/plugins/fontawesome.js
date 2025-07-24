@@ -5,6 +5,7 @@ import {
   faFolder,
   faFolderOpen,
   faFile,
+  faShare,
   faCircleUser,
   faDiagramProject,
 } from '@fortawesome/free-solid-svg-icons';
@@ -15,6 +16,7 @@ library.add(
   faFolder,
   faFolderOpen,
   faFile,
+  faShare,
   faPenToSquare,
   faCircleUser,
   faDiagramProject
