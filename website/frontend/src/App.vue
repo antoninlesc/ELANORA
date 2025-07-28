@@ -57,7 +57,7 @@ onMounted(async () => {
 
   // Fetch projects from backend and save to store
   try {
-    const res = await gitService.listProjects();
+    const res = await gitService.listUserProjects();
     if (res && res.projects) {
       projectStore.setProjects(res.projects);
       // Set the first project as current if none is set

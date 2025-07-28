@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependency.database import get_db_dep
 from app.dependency.elan_validation import validate_multiple_elan_files
-from app.dependency.user import get_admin_dep
+from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.user import User
 from app.schema.requests.git import (
     CommitRequest,
@@ -230,9 +230,20 @@ async def list_projects(
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
-    """List all project names for the current instance."""
+    """List all project names for the current instance (admin only)."""
     instance_id = 1
     project_names = await git_service.list_projects(db, instance_id)
+    return ProjectListResponse(projects=project_names)
+
+
+@router.get("/user-projects", response_model=ProjectListResponse)
+async def list_user_projects(
+    db: AsyncSession = get_db_dep,
+    user: User = get_user_dep,
+):
+    """List project names that the current user has access to."""
+    instance_id = 1
+    project_names = await git_service.list_user_projects(db, user.user_id, instance_id)
     return ProjectListResponse(projects=project_names)
 
 

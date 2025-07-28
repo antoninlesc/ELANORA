@@ -249,7 +249,7 @@ const isAdmin = computed(() => userStore.user?.role === 'admin');
 async function fetchProjects() {
   loading.value = true;
   try {
-    const res = await gitService.listProjects();
+    const res = await gitService.listUserProjects();
     projects.value = res.projects;
     projectStore.setProjects(res.projects);
   } finally {
