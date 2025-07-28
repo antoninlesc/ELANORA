@@ -49,6 +49,11 @@ from .invitation import Invitation
 
 # Project model (depends on instance)
 from .project import Project
+from .project_naming_standard import ProjectNamingStandard
+
+from .naming_component import NamingComponent
+
+from .file_type import FileType
 
 # Tier and annotation models
 from .tier import Tier
@@ -80,10 +85,13 @@ __all__ = [
     "ElanFileToMedia",
     "ElanFileToProject",
     "ElanFileToTier",
+    "FileType",
     "Instance",
     "Invitation",
     "InvitationStatus",
+    "NamingComponent",
     "Project",
+    "ProjectNamingStandard",
     "ProjectAnnotStandard",
     "ProjectPermission",
     "Tier",

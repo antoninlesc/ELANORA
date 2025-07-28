@@ -9,12 +9,13 @@ import RegisterPage from '@views/RegisterPage.vue';
 import ForgotPassword from '@views/ForgotPassword.vue';
 import ResetPassword from '@views/ResetPassword.vue';
 import EmailVerificationPage from '@views/EmailVerificationPage.vue';
-import HTTPStatus from '@views/HTTPStatus.vue';
+import HTTPStatusPage from '@views/HTTPStatusPage.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import UploadPage from '@views/UploadPage.vue';
 import ConflictsPage from '@views/ConflictsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import TiersPage from '@views/TiersPage.vue';
+import ProjectConfigurationPage from '@views/ProjectConfigurationPage.vue';
 
 // Define routes
 const routes = [
@@ -86,13 +87,19 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: '/projects/:projectId/configuration',
+        name: 'ProjectConfigurationPage',
+        component: ProjectConfigurationPage,
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'error/:statusCode',
-        name: 'HTTPStatus',
+        name: 'HTTPStatusPage',
         props: (route) => ({
           statusCode: String(route.params.statusCode),
           message: getErrorMessage(route.params.statusCode),
         }),
-        component: HTTPStatus,
+        component: HTTPStatusPage,
       },
       {
         // Catch-all to redirect to 404 page when no route matches
@@ -175,7 +182,7 @@ router.beforeEach(async (to, from, next) => {
 // Add afterEach to track last successful route for redirectTo
 router.afterEach((to, from) => {
   // Don't update redirectTo if navigating to or coming from the HTTPStatus error page
-  if (to.name !== 'HTTPStatus' && from.name !== 'HTTPStatus') {
+  if (to.name !== 'HTTPStatusPage' && from.name !== 'HTTPStatusPage') {
     localStorage.setItem('redirectTo', from.fullPath || '/');
   }
   // If user navigates from LoginPage to HomePage, update redirectAfterLogin to homepage

@@ -54,14 +54,21 @@
           }}</span>
           <div class="project-page-actions">
             <button
-              class="project-page-edit-btn"
+              class="project-page-action-btn project-page-edit-btn"
               title="Rename Project"
               @click.stop="openRenameDialog(project)"
             >
               <font-awesome-icon icon="fa-regular fa-pen-to-square" />
             </button>
             <button
-              class="project-page-delete-btn"
+              class="project-page-action-btn project-page-config-btn"
+              title="Configure Standards"
+              @click.stop="goToStandardsPage(project)"
+            >
+              <font-awesome-icon icon="fa-solid fa-gears" />
+            </button>
+            <button
+              class="project-page-action-btn project-page-delete-btn"
               title="Delete Project"
               @click.stop="deleteProject(project.project_name)"
             >
@@ -179,8 +186,10 @@ import { useProjectStore } from '@stores/project';
 import gitService from '@api/service/gitService';
 import FileTree from '@components/common/FileTree.vue';
 import UploadFolder from '@components/common/UploadFolder.vue';
+import { useRouter } from 'vue-router';
 
 const projectStore = useProjectStore();
+const router = useRouter();
 const projects = ref([]);
 const loading = ref(true);
 
@@ -395,6 +404,13 @@ onMounted(() => {
   fetchProjects();
   projectStore.loadCurrentProject();
 });
+
+function goToStandardsPage(project) {
+  router.push({
+    name: 'ProjectConfigurationPage',
+    params: { projectId: project.project_id },
+  });
+}
 </script>
 
-<style src="@/assets/css/project-page.css"></style>
+<style src="@/assets/css/projects-page.css"></style>

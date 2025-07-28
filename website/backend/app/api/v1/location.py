@@ -7,7 +7,7 @@ from app.dependency.database import get_db_dep
 from app.schema.responses.location import CityResponse, CountryResponse
 from app.service.location import LocationService
 
-router = APIRouter(tags=["Location"])
+router = APIRouter()
 
 
 @router.get("/countries", response_model=list[CountryResponse])

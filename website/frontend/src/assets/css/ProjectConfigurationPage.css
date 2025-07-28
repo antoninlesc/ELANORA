@@ -1,0 +1,65 @@
+.project-standards-page {
+  background: #f7fafd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.project-standards-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 32px;
+  color: #2a2a2a;
+  text-align: center;
+}
+
+.settings-section {
+  width: 100%;
+  max-width: 1000px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 24px #0001;
+  margin-bottom: 32px;
+  overflow: hidden;
+}
+
+.settings-section-header {
+  padding: 22px 32px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  background: #e9eef5;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.settings-section-header.open,
+.settings-section-header:hover {
+  background: #dbe7fa;
+}
+
+.settings-section-header span.open {
+  transform: rotate(180deg);
+  transition: transform 0.2s;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-section-body {
+  padding: 28px 32px 32px;
+  background: #fff;
+  animation: fade-in 0.2s;
+}
