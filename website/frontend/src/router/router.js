@@ -14,6 +14,7 @@ import UploadPage from '@views/UploadPage.vue';
 import ConflictsPage from '@views/ConflictsPage.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
+import InvitationResponsePage from '@views/InvitationResponsePage.vue';
 import TiersPage from '@views/TiersPage.vue';
 
 // Define routes
@@ -43,6 +44,14 @@ const routes = [
     path: '/verify-email',
     name: 'EmailVerificationPage',
     component: EmailVerificationPage,
+  },
+  // Invitation response routes (public, for email links)
+  {
+    path: '/invitation/:action/:invitationId',
+    name: 'InvitationResponse',
+    component: InvitationResponsePage,
+    props: true,
+    meta: { requiresAuth: true },
   },
   // Authenticated routes with layout
   {

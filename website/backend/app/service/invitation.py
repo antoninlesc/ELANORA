@@ -1,5 +1,7 @@
 """Invitation service layer - Business logic for invitation management."""
 
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -60,6 +62,11 @@ class InvitationService:
                     success=False, message="Project not found"
                 )
 
+            # Check if receiver already exists as a user
+            existing_user = await get_user_by_username_or_email(
+                db, request.receiver_email
+            )
+
             # Check for existing invitations for this email
             existing = await get_pending_invitations_by_email(
                 db, request.receiver_email
@@ -69,6 +76,17 @@ class InvitationService:
                     success=False,
                     message="An active invitation already exists for this email.",
                 )
+
+            # If user exists, check if they're already in the project
+            if existing_user:
+                existing_membership = await user_in_project(
+                    db, existing_user.user_id, project.project_id
+                )
+                if existing_membership:
+                    return InvitationSendResponse(
+                        success=False,
+                        message="User is already a member of this project.",
+                    )
 
             # Create invitation in database
             invitation, raw_code = await create_invitation(
@@ -80,16 +98,30 @@ class InvitationService:
                 expires_in_days=request.expires_in_days,
             )
 
-            # Send invitation email
+            # Send different email based on whether user exists
             language = request.language or "en"
-            email_sent = await self.email_service.send_invitation_email(
-                email=request.receiver_email,
-                invitation_code=raw_code,
-                sender_name=f"{sender.first_name} {sender.last_name}",
-                project_name=project.project_name,
-                custom_message=request.message,
-                language=language,
-            )
+            if existing_user:
+                # Send existing user invitation email with accept/reject buttons
+                email_sent = (
+                    await self.email_service.send_existing_user_invitation_email(
+                        email=request.receiver_email,
+                        invitation_id=invitation.invitation_id,
+                        sender_name=f"{sender.first_name} {sender.last_name}",
+                        project_name=project.project_name,
+                        custom_message=request.message,
+                        language=language,
+                    )
+                )
+            else:
+                # Send new user invitation email with registration link
+                email_sent = await self.email_service.send_invitation_email(
+                    email=request.receiver_email,
+                    invitation_code=raw_code,
+                    sender_name=f"{sender.first_name} {sender.last_name}",
+                    project_name=project.project_name,
+                    custom_message=request.message,
+                    language=language,
+                )
 
             if email_sent:
                 logger.info(
@@ -99,20 +131,21 @@ class InvitationService:
                         "receiver_email": request.receiver_email,
                         "invitation_id": invitation.invitation_id,
                         "project_id": project.project_id,
+                        "user_exists": existing_user is not None,
                     },
                 )
                 return InvitationSendResponse(
                     success=True,
                     message="Invitation sent successfully",
                     invitation_id=invitation.invitation_id,
-                    invitation_code=raw_code,
+                    invitation_code=raw_code if not existing_user else None,
                 )
             else:
                 return InvitationSendResponse(
                     success=False,
                     message="Failed to send invitation email",
                     invitation_id=invitation.invitation_id,
-                    invitation_code=raw_code,
+                    invitation_code=raw_code if not existing_user else None,
                 )
 
         except Exception as e:
@@ -463,3 +496,135 @@ class InvitationService:
             sender_username=sender_username,
             project_name=project_name,
         )
+
+    async def accept_invitation_by_user(
+        self,
+        db: AsyncSession,
+        invitation_id: int,
+        user_id: int,
+    ) -> dict[str, Any]:
+        """Accept an invitation by an existing user."""
+        try:
+            # Get invitation details
+            invitation = await get_invitation_by_id(db, invitation_id)
+            if not invitation:
+                return {"success": False, "message": "Invitation not found"}
+
+            # Check if invitation is still pending
+            if invitation.status != InvitationStatus.PENDING:
+                return {"success": False, "message": "Invitation is no longer pending"}
+
+            # Verify the user matches the invitation email
+            user = await get_user_by_id(db, user_id)
+            if not user or user.email != invitation.receiver_email:
+                return {
+                    "success": False,
+                    "message": "User email does not match invitation",
+                }
+
+            # Check if user is already in the project
+            existing_membership = await user_in_project(
+                db, user_id, invitation.project_id
+            )
+            if existing_membership:
+                # Mark invitation as accepted anyway
+                await update_invitation_status(
+                    db=db,
+                    invitation_id=invitation_id,
+                    status=InvitationStatus.ACCEPTED,
+                    receiver_id=user_id,
+                )
+                return {
+                    "success": False,
+                    "message": "You are already a member of this project",
+                }
+
+            # Accept the invitation
+            success = await self.accept_invitation(
+                db=db,
+                invitation_id=invitation_id,
+                user_id=user_id,
+            )
+
+            if success:
+                logger.info(
+                    "Invitation accepted by existing user",
+                    extra={
+                        "invitation_id": invitation_id,
+                        "user_id": user_id,
+                        "email": invitation.receiver_email,
+                    },
+                )
+                return {"success": True, "message": "Invitation accepted successfully"}
+            else:
+                return {"success": False, "message": "Failed to accept invitation"}
+
+        except Exception as e:
+            logger.error(
+                "Failed to accept invitation by user",
+                extra={
+                    "invitation_id": invitation_id,
+                    "user_id": user_id,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            return {"success": False, "message": "Internal server error"}
+
+    async def reject_invitation_by_user(
+        self,
+        db: AsyncSession,
+        invitation_id: int,
+        user_id: int,
+    ) -> dict[str, Any]:
+        """Reject an invitation by an existing user."""
+        try:
+            # Get invitation details
+            invitation = await get_invitation_by_id(db, invitation_id)
+            if not invitation:
+                return {"success": False, "message": "Invitation not found"}
+
+            # Check if invitation is still pending
+            if invitation.status != InvitationStatus.PENDING:
+                return {"success": False, "message": "Invitation is no longer pending"}
+
+            # Verify the user matches the invitation email
+            user = await get_user_by_id(db, user_id)
+            if not user or user.email != invitation.receiver_email:
+                return {
+                    "success": False,
+                    "message": "User email does not match invitation",
+                }
+
+            # Reject the invitation
+            success = await update_invitation_status(
+                db=db,
+                invitation_id=invitation_id,
+                status=InvitationStatus.REJECTED,
+                receiver_id=user_id,
+            )
+
+            if success:
+                logger.info(
+                    "Invitation rejected by existing user",
+                    extra={
+                        "invitation_id": invitation_id,
+                        "user_id": user_id,
+                        "email": invitation.receiver_email,
+                    },
+                )
+                return {"success": True, "message": "Invitation rejected successfully"}
+            else:
+                return {"success": False, "message": "Failed to reject invitation"}
+
+        except Exception as e:
+            logger.error(
+                "Failed to reject invitation by user",
+                extra={
+                    "invitation_id": invitation_id,
+                    "user_id": user_id,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            return {"success": False, "message": "Internal server error"}
