@@ -46,7 +46,7 @@ class InvitationService:
         sender_id: int,
         request: InvitationSendRequest,
     ) -> InvitationSendResponse:
-        """Send an invitation email to a user or generate code only."""
+        """Send an invitation email to a user."""
         try:
             # Get sender information
             sender = await get_user_by_id(db, sender_id)
@@ -60,57 +60,30 @@ class InvitationService:
                     success=False, message="Project not found"
                 )
 
-            # For email invitations, check receiver_email is provided
-            if request.send_email and not request.receiver_email:
-                return InvitationSendResponse(
-                    success=False, message="Email is required when send_email is True"
-                )
-
-            # Set receiver_email to empty string if not sending email
-            receiver_email = (
-                str(request.receiver_email) if request.receiver_email else ""
+            # Check for existing invitations for this email
+            existing = await get_pending_invitations_by_email(
+                db, request.receiver_email
             )
-
-            # Check for existing invitations only if sending by email
-            if request.send_email and receiver_email:
-                existing = await get_pending_invitations_by_email(db, receiver_email)
-                if existing:
-                    return InvitationSendResponse(
-                        success=False,
-                        message="An active invitation already exists for this email.",
-                    )
+            if existing:
+                return InvitationSendResponse(
+                    success=False,
+                    message="An active invitation already exists for this email.",
+                )
 
             # Create invitation in database
             invitation, raw_code = await create_invitation(
                 db=db,
                 sender_id=sender_id,
-                receiver_email=receiver_email,
+                receiver_email=request.receiver_email,
                 project_id=project.project_id,
                 project_permission=request.project_permission,
                 expires_in_days=request.expires_in_days,
             )
 
-            # If not sending email, just return the code
-            if not request.send_email:
-                logger.info(
-                    "Invitation code generated successfully",
-                    extra={
-                        "sender_id": sender_id,
-                        "invitation_id": invitation.invitation_id,
-                        "project_id": project.project_id,
-                    },
-                )
-                return InvitationSendResponse(
-                    success=True,
-                    message="Invitation code generated successfully",
-                    invitation_id=invitation.invitation_id,
-                    invitation_code=raw_code,
-                )
-
             # Send invitation email
             language = request.language or "en"
             email_sent = await self.email_service.send_invitation_email(
-                email=receiver_email,
+                email=request.receiver_email,
                 invitation_code=raw_code,
                 sender_name=f"{sender.first_name} {sender.last_name}",
                 project_name=project.project_name,
@@ -123,7 +96,7 @@ class InvitationService:
                     "Invitation sent successfully",
                     extra={
                         "sender_id": sender_id,
-                        "receiver_email": receiver_email,
+                        "receiver_email": request.receiver_email,
                         "invitation_id": invitation.invitation_id,
                         "project_id": project.project_id,
                     },
@@ -147,9 +120,7 @@ class InvitationService:
                 "Failed to send invitation",
                 extra={
                     "sender_id": sender_id,
-                    "receiver_email": str(request.receiver_email)
-                    if request.receiver_email
-                    else "",
+                    "receiver_email": request.receiver_email,
                     "error": str(e),
                 },
                 exc_info=True,

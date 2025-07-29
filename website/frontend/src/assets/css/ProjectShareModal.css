@@ -65,44 +65,6 @@
   padding: 24px;
 }
 
-.share-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 12px 16px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-  border-radius: var(--input-radius) var(--input-radius) 0 0;
-}
-
-.tab-btn.active {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-}
-
-.tab-btn:hover:not(.active) {
-  color: var(--text-main);
-  background: var(--secondary-bg);
-}
-
-.tab-icon {
-  font-size: 18px;
-}
-
 .tab-content {
   animation: fadeIn 0.2s ease-in;
 }
@@ -177,81 +139,6 @@
 .send-btn {
   width: 100%;
   margin-top: 8px;
-}
-
-.generate-code-section,
-.code-display-section {
-  text-align: center;
-}
-
-.info-message {
-  margin-bottom: 16px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
-.generate-btn,
-.refresh-btn {
-  margin-top: 8px;
-}
-
-.code-container {
-  display: flex;
-  gap: 8px;
-  margin: 16px 0;
-  align-items: center;
-}
-
-.code-input {
-  flex: 1;
-  padding: 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: var(--input-radius);
-  background: var(--secondary-bg);
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
-  text-align: center;
-  font-size: 16px;
-  color: var(--text-main);
-  transition: border-color 0.2s;
-}
-
-.code-input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-}
-
-.copy-btn {
-  padding: 12px;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: var(--input-radius);
-  cursor: pointer;
-  font-size: 18px;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  box-shadow: var(--btn-shadow);
-}
-
-.copy-btn:hover {
-  background: var(--primary-color-dark);
-  box-shadow: var(--btn-shadow-hover);
-}
-
-.copy-btn.copied {
-  background: #10b981;
-}
-
-.code-instructions {
-  margin-top: 12px;
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.4;
 }
 
 .share-success-message {
