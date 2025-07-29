@@ -1,68 +1,68 @@
 <template>
   <div class="configure-naming-page">
     <h2 class="configure-naming-title">Configure Naming Standards</h2>
-    <div v-if="loading" class="configure-naming-loading">Loading...</div>
+    <div v-if="loading">Loading...</div>
     <div v-else>
-      <div v-if="standards.length === 0" class="configure-naming-empty">
+      <div v-if="standards.length === 0">
         <em>No standards configured yet.</em>
       </div>
       <div>
         <div
-          v-for="standard in standards"
-          :key="standard.standard.id"
+          v-for="std in standards"
+          :key="std.id"
           class="configure-naming-accordion"
           style="margin-bottom: 32px"
         >
           <div
             class="configure-naming-accordion-header"
-            :class="{ open: openStandardId === standard.standard.id }"
-            @click="toggleAccordion(standard.standard.id)"
+            :class="{ open: openStandardId === std.id }"
+            @click="toggleAccordion(std.id)"
           >
             <span class="configure-naming-accordion-title">
-              {{ standard.standard.name
-              }}<span v-if="getFileTypeDisplay(standard.standard.file_type_id)"
+              {{ std.name
+              }}<span v-if="getFileTypeDisplay(std.project_file_type_id)"
                 >:
                 <span class="configure-naming-accordion-filetype">{{
-                  getFileTypeDisplay(standard.standard.file_type_id)
+                  getFileTypeDisplay(std.project_file_type_id)
                 }}</span></span
               >
             </span>
             <span
               class="configure-naming-accordion-chevron"
-              :class="{ open: openStandardId === standard.standard.id }"
+              :class="{ open: openStandardId === std.id }"
               >&#9660;</span
             >
           </div>
           <transition name="accordion">
             <div
-              v-if="openStandardId === standard.standard.id"
+              v-if="openStandardId === std.id"
               class="configure-naming-accordion-body"
             >
               <div
-                v-if="standard.standard.description"
+                v-if="std.description"
                 class="configure-naming-accordion-desc-box"
               >
                 <span class="configure-naming-desc-label">Description:</span>
                 <span class="configure-naming-desc-content">{{
-                  standard.standard.description
+                  std.description
                 }}</span>
               </div>
               <div class="configure-naming-pattern-example-label">
                 Example filename:
               </div>
               <div class="configure-naming-pattern-example-value">
-                <code>{{ buildExampleFilename(standard) }}</code>
+                <code>{{ buildExampleFilename(std) }}</code>
               </div>
               <div class="configure-naming-accordion-pattern">
                 <div class="configure-naming-pattern-label">Pattern:</div>
                 <div class="configure-naming-pattern-value">
-                  {{ standard.standard.pattern }}
+                  {{ std.pattern }}
                 </div>
                 <div class="configure-naming-pattern-breakdown">
                   <div class="breakdown-title">Pattern Groups:</div>
                   <div class="breakdown-groups">
                     <template
-                      v-for="comp in standard.components"
+                      v-for="comp in getPatternOrderedComponents(std)"
                       :key="comp.id || comp.name"
                     >
                       <span class="breakdown-group">
@@ -91,8 +91,8 @@
                   </thead>
                   <tbody>
                     <tr
-                      v-for="component in standard.components"
-                      :key="component.id"
+                      v-for="component in getPatternOrderedComponents(std)"
+                      :key="component.id || component.name"
                     >
                       <td class="configure-naming-component-name">
                         {{ component.name }}
@@ -103,12 +103,17 @@
                       <td>{{ buildExampleForRegex(component.regex) }}</td>
                       <td>
                         <span
-                          v-if="
-                            component.accepted_values &&
-                            component.accepted_values.length
-                          "
+                          v-if="component.accepted_values && component.accepted_values.length"
                         >
-                          {{ component.accepted_values.join(', ') }}
+                          {{
+                            component.accepted_values
+                              .map(val =>
+                                typeof val === 'object' && val !== null && 'value' in val
+                                  ? val.value
+                                  : val
+                              )
+                              .join(', ')
+                          }}
                         </span>
                       </td>
                     </tr>
@@ -118,13 +123,13 @@
               <div class="configure-naming-accordion-actions">
                 <button
                   class="configure-naming-btn"
-                  @click="editStandard(standard)"
+                  @click="editStandard(std)"
                 >
                   Edit
                 </button>
                 <button
                   class="configure-naming-btn delete"
-                  @click="deleteStandard(standard.standard.id)"
+                  @click="deleteStandard(std.id)"
                 >
                   Delete
                 </button>
@@ -163,7 +168,7 @@
             <label for="standard-filetype">File type</label>
             <select
               id="standard-filetype"
-              v-model="newStandard.file_type_id"
+              v-model="newStandard.project_file_type_id"
               required
               @change="onFileTypeChange"
             >
@@ -181,6 +186,7 @@
             <div class="configure-naming-pattern-row">
               <input
                 class="configure-naming-prefix-box"
+                :title="prefixValue"
                 :value="prefixValue"
                 readonly
                 tabindex="-1"
@@ -190,6 +196,7 @@
                 id="pattern-comma-input"
                 v-model="commaPattern"
                 class="configure-naming-pattern-box"
+                :title="commaPattern"
                 placeholder="Comma pattern (e.g. session,task,_,signer)"
                 required
                 @input="onCommaPatternInput"
@@ -197,10 +204,15 @@
             </div>
           </div>
           <!-- Pattern example-->
-          <div class="configure-naming-form-row" style="margin-top: -1.5rem">
+          <div class="configure-naming-form-row">
             <div class="configure-naming-example-desc">
-              Example comma pattern for filename <b>CLSFBI1912A_S040_B</b>:
-              <code>{{ exampleCommaPattern }}</code>
+              <span class="configure-naming-accepted-separators">
+                <b>Accepted separators</b>: {{ knownSeparators.map(s => `"${s}"`).join(', ') }}
+              </span>
+              <span>
+                Example comma pattern for filename <b>CLSFBI1912A_S040_B</b>:
+                <code class="configure-naming-example-comma-pattern">{{ exampleCommaPattern }}</code>
+              </span>
             </div>
           </div>
           <!-- Example and extraction -->
@@ -240,15 +252,27 @@
               </thead>
               <tbody>
                 <tr
-                  v-for="comp in newStandard.components"
+                  v-for="(comp, idx) in newStandard.components"
                   :key="comp.name"
                   class="configure-naming-component-row"
                 >
                   <td>
-                    <input v-model="comp.name" placeholder="Component name" />
+                    <input
+                      v-model="comp.name"
+                      placeholder="Component name"
+                      :readonly="idx === 0 && comp.name.startsWith('prefix_')"
+                      :class="{ 'configure-naming-components-table-prefix-disabled': idx === 0 && comp.name.startsWith('prefix_') }"
+                      :tabindex="idx === 0 && comp.name.startsWith('prefix_') ? -1 : 0"
+                    />
                   </td>
                   <td>
-                    <input v-model="comp.regex" placeholder="Regex" />
+                    <input
+                      v-model="comp.regex"
+                      placeholder="Regex"
+                      :readonly="idx === 0 && comp.name.startsWith('prefix_')"
+                      :class="{ 'configure-naming-components-table-prefix-disabled': idx === 0 && comp.name.startsWith('prefix_') }"
+                      :tabindex="idx === 0 && comp.name.startsWith('prefix_') ? -1 : 0"
+                    />
                   </td>
                   <td>
                     <input
@@ -260,7 +284,8 @@
                     <input
                       v-if="showAcceptedValuesInput(comp)"
                       v-model="comp.accepted_values_str"
-                      placeholder="Accepted values (comma separated)"
+                      :placeholder="getAcceptedValuesPlaceholder(comp)"
+                      :title="getAcceptedValuesPlaceholder(comp)"
                       @input="onAcceptedValuesInput(comp)"
                     />
                   </td>
@@ -272,6 +297,16 @@
                 </tr>
               </tbody>
             </table>
+            <div
+              v-if="shouldShowAcceptedValuesWarning"
+              class="configure-naming-warning"
+              style="margin-top: 4px"
+            >
+              <span>
+                <b>Note:</b> You entered [<code>{{ detectedUnusualAcceptedValue }}</code>] as an accepted value. This will be saved as a single value. 
+                To save multiple accepted values, separate them with a <b>comma</b> <code>,</code> or <b>semicolon</b> <code>;</code> (e.g. <code>B,A,W</code> or <code>B;A;W</code>).
+              </span>
+            </div>
             <div
               v-if="regexExtractionError"
               class="configure-naming-error"
@@ -325,7 +360,7 @@ const allComponentNames = ref([]);
 const showAddStandard = ref(false);
 const newStandard = ref({
   name: '',
-  file_type_id: '',
+  project_file_type_id: '',
   pattern: '',
   description: '',
   components: [],
@@ -354,54 +389,109 @@ function handleUserPromptCancel() {
 }
 
 function showAcceptedValuesInput(comp) {
-  // Only show for prefix_ or letter-based types
   if (comp.name.startsWith('prefix_')) return true;
-  return comp.type === 'L' || comp.type === 'l';
+  return comp.type === 'L' || comp.type === 'l' || comp.type === 'D';
 }
 
 function onAcceptedValuesInput(comp) {
-  // Keep array in sync with string input
+  regexExtractionError.value = '';
   if (typeof comp.accepted_values_str === 'string') {
-    // Try to extract length from regex, e.g. [A-Z]{2} or \d{3}
     let length = null;
+    let isDigitRegex = false;
     if (comp.regex) {
-      const match = comp.regex.match(/\{(\d+)\}/);
-      if (match) length = parseInt(match[1]);
+      const match = comp.regex.match(/\\d\{(\d+)\}/);
+      if (match) {
+        length = parseInt(match[1]);
+        isDigitRegex = true;
+      }
     }
-    comp.accepted_values = comp.accepted_values_str
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .filter((val) => {
-        // If length is known, only accept values of that length
-        if (length !== null) return val.length === length;
-        return true;
-      });
-    // Optionally, show a warning if any value was filtered out
-    if (
-      length !== null &&
-      comp.accepted_values_str
-        .split(',')
-        .some((s) => s.trim() && s.trim().length !== length)
-    ) {
-      regexExtractionError.value = `All accepted values for "${comp.name}" must be exactly ${length} characters long.`;
-    } else {
-      regexExtractionError.value = '';
+    let inputParts = comp.accepted_values_str.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+
+    if (isDigitRegex) {
+      let normalizedParts = [];
+      for (let part of inputParts) {
+        if (/^\d+-\d+$/.test(part)) {
+          let [start, end] = part.split('-').map(Number);
+          if (isNaN(start) || isNaN(end) || start > end) {
+            regexExtractionError.value = `Invalid range "${part}" for "${comp.name}".`;
+            return;
+          }
+          // Pad both start and end
+          let startStr = start.toString().padStart(length, '0');
+          let endStr = end.toString().padStart(length, '0');
+          // Check if padded values fit the regex length
+          if (startStr.length > length || endStr.length > length) {
+            regexExtractionError.value = `Values in range "${part}" exceed ${length} digits for "${comp.name}".`;
+            return;
+          }
+          normalizedParts.push(`${startStr}-${endStr}`);
+        } else if (/^\d+$/.test(part)) {
+          let numStr = Number(part).toString().padStart(length, '0');
+          if (numStr.length > length) {
+            regexExtractionError.value = `Value "${part}" exceeds ${length} digits for "${comp.name}".`;
+            return;
+          }
+          normalizedParts.push(numStr);
+        } else {
+          regexExtractionError.value = `Invalid value "${part}" for "${comp.name}".`;
+          return;
+        }
+      }
+      comp.accepted_values = normalizedParts;
+      // Optionally, update the input field to show the normalized version:
+      comp.accepted_values_str = normalizedParts.join(', ');
+      return;
     }
+
+    // For non-digit regexes, expand and validate as before
+    let values = [];
+    for (let part of inputParts) {
+      values.push(part);
+    }
+    values = [...new Set(values)];
+
+    // Validate length for letter regexes
+    if (length !== null) {
+      for (const val of values) {
+        if (val.length !== length) {
+          regexExtractionError.value = `All accepted values for "${comp.name}" must be exactly ${length} characters long.`;
+          return;
+        }
+      }
+    }
+
+    // Validate each value against the regex
+    if (comp.regex) {
+      let regexStr = comp.regex;
+      let re;
+      try {
+        re = new RegExp('^' + regexStr + '$');
+      } catch {
+        regexExtractionError.value = `Invalid regex for "${comp.name}".`;
+        return;
+      }
+      for (const val of values) {
+        if (!re.test(val)) {
+          regexExtractionError.value = `Accepted value "${val}" does not match regex "${comp.regex}" for "${comp.name}".`;
+          return;
+        }
+      }
+    }
+
+    comp.accepted_values = values;
   } else {
     comp.accepted_values = [];
   }
 }
 
 // Remove unused getFileTypeName
-function getFileTypeNameRaw(file_type_id) {
-  const ft = fileTypes.value.find((f) => f.id === file_type_id);
+function getFileTypeNameRaw(project_file_type_id) {
+  const ft = fileTypes.value.find((f) => f.id === project_file_type_id);
   return ft ? ft.name : '';
 }
 
-// Add this helper for dropdown and display:
-function getFileTypeDisplay(file_type_id) {
-  const ft = fileTypes.value.find((f) => f.id === file_type_id);
+function getFileTypeDisplay(project_file_type_id) {
+  const ft = fileTypes.value.find((f) => f.id === project_file_type_id);
   if (!ft) return '';
   return `${ft.name} (${ft.extension})${ft.description ? ' — ' + ft.description : ''}`;
 }
@@ -418,12 +508,18 @@ async function fetchStandardsAndComponentNames() {
   loading.value = true;
   try {
     const { data } = await projectNamingStandardApi.getProjectNamingStandardsFull(projectId);
-    standards.value = Array.isArray(data.standards) ? data.standards : [];
+    // Flatten standards to a single object with components
+    standards.value = Array.isArray(data.standards)
+      ? data.standards.map(s => ({
+          ...s.standard,
+          components: s.components || [],
+        }))
+      : [];
     allComponentNames.value = Array.isArray(data.component_names) ? data.component_names : [];
     // Ensure accepted_values_str for editing
-    for (const standard of standards.value) {
-      if (standard.components) {
-        standard.components = standard.components.map((c) => ({
+    for (const std of standards.value) {
+      if (std.components) {
+        std.components = std.components.map((c) => ({
           ...c,
           accepted_values: c.accepted_values || [],
           accepted_values_str: (c.accepted_values || []).join(', '),
@@ -454,7 +550,7 @@ function extractComponentsFromPattern(pattern) {
 }
 
 function onCommaPatternInput() {
-  const fileType = getFileTypeNameRaw(newStandard.value.file_type_id);
+  const fileType = getFileTypeNameRaw(newStandard.value.project_file_type_id);
   if (!commaPattern.value || !fileType) {
     newStandard.value.pattern = '';
     newStandard.value.components = [];
@@ -736,33 +832,22 @@ async function addStandard() {
     await projectNamingStandardApi.createStandardWithComponents({
       project_id: projectId,
       name: newStandard.value.name,
-      file_type_id: newStandard.value.file_type_id,
+      project_file_type_id: newStandard.value.project_file_type_id,
       pattern: newStandard.value.pattern,
       description: newStandard.value.description,
-      components: newStandard.value.components.map((c) => {
-        const rest = Object.fromEntries(
-          Object.entries(c).filter(
-            ([key]) => key !== 'type' && key !== 'accepted_values_str'
-          )
-        );
-        return {
-          ...rest,
-          file_type_id: newStandard.value.file_type_id,
-          accepted_values:
-            typeof c.accepted_values_str === 'string' &&
-            showAcceptedValuesInput(c)
-              ? c.accepted_values_str
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter(Boolean)
-              : [],
-        };
-      }),
+      components: newStandard.value.components.map((c) => ({
+        name: c.name,
+        regex: c.regex,
+        description: c.description,
+        order: c.order,
+        accepted_values: c.accepted_values,
+        project_file_type_id: newStandard.value.project_file_type_id,
+      })),
     });
     showAddStandard.value = false;
     newStandard.value = {
       name: '',
-      file_type_id: '',
+      project_file_type_id: '',
       pattern: '',
       description: '',
       components: [],
@@ -804,7 +889,7 @@ onMounted(async () => {
 });
 
 watch(
-  () => newStandard.value.file_type_id,
+  () => newStandard.value.project_file_type_id,
   (newVal, oldVal) => {
     if (newVal !== oldVal) {
       commaPattern.value = '';
@@ -854,14 +939,39 @@ function buildExampleForRegex(regex) {
   return 'X';
 }
 
-function buildExampleFilename(standard) {
-  let filename = standard.standard.pattern;
-  if (!standard.components) return filename;
-  for (const comp of standard.components) {
+/**
+ * Returns components in the order they appear in the pattern string.
+ * This ensures pattern groups and table rows match the pattern order.
+ */
+function getPatternOrderedComponents(std) {
+  if (!std?.pattern || !Array.isArray(std.components)) return [];
+  // Extract component names in order from the pattern
+  const names = Array.from(std.pattern.matchAll(/\{(\w+)\}/g)).map(m => m[1]);
+  // Map names to actual component objects
+  return names
+    .map(name => std.components.find(c => c.name === name))
+    .filter(Boolean);
+}
+
+/**
+ * Returns the example filename for a standard, including the file extension.
+ */
+function buildExampleFilename(std) {
+  let filename = std.pattern;
+  const orderedComps = getPatternOrderedComponents(std);
+  if (!orderedComps.length) return filename;
+  for (const comp of orderedComps) {
     filename = filename.replace(
       new RegExp(`\\{${comp.name}\\}`, 'g'),
       buildExampleForRegex(comp.regex)
     );
+  }
+  // Add extension if available
+  const ft = fileTypes.value.find(f => f.id === std.project_file_type_id);
+  if (ft && ft.extension) {
+    // Ensure extension starts with a dot
+    const ext = ft.extension.startsWith('.') ? ft.extension : '.' + ft.extension;
+    filename += ext;
   }
   return filename;
 }
@@ -869,7 +979,7 @@ function buildExampleFilename(standard) {
 // Computed prefix value for the pattern
 const prefixValue = computed(() => {
   const ft = fileTypes.value.find(
-    (f) => f.id === newStandard.value.file_type_id
+    (f) => f.id === newStandard.value.project_file_type_id
   );
   return ft ? `prefix_${ft.name}` : '';
 });
@@ -885,7 +995,7 @@ function resetAddForm() {
   showAddStandard.value = false;
   newStandard.value = {
     name: '',
-    file_type_id: '',
+    project_file_type_id: '',
     pattern: '',
     description: '',
     components: [],
@@ -893,6 +1003,42 @@ function resetAddForm() {
   commaPattern.value = '';
   exampleFilename.value = '';
   regexExtractionError.value = '';
+}
+
+// Detect if any accepted_values_str looks like "B A W" (single value, multiple tokens separated by space)
+const detectedUnusualAcceptedValue = computed(() => {
+  for (const comp of newStandard.value.components) {
+    if (
+      typeof comp.accepted_values_str === 'string' &&
+      comp.accepted_values_str.trim() &&
+      // Only one value, but contains spaces (and not commas/semicolons)
+      !comp.accepted_values_str.includes(',') &&
+      !comp.accepted_values_str.includes(';') &&
+      comp.accepted_values_str.trim().split(/\s+/).length > 1
+    ) {
+      return comp.accepted_values_str.trim();
+    }
+  }
+  return '';
+});
+
+const shouldShowAcceptedValuesWarning = computed(() => !!detectedUnusualAcceptedValue.value);
+
+function getAcceptedValuesPlaceholder(comp) {
+  if (comp.name.startsWith('prefix_') && comp.regex && /\[A-Z\]\{(\d+)\}/.test(comp.regex)) {
+    // Example: [A-Z]{6}
+    return 'e.g. CLSFBI or CLSFBI, CLSFAE';
+  }
+  if (comp.regex && /\\d\{(\d+)\}/.test(comp.regex)) {
+    // Example: \d{2}
+    return 'e.g. 15, 1-50, 01-50';
+  }
+  if (comp.regex && /\[A-Z\]\{(\d+)\}/.test(comp.regex)) {
+    // Example: [A-Z]{2}
+    return 'e.g. AB, AC, BA';
+  }
+  // Default
+  return 'e.g. B or B, A, W';
 }
 </script>
 
@@ -951,11 +1097,6 @@ function resetAddForm() {
   padding: 18px 22px 22px;
   background: #f7fafd;
   border-radius: 0 0 8px 8px;
-}
-
-.configure-naming-accordion-desc {
-  margin-bottom: 10px;
-  color: #555;
 }
 
 .configure-naming-accordion-desc-box {
@@ -1188,6 +1329,8 @@ function resetAddForm() {
   border-radius: 5px;
   font-size: 1rem;
   max-width: fit-content;
+  cursor: not-allowed;
+  caret-color: transparent;
 }
 
 .configure-naming-pattern-sep {
@@ -1283,6 +1426,22 @@ function resetAddForm() {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 16px;
+}
+
+.configure-naming-components-table-prefix-disabled {
+  background: #f3f6fa !important;
+  color: #aaa !important;
+  cursor: not-allowed !important;
+  pointer-events: auto !important;
+}
+
+.configure-naming-accepted-separators {
+  margin-left: 2rem;
+  margin-right: 2.1rem;
+}
+
+.configure-naming-example-comma-pattern {
+  margin-left: 20rem;
 }
 
 @media (width <= 700px) {

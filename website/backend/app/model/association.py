@@ -1,5 +1,6 @@
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.schema import UniqueConstraint
 
 from app.db.database import Base
 
@@ -148,3 +149,23 @@ class ElanFileToMedia(Base):
     # Relationships
     elan_file = relationship("ElanFile", back_populates="media_links")
     media = relationship("ElanFileMedia", back_populates="elan_files")
+
+
+class ProjectFileType(Base):
+    """Association table linking projects to file types with a project-specific name."""
+
+    __tablename__ = "PROJECT_FILE_TYPE"
+    __table_args__ = (
+        UniqueConstraint("project_id", "name", name="uq_project_filetype_name"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    project_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("PROJECT.project_id"), nullable=False
+    )
+    file_type_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("FILE_TYPE.id"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    file_type = relationship("FileType")

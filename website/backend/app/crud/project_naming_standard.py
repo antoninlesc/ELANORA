@@ -24,7 +24,7 @@ async def create_standard(
     db: AsyncSession,
     project_id: int,
     name: str,
-    file_type_id: int,
+    project_file_type_id: int,
     pattern: str,
     description: str | None,
 ):
@@ -33,7 +33,7 @@ async def create_standard(
     standard = ProjectNamingStandard(
         project_id=project_id,
         name=name,
-        file_type_id=file_type_id,
+        project_file_type_id=project_file_type_id,
         pattern=pattern,
         description=description,
     )

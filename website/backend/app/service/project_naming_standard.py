@@ -20,27 +20,41 @@ class ProjectNamingStandardService:
         if not standard:
             return None
         components = await naming_component.get_components_by_standard(db, standard_id)
-        return {"standard": standard, "components": components}
+        # Serialize components to include accepted_values
+        components_serialized = [
+            {
+                "id": c.id,
+                "naming_standard_id": c.naming_standard_id,
+                "name": c.name,
+                "description": c.description,
+                "project_file_type_id": c.project_file_type_id,
+                "regex": c.regex,
+                "order": c.order,
+                "accepted_values": [v.value for v in getattr(c, "accepted_values", [])],
+            }
+            for c in components
+        ]
+        return {"standard": standard, "components": components_serialized}
 
     @staticmethod
     async def create_standard_with_components(
         db: AsyncSession,
         project_id: int,
         name: str,
-        file_type_id: int,
+        project_file_type_id: int,
         pattern: str,
         description: str | None,
         components: list[dict],
     ):
         try:
             standard = await project_naming_standard.create_standard(
-                db, project_id, name, file_type_id, pattern, description
+                db, project_id, name, project_file_type_id, pattern, description
             )
             for idx, comp in enumerate(components):
                 await naming_component.create_component(
                     db,
                     naming_standard_id=standard.id,
-                    file_type_id=file_type_id,
+                    project_file_type_id=project_file_type_id,
                     name=comp["name"],
                     regex=comp["regex"],
                     description=comp.get("description"),
@@ -55,7 +69,7 @@ class ProjectNamingStandardService:
                 "id": standard.id,
                 "project_id": standard.project_id,
                 "name": standard.name,
-                "file_type_id": standard.file_type_id,
+                "project_file_type_id": standard.project_file_type_id,
                 "pattern": standard.pattern,
                 "description": standard.description,
                 "components": [
@@ -65,8 +79,8 @@ class ProjectNamingStandardService:
                         "regex": c.regex,
                         "description": c.description,
                         "order": c.order,
-                        "accepted_values": getattr(c, "accepted_values_list", []),
-                        "file_type_id": c.file_type_id,
+                        "accepted_values": [v.value for v in c.accepted_values],
+                        "project_file_type_id": c.project_file_type_id,
                     }
                     for c in components_objs
                 ],
@@ -107,20 +121,46 @@ class ProjectNamingStandardService:
             await project_naming_standard.update_standard(
                 db, standard_id, update_fields
             )
-            # Remove old components
-            await naming_component.delete_components_by_standard(db, standard_id)
-            # Add new components
+
+            # Fetch existing components for the standard
+            existing_components = await naming_component.get_components_by_standard(db, standard_id)
+            existing_components_by_id = {c.id: c for c in existing_components}
+            payload_ids = {c.get("id") for c in components if c.get("id") is not None}
+
+            # Update or create components
             for idx, comp in enumerate(components):
-                await naming_component.create_component(
-                    db,
-                    naming_standard_id=standard_id,
-                    file_type_id=comp["file_type_id"],
-                    name=comp["name"],
-                    regex=comp["regex"],
-                    description=comp.get("description"),
-                    order=comp.get("order", idx + 1),
-                    accepted_values=comp.get("accepted_values"),
-                )
+                if comp.get("id") in existing_components_by_id:
+                    # Update existing component
+                    await naming_component.update_component(
+                        db,
+                        component_id=comp["id"],
+                        update_fields={
+                            "name": comp["name"],
+                            "regex": comp["regex"],
+                            "description": comp.get("description"),
+                            "order": comp.get("order", idx + 1),
+                            "project_file_type_id": comp["project_file_type_id"],
+                        },
+                        accepted_values=comp.get("accepted_values"),
+                    )
+                else:
+                    # Create new component
+                    await naming_component.create_component(
+                        db,
+                        naming_standard_id=standard_id,
+                        project_file_type_id=comp["project_file_type_id"],
+                        name=comp["name"],
+                        regex=comp["regex"],
+                        description=comp.get("description"),
+                        order=comp.get("order", idx + 1),
+                        accepted_values=comp.get("accepted_values"),
+                    )
+
+            # Delete removed components
+            for c in existing_components:
+                if c.id not in payload_ids:
+                    await naming_component.delete_component(db, c.id)
+
             await db.commit()
             return True
         except Exception:

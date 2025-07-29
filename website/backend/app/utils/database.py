@@ -18,22 +18,28 @@ class DatabaseUtils:
 
     @staticmethod
     async def get_by_id(
-        db: AsyncSession, model: type[ModelType], id_field: str, id_value: Any
+        db: AsyncSession, model: type[ModelType], id_field: str, id_value: Any, options: list | None = None
     ) -> ModelType | None:
         logger.info(
             f"get_by_id: model={model.__name__} id_field={id_field} id_value={id_value}"
         )
-        result = await db.execute(
-            select(model).filter(getattr(model, id_field) == id_value)
-        )
+        query = select(model).filter(getattr(model, id_field) == id_value)
+        if options:
+            for opt in options:
+                query = query.options(opt)
+        result = await db.execute(query)
         instance = result.scalar_one_or_none()
         logger.debug(f"get_by_id: found={instance is not None}")
         return instance
 
     @staticmethod
-    async def get_all(db: AsyncSession, model: type[ModelType]) -> list[ModelType]:
+    async def get_all(db: AsyncSession, model: type[ModelType], options: list = None) -> list[ModelType]:
         logger.info(f"get_all: model={model.__name__}")
-        result = await db.execute(select(model))
+        query = select(model)
+        if options:
+            for opt in options:
+                query = query.options(opt)
+        result = await db.execute(query)
         all_results = list(result.scalars().all())
         logger.debug(f"get_all: count={len(all_results)}")
         return all_results
@@ -111,6 +117,7 @@ class DatabaseUtils:
         model: type[ModelType],
         filters: dict,
         order_by: list | None = None,
+        options: list | None = None,
     ) -> list[ModelType]:
         """Get records matching filters, optionally ordered."""
         query = select(model)
@@ -121,6 +128,9 @@ class DatabaseUtils:
                 query = query.where(getattr(model, field) == value)
         if order_by:
             query = query.order_by(*order_by)
+        if options:
+            for opt in options:
+                query = query.options(opt)
         result = await db.execute(query)
         return list(result.scalars().all())
 
@@ -130,6 +140,7 @@ class DatabaseUtils:
         model: type[ModelType],
         filters: dict,
         order_by: list | None = None,
+        options: list | None = None,
     ) -> ModelType | None:
         """Get a single record matching filters, optionally ordered."""
         query = select(model)
@@ -140,6 +151,9 @@ class DatabaseUtils:
                 query = query.where(getattr(model, field) == value)
         if order_by:
             query = query.order_by(*order_by)
+        if options:
+            for opt in options:
+                query = query.options(opt)
         result = await db.execute(query)
         return result.scalar_one_or_none()
 
@@ -150,6 +164,7 @@ class DatabaseUtils:
         page: int,
         page_size: int,
         filters: dict | None,
+        options: list | None = None,
     ) -> list[ModelType]:
         """Paginate records with optional filters."""
         query = select(model)
@@ -159,6 +174,9 @@ class DatabaseUtils:
                 query = query.where(getattr(model, field).in_(tuple(value)))
             else:
                 query = query.where(getattr(model, field) == value)
+        if options:
+            for opt in options:
+                query = query.options(opt)
         query = query.offset((page - 1) * page_size).limit(page_size)
         result = await db.execute(query)
         return list(result.scalars().all())

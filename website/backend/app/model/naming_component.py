@@ -1,8 +1,6 @@
 from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from app.db.database import Base
-from app.model.component_accepted_value import ComponentAcceptedValue
 
 
 class NamingComponent(Base):
@@ -17,8 +15,8 @@ class NamingComponent(Base):
     naming_standard_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PROJECT_NAMING_STANDARD.id"), nullable=False
     )
-    file_type_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("FILE_TYPE.id"), nullable=False
+    project_file_type_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("PROJECT_FILE_TYPE.id"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     regex: Mapped[str] = mapped_column(String(255), nullable=True)
@@ -26,11 +24,12 @@ class NamingComponent(Base):
     order: Mapped[int] = mapped_column("order", Integer, nullable=False)
 
     standard = relationship("ProjectNamingStandard", back_populates="components")
-    file_type = relationship("FileType")
+    project_file_type = relationship("ProjectFileType")
+
+    # Add this relationship:
     accepted_values = relationship(
         "ComponentAcceptedValue",
-        backref="component",
         cascade="all, delete-orphan",
-        lazy="joined",
+        backref="component"
     )
 

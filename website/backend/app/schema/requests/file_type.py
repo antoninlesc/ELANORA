@@ -4,8 +4,9 @@ from app.schema.common.base import CustomBaseModel
 class FileTypeCreateRequest(CustomBaseModel):
     name: str
     extension: str
+    project_id: int
 
 
 class FileTypeUpdateRequest(CustomBaseModel):
-    name: str
-    extension: str
+    name: str | None = None
+    extension: str | None = None

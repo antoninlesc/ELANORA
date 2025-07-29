@@ -16,6 +16,7 @@ import ConflictsPage from '@views/ConflictsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import TiersPage from '@views/TiersPage.vue';
 import ProjectConfigurationPage from '@views/ProjectConfigurationPage.vue';
+import ProfilePage from '@views/ProfilePage.vue';
 
 // Define routes
 const routes = [
@@ -90,6 +91,12 @@ const routes = [
         path: '/projects/:projectId/configuration',
         name: 'ProjectConfigurationPage',
         component: ProjectConfigurationPage,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'profile',
+        name: 'ProfilePage',
+        component: ProfilePage,
         meta: { requiresAuth: true },
       },
       {

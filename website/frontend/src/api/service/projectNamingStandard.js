@@ -12,7 +12,7 @@ export default {
   },
   async updateStandardAndComponents(standardId, updateFields, components) {
     return axiosInstance.put(`/project-naming-standard/${standardId}/update`, {
-      update_fields: updateFields,
+      ...updateFields,
       components,
     });
   },

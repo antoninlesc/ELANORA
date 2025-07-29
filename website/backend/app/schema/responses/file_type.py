@@ -5,3 +5,4 @@ class FileTypeResponse(CustomBaseModel):
     id: int
     name: str
     extension: str
+    exists_in_target: bool = False

@@ -88,7 +88,7 @@ async def validation_exception_handler(
         return JSONResponse(
             status_code=HTTP_400_BAD_REQUEST,
             content={
-                "detail": "Invalid request data.",
+                "detail": exc.errors(),
                 "correlation_id": client_info["correlation_id"],
             },
         )

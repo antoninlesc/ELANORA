@@ -308,5 +308,41 @@
         "Rename": "Renommer le projet"
       }
     }
+  },
+
+  "projectSettings": {
+    "title": "Configuration du projet {projectName}",
+    "subtitle": "Personnalisez les paramètres de votre projet",
+    "sectionNames": {
+      "sections": {
+        "technical": "Paramètres techniques",
+        "collaborators": "Collaborateurs",
+        "subsections": {
+          "fileTypes": "Types de Fichiers",
+          "namingStandards": "Normes de Nommage",
+          "membersAndAccess": "Membres et Accès",
+          "invitations": "Invitations"
+        }
+      }
+    }
+  },
+
+  "fileTypes": {
+    "title": "Gérer les types de fichiers pour votre projet",
+    "loading": "Chargement des types de fichiers...",
+    "empty": "Aucun type de fichier trouvé. Créez votre premier type de fichier !",
+    "createFileType": "Ajouter",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "name": "Nom",
+    "extension": "Extension",
+    "actions": "Actions",
+    "invalidName": "Entrez un nom valide (lettres, chiffres, espaces, tirets, soulignés, 2 à 40 caractères).",
+    "invalidExtension": "Entrez une extension valide (ex. : .mp4, .txt, 1 à 10 lettres minuscules ou chiffres).",
+    "eventMessages": {
+      "duplicateName": "Un type de fichier avec ce nom existe déjà.",
+      "cannotDeleteUsed": "Impossible de supprimer : ce type de fichier est utilisé par une norme de nommage ou un composant. Veuillez d'abord supprimer la norme de nommage associée.",
+      "deleteFailed": "Échec de la suppression du type de fichier."
+    }
   }
 }

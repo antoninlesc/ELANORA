@@ -1,30 +1,30 @@
 from sqlalchemy import join, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.crud.component_accepted_value import (
-    create_accepted_values,
-    delete_accepted_values,
-    get_accepted_values,
-)
+from sqlalchemy.orm import selectinload
 from app.model.naming_component import NamingComponent
 from app.model.project_naming_standard import ProjectNamingStandard
 from app.utils.database import DatabaseUtils
 
+from app.crud.component_accepted_value import (
+    create_accepted_values,
+    delete_accepted_values,
+)
 
 async def get_components_by_standard(
     db: AsyncSession, naming_standard_id: int
 ) -> list[NamingComponent]:
-    stmt = select(NamingComponent).where(
-        NamingComponent.naming_standard_id == naming_standard_id
+    return await DatabaseUtils.get_by_filter(
+        db,
+        NamingComponent,
+        {"naming_standard_id": naming_standard_id},
+        options=[selectinload(NamingComponent.accepted_values)]
     )
-    result = await db.execute(stmt)
-    return list(result.unique().scalars().all())
 
 
 async def create_component(
     db: AsyncSession,
     naming_standard_id: int,
-    file_type_id: int,
+    project_file_type_id: int,
     name: str,
     regex: str,
     description: str | None,
@@ -33,7 +33,7 @@ async def create_component(
 ) -> NamingComponent:
     component = NamingComponent(
         naming_standard_id=naming_standard_id,
-        file_type_id=file_type_id,
+        project_file_type_id=project_file_type_id,
         name=name,
         regex=regex,
         description=description,
@@ -80,12 +80,12 @@ async def delete_components_by_standard(
 
 
 async def get_unique_component_names_by_file_type(
-    db: AsyncSession, file_type_id: int
+    db: AsyncSession, project_file_type_id: int
 ) -> list[str]:
     stmt = (
         select(NamingComponent.name)
         .distinct()
-        .where(NamingComponent.file_type_id == file_type_id)
+        .where(NamingComponent.project_file_type_id == project_file_type_id)
     )
     result = await db.execute(stmt)
     return [row[0] for row in result.fetchall()]

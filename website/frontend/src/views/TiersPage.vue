@@ -130,8 +130,8 @@ import {
   deleteSection,
   moveTierGroup,
 } from '@/api/service/tierService';
-import TierTree from '@/components/common/tierTree.vue';
-import draggable from 'vuedraggable';
+import TierTree from '@/components/common/TierTree.vue';
+import { VueDraggableNext as draggable } from 'vue-draggable-next';
 
 const projectStore = useProjectStore();
 const currentProject = computed(() => projectStore.currentProject);

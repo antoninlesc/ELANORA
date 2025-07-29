@@ -1,17 +1,17 @@
 <template>
   <div class="configure-filetypes-page">
-    <h2 class="configure-filetypes-title">Configure File Types</h2>
-    <div v-if="isLoading" class="configure-filetypes-loading">Loading...</div>
+    <h2 class="configure-filetypes-title">{{ t('fileTypes.title') }}</h2>
+    <div v-if="isLoading" class="configure-filetypes-loading">{{ t('fileTypes.loading') }}</div>
     <div v-else>
       <div v-if="fileTypes.length === 0" class="configure-filetypes-empty">
-        <em>No file types defined yet.</em>
+        <em>{{ t('fileTypes.empty') }}</em>
       </div>
       <table v-if="fileTypes.length" class="configure-filetypes-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Extension</th>
-            <th>Actions</th>
+            <th>{{ t('fileTypes.name') }}</th>
+            <th>{{ t('fileTypes.extension') }}</th>
+            <th>{{ t('fileTypes.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -20,7 +20,7 @@
               <template v-if="editId === ft.id">
                 <input
                   v-model="editFileType.name"
-                  class="edit-highlight"
+                  class="configure-file-types-edit-highlight"
                   autofocus
                   @keydown.enter="saveEdit(ft.id)"
                   @keydown.esc="cancelEdit"
@@ -34,7 +34,7 @@
               <template v-if="editId === ft.id">
                 <input
                   v-model="editFileType.extension"
-                  class="edit-highlight"
+                  class="configure-file-types-edit-highlight"
                   @keydown.enter="saveEdit(ft.id)"
                   @keydown.esc="cancelEdit"
                 />
@@ -48,14 +48,14 @@
                 <template v-if="editId === ft.id">
                   <button
                     class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    title="Save"
+                    :title="t('fileTypes.edit')"
                     @click="saveEdit(ft.id)"
                   >
                     <font-awesome-icon icon="fa-regular fa-pen-to-square" />
                   </button>
                   <button
                     class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    title="Cancel"
+                    :title="t('fileTypes.delete')"
                     @click="cancelEdit"
                   >
                     <span style="font-size: 1.1em">✖</span>
@@ -64,14 +64,14 @@
                 <template v-else>
                   <button
                     class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    title="Edit"
+                    :title="t('fileTypes.edit')"
                     @click="startEdit(ft)"
                   >
                     <font-awesome-icon icon="fa-regular fa-pen-to-square" />
                   </button>
                   <button
                     class="configure-file-types-action-btn configure-file-types-delete-btn"
-                    title="Delete"
+                    :title="t('fileTypes.delete')"
                     @click="deleteFileType(ft.id)"
                   >
                     <font-awesome-icon icon="trash" />
@@ -83,20 +83,36 @@
         </tbody>
       </table>
       <div class="configure-filetypes-add-form">
-        <input v-model="newFileType.name" placeholder="File type name" />
-        <input v-model="newFileType.extension" placeholder="Extension" />
-        <button @click="addFileType">Add</button>
+        <div class="add-form-col">
+          <input v-model="newFileType.name" :placeholder="t('fileTypes.name')" />
+          <span v-if="addNameError" class="configure-file-types-input-error">{{ addNameError }}</span>
+        </div>
+        <div class="add-form-col">
+          <input v-model="newFileType.extension" :placeholder="t('fileTypes.extension')" />
+          <span v-if="addExtensionError" class="configure-file-types-input-error">{{ addExtensionError }}</span>
+        </div>
+        <button @click="addFileType">{{ t('fileTypes.createFileType') }}</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from 'vue';
+import { ref, nextTick, computed, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { useFileTypeStore } from '@/stores/fileType.js';
+import { useEventMessageStore } from '@/stores/eventMessage.js';
 import FontAwesomeIcon from '@/plugins/fontawesome';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+const route = useRoute();
 
 const fileTypeStore = useFileTypeStore();
+const eventMessageStore = useEventMessageStore();
+
+const projectId = computed(() => Number(route.params.projectId));
+
 const fileTypes = computed(() => fileTypeStore.fileTypes);
 const isLoading = computed(() => fileTypeStore.isLoading);
 
@@ -104,17 +120,27 @@ const newFileType = ref({ name: '', extension: '' });
 const editId = ref(null);
 const editFileType = ref({ name: '', extension: '' });
 
-async function fetchFileTypes() {
-  await fileTypeStore.fetchFileTypes();
-}
+const addNameError = ref('');
+const addExtensionError = ref('');
 
-onMounted(fetchFileTypes);
+// Refetch file types when projectId changes
+watch(
+  projectId,
+  () => {
+    fetchFileTypes();
+  },
+  { immediate: true }
+);
+
+async function fetchFileTypes() {
+  await fileTypeStore.fetchFileTypes(projectId.value);
+}
 
 function startEdit(ft) {
   editId.value = ft.id;
   editFileType.value = { name: ft.name, extension: ft.extension };
   nextTick(() => {
-    const input = document.querySelector('.edit-highlight');
+    const input = document.querySelector('.configure-file-types-edit-highlight');
     if (input) input.focus();
   });
 }
@@ -122,29 +148,90 @@ function cancelEdit() {
   editId.value = null;
   editFileType.value = { name: '', extension: '' };
 }
+function isValidExtension(ext) {
+  return /^\.[a-z0-9]{1,10}$/.test(ext);
+}
+function isValidName(name) {
+  const trimmed = name.trim();
+  return (
+    trimmed.length >= 2 &&
+    trimmed.length <= 40 &&
+    /^[\w\s-]+$/.test(trimmed) &&
+    /[a-zA-Z]/.test(trimmed)
+  );
+}
 async function saveEdit(id) {
-  await fileTypeStore.updateFileType(id, { ...editFileType.value });
+  editFileType.value.name = editFileType.value.name.trim();
+  editFileType.value.extension = editFileType.value.extension.trim();
+  if (editFileType.value.extension && !editFileType.value.extension.startsWith('.')) {
+    editFileType.value.extension = '.' + editFileType.value.extension;
+  }
+  if (!isValidName(editFileType.value.name)) {
+    eventMessageStore.addMessage('fileTypes.invalidName', 'error', 5000);
+    return;
+  }
+  if (!isValidExtension(editFileType.value.extension)) {
+    eventMessageStore.addMessage('fileTypes.invalidExtension', 'error', 5000);
+    return;
+  }
+  await fileTypeStore.updateFileType(id, { ...editFileType.value }, projectId.value);
   cancelEdit();
 }
 async function deleteFileType(id) {
-  if (confirm('Delete this file type?')) {
+  if (confirm(t('fileTypes.delete') + '?')) {
     try {
-      await fileTypeStore.deleteFileType(id);
+      await fileTypeStore.deleteFileType(id, projectId.value);
     } catch (e) {
       const detail = e?.response?.data?.detail;
       if (detail && detail.includes('used by a naming standard')) {
-        alert(
-          'Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first.'
+        eventMessageStore.addMessage(
+          'fileTypes.eventMessages.cannotDeleteUsed',
+          'error',
+          7000
         );
       } else {
-        alert('Failed to delete file type.');
+        eventMessageStore.addMessage(
+          'fileTypes.eventMessages.deleteFailed',
+          'error',
+          7000
+        );
       }
     }
   }
 }
 async function addFileType() {
-  if (!newFileType.value.name || !newFileType.value.extension) return;
-  await fileTypeStore.addFileType({ ...newFileType.value });
+  addNameError.value = '';
+  addExtensionError.value = '';
+  newFileType.value.name = newFileType.value.name.trim();
+  newFileType.value.extension = newFileType.value.extension.trim();
+  if (newFileType.value.extension && !newFileType.value.extension.startsWith('.')) {
+    newFileType.value.extension = '.' + newFileType.value.extension;
+  }
+  let valid = true;
+  if (!isValidName(newFileType.value.name)) {
+    addNameError.value = t('fileTypes.invalidName');
+    valid = false;
+  }
+  if (!isValidExtension(newFileType.value.extension)) {
+    addExtensionError.value = t('fileTypes.invalidExtension');
+    valid = false;
+  }
+  if (!valid) return;
+  const duplicate = fileTypes.value.some(
+    ft => ft.name.trim().toLowerCase() === newFileType.value.name.toLowerCase()
+  );
+  if (duplicate) {
+    eventMessageStore.addMessage(
+      'fileTypes.eventMessages.duplicateName',
+      'error',
+      5000
+    );
+    return;
+  }
+  await fileTypeStore.addFileType(
+    { ...newFileType.value, project_id: projectId.value },
+    projectId.value
+  );
   newFileType.value = { name: '', extension: '' };
 }
 </script>
@@ -206,6 +293,15 @@ async function addFileType() {
   display: flex;
   gap: 10px;
   margin-top: 12px;
+  align-items: flex-start;
+}
+
+.add-form-col {
+  display: flex;
+  flex-direction: column;
+  width: 20rem;
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 .configure-filetypes-add-form input {
@@ -279,7 +375,7 @@ async function addFileType() {
 }
 
 /* Highlight editable fields */
-.edit-highlight {
+.configure-file-types-edit-highlight {
   border: 2px solid #2563eb !important;
   background: #f0f7ff !important;
   border-radius: 5px;
@@ -290,5 +386,16 @@ async function addFileType() {
     box-shadow 0.18s;
   width: 100%;
   box-sizing: border-box;
+}
+
+.configure-file-types-input-error {
+  color: #d32f2f;
+  font-size: 0.92em;
+  margin-top: 2px;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
+  white-space: normal;
 }
 </style>

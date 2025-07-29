@@ -7,26 +7,30 @@ export const useFileTypeStore = defineStore('fileType', {
     isLoading: false,
   }),
   actions: {
-    async fetchFileTypes() {
+    async fetchFileTypes(projectId) {
       this.isLoading = true;
       try {
-        const { data } = await fileTypeService.getAllFileTypes();
+        if (!projectId) {
+          this.fileTypes = [];
+          return;
+        }
+        const { data } = await fileTypeService.getProjectFileTypes(projectId);
         this.fileTypes = Array.isArray(data) ? data : [];
       } finally {
         this.isLoading = false;
       }
     },
-    async addFileType(newFileType) {
-      await fileTypeService.createFileType(newFileType);
-      await this.fetchFileTypes();
+    async addFileType(newFileType, projectId) {
+      await fileTypeService.addProjectFileType(projectId, newFileType);
+      await this.fetchFileTypes(projectId);
     },
-    async deleteFileType(id) {
-      await fileTypeService.deleteFileType(id);
-      await this.fetchFileTypes();
+    async deleteFileType(id, projectId) {
+      await fileTypeService.deleteProjectFileType(projectId, id);
+      await this.fetchFileTypes(projectId);
     },
-    async updateFileType(id, update) {
-      await fileTypeService.updateFileType(id, update);
-      await this.fetchFileTypes();
+    async updateFileType(id, update, projectId) {
+      await fileTypeService.updateProjectFileType(projectId, id, update);
+      await this.fetchFileTypes(projectId);
     },
   },
 });

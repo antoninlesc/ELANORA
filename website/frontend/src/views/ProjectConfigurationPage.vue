@@ -2,11 +2,10 @@
   <div>
     <div class="project-standards-page">
       <h1 class="project-standards-title">
-        <span v-if="projectName" class="project-standards-title-project-name">
-          {{ projectName }}
-        </span>
         <span class="project-standards-title-text">
-          {{ t('projectSettings.title') }}
+          {{ titleParts.before }}
+          <span class="project-standards-title-project-name">{{ projectName }}</span>
+          {{ titleParts.after }}
         </span>
       </h1>
 
@@ -19,7 +18,7 @@
           class="settings-section-header group-header"
           @click="toggleGroup(group.key)"
         >
-          <span>{{ group.title }}</span>
+          <span>{{ t(group.titleKey) }}</span>
           <span :class="{ open: openGroup === group.key }">&#9660;</span>
         </div>
         <transition name="main-section-height">
@@ -33,7 +32,7 @@
                 class="settings-section-header inner-header"
                 @click="toggleSection(section.key)"
               >
-                <span>{{ section.title }}</span>
+                <span>{{ t(section.titleKey) }}</span>
                 <span :class="{ open: openSections.includes(section.key) }">&#9660;</span>
               </div>
               <transition name="accordion">
@@ -58,8 +57,16 @@
 import ConfigureNamingStandards from '@components/pageSpecific/projectConfiguration/ConfigureNamingStandards.vue';
 import ConfigureFileTypes from '@components/pageSpecific/projectConfiguration/ConfigureFileTypes.vue';
 // Stub components for demo
-const ConfigureProjectMembers = { template: '<div>Members & Access</div>' };
-const ConfigurePendingInvitations = { template: '<div>Invitations</div>' };
+const ConfigureProjectMembers = {
+  render() {
+    return null; // renders nothing
+  }
+};
+const ConfigurePendingInvitations = {
+  render() {
+    return null;
+  }
+};
 
 import { ref, computed } from 'vue';
 import { useProjectStore } from '@stores/project.js';
@@ -68,12 +75,10 @@ import { useI18n } from 'vue-i18n';
 import '@/assets/css/ProjectConfigurationPage.css';
 
 const openGroup = ref(null);
-// Change to array for multiple open subsections
 const openSections = ref([]);
 
 function toggleGroup(group) {
   openGroup.value = openGroup.value === group ? null : group;
-  // Optionally clear openSections when switching group
   openSections.value = [];
 }
 function toggleSection(section) {
@@ -87,37 +92,44 @@ function toggleSection(section) {
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
-const projectName = computed(() => projectStore.projectName);
+const projectName = computed(() => projectStore.projectName || '');
+
+const titleParts = computed(() => {
+  // Get the translation with a unique placeholder
+  const raw = t('projectSettings.title', { projectName: '___PROJECT___' });
+  const [before, after] = raw.split('___PROJECT___');
+  return { before, after };
+});
 
 const sectionGroups = [
   {
     key: 'technical',
-    title: 'Technical Settings',
+    titleKey: 'projectSettings.sectionNames.sections.technical',
     sections: [
       {
         key: 'filetypes',
-        title: 'File Types',
+        titleKey: 'projectSettings.sectionNames.sections.subsections.fileTypes',
         component: ConfigureFileTypes,
       },
       {
         key: 'naming',
-        title: 'Naming Standards',
+        titleKey: 'projectSettings.sectionNames.sections.subsections.namingStandards',
         component: ConfigureNamingStandards,
       },
     ],
   },
   {
     key: 'collaborators',
-    title: 'Collaborators',
+    titleKey: 'projectSettings.sectionNames.sections.collaborators',
     sections: [
       {
         key: 'members',
-        title: 'Members & Access',
+        titleKey: 'projectSettings.sectionNames.sections.subsections.membersAndAccess',
         component: ConfigureProjectMembers,
       },
       {
         key: 'invitations',
-        title: 'Invitations',
+        titleKey: 'projectSettings.sectionNames.sections.subsections.invitations',
         component: ConfigurePendingInvitations,
       },
     ],

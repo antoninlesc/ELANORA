@@ -319,7 +319,38 @@
   },
 
   "projectSettings": {
-    "title": "project settings",
-    "subtitle": "Configure your project details, standards and permissions."
+    "title": "Configure the {projectName} project",
+    "subtitle": "Customize your project settings",
+    "sectionNames": {
+      "sections": {
+        "technical": "Technical Settings",
+        "collaborators": "Collaborators",
+        "subsections" : {
+          "fileTypes": "File Types",
+          "namingStandards": "Naming Standards",
+          "membersAndAccess": "Members and Access",
+          "invitations": "Invitations"
+        }
+      }
+    }
+  },
+
+  "fileTypes": {
+    "title": "Manage file types for your project",
+    "loading": "Loading file types...",
+    "empty": "No file types found. Create your first file type!",
+    "createFileType": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "name": "Name",
+    "extension": "Extension",
+    "actions": "Actions",
+    "invalidName": "Enter a valid name (letters, numbers, spaces, dashes, underscores, 2-40 chars).",
+    "invalidExtension": "Enter a valid extension (e.g., .mp4, .txt, 1-10 lowercase letters or numbers).",
+    "eventMessages": {
+      "duplicateName": "A file type with this name already exists.",
+      "cannotDeleteUsed": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first.",
+      "deleteFailed": "Failed to delete file type."
+    }
   }
 }

@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any
 
 from app.dependency.database import get_db_dep
 from app.schema.requests.file_type import FileTypeCreateRequest, FileTypeUpdateRequest
@@ -8,41 +9,120 @@ from app.service.file_type import FileTypeService
 
 router = APIRouter()
 
+@router.get("/project/{project_id}", response_model=list[FileTypeResponse])
+async def get_file_types_for_project(project_id: int, db: AsyncSession = get_db_dep):
+    project_file_types = await FileTypeService.get_file_types_for_project(db, project_id)
+    result = []
+    for pft in project_file_types:
+        # Make sure file_type is loaded
+        extension = pft.file_type.extension if pft.file_type else None
+        result.append(
+            FileTypeResponse(
+                id=pft.id,
+                name=pft.name,
+                extension=extension,
+            )
+        )
+    return result
 
-@router.get("/all", response_model=list[FileTypeResponse])
-async def get_all_file_types(db: AsyncSession = get_db_dep):
-    file_types = await FileTypeService.get_all_file_types(db)
-    # Ensure all returned objects are serialized using the response schema
-    return [FileTypeResponse.model_validate(ft) for ft in file_types]
 
-
-@router.post("/", response_model=FileTypeResponse)
-async def create_file_type(req: FileTypeCreateRequest, db: AsyncSession = get_db_dep):
-    file_type = await FileTypeService.create_file_type(db, req.name, req.extension)
-    return FileTypeResponse.model_validate(file_type)
-
-
-@router.put("/{file_type_id}", response_model=FileTypeResponse)
-async def update_file_type(
-    file_type_id: int, req: FileTypeUpdateRequest, db: AsyncSession = get_db_dep
+@router.delete("/project/{project_id}/file_type/{project_file_type_id}", response_model=FileTypeResponse)
+async def remove_file_type_from_project(
+    project_id: int, project_file_type_id: int, db: AsyncSession = get_db_dep
 ):
-    await FileTypeService.update_file_type(
-        db, file_type_id, req.model_dump(exclude_unset=True)
-    )
-    # Fetch the updated file type to return as response
-    updated = await FileTypeService.get_all_file_types(db)
-    updated_ft = next((ft for ft in updated if ft.id == file_type_id), None)
-    if not updated_ft:
-        raise HTTPException(status_code=404, detail="File type not found")
-    return FileTypeResponse.model_validate(updated_ft)
-
-
-@router.delete("/{file_type_id}", response_model=FileTypeResponse)
-async def delete_file_type(file_type_id: int, db: AsyncSession = get_db_dep):
     # Fetch before delete for response
-    file_types = await FileTypeService.get_all_file_types(db)
-    ft = next((ft for ft in file_types if ft.id == file_type_id), None)
+    project_file_types = await FileTypeService.get_file_types_for_project(db, project_id)
+    ft = next((ft for ft in project_file_types if ft.id == project_file_type_id), None)
     if not ft:
-        raise HTTPException(status_code=404, detail="File type not found")
-    await FileTypeService.delete_file_type(db, file_type_id)
-    return FileTypeResponse.model_validate(ft)
+        raise HTTPException(status_code=404, detail="File type not found in project")
+    extension = ft.file_type.extension if ft.file_type else None
+
+    # Actually delete the association
+    await FileTypeService.remove_file_type_from_project(db, project_file_type_id, project_id)
+
+    return FileTypeResponse(
+        id=ft.id,
+        name=ft.name,
+        extension=extension,
+    )
+
+
+@router.get("/import_preview/", response_model=list[FileTypeResponse])
+async def preview_importable_file_types(
+    source_project_id: int,
+    target_project_id: int,
+    db: AsyncSession = get_db_dep
+):
+    """
+    Returns file types from source_project_id, and marks which already exist in target_project_id.
+    """
+    source_types = await FileTypeService.get_file_types_for_project(db, source_project_id)
+    target_types = await FileTypeService.get_file_types_for_project(db, target_project_id)
+    target_names = {ft.name for ft in target_types}
+    result = []
+    for ft in source_types:
+        result.append(
+            FileTypeResponse(
+                id=ft.id,
+                name=ft.name,
+                extension=ft.extension,
+                exists_in_target=ft.name in target_names
+            )
+        )
+    return result
+
+
+@router.post("/import_selected/", response_model=list[FileTypeResponse])
+async def import_selected_file_types(
+    source_project_id: int,
+    target_project_id: int,
+    file_type_names: None,
+    db: AsyncSession = get_db_dep
+):
+    if file_type_names is None:
+        file_type_names = Body(..., embed=True)
+    imported = await FileTypeService.import_selected_file_types(
+        db, source_project_id, target_project_id, file_type_names
+    )
+    # Convert to response model
+    return [
+        FileTypeResponse(
+            id=ft.id,
+            name=ft.name,
+            extension=ft.file_type.extension if hasattr(ft, "file_type") else ft.extension,
+            exists_in_target=False,
+        )
+        for ft in imported
+    ]
+
+
+@router.post("/project/{project_id}/add", response_model=FileTypeResponse)
+async def add_project_file_type(
+    project_id: int,
+    req: FileTypeCreateRequest,
+    db: AsyncSession = get_db_dep
+):
+    result = await FileTypeService.create_file_type_for_project(
+        db, req.name, req.extension, project_id
+    )
+    return FileTypeResponse(
+        id=result["id"],
+        name=result["name"],
+        extension=result["extension"],
+        exists_in_target=result.get("exists_in_target", False)
+    )
+
+
+@router.put("/project/{project_id}/file_type/{project_file_type_id}", response_model=FileTypeResponse)
+async def update_project_file_type(
+    project_id: int,
+    project_file_type_id: int,
+    update: FileTypeUpdateRequest,
+    db: AsyncSession = get_db_dep,
+):
+    result = await FileTypeService.update_project_file_type(db, project_id, project_file_type_id, update.model_dump(exclude_unset=True))
+    return FileTypeResponse(
+        id=result["id"],
+        name=result["name"],
+        extension=result["extension"],
+    )
