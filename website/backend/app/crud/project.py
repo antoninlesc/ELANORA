@@ -9,11 +9,11 @@ from app.crud.elan_file import delete_elan_file_full, get_orphan_elan_files_by_p
 from app.crud.elan_file_media import delete_orphaned_media
 from app.crud.invitation import delete_project_invitations
 from app.crud.tier import delete_tiers_for_elan_file
-from app.model.tier_group import TierGroup
-from app.model.tier_section import TierSection
 from app.model.association import UserToProject
 from app.model.enums import ProjectPermission
 from app.model.project import Project
+from app.model.tier_group import TierGroup
+from app.model.tier_section import TierSection
 from app.utils.database import DatabaseUtils
 
 logger = get_logger()

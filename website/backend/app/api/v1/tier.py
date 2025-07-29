@@ -2,22 +2,21 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependency.database import get_db_dep
-from app.service.tier import TierService, TierSectionService, TierGroupService
-from app.schema.responses.tier import TierTreeResponse, SectionsAndGroupsResponse
 from app.schema.requests.tier import (
     CreateSectionRequest,
-    RenameSectionRequest,
     DeleteSectionRequest,
+    MoveTierGroupRequest,
+    RenameSectionRequest,
 )
-from app.schema.requests.tier import MoveTierGroupRequest
+from app.schema.responses.tier import SectionsAndGroupsResponse, TierTreeResponse
+from app.service.tier import TierGroupService, TierSectionService, TierService
 
 router = APIRouter()
 
 
 @router.get("/{project_name}", response_model=TierTreeResponse)
 async def get_tiers(project_name: str, db: AsyncSession = get_db_dep):
-    """
-    Get all tiers for a project, grouped by ELAN file.
+    """Get all tiers for a project, grouped by ELAN file.
     Returns a list of tier trees (one per file).
     """
     result = await TierService.get_project_tiers_grouped_by_file(db, project_name)

@@ -9,43 +9,42 @@
       <div>
         <div
           v-for="standard in standards"
-          :key="standard.id"
+          :key="standard.standard.id"
           class="configure-naming-accordion"
           style="margin-bottom: 32px"
         >
           <div
             class="configure-naming-accordion-header"
-            :class="{ open: openStandardId === standard.id }"
-            @click="toggleAccordion(standard.id)"
+            :class="{ open: openStandardId === standard.standard.id }"
+            @click="toggleAccordion(standard.standard.id)"
           >
             <span class="configure-naming-accordion-title">
-              {{ standard.name
-              }}<span v-if="getFileTypeDisplay(standard.file_type_id)"
+              {{ standard.standard.name
+              }}<span v-if="getFileTypeDisplay(standard.standard.file_type_id)"
                 >:
                 <span class="configure-naming-accordion-filetype">{{
-                  getFileTypeDisplay(standard.file_type_id)
+                  getFileTypeDisplay(standard.standard.file_type_id)
                 }}</span></span
               >
             </span>
             <span
               class="configure-naming-accordion-chevron"
-              :class="{ open: openStandardId === standard.id }"
+              :class="{ open: openStandardId === standard.standard.id }"
               >&#9660;</span
             >
           </div>
           <transition name="accordion">
             <div
-              v-if="openStandardId === standard.id"
+              v-if="openStandardId === standard.standard.id"
               class="configure-naming-accordion-body"
             >
-              <!-- Description as info box, only if present -->
               <div
-                v-if="standard.description"
+                v-if="standard.standard.description"
                 class="configure-naming-accordion-desc-box"
               >
                 <span class="configure-naming-desc-label">Description:</span>
                 <span class="configure-naming-desc-content">{{
-                  standard.description
+                  standard.standard.description
                 }}</span>
               </div>
               <div class="configure-naming-pattern-example-label">
@@ -57,9 +56,8 @@
               <div class="configure-naming-accordion-pattern">
                 <div class="configure-naming-pattern-label">Pattern:</div>
                 <div class="configure-naming-pattern-value">
-                  {{ standard.pattern }}
+                  {{ standard.standard.pattern }}
                 </div>
-                <!-- Group breakdown -->
                 <div class="configure-naming-pattern-breakdown">
                   <div class="breakdown-title">Pattern Groups:</div>
                   <div class="breakdown-groups">
@@ -126,7 +124,7 @@
                 </button>
                 <button
                   class="configure-naming-btn delete"
-                  @click="deleteStandard(standard.id)"
+                  @click="deleteStandard(standard.standard.id)"
                 >
                   Delete
                 </button>
@@ -179,7 +177,7 @@
           </div>
           <!-- Pattern: prefix + comma pattern -->
           <div class="configure-naming-form-row">
-            <label>Pattern</label>
+            <label for="pattern-comma-input">Pattern</label>
             <div class="configure-naming-pattern-row">
               <input
                 class="configure-naming-prefix-box"
@@ -189,6 +187,7 @@
               />
               <span class="configure-naming-pattern-sep">+</span>
               <input
+                id="pattern-comma-input"
                 v-model="commaPattern"
                 class="configure-naming-pattern-box"
                 placeholder="Comma pattern (e.g. session,task,_,signer)"
@@ -199,7 +198,6 @@
           </div>
           <!-- Pattern example-->
           <div class="configure-naming-form-row" style="margin-top: -1.5rem">
-            <label></label>
             <div class="configure-naming-example-desc">
               Example comma pattern for filename <b>CLSFBI1912A_S040_B</b>:
               <code>{{ exampleCommaPattern }}</code>
@@ -207,9 +205,10 @@
           </div>
           <!-- Example and extraction -->
           <div class="configure-naming-form-row">
-            <label>Example File</label>
+            <label for="example-file-input">Example File</label>
             <div class="configure-naming-example-block">
               <input
+                id="example-file-input"
                 v-model="exampleFilename"
                 placeholder="e.g. CLSFBI1912A_S040_B.mp4"
                 class="configure-naming-example-input"
@@ -225,8 +224,9 @@
           </div>
           <!-- Components (optional, can be hidden or shown as needed) -->
           <div class="configure-naming-components-section">
-            <label class="configure-naming-components-label">Components</label>
+            <label class="configure-naming-components-label" for="components-table">Components</label>
             <table
+              id="components-table"
               class="configure-naming-components-table configure-naming-components-edit-table"
             >
               <thead>
@@ -310,7 +310,7 @@
 </template>
 
 <script setup>
-import UserPrompt from './UserPrompt.vue';
+import UserPrompt from '@components/common/UserPrompt.vue';
 import projectNamingStandardApi from '@/api/service/projectNamingStandard.js';
 import { ref, onMounted, watch, computed } from 'vue';
 import { useProjectStore } from '@/stores/project';
@@ -321,6 +321,7 @@ const projectId = projectStore.currentProject?.project_id;
 
 const loading = ref(true);
 const standards = ref([]);
+const allComponentNames = ref([]);
 const showAddStandard = ref(false);
 const newStandard = ref({
   name: '',
@@ -406,7 +407,6 @@ function getFileTypeDisplay(file_type_id) {
 }
 
 const fileTypes = ref([]);
-const allComponentNames = ref([]);
 const exampleFilename = ref('');
 const regexExtractionError = ref('');
 const commaPattern = ref('');
@@ -414,14 +414,30 @@ const exampleCommaPattern =
   'session,task,letter1,_,signer_letter,signer_digits,_,camera';
 const knownSeparators = ['_', '-', '.', ' '];
 
-async function fetchComponentNames() {
-  const { data } = await projectNamingStandardApi.getComponentNames(projectId);
-  allComponentNames.value = Array.isArray(data) ? data : [];
+async function fetchStandardsAndComponentNames() {
+  loading.value = true;
+  try {
+    const { data } = await projectNamingStandardApi.getProjectNamingStandardsFull(projectId);
+    standards.value = Array.isArray(data.standards) ? data.standards : [];
+    allComponentNames.value = Array.isArray(data.component_names) ? data.component_names : [];
+    // Ensure accepted_values_str for editing
+    for (const standard of standards.value) {
+      if (standard.components) {
+        standard.components = standard.components.map((c) => ({
+          ...c,
+          accepted_values: c.accepted_values || [],
+          accepted_values_str: (c.accepted_values || []).join(', '),
+        }));
+      }
+    }
+  } finally {
+    loading.value = false;
+  }
 }
 
 function extractComponentsFromPattern(pattern) {
   // Match all {component_name} in the pattern
-  const matches = pattern.matchAll(/\{([a-zA-Z0-9_]+)\}/g);
+  const matches = pattern.matchAll(/\{(\w+)\}/g);
   const components = [];
   let order = 1;
   for (const match of matches) {
@@ -476,28 +492,6 @@ function onCommaPatternInput() {
   newStandard.value.components = components;
 }
 
-async function fetchStandards() {
-  loading.value = true;
-  try {
-    const { data } =
-      await projectNamingStandardApi.getStandardsByProject(projectId);
-    standards.value = Array.isArray(data) ? data : [];
-    for (const standard of standards.value) {
-      const res = await projectNamingStandardApi.getStandardWithComponents(
-        standard.id
-      );
-      // Accepted values fallback for legacy data
-      standard.components = (res.data.components || []).map((c) => ({
-        ...c,
-        accepted_values: c.accepted_values || [],
-        accepted_values_str: (c.accepted_values || []).join(', '),
-      }));
-    }
-  } finally {
-    loading.value = false;
-  }
-}
-
 async function extractRegexFromExample() {
   regexExtractionError.value = '';
   const pattern = newStandard.value.pattern;
@@ -516,8 +510,7 @@ async function extractRegexFromExample() {
     let blocks = [];
     let current = '';
     let depth = 0;
-    for (let i = 0; i < pattern.length; i++) {
-      const c = pattern[i];
+    for (const c of pattern) {
       if (c === '{') depth++;
       if (c === '}') depth--;
       if (c === sep && depth === 0) {
@@ -573,7 +566,7 @@ async function extractRegexFromExample() {
 
     // Extract component names in this block
     const blockCompNames = [];
-    const matches = patBlock.matchAll(/\{([a-zA-Z0-9_]+)\}/g);
+    const matches = patBlock.matchAll(/\{(\w+)\}/g);
     for (const m of matches) blockCompNames.push(m[1]);
     if (blockCompNames.length === 0) continue;
 
@@ -581,8 +574,8 @@ async function extractRegexFromExample() {
     if (blockCompNames[0].startsWith('prefix_')) {
       const comp = comps.find((c) => c.name === blockCompNames[0]);
       let prefix = '';
-      for (let i = 0; i < exBlock.length; i++) {
-        if (/[A-Z]/.test(exBlock[i])) prefix += exBlock[i];
+      for (const char of exBlock) {
+        if (/[A-Z]/.test(char)) prefix += char;
         else break;
       }
       assignRegexAndAcceptable(comp, prefix);
@@ -738,7 +731,7 @@ async function extractRegexFromExample() {
 }
 
 async function addStandard() {
-  if (regexExtractionError.value) return; // Prevent add if warning exists
+  if (regexExtractionError.value) return;
   try {
     await projectNamingStandardApi.createStandardWithComponents({
       project_id: projectId,
@@ -776,8 +769,7 @@ async function addStandard() {
     };
     commaPattern.value = '';
     exampleFilename.value = '';
-    await fetchStandards();
-    await fetchComponentNames();
+    await fetchStandardsAndComponentNames();
   } catch (err) {
     if (err?.response?.status === 409) {
       alert(err?.response?.data?.detail);
@@ -794,8 +786,7 @@ async function deleteStandard(id) {
   if (!confirm('Delete this standard?')) return;
   try {
     await projectNamingStandardApi.deleteStandard(id);
-    await fetchStandards();
-    await fetchComponentNames();
+    await fetchStandardsAndComponentNames();
   } catch {
     alert('Failed to delete standard.');
   }
@@ -809,8 +800,7 @@ const fileTypeStore = useFileTypeStore();
 
 onMounted(async () => {
   await fileTypeStore.fetchFileTypes();
-  await fetchStandards();
-  await fetchComponentNames();
+  await fetchStandardsAndComponentNames();
 });
 
 watch(
@@ -865,7 +855,7 @@ function buildExampleForRegex(regex) {
 }
 
 function buildExampleFilename(standard) {
-  let filename = standard.pattern;
+  let filename = standard.standard.pattern;
   if (!standard.components) return filename;
   for (const comp of standard.components) {
     filename = filename.replace(

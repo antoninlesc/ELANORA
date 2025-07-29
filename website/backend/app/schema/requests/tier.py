@@ -1,5 +1,5 @@
+
 from app.schema.common.base import CustomBaseModel
-from typing import Optional
 
 
 class TierTreeRequest(CustomBaseModel):
@@ -22,4 +22,4 @@ class DeleteSectionRequest(CustomBaseModel):
 
 class MoveTierGroupRequest(CustomBaseModel):
     tier_group_id: int
-    section_id: Optional[int]
+    section_id: int | None

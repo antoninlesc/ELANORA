@@ -90,15 +90,20 @@
     "loading": "Chargement...",
     "logout": "Déconnexion"
   },
-  "navigation": {
+  "appHeader": {
     "projects": "Projets",
     "dashboard": "Tableau de bord",
     "upload": "File Upload",
     "conflicts": "Conflits",
     "tiers": "Tiers",
-    "export": "Export"
+    "export": "Export",
+    "projectSection": {
+      "selectProject": "Sélectionnez un projet",
+      "noProjectAvailable": "Aucun projet disponible",
+      "loadError": "Échec du chargement des projets"
+    }
   },
-  "footer": {
+  "appFooter": {
     "platform_description": "Plateforme collaborative d'annotation linguistique pour les corpus ELAN.",
     "resources": "Ressources",
     "documentation": "Documentation",
@@ -251,7 +256,7 @@
     "email_label": "Adresse email",
     "email_placeholder": "Saisissez l'email du destinataire",
     "project_label": "Projet",
-    "select_project": "Sélectionnez un projet",
+    "selectProject": "Sélectionnez un projet",
     "project_required": "Veuillez sélectionner un projet",
     "message_label": "Message personnel (Optionnel)",
     "message_placeholder": "Ajoutez un message personnel à l'invitation",
@@ -262,10 +267,7 @@
     "error": "Échec de l'envoi de l'invitation",
     "invalid_email": "Veuillez saisir une adresse email valide"
   },
-  "project": {
-    "select_project": "Sélectionnez un projet",
-    "load_error": "Échec du chargement des projets"
-  },
+
   "emailVerification": {
     "title": "Vérification d'email",
     "subtitle": "Nous avons envoyé un code de vérification à votre adresse email",
@@ -290,6 +292,21 @@
       "invalidCode": "Code de vérification invalide",
       "verificationFailed": "Échec de la vérification de l'email",
       "resendFailed": "Échec de l'envoi du code de vérification"
+    }
+  },
+
+  "projectsPage": {
+    "title": "Projets",
+    "subtitle": "Gérez vos projets et corpus linguistiques",
+    "createProject": "Créer un Nouveau Projet",
+    "noProjects": "Aucun projet disponible, créez votre premier projet !",
+    "project": {
+      "buttons": {
+        "settings": "Paramètres du projet",
+        "share": "Partager le projet",
+        "delete": "Supprimer le projet",
+        "Rename": "Renommer le projet"
+      }
     }
   }
 }

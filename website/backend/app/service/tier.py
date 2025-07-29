@@ -1,24 +1,24 @@
-from app.core.centralized_logging import get_logger
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.crud.project import get_project_id_by_name, get_project_by_id
+
+from app.core.centralized_logging import get_logger
 from app.crud.association import get_elan_ids_for_project, get_tier_ids_for_elan_file
-from app.crud.tier import get_tiers_by_ids
-from app.model.tier import Tier
 from app.crud.elan_file import get_elan_file_by_id
-from app.schema.responses.tier import TierNode
-from app.crud.tier_section import (
-    create_tier_section,
-    get_tier_sections_by_project,
-    update_tier_section_name,
-    delete_tier_section,
-)
+from app.crud.project import get_project_by_id, get_project_id_by_name
+from app.crud.tier import get_tiers_by_ids
 from app.crud.tier_group import (
     create_tier_group,
+    get_tier_groups_by_project,
     get_tier_groups_by_section,
     update_tier_group_section,
 )
-from app.crud.tier_group import get_tier_groups_by_project
-from app.schema.responses.tier import TierGroupInfo, SectionInfo
+from app.crud.tier_section import (
+    create_tier_section,
+    delete_tier_section,
+    get_tier_sections_by_project,
+    update_tier_section_name,
+)
+from app.model.tier import Tier
+from app.schema.responses.tier import SectionInfo, TierGroupInfo, TierNode
 
 logger = get_logger()
 

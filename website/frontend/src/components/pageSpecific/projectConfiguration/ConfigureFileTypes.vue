@@ -92,20 +92,23 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue';
+import { ref, onMounted, nextTick, computed } from 'vue';
 import { useFileTypeStore } from '@/stores/fileType.js';
 import FontAwesomeIcon from '@/plugins/fontawesome';
 
-defineProps({
-  fileTypes: { type: Array, default: () => [] },
-  isLoading: { type: Boolean, default: false },
-});
-
 const fileTypeStore = useFileTypeStore();
-const newFileType = ref({ name: '', extension: '' });
+const fileTypes = computed(() => fileTypeStore.fileTypes);
+const isLoading = computed(() => fileTypeStore.isLoading);
 
+const newFileType = ref({ name: '', extension: '' });
 const editId = ref(null);
 const editFileType = ref({ name: '', extension: '' });
+
+async function fetchFileTypes() {
+  await fileTypeStore.fetchFileTypes();
+}
+
+onMounted(fetchFileTypes);
 
 function startEdit(ft) {
   editId.value = ft.id;

@@ -1,7 +1,6 @@
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.model.project_naming_standard import ProjectNamingStandard
-from app.model.naming_component import NamingComponent
 from app.utils.database import DatabaseUtils
 
 # --- ProjectNamingStandard CRUD ---

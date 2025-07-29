@@ -26,7 +26,7 @@ async def get_projects(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve projects: {e!s}",
-        )
+        ) from e
 
 
 @router.get("/details/{project_id}", response_model=ProjectResponse)
@@ -49,4 +49,4 @@ async def get_project(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve project: {e!s}",
-        )
+        ) from e

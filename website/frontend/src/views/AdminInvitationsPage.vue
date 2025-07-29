@@ -40,7 +40,7 @@
               :class="{ error: projectError }"
               required
             >
-              <option value="">{{ t('invitation.select_project') }}</option>
+              <option value="">{{ t('invitation.selectProject') }}</option>
               <option
                 v-for="project in projects"
                 :key="project.project_id"
@@ -169,7 +169,7 @@ const loadProjects = async () => {
     projects.value = response.data || [];
   } catch (error) {
     console.error('Failed to load projects:', error);
-    eventMessageStore.addMessage(t('project.load_error'), 'error');
+    eventMessageStore.addMessage(t('appHeader.projectSection.loadError'), 'error');
   }
 };
 

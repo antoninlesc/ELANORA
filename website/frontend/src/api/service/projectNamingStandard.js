@@ -24,4 +24,7 @@ export default {
       `/project-naming-standard/project/${projectId}/component-names`
     );
   },
+  async getProjectNamingStandardsFull(projectId) {
+    return axiosInstance.get(`/project-naming-standard/project/${projectId}/full`);
+  },
 };

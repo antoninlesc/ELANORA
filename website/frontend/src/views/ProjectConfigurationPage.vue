@@ -1,93 +1,126 @@
 <template>
   <div>
     <div class="project-standards-page">
-      <h1 class="project-standards-title">Project Settings</h1>
-      <!-- File Types Section -->
-      <div class="settings-section">
+      <h1 class="project-standards-title">
+        <span v-if="projectName" class="project-standards-title-project-name">
+          {{ projectName }}
+        </span>
+        <span class="project-standards-title-text">
+          {{ t('projectSettings.title') }}
+        </span>
+      </h1>
+
+      <div
+        v-for="group in sectionGroups"
+        :key="group.key"
+        :class="['settings-section', { open: openGroup === group.key }]"
+      >
         <div
-          class="settings-section-header"
-          @click="toggleSection('filetypes')"
+          class="settings-section-header group-header"
+          @click="toggleGroup(group.key)"
         >
-          <span>File Types</span>
-          <span :class="{ open: openSection === 'filetypes' }">&#9660;</span>
+          <span>{{ group.title }}</span>
+          <span :class="{ open: openGroup === group.key }">&#9660;</span>
         </div>
-        <transition name="accordion">
-          <div
-            v-show="openSection === 'filetypes'"
-            class="settings-section-body"
-          >
-            <ConfigureFileTypes
-              :file-types="fileTypeStore.fileTypes"
-              :is-loading="fileTypeStore.isLoading"
-            />
+        <transition name="main-section-height">
+          <div v-show="openGroup === group.key">
+            <div
+              v-for="section in group.sections"
+              :key="section.key"
+              class="inner-section"
+            >
+              <div
+                class="settings-section-header inner-header"
+                @click="toggleSection(section.key)"
+              >
+                <span>{{ section.title }}</span>
+                <span :class="{ open: openSections.includes(section.key) }">&#9660;</span>
+              </div>
+              <transition name="accordion">
+                <div
+                  v-show="openSections.includes(section.key)"
+                  class="settings-section-body"
+                >
+                  <component
+                    :is="section.component"
+                  />
+                </div>
+              </transition>
+            </div>
           </div>
         </transition>
       </div>
-      <!-- Naming Standards Section -->
-      <div class="settings-section">
-        <div class="settings-section-header" @click="toggleSection('naming')">
-          <span>Naming Standards</span>
-          <span :class="{ open: openSection === 'naming' }">&#9660;</span>
-        </div>
-        <transition name="accordion">
-          <div v-show="openSection === 'naming'" class="settings-section-body">
-            <ConfigureNamingStandards
-              :standards="standards"
-              :file-types="fileTypeStore.fileTypes"
-              :component-names="componentNames"
-              :loading="loading"
-              @refresh="fetchProjectConfiguration"
-            />
-          </div>
-        </transition>
-      </div>
-      <!-- Add more sections as needed -->
     </div>
   </div>
 </template>
 
 <script setup>
-import ConfigureNamingStandards from '@components/common/ConfigureNamingStandards.vue';
-import ConfigureFileTypes from '@components/common/ConfigureFileTypes.vue';
-import { ref, onMounted, watch } from 'vue';
-import projectConfigurationApi from '@/api/service/projectConfiguration.js';
-import { useFileTypeStore } from '@stores/fileType.js';
+import ConfigureNamingStandards from '@components/pageSpecific/projectConfiguration/ConfigureNamingStandards.vue';
+import ConfigureFileTypes from '@components/pageSpecific/projectConfiguration/ConfigureFileTypes.vue';
+// Stub components for demo
+const ConfigureProjectMembers = { template: '<div>Members & Access</div>' };
+const ConfigurePendingInvitations = { template: '<div>Invitations</div>' };
+
+import { ref, computed } from 'vue';
 import { useProjectStore } from '@stores/project.js';
+import { useI18n } from 'vue-i18n';
 
 import '@/assets/css/ProjectConfigurationPage.css';
 
-const openSection = ref(null);
-function toggleSection(section) {
-  openSection.value = openSection.value === section ? null : section;
+const openGroup = ref(null);
+// Change to array for multiple open subsections
+const openSections = ref([]);
+
+function toggleGroup(group) {
+  openGroup.value = openGroup.value === group ? null : group;
+  // Optionally clear openSections when switching group
+  openSections.value = [];
 }
-
-const fileTypeStore = useFileTypeStore();
-const projectStore = useProjectStore();
-const standards = ref([]);
-const componentNames = ref([]);
-const loading = ref(true);
-
-async function fetchProjectConfiguration() {
-  loading.value = true;
-  try {
-    const { data } = await projectConfigurationApi.getProjectConfiguration(
-      projectStore.projectId
-    );
-    fileTypeStore.fileTypes = data.file_types;
-    standards.value = data.standards;
-    componentNames.value = data.component_names;
-  } finally {
-    loading.value = false;
+function toggleSection(section) {
+  const idx = openSections.value.indexOf(section);
+  if (idx === -1) {
+    openSections.value.push(section);
+  } else {
+    openSections.value.splice(idx, 1);
   }
 }
 
-onMounted(fetchProjectConfiguration);
+const { t } = useI18n();
+const projectStore = useProjectStore();
+const projectName = computed(() => projectStore.projectName);
 
-watch(
-  () => projectStore.currentProject,
-  (val) => {
-    console.log('Current project changed:', val);
+const sectionGroups = [
+  {
+    key: 'technical',
+    title: 'Technical Settings',
+    sections: [
+      {
+        key: 'filetypes',
+        title: 'File Types',
+        component: ConfigureFileTypes,
+      },
+      {
+        key: 'naming',
+        title: 'Naming Standards',
+        component: ConfigureNamingStandards,
+      },
+    ],
   },
-  { immediate: true }
-);
+  {
+    key: 'collaborators',
+    title: 'Collaborators',
+    sections: [
+      {
+        key: 'members',
+        title: 'Members & Access',
+        component: ConfigureProjectMembers,
+      },
+      {
+        key: 'invitations',
+        title: 'Invitations',
+        component: ConfigurePendingInvitations,
+      },
+    ],
+  },
+];
 </script>

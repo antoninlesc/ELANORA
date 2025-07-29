@@ -1,6 +1,7 @@
-from app.crud import file_type as file_type_crud
-from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
+
+from app.crud import file_type as file_type_crud
 
 
 class FileTypeService:

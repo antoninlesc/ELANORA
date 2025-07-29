@@ -1,5 +1,6 @@
-from sqlalchemy import Integer, String, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
 from app.db.database import Base
 
 
@@ -11,5 +12,3 @@ class ComponentAcceptedValue(Base):
         Integer, ForeignKey("NAMING_COMPONENT.id", ondelete="CASCADE"), nullable=False
     )
     value: Mapped[str] = mapped_column(String(100), nullable=False)
-
-    naming_component = relationship("NamingComponent", back_populates="accepted_values")

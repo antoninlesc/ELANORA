@@ -3,16 +3,16 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
-from app.model.association import ElanFileToProject, ElanFileToTier
-from app.model.elan_file import ElanFile
-from app.utils.database import DatabaseUtils
-from app.utils.validation import ValidationUtils
+from app.crud.association import add_elan_file_to_media, add_elan_file_to_project
 from app.crud.elan_file_media import (
     create_or_get_media_in_db,
     delete_orphaned_media,
 )
-from app.crud.association import add_elan_file_to_media, add_elan_file_to_project
+from app.model.association import ElanFileToProject, ElanFileToTier
+from app.model.elan_file import ElanFile
 from app.model.tier_group import TierGroup
+from app.utils.database import DatabaseUtils
+from app.utils.validation import ValidationUtils
 
 logger = get_logger()
 
@@ -177,8 +177,7 @@ async def get_projects_for_elan_file(db: AsyncSession, elan_id: int) -> list[int
 
 
 async def delete_elan_file_full(db: AsyncSession, elan_id: int) -> bool:
-    """
-    Delete an ELAN file and all related associations, then clean up orphaned media.
+    """Delete an ELAN file and all related associations, then clean up orphaned media.
     Returns True if the file was deleted, False otherwise.
     """
     logger.info(f"Full deletion for ELAN file ID: {elan_id}")
@@ -217,8 +216,7 @@ async def delete_elan_file_full(db: AsyncSession, elan_id: int) -> bool:
 async def store_elan_file_data_in_db(
     db: AsyncSession, file_info: dict, user_id: int, project_id: int
 ) -> int:
-    """
-    Store parsed ELAN file data in the database and sync associations.
+    """Store parsed ELAN file data in the database and sync associations.
     Returns the elan_id.
     """
     # Check if file already exists

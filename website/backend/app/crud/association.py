@@ -2,9 +2,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.model.association import (
+    ElanFileToMedia,
     ElanFileToProject,
     ElanFileToTier,
-    ElanFileToMedia,
     ProjectAnnotStandard,
     UserToProject,
 )

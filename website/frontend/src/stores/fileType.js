@@ -7,10 +7,7 @@ export const useFileTypeStore = defineStore('fileType', {
     isLoading: false,
   }),
   actions: {
-    async fetchFileTypes(force = false) {
-      if (!force && (this.fileTypes.length > 0 || this.isLoading)) {
-        return;
-      }
+    async fetchFileTypes() {
       this.isLoading = true;
       try {
         const { data } = await fileTypeService.getAllFileTypes();

@@ -1,13 +1,13 @@
-from typing import List, Optional
+
 from app.schema.common.base import CustomBaseModel
 
 
 class NamingComponentRequest(CustomBaseModel):
     name: str
     regex: str
-    description: Optional[str] = ""
+    description: str | None = ""
     order: int
-    accepted_values: Optional[List[str]] = None
+    accepted_values: list[str] | None = None
     file_type_id: int
 
 
@@ -16,5 +16,5 @@ class CreateNamingStandardRequest(CustomBaseModel):
     name: str
     file_type_id: int
     pattern: str
-    description: Optional[str] = ""
-    components: List[NamingComponentRequest]
+    description: str | None = ""
+    components: list[NamingComponentRequest]

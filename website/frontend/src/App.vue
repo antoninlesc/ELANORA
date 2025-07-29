@@ -39,8 +39,6 @@ onMounted(async () => {
   userStore.initializeFromStorage();
   projectStore.initializeFromStorage();
 
-  await userStore.verifyAuthentication();
-
   // Fetch instance info (if needed)
   try {
     const response = await instanceService.getInstanceInfo();

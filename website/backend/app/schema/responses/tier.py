@@ -1,24 +1,24 @@
-from app.schema.common.base import CustomBaseModel
-from typing import List, Optional, Dict
+
 from pydantic import Field
+
+from app.schema.common.base import CustomBaseModel
 
 
 class TierNode(CustomBaseModel):
     tier_id: int
     tier_name: str
-    parent_tier_id: Optional[int] = None
-    children: List["TierNode"] = Field(default_factory=list)
+    parent_tier_id: int | None = None
+    children: list["TierNode"] = Field(default_factory=list)
 
 
 TierNode.model_rebuild()
 
 
 class TierTreeResponse(CustomBaseModel):
-    tiers: Dict[str, List[TierNode]]
+    tiers: dict[str, list[TierNode]]
 
 
-from typing import List, Dict, Optional
-from pydantic import BaseModel
+
 
 
 class SectionInfo(CustomBaseModel):
@@ -29,10 +29,10 @@ class SectionInfo(CustomBaseModel):
 class TierGroupInfo(CustomBaseModel):
     tier_group_id: int
     elan_file_name: str
-    section_id: Optional[int]
-    tiers: List[TierNode] = []
+    section_id: int | None
+    tiers: list[TierNode] = []
 
 
 class SectionsAndGroupsResponse(CustomBaseModel):
-    sections: List[SectionInfo]
-    tier_groups: List[TierGroupInfo]
+    sections: list[SectionInfo]
+    tier_groups: list[TierGroupInfo]

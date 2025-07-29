@@ -1,29 +1,24 @@
+from sqlalchemy import join, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, join
-from app.model.naming_component import NamingComponent
-from app.model.project_naming_standard import ProjectNamingStandard
+
 from app.crud.component_accepted_value import (
     create_accepted_values,
-    get_accepted_values,
     delete_accepted_values,
+    get_accepted_values,
 )
+from app.model.naming_component import NamingComponent
+from app.model.project_naming_standard import ProjectNamingStandard
 from app.utils.database import DatabaseUtils
 
 
 async def get_components_by_standard(
     db: AsyncSession, naming_standard_id: int
 ) -> list[NamingComponent]:
-    components = await DatabaseUtils.get_by_filter(
-        db,
-        NamingComponent,
-        {"naming_standard_id": naming_standard_id},
-        order_by=[NamingComponent.order],
+    stmt = select(NamingComponent).where(
+        NamingComponent.naming_standard_id == naming_standard_id
     )
-    # Attach accepted_values as a list of strings using a different attribute name
-    for comp in components:
-        values = await get_accepted_values(db, comp.id)
-        comp.accepted_values_list = [v.value for v in values]
-    return components
+    result = await db.execute(stmt)
+    return list(result.unique().scalars().all())
 
 
 async def create_component(

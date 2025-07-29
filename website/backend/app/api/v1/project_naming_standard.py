@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependency.database import get_db_dep
-from app.service.project_naming_standard import ProjectNamingStandardService
 from app.schema.requests.project_naming_standard import CreateNamingStandardRequest
 from app.schema.responses.project_naming_standard import NamingStandardResponse
+from app.service.project_naming_standard import ProjectNamingStandardService
 
 router = APIRouter()
 
@@ -63,3 +63,8 @@ async def get_component_names(project_id: int, db: AsyncSession = get_db_dep):
     return await ProjectNamingStandardService.get_unique_component_names_by_project(
         db, project_id
     )
+
+
+@router.get("/project/{project_id}/full")
+async def get_project_naming_standards_full(project_id: int, db: AsyncSession = get_db_dep):
+    return await ProjectNamingStandardService.get_project_naming_standards_full(db, project_id)

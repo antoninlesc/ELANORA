@@ -1,9 +1,10 @@
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError
+
 from fastapi import HTTPException
-from app.crud import project_naming_standard
-from app.crud import naming_component
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.crud import naming_component, project_naming_standard
 
 logger = logging.getLogger(__name__)
 
@@ -78,16 +79,16 @@ class ProjectNamingStandardService:
                 raise HTTPException(
                     status_code=409,
                     detail="A standard for this file type already exists in this project.",
-                )
+                ) from e
             elif "uq_project_naming_standard_name" in msg:
                 raise HTTPException(
                     status_code=409,
                     detail="A standard with this name already exists in this project.",
-                )
+                ) from e
             else:
                 raise HTTPException(
                     status_code=409, detail=f"A database constraint was violated: {msg}"
-                )
+                ) from e
         except Exception as e:
             await db.rollback()
             logger.error(
@@ -142,3 +143,16 @@ class ProjectNamingStandardService:
         return await naming_component.get_unique_component_names_by_project(
             db, project_id
         )
+
+    @staticmethod
+    async def get_project_naming_standards_full(db: AsyncSession, project_id: int):
+        standards = await project_naming_standard.get_standards_by_project(db, project_id)
+        standards_with_components = []
+        for standard in standards:
+            detail = await ProjectNamingStandardService.get_standard_with_components(db, standard.id)
+            standards_with_components.append(detail)
+        component_names = await naming_component.get_unique_component_names_by_project(db, project_id)
+        return {
+            "component_names": component_names,
+            "standards": standards_with_components,
+        }

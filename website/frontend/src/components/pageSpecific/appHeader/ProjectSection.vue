@@ -15,7 +15,7 @@
           :icon="faDiagramProject"
           class="project-section-icon"
         />
-        {{ currentProjectName || t('project.select_project') }}
+        {{ currentProjectName || t('appHeader.projectSection.selectProject') }}
       </span>
       <svg
         class="project-section-chevron"

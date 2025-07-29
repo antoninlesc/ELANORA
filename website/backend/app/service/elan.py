@@ -11,10 +11,10 @@ from app.core.centralized_logging import get_logger
 from app.crud import annotation, elan_file, tier
 from app.crud.annotation import bulk_create_annotations
 from app.crud.annotation_value import bulk_get_or_create_annotation_values
+from app.crud.elan_file import store_elan_file_data_in_db
 from app.crud.project import get_project_by_name
 from app.model.tier import Tier
 from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
-from app.crud.elan_file import store_elan_file_data_in_db
 
 # Get logger for this module
 logger = get_logger()

@@ -49,15 +49,20 @@
       "contact_us": "Contact Us"
     }
   },
-  "navigation": {
+  "appHeader": {
     "projects": "Projects",
     "dashboard": "Dashboard",
     "upload": "File Upload",
     "conflicts": "Conflicts",
     "tiers": "Tiers",
-    "export": "Export"
+    "export": "Export",
+    "projectSection": {
+      "selectProject": "Select a project",
+      "noProjectAvailable": "No projects available",
+      "loadError": "Failed to load projects"
+    }
   },
-  "footer": {
+  "appFooter": {
     "platform_description": "Collaborative linguistic annotation platform for ELAN corpora.",
     "resources": "Resources",
     "documentation": "Documentation",
@@ -259,7 +264,7 @@
     "email_label": "Email Address",
     "email_placeholder": "Enter recipient's email",
     "project_label": "Project",
-    "select_project": "Select a project",
+    "selectProject": "Select a project",
     "project_required": "Please select a project",
     "message_label": "Personal Message (Optional)",
     "message_placeholder": "Add a personal message to the invitation",
@@ -270,10 +275,7 @@
     "error": "Failed to send invitation",
     "invalid_email": "Please enter a valid email address"
   },
-  "project": {
-    "select_project": "Select a project",
-    "load_error": "Failed to load projects"
-  },
+  
   "emailVerification": {
     "title": "Email Verification",
     "subtitle": "We've sent a verification code to your email address",
@@ -299,5 +301,25 @@
       "verificationFailed": "Failed to verify email",
       "resendFailed": "Failed to send verification code"
     }
+  },
+
+  "projectsPage": {
+    "title": "Projects",
+    "subtitle": "Manage your linguistic projects and corpora",
+    "createProject": "Create New Project",
+    "noProjects": "No projects available. Create your first project!",
+    "project": {
+      "buttons": {
+        "settings": "Project settings",
+        "share": "Share project",
+        "delete": "Delete project",
+        "Rename": "Rename project"
+      }
+    }
+  },
+
+  "projectSettings": {
+    "title": "project settings",
+    "subtitle": "Configure your project details, standards and permissions."
   }
 }

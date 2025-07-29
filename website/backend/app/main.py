@@ -7,16 +7,15 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.auth import router as auth_router
+from app.api.v1.file_type import router as file_type_router
 from app.api.v1.git import router as git_router
-from app.api.v1.tier import router as tier_router
+from app.api.v1.instance import router as instance_router
 from app.api.v1.invitation import router as invitation_router
 from app.api.v1.location import router as location_router
 from app.api.v1.project import router as project_router
-from app.api.v1.user import router as user_router
-from app.api.v1.instance import router as instance_router
 from app.api.v1.project_naming_standard import router as project_naming_standard_router
-from app.api.v1.file_type import router as file_type_router
-from app.api.v1.project_configuration import router as project_configuration_router
+from app.api.v1.tier import router as tier_router
+from app.api.v1.user import router as user_router
 from app.core.centralized_logging import get_logger
 from app.core.config import BACKEND_HOST, ENVIRONMENT, FRONTEND_HOST
 from app.core.exception_handler import (
@@ -96,12 +95,6 @@ app.include_router(
 app.include_router(
     file_type_router, prefix=f"{API_V1_PREFIX}/file-type", tags=["FILE TYPE"]
 )
-app.include_router(
-    project_configuration_router,
-    prefix=f"{API_V1_PREFIX}/project-configuration",
-    tags=["PROJECT CONFIGURATION"],
-)
-
 
 # Root endpoint
 @app.get("/")

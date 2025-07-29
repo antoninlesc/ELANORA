@@ -62,7 +62,7 @@
             </button>
             <button
               class="project-page-action-btn project-page-config-btn"
-              title="Configure Standards"
+              :title="t('projectsPage.project.buttons.settings')"
               @click.stop="goToStandardsPage(project)"
             >
               <font-awesome-icon icon="fa-solid fa-gears" />
@@ -187,11 +187,13 @@ import gitService from '@api/service/gitService';
 import FileTree from '@components/common/FileTree.vue';
 import UploadFolder from '@components/common/UploadFolder.vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 
 const projectStore = useProjectStore();
 const router = useRouter();
 const projects = ref([]);
 const loading = ref(true);
+const { t } = useI18n();
 
 const newProjectName = ref('');
 const newProjectDescription = ref('');

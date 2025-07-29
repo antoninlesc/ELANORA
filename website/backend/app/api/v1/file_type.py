@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.dependency.database import get_db_dep
-from app.service.file_type import FileTypeService
+from app.schema.requests.file_type import FileTypeCreateRequest, FileTypeUpdateRequest
 from app.schema.responses.file_type import FileTypeResponse
-from app.schema.requests.file_type import FileTypeCreateRequest
-from app.schema.requests.file_type import FileTypeUpdateRequest
+from app.service.file_type import FileTypeService
 
 router = APIRouter()
 

@@ -1,4 +1,4 @@
-from typing import List, Optional
+
 from app.schema.common.base import CustomBaseModel
 
 
@@ -6,9 +6,9 @@ class NamingComponentResponse(CustomBaseModel):
     id: int
     name: str
     regex: str
-    description: Optional[str] = ""
+    description: str | None = ""
     order: int
-    accepted_values: Optional[List[str]] = None
+    accepted_values: list[str] | None = None
     file_type_id: int
 
 
@@ -18,5 +18,5 @@ class NamingStandardResponse(CustomBaseModel):
     name: str
     file_type_id: int
     pattern: str
-    description: Optional[str] = ""
-    components: List[NamingComponentResponse]
+    description: str | None = ""
+    components: list[NamingComponentResponse]

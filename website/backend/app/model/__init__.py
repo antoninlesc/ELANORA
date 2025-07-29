@@ -7,10 +7,10 @@ Models are imported based on their dependencies, with base models first.
 # Import enums first
 from .address import Address
 from .annotation import Annotation
-from .annotation_value import AnnotationValue
 
 # Base models with no dependencies
 from .annotation_standard import AnnotationStandard
+from .annotation_value import AnnotationValue
 
 # Association tables (import last)
 from .association import (
@@ -18,6 +18,7 @@ from .association import (
     CommentElanFile,
     CommentProject,
     ConflictOfElanFile,
+    ElanFileToMedia,
     ElanFileToProject,
     ElanFileToTier,
     ProjectAnnotStandard,
@@ -30,11 +31,10 @@ from .city import City
 from .comment import Comment
 from .conflict import Conflict
 from .country import Country
-from .elan_file_media import ElanFileMedia
-from .association import ElanFileToMedia
 
 # Models with dependencies on user/project
 from .elan_file import ElanFile
+from .elan_file_media import ElanFileMedia
 from .enums import (
     CommentTargetType,
     ConflictSeverity,
@@ -44,16 +44,14 @@ from .enums import (
     ProjectPermission,
     UserRole,
 )
+from .file_type import FileType
 from .instance import Instance
 from .invitation import Invitation
+from .naming_component import NamingComponent
 
 # Project model (depends on instance)
 from .project import Project
 from .project_naming_standard import ProjectNamingStandard
-
-from .naming_component import NamingComponent
-
-from .file_type import FileType
 
 # Tier and annotation models
 from .tier import Tier
@@ -91,8 +89,8 @@ __all__ = [
     "InvitationStatus",
     "NamingComponent",
     "Project",
-    "ProjectNamingStandard",
     "ProjectAnnotStandard",
+    "ProjectNamingStandard",
     "ProjectPermission",
     "Tier",
     "TierGroup",

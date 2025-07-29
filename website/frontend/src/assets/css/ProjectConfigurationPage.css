@@ -7,8 +7,7 @@
 
 .project-standards-title {
   font-size: 2.2rem;
-  font-weight: 700;
-  margin-bottom: 32px;
+  margin: 2rem;
   color: #2a2a2a;
   text-align: center;
 }
@@ -16,11 +15,19 @@
 .settings-section {
   width: 100%;
   max-width: 1000px;
-  background: #fff;
+  margin-bottom: 32px;
   border-radius: 14px;
   box-shadow: 0 4px 24px #0001;
-  margin-bottom: 32px;
   overflow: hidden;
+  /* Hide background and padding by default */
+  background: transparent;
+  padding-bottom: 0;
+  transition: background 0.2s, padding-bottom 0.2s;
+}
+
+.settings-section.open {
+  background: #fff;
+  padding-bottom: 8px;
 }
 
 .settings-section-header {
@@ -46,6 +53,19 @@
   transition: transform 0.2s;
 }
 
+.settings-section-header.group-header {
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: #e0eafc;
+  border-radius: 14px 14px 0 0;
+  margin-bottom: 0;
+}
+
+.settings-section-header.group-header.open,
+.settings-section-header.group-header:hover {
+  background: #c7dbf7;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -58,8 +78,81 @@
   }
 }
 
+.inner-section {
+  margin: 0 0 8px 0;
+}
+
+.settings-section-header.inner-header {
+  font-size: 1.15rem;
+  font-weight: 600;
+  background: #e9eef5;
+  border-radius: 10px;
+  margin: 8px 16px 0 16px;
+  padding: 16px 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.settings-section-header.inner-header.open,
+.settings-section-header.inner-header:hover {
+  background: #dbe7fa;
+}
+
 .settings-section-body {
-  padding: 28px 32px 32px;
+  padding: 20px 32px 24px;
   background: #fff;
   animation: fade-in 0.2s;
+  border-radius: 0 0 10px 10px;
+  margin: 0 16px 8px 16px;
+  box-shadow: 0 2px 8px #0001;
+}
+
+.project-standards-title-project-name {
+  font-weight: 600;
+  color: #2a2a2a;
+  margin-right: 8px;
+}
+
+.settings-group {
+  margin-bottom: 40px;
+}
+
+.settings-group-header {
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: #e0eafc;
+  padding: 18px 32px;
+  border-radius: 10px 10px 0 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  transition: background 0.2s;
+  margin-bottom: 2px;
+}
+
+.settings-group-header.open,
+.settings-group-header:hover {
+  background: #c7dbf7;
+}
+
+.main-section-height-enter-active,
+.main-section-height-leave-active {
+  transition: height 0.35s cubic-bezier(.4,0,.2,1), opacity 0.35s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+.main-section-height-enter-from,
+.main-section-height-leave-to {
+  height: 0;
+  opacity: 0;
+}
+.main-section-height-enter-to,
+.main-section-height-leave-from {
+  height: auto;
+  opacity: 1;
 }

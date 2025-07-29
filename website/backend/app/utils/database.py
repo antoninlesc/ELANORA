@@ -252,8 +252,7 @@ class DatabaseUtils:
         main_id_field: str,
         assoc_ref_field: str,
     ):
-        """
-        Return all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
+        """Return all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
         """
         main_id_col = getattr(main_model, main_id_field)
         assoc_ref_col = getattr(assoc_model, assoc_ref_field)
@@ -270,8 +269,7 @@ class DatabaseUtils:
         main_id_field: str,
         assoc_ref_field: str,
     ) -> int:
-        """
-        Delete all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
+        """Delete all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
         Returns the number of deleted rows.
         """
         orphans = await DatabaseUtils.get_fully_orphaned(

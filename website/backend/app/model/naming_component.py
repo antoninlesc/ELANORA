@@ -1,5 +1,6 @@
-from sqlalchemy import Integer, String, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.database import Base
 from app.model.component_accepted_value import ComponentAcceptedValue
 
@@ -28,6 +29,8 @@ class NamingComponent(Base):
     file_type = relationship("FileType")
     accepted_values = relationship(
         "ComponentAcceptedValue",
-        back_populates="naming_component",
+        backref="component",
         cascade="all, delete-orphan",
+        lazy="joined",
     )
+

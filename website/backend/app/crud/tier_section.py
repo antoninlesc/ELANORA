@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.model.tier_section import TierSection
+
 from app.model.tier_group import TierGroup
+from app.model.tier_section import TierSection
 from app.utils.database import DatabaseUtils
 
 

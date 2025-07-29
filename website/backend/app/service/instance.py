@@ -1,8 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.crud.instance import (
-    get_instance_by_name,
-    get_first_instance,
     create_instance as crud_create_instance,
+)
+from app.crud.instance import (
+    get_first_instance,
+    get_instance_by_name,
+)
+from app.crud.instance import (
     update_instance as crud_update_instance,
 )
 
