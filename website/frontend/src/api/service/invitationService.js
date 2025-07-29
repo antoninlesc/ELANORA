@@ -7,7 +7,7 @@
 import axiosInstance from '@api/apiClient.js';
 
 /**
- * Send an invitation to a specific project.
+ * Send an invitation to a specific project by email.
  * @param {Object} invitationData
  * @param {string} invitationData.receiver_email
  * @param {string} invitationData.project_name
@@ -15,27 +15,10 @@ import axiosInstance from '@api/apiClient.js';
  * @param {number} invitationData.expires_in_days
  * @param {string} invitationData.project_permission
  * @param {string} invitationData.language
- * @param {boolean} invitationData.send_email
  * @returns {Promise<import('axios').AxiosResponse>}
  */
 export async function sendInvitation(invitationData) {
   return await axiosInstance.post('/invitation/send', invitationData);
-}
-
-/**
- * Generate an invitation code without sending email.
- * @param {Object} invitationData
- * @param {string} invitationData.project_name
- * @param {string} invitationData.project_permission
- * @param {number} invitationData.expires_in_days
- * @returns {Promise<import('axios').AxiosResponse>}
- */
-export async function generateInvitationCode(invitationData) {
-  // Generate an invitation code without sending email
-  return await axiosInstance.post('/invitation/send', {
-    ...invitationData,
-    send_email: false
-  });
 }
 
 /**

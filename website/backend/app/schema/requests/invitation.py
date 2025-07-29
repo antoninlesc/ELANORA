@@ -1,23 +1,20 @@
 """Request schemas for invitation operations."""
 
-from pydantic import EmailStr, Field
+from pydantic import EmailStr
 
 from app.model.enums import ProjectPermission
 from app.schema.common.base import CustomBaseModel
 
 
 class InvitationSendRequest(CustomBaseModel):
-    """Schema for sending an invitation."""
+    """Schema for sending an invitation by email."""
 
-    receiver_email: EmailStr | None = None
+    receiver_email: EmailStr
     project_name: str
     project_permission: ProjectPermission = ProjectPermission.READ
     expires_in_days: int = 7
     language: str = "en"
     message: str | None = None
-    send_email: bool = Field(
-        default=True, description="Whether to send email or just generate code"
-    )
 
 
 class InvitationAcceptRequest(CustomBaseModel):
