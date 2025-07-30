@@ -7,12 +7,12 @@
 </head>
 <body style="font-family:'Segoe UI','Roboto',Arial,sans-serif;background:#fff;color:#374151;margin:0;padding:2rem 1rem;text-align:center;">
     <div style="background:#fff;border-radius:1.5rem;box-shadow:0 10px 40px rgba(0,0,0,0.1);max-width:500px;width:100%;overflow:hidden;position:relative;margin:0 auto;display:inline-block;text-align:left;">
-        <div style="background:linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);padding:2rem;text-align:center;color:white;position:relative;">
-            <div style="font-size:2.5rem;font-weight:800;margin-bottom:0.5rem;letter-spacing:-0.5px;">ELANORA</div>
-            <div style="font-size:1.1rem;opacity:0.9;font-weight:500;">Plateforme collaborative ELAN</div>
+        <div style="background:linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);padding:1.5rem;text-align:center;color:white;">
+            <div style="font-size:clamp(1.8rem, 5vw, 2.5rem);font-weight:800;margin-bottom:0.5rem;letter-spacing:-0.5px;">ELANORA</div>
+            <div style="font-size:1rem;opacity:0.9;font-weight:500;">Plateforme collaborative ELAN</div>
         </div>
         
-        <div style="padding:2.5rem;">
+        <div style="padding:1.5rem;">
             <div style="font-size:1.2rem;font-weight:600;color:#374151;margin-bottom:1.5rem;">
                 Bonjour,
             </div>
@@ -23,30 +23,33 @@
             
             {custom_message}
             
-            <div style="background:#f0f4ff;border:2px solid #d1d5db;border-radius:1rem;padding:2rem;text-align:center;margin:2rem 0;position:relative;overflow:hidden;">
-                <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);"></div>
-                <div style="font-size:0.9rem;color:#6b7280;margin-bottom:1.5rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">
+            <div style="background:#f0f4ff;border:1px solid #e0e7ff;border-radius:16px;padding:24px 16px;text-align:center;margin:24px 0;">
+                <div style="font-size:14px;color:#6b7280;margin-bottom:20px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">
                     Répondre à cette invitation
                 </div>
-                <table cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
+
+                <!-- buttons stacked vertically on mobile, side by side on desktop -->
+                <table cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:400px;margin:0 auto;">
                     <tr>
-                        <td style="padding:0 8px 0 0;">
-                            <table cellspacing="0" cellpadding="0" border="0">
+                        <td style="padding:0 0 12px 0;">
+                            <table cellspacing="0" cellpadding="0" border="0" style="width:100%;">
                                 <tr>
-                                    <td style="background:#10b981;border-radius:12px;text-align:center;mso-padding-alt:14px 32px 14px 32px;">
-                                        <a href="{accept_url}" style="display:inline-block;background:#10b981;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-weight:600;font-size:16px;font-family:'Segoe UI','Roboto',Arial,sans-serif;line-height:1;mso-line-height-rule:exactly;border:2px solid #10b981;">
-                                            <span style="color:#ffffff;">✓ Accepter</span>
+                                    <td style="background:#10b981;border-radius:8px;text-align:center;">
+                                        <a href="{accept_url}" style="display:block;background:#10b981;color:#ffffff;text-decoration:none;padding:16px 24px;border-radius:8px;font-weight:600;font-size:16px;font-family:'Segoe UI','Roboto',Arial,sans-serif;transition:background-color 0.2s;">
+                                            ✓ Accepter
                                         </a>
                                     </td>
                                 </tr>
                             </table>
                         </td>
-                        <td style="padding:0 0 0 8px;">
-                            <table cellspacing="0" cellpadding="0" border="0">
+                    </tr>
+                    <tr>
+                        <td style="padding:0;">
+                            <table cellspacing="0" cellpadding="0" border="0" style="width:100%;">
                                 <tr>
-                                    <td style="background:#ef4444;border-radius:12px;text-align:center;mso-padding-alt:14px 32px 14px 32px;">
-                                        <a href="{reject_url}" style="display:inline-block;background:#ef4444;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-weight:600;font-size:16px;font-family:'Segoe UI','Roboto',Arial,sans-serif;line-height:1;mso-line-height-rule:exactly;border:2px solid #ef4444;">
-                                            <span style="color:#ffffff;">✗ Refuser</span>
+                                    <td style="background:#ef4444;border-radius:8px;text-align:center;">
+                                        <a href="{reject_url}" style="display:block;background:#ef4444;color:#ffffff;text-decoration:none;padding:16px 24px;border-radius:8px;font-weight:600;font-size:16px;font-family:'Segoe UI','Roboto',Arial,sans-serif;transition:background-color 0.2s;">
+                                            ✗ Refuser
                                         </a>
                                     </td>
                                 </tr>
@@ -54,20 +57,19 @@
                         </td>
                     </tr>
                 </table>
-                <!-- Fallback pour clients ne supportant pas les tableaux imbriqués -->
-                <!--[if mso]>
-                <table cellspacing="0" cellpadding="0" border="0" align="center" style="margin:20px auto 0 auto;">
-                    <tr>
-                        <td style="background:#10b981;border-radius:12px;padding:14px 32px;text-align:center;">
-                            <a href="{accept_url}" style="color:#ffffff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">✓ Accepter</a>
-                        </td>
-                        <td style="width:16px;"></td>
-                        <td style="background:#ef4444;border-radius:12px;padding:14px 32px;text-align:center;">
-                            <a href="{reject_url}" style="color:#ffffff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">✗ Refuser</a>
-                        </td>
-                    </tr>
-                </table>
-                <![endif]-->
+
+                <!-- desktop version (side by side) for clients that support media queries -->
+                <!--[if !mso]><!-->
+                <div style="display:none;">
+                    <style>
+                        @media screen and (min-width: 480px) {
+                            .button-container { display: table !important; width: 100% !important; }
+                            .button-cell { display: table-cell !important; width: 50% !important; padding: 0 6px !important; }
+                            .mobile-stack { display: none !important; }
+                        }
+                    </style>
+                </div>
+                <!--<![endif]-->
             </div>
             
             <div style="background:rgba(217, 119, 6, 0.05);border:1px solid rgba(217, 119, 6, 0.2);border-radius:12px;padding:16px 24px;margin:24px 0;text-align:center;">
@@ -90,27 +92,25 @@
             </div>
         </div>
         
-        <div style="background:#f9fafb;padding:2rem;text-align:center;border-top:1px solid #e5e7eb;">
+            <div style="background:#f9fafb;padding:1.5rem;text-align:center;border-top:1px solid #e5e7eb;">
             <div style="font-size:0.9rem;color:#6b7280;margin-bottom:1rem;">
                 © {year} ELANORA Platform. Tous droits réservés.
             </div>
-            <div style="display:flex;justify-content:center;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-                <table cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
-                    <tr>
-                        <td style="padding:0 8px;text-align:center;">
-                            <a href="{contact_url}" style="color:#2563eb;text-decoration:none;font-weight:500;font-size:14px;font-family:'Segoe UI','Roboto',Arial,sans-serif;">Contact Support</a>
-                        </td>
-                        <td style="color:#d1d5db;font-size:14px;padding:0 4px;">|</td>
-                        <td style="padding:0 8px;text-align:center;">
-                            <a href="#" style="color:#2563eb;text-decoration:none;font-weight:500;font-size:14px;font-family:'Segoe UI','Roboto',Arial,sans-serif;">Centre d'aide</a>
-                        </td>
-                        <td style="color:#d1d5db;font-size:14px;padding:0 4px;">|</td>
-                        <td style="padding:0 8px;text-align:center;">
-                            <a href="#" style="color:#2563eb;text-decoration:none;font-weight:500;font-size:14px;font-family:'Segoe UI','Roboto',Arial,sans-serif;">Politique de confidentialité</a>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+            <table style="width:100%;margin:0 auto;border-collapse:collapse;">
+                <tr>
+                    <td style="padding:0 8px;text-align:center;">
+                        <a href="{contact_url}" style="color:#2563eb;text-decoration:none;font-weight:500;font-size:14px;font-family:'Segoe UI','Roboto',Arial,sans-serif;">Contact Support</a>
+                    </td>
+                    <td style="color:#d1d5db;font-size:14px;padding:0 4px;">|</td>
+                    <td style="padding:0 8px;text-align:center;">
+                        <a href="#" style="color:#2563eb;text-decoration:none;font-weight:500;font-size:14px;font-family:'Segoe UI','Roboto',Arial,sans-serif;">Centre d'aide</a>
+                    </td>
+                    <td style="color:#d1d5db;font-size:14px;padding:0 4px;">|</td>
+                    <td style="padding:0 8px;text-align:center;">
+                        <a href="#" style="color:#2563eb;text-decoration:none;font-weight:500;font-size:14px;font-family:'Segoe UI','Roboto',Arial,sans-serif;">Politique de confidentialité</a>
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
 </body>
