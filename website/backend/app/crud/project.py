@@ -3,7 +3,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.annotation import delete_unused_annotation_values
 from app.crud.association import delete_project_associations
 from app.crud.comment import delete_project_comments
-from app.crud.conflict import delete_project_conflicts
 from app.crud.elan_file import delete_elan_file, get_orphan_elan_files_by_project
 from app.crud.invitation import delete_project_invitations
 from app.crud.tier import delete_tiers_for_elan_file
@@ -77,7 +76,6 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
         # Now delete project associations (users, standards, file links)
         await delete_project_associations(db, project.project_id)
         await delete_project_invitations(db, project.project_id)
-        await delete_project_conflicts(db, project.project_id)
         await delete_project_comments(db, project.project_id)
         # Clean up unused annotation values
         await delete_unused_annotation_values(db)

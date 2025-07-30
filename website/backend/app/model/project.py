@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
 
 if TYPE_CHECKING:
-    from .conflict import Conflict
+    from .pending_upload import PendingUpload
     from .instance import Instance
     from .invitation import Invitation
 
@@ -27,8 +27,8 @@ class Project(Base):
     project_path: Mapped[str] = mapped_column(String(512), nullable=False, unique=True)
 
     # Relationships - use string references
-    conflicts: Mapped[list["Conflict"]] = relationship(
-        "Conflict", back_populates="project", cascade="all, delete-orphan"
+    pending_uploads: Mapped[list["PendingUpload"]] = relationship(
+        "PendingUpload", back_populates="project", cascade="all, delete-orphan"
     )
     instance: Mapped["Instance"] = relationship("Instance", back_populates="projects")
     invitations: Mapped[list["Invitation"]] = relationship(

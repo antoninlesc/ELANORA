@@ -87,21 +87,50 @@ class FileChanges(CustomBaseModel):
     error: str | None = None
 
 
+class UploadSummary(CustomBaseModel):
+    """Schema for upload file summary."""
+
+    new_files: list[str] = []
+    modified_files: list[str] = []
+    deleted_files: list[str] = []
+
+
+class AdminInfo(CustomBaseModel):
+    """Schema for admin workflow information."""
+
+    pending_approval_since: str | None = None
+    approval_branch: str | None = None
+    original_branch: str | None = None
+    next_steps: str | None = None
+
+
 class BatchFileUploadResponse(CustomBaseModel):
     project_name: str
-    branch_name: str
+    branch_name: str | None = None
     uploaded_files: list[UploadedFileInfo]
     failed_files: list[FailedFileInfo]
     total_uploaded: int
     total_failed: int
     existing_files_updated: int
     new_files_added: int
-    merge_status: str
-    has_conflicts: bool
-    conflicts: list[FileChanges] = []
+
+    # Workflow status fields (updated for pending upload workflow)
+    status: str  # "pending_admin_approval"
+    requires_approval: bool = True
+    has_differences: bool = False
+
+    # Legacy fields for backward compatibility
+    merge_status: str = "pending_admin_approval"  # Default value
+    has_conflicts: bool = False  # No conflicts until admin tests merge
+    conflicts: list[FileChanges] = []  # Empty until admin tests merge
+
+    # New workflow fields
+    upload_summary: UploadSummary | None = None
+    admin_info: AdminInfo | None = None
+
+    # Optional fields
     new_files_in_merge: list[str] | None = []
     modified_files_in_merge: list[str] | None = []
-    status: str
     uploaded_at: str
     message: str | None = None
 
@@ -141,3 +170,43 @@ class ProjectDeleteResponse(CustomBaseModel):
     project_id: int
     status: str
     message: str | None = None
+
+
+class PendingUploadInfo(CustomBaseModel):
+    """Schema for individual pending upload information."""
+
+    upload_id: int
+    branch_name: str
+    original_branch: str | None = None
+    upload_type: str
+    description: str
+    status: str
+    uploaded_at: str | None = None
+    uploaded_by: int | None = None
+
+    # Real-time merge status (computed when requested)
+    merge_status: str | None = None  # "ready_to_merge", "needs_resolution", "error"
+    conflicted_files: list[str] = []
+    conflicted_files_count: int = 0
+    tested_at: str | None = None
+
+    # Raw git details
+    git_details: dict | None = None
+
+
+class UploadSummaryStats(CustomBaseModel):
+    """Schema for upload summary statistics."""
+
+    total_pending: int
+    ready_count: int = 0
+    conflicts_count: int = 0
+
+
+class PendingUploadsResponse(CustomBaseModel):
+    """Schema for pending uploads list response."""
+
+    project_name: str
+    pending_uploads: list[PendingUploadInfo]
+    total_pending: int
+    ready_count: int = 0
+    conflicts_count: int = 0

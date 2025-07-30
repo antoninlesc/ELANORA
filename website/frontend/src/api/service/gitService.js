@@ -78,14 +78,14 @@ const gitService = {
   },
 
   // Resolve conflicts and merge a branch
-  async getConflicts(projectName, branchName, forceRefresh = false) {
+  async getPendingUploads(projectName, forceRefresh = false) {
     const params = new URLSearchParams();
     if (forceRefresh) {
       params.append('force_refresh', 'true');
     }
     
     const { data } = await axiosInstance.get(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts?${params.toString()}`
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads`
     );
     return data;
   },
@@ -162,6 +162,25 @@ const gitService = {
     const { data } = await axiosInstance.post(
       `/git/projects/${encodeURIComponent(oldProjectName)}/rename`,
       { new_project_name: newProjectName }
+    );
+    return data;
+  },
+    // Get detailed conflict information for a file
+  async getConflictDetails(projectName, branchName, filename) {
+    const { data } = await axiosInstance.get(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts/${encodeURIComponent(filename)}/details`
+    );
+    return data;
+  },
+
+  // Resolve conflict manually with custom content
+  async resolveConflictManually(projectName, branchName, filename, resolvedContent) {
+    const formData = new FormData();
+    formData.append('resolved_content', resolvedContent);
+    
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts/${encodeURIComponent(filename)}/resolve-manual`,
+      formData
     );
     return data;
   },

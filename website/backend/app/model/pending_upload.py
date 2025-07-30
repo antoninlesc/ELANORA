@@ -17,30 +17,28 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
 
-from .enums import ConflictSeverity, ConflictStatus, ConflictType
+from .enums import Severity, Status, Type
 
 if TYPE_CHECKING:
     from .project import Project
     from .user import User
 
 
-class Conflict(Base):
-    """Conflict model representing detected conflicts in projects."""
+class PendingUpload(Base):
+    """PendingUpload model representing detected uploads in projects."""
 
-    __tablename__ = "CONFLICT"
+    __tablename__ = "PENDING_UPLOAD"
 
-    conflict_id: Mapped[int] = mapped_column(
+    upload_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    conflict_type: Mapped[ConflictType] = mapped_column(
-        SQLEnum(ConflictType), nullable=False
+    upload_type: Mapped[Type] = mapped_column(SQLEnum(Type), nullable=False)
+    upload_description: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[Severity] = mapped_column(
+        SQLEnum(Severity), nullable=False, default=Severity.MEDIUM
     )
-    conflict_description: Mapped[str] = mapped_column(Text, nullable=False)
-    severity: Mapped[ConflictSeverity] = mapped_column(
-        SQLEnum(ConflictSeverity), nullable=False, default=ConflictSeverity.MEDIUM
-    )
-    status: Mapped[ConflictStatus] = mapped_column(
-        SQLEnum(ConflictStatus), nullable=False, default=ConflictStatus.DETECTED
+    status: Mapped[Status] = mapped_column(
+        SQLEnum(Status), nullable=False, default=Status.PENDING_ADMIN_APPROVAL
     )
     detected_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.current_timestamp()
@@ -56,11 +54,13 @@ class Conflict(Base):
     )
 
     # Relationships
-    project: Mapped["Project"] = relationship("Project", back_populates="conflicts")
+    project: Mapped["Project"] = relationship(
+        "Project", back_populates="pending_uploads"
+    )
     resolver: Mapped[Optional["User"]] = relationship(
-        "User", foreign_keys=[resolved_by], back_populates="resolved_conflicts"
+        "User", foreign_keys=[resolved_by], back_populates="resolved_uploads"
     )
 
     def __repr__(self) -> str:
-        """Return a string representation of the Conflict."""
-        return f"<Conflict(conflict_id='{self.conflict_id}', conflict_type='{self.conflict_type}', status='{self.status}', detected_at='{self.detected_at}', project_id='{self.project_id}', branch_name='{self.branch_name}')>"
+        """Return a string representation of the PendingUpload."""
+        return f"<Upload(upload_id='{self.upload_id}', upload_type='{self.upload_type}', status='{self.status}', detected_at='{self.detected_at}', project_id='{self.project_id}', branch_name='{self.branch_name}')>"

@@ -96,7 +96,8 @@
     "upload": "File Upload",
     "conflicts": "Conflits",
     "tiers": "Tiers",
-    "export": "Export"
+    "export": "Export",
+    "contribution": "Contribution"
   },
   "footer": {
     "platform_description": "Plateforme collaborative d'annotation linguistique pour les corpus ELAN.",

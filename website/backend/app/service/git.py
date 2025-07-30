@@ -3,15 +3,17 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
+
+from fastapi import UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
-from app.db.database import get_session_maker
-from fastapi import UploadFile
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-
+from app.crud.pending_upload import (
+    save_pending_upload,
+    get_pending_uploads,
+)
 from app.crud.project import (
     create_project_db,
     delete_project_db,
@@ -20,17 +22,12 @@ from app.crud.project import (
     list_projects_by_user,
     project_exists_by_name,
 )
-from app.crud.conflict import save_git_conflicts, get_git_conflicts_for_branch
-from app.model.enums import ConflictStatus
-
 from app.service.elan import ElanService
-from app.service.git_diff_parser import GitDiffParser
 from app.service.git_operations import (
     FileUploadProcessor,
     GitBranchManager,
     GitCommandRunner,
     GitDiffAnalyzer,
-    GitMerger,
     delete_project_folder,
 )
 from app.utils.project_setup_utils import (
@@ -257,7 +254,6 @@ class GitService:
             branch_manager = GitBranchManager(project_path)
             file_processor = FileUploadProcessor(project_path)
             diff_analyzer = GitDiffAnalyzer(project_path)
-            merger = GitMerger(project_path)
 
             # Create branch and process files
             branch_name = branch_manager.create_upload_branch(user_name, len(files))
@@ -268,12 +264,11 @@ class GitService:
             if not uploaded_files:
                 raise RuntimeError("No files were successfully uploaded")
 
-            # Commit and attempt merge
+            # Commit
             file_processor.commit_files(uploaded_files, user_name)
-            merge_result = await self._attempt_merge(
+            upload_info = await self._save_upload_for_admin_approval(
                 branch_manager,
                 diff_analyzer,
-                merger,
                 branch_name,
                 db=db,
                 user_id=user_id,
@@ -283,11 +278,10 @@ class GitService:
             # Build response
             return self._build_upload_response(
                 project_name,
-                branch_name,
                 uploaded_files,
                 failed_files,
                 existing_files,
-                merge_result,
+                upload_info,
             )
 
         except subprocess.CalledProcessError as e:
@@ -296,6 +290,120 @@ class GitService:
         except Exception as e:
             logger.error(f"Batch file operation failed: {e}")
             raise RuntimeError(f"Failed to add ELAN files: {e}") from e
+
+    async def _save_upload_for_admin_approval(
+        self,
+        branch_manager: GitBranchManager,
+        diff_analyzer: GitDiffAnalyzer,
+        branch_name: str,
+        db: AsyncSession,
+        user_id: int,
+        project_path: Path,
+    ) -> dict[str, Any]:
+        """Save upload for admin approval instead of attempting immediate merge."""
+        logger.info(f"Saving upload branch '{branch_name}' for admin approval")
+
+        # Analyze what was uploaded
+        branch_manager.switch_to_master()
+        analysis = diff_analyzer.analyze_merge_differences(branch_name)
+        logger.info(
+            f"Upload analysis - New: {len(analysis.new_files)}, Modified: {len(analysis.modified_files)}, Deleted: {len(analysis.deleted_files)}"
+        )
+
+        # Always save for admin approval (no immediate merging)
+        approval_branch_name = f"{branch_name}_pending_approval"
+        runner = GitCommandRunner(project_path)
+
+        try:
+            # Rename upload branch to indicate it's pending approval
+            runner.run(["branch", "-m", branch_name, approval_branch_name], check=True)
+            logger.info(
+                f"Branch renamed to '{approval_branch_name}' for admin approval"
+            )
+
+            # Store basic upload info in database for admin review
+            upload_info = {
+                "status": "pending_admin_approval",
+                "has_conflicts": False,  # Unknown until admin tests merge
+                "has_differences": len(analysis.modified_files) > 0
+                or len(analysis.deleted_files) > 0,
+                "requires_approval": True,
+                "branch_name": approval_branch_name,
+                "original_branch": branch_name,
+                "new_files": analysis.new_files,
+                "modified_files": analysis.modified_files,
+                "deleted_files": analysis.deleted_files,
+                "analysis": analysis,
+                "message": f"Upload saved for admin approval. {len(analysis.new_files)} new files, {len(analysis.modified_files)} modified files.",
+                "pending_approval_since": datetime.now().isoformat(),
+                "uploaded_by": user_id,
+            }
+
+            # Save upload info to database for admin dashboard
+            await self._save_pending_upload_to_db(
+                upload_info, project_path, db, user_id
+            )
+
+            return upload_info
+
+        except Exception as e:
+            logger.error(f"Failed to save upload for approval: {e}")
+            # Cleanup on error
+            try:
+                runner.run(["branch", "-D", approval_branch_name], check=False)
+            except:
+                pass
+            raise RuntimeError(f"Failed to save upload for approval: {e}") from e
+
+    async def _save_pending_upload_to_db(
+        self, upload_info: dict, project_path: Path, db: AsyncSession, user_id: int
+    ):
+        """Save pending upload info to database for admin review."""
+        try:
+            project = await get_project_by_name(db, project_path.name)
+            if project:
+                # Create a pending upload record using the existing conflicts table
+                # We'll use this as a "pending upload" entry
+                upload_record = {
+                    "type": "PENDING_UPLOAD",
+                    "status": "PENDING_ADMIN_APPROVAL",
+                    "upload_data": {
+                        "branch_name": upload_info["branch_name"],
+                        "original_branch": upload_info["original_branch"],
+                        "uploaded_by": user_id,
+                        "new_files_count": len(upload_info["new_files"]),
+                        "modified_files_count": len(upload_info["modified_files"]),
+                        "deleted_files_count": len(upload_info["deleted_files"]),
+                        "new_files": upload_info["new_files"],
+                        "modified_files": upload_info["modified_files"],
+                        "deleted_files": upload_info["deleted_files"],
+                        "pending_since": upload_info["pending_approval_since"],
+                        "has_differences": upload_info["has_differences"],
+                        "has_conflicts": upload_info["has_conflicts"],
+                    },
+                    "resolution_info": {
+                        "can_auto_resolve": False,
+                        "requires_admin_approval": True,
+                        "suggested_action": "admin_test_merge",
+                        "available_strategies": ["test_merge"],
+                    },
+                    "detected_at": upload_info["pending_approval_since"],
+                }
+
+                # Save to conflicts table as "pending upload"
+                await save_pending_upload(
+                    db,
+                    project.project_id,
+                    upload_info["branch_name"],
+                    upload_record,
+                )
+
+                logger.info(
+                    f"Saved pending upload info for admin review: {upload_info['branch_name']}"
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to save pending upload to DB: {e}")
 
     async def list_projects(self, db: AsyncSession, instance_id: int) -> list[str]:
         projects = await list_projects_by_instance(db, instance_id)
@@ -399,212 +507,154 @@ class GitService:
                 existing_files.append(filename)
         return existing_files
 
-    async def _attempt_merge(
-        self,
-        branch_manager: GitBranchManager,
-        diff_analyzer: GitDiffAnalyzer,
-        merger: GitMerger,
-        branch_name: str,
-        db: AsyncSession,
-        user_id: int,
-        project_path: Path,
+    async def get_pending_uploads_with_status(
+        self, project_name: str, db: AsyncSession
     ) -> dict[str, Any]:
-        logger.info(f"Attempting to merge branch '{branch_name}' to master branch")
-        diff_parser = GitDiffParser()
-        branch_manager.switch_to_master()
-        analysis = diff_analyzer.analyze_merge_differences(branch_name, diff_parser)
-
-        # Use selective merge instead of auto_merge_if_safe
-        merge_result = merger.selective_merge_with_conflict_isolation(
-            branch_name, analysis
-        )
-
-        if (
-            merge_result["status"] == "merged_successfully"
-            or merge_result["status"] == "selective_merge_completed"
-        ):
-            # Only delete the original branch if it was successfully processed
-            if (
-                "conflict_branch" not in merge_result
-            ):  # Don't delete if we created a conflict branch
-                branch_manager.delete_branch(branch_name)
-
-            # Sync DB with merged ELAN files
-            if db and user_id and project_path:
-                await self._sync_elan_files_with_db(
-                    project_path, db, user_id, project_name=project_path.name
-                )
-
-        if (
-            merge_result.get("has_conflicts", False)
-            or merge_result["status"] == "changes_detected"
-            or merge_result["status"] == "selective_merge_completed"
-        ):
-            conflicts = self._extract_conflicts_from_merge_result(
-                merge_result, project_path
-            )
-            if conflicts:
-                # Get project_id from project_name
-                project = await get_project_by_name(db, project_path.name)
-                if project:
-                    await save_git_conflicts(
-                        db,
-                        project.project_id,
-                        merge_result.get("conflict_branch"),
-                        conflicts,
-                    )
-                    logger.info(
-                        f"Saved {len(conflicts)} git conflicts for branch {branch_name}"
-                    )
-
-        logger.info(f"Merge result: {merge_result['status']}")
-        return merge_result
-
-    async def get_conflicts(
-        self,
-        project_name: str,
-        branch_name: str,
-        db: AsyncSession,
-        force_refresh: bool = False,
-    ) -> dict[str, Any]:
-        """Get conflicts for a specific branch with enhanced information."""
+        """Get pending uploads and compute their merge readiness in real-time."""
         project_path = self.base_path / project_name
+        runner = GitCommandRunner(project_path)
 
-        if not project_path.exists():
-            raise ValueError(f"Project '{project_name}' not found")
-
-        # Get project_id
+        # Get pending uploads from DB
         project = await get_project_by_name(db, project_name)
-        if not project:
-            raise ValueError(f"Project '{project_name}' not found in database")
+        pending_uploads = await get_pending_uploads(db, project.project_id)
 
-        try:
-            # Get conflicts from database
-            conflicts_data = await get_git_conflicts_for_branch(
-                db, project.project_id, branch_name
-            )
+        upload_status = []
+        ready_count = 0
+        conflicts_count = 0
 
-            # If force_refresh is requested, also check git status
-            if force_refresh:
-                git_conflicts = self._get_live_git_conflicts(project_path, branch_name)
-                conflicts_data["live_git_status"] = git_conflicts
+        for upload in pending_uploads:
+            branch_name = upload.branch_name
 
-            # Add cache age information
-            if conflicts_data["conflicts"]:
-                latest_conflict = max(
-                    conflicts_data["conflicts"],
-                    key=lambda c: c["detected_at"] or "1970-01-01T00:00:00",
-                )
-                from datetime import datetime
-
-                latest_time = datetime.fromisoformat(
-                    latest_conflict["detected_at"].replace("Z", "+00:00")
-                )
-                cache_age = (
-                    datetime.now() - latest_time.replace(tzinfo=None)
-                ).total_seconds() / 3600
-                conflicts_data["cache_age_hours"] = round(cache_age, 1)
-
-            return conflicts_data
-
-        except Exception as e:
-            logger.error(
-                f"Error getting conflicts for {project_name}/{branch_name}: {e}"
-            )
-            return {
-                "conflicts": [],
-                "total_count": 0,
-                "by_status": {},
-                "by_type": {},
-                "source": "error",
-                "error": str(e),
-            }
-
-    def _get_live_git_conflicts(self, project_path: Path, branch_name: str) -> dict:
-        """Get live git conflict status."""
-        try:
-            runner = GitCommandRunner(project_path)
-
-            # Check if branch exists
+            # Test merge in real-time to check status
             try:
-                runner.run(["rev-parse", "--verify", branch_name], check=True)
-            except subprocess.CalledProcessError:
-                return {"error": f"Branch '{branch_name}' not found"}
+                runner.checkout("master")
+                merge_test = runner.run(
+                    ["merge", "--no-commit", "--no-ff", branch_name], check=False
+                )
 
-            # Get current branch
-            current_branch = runner.get_current_branch()
+                if merge_test.returncode == 0:
+                    # Clean merge - ready to go
+                    runner.run(["merge", "--abort"], check=False)
+                    status = "ready_to_merge"
+                    conflicts = []
+                    ready_count += 1
+                else:
+                    # Has conflicts - get details
+                    conflicted_files = runner.get_conflicted_files()
+                    runner.run(["merge", "--abort"], check=False)
+                    status = "needs_resolution"
+                    conflicts = conflicted_files
+                    conflicts_count += 1
 
-            # Switch to master and check differences
-            runner.checkout("master")
-            diff_result = runner.run(
-                ["diff", "--name-status", f"master...{branch_name}"]
-            )
+                upload_data = upload.git_details.get("upload_data")
 
-            # Switch back to original branch
-            runner.checkout(current_branch)
+                upload_status.append(
+                    {
+                        "upload_id": upload.upload_id
+                        if hasattr(upload, "upload_id")
+                        else upload.get("upload_id"),
+                        "branch_name": branch_name,
+                        "original_branch": upload_data.get(
+                            "original_branch",
+                            branch_name.replace("_pending_approval", ""),
+                        ),
+                        "upload_type": upload.upload_type.value
+                        if hasattr(upload, "upload_type")
+                        else upload.get("upload_type", "pending_upload"),
+                        "description": upload.upload_description
+                        if hasattr(upload, "upload_description")
+                        else upload.get("description", ""),
+                        "status": upload.status.value
+                        if hasattr(upload, "status")
+                        else upload.get("status", "pending_admin_approval"),
+                        "uploaded_at": upload.detected_at.isoformat()
+                        if hasattr(upload, "detected_at") and upload.detected_at
+                        else upload.get("uploaded_at"),
+                        "uploaded_by": upload_data.get("uploaded_by"),
+                        "merge_status": status,
+                        "conflicted_files": conflicts,
+                        "conflicted_files_count": len(conflicts),
+                        "tested_at": datetime.now().isoformat(),
+                    }
+                )
 
-            # Parse diff output
-            live_conflicts = []
-            for line in diff_result.stdout.strip().split("\n"):
-                if line.strip():
-                    parts = line.split("\t", 1)
-                    if len(parts) == 2:
-                        status, filename = parts
-                        if filename.startswith("elan_files/"):
-                            filename = filename[len("elan_files/") :]
+            except Exception as e:
+                upload_status.append(
+                    {
+                        "upload_id": upload.upload_id
+                        if hasattr(upload, "upload_id")
+                        else upload.get("upload_id"),
+                        "branch_name": branch_name,
+                        "original_branch": upload_data.get(
+                            "original_branch",
+                            branch_name.replace("_pending_approval", ""),
+                        ),
+                        "upload_type": upload.upload_type.value
+                        if hasattr(upload, "upload_type")
+                        else upload.get("upload_type", "pending_upload"),
+                        "description": upload.upload_description
+                        if hasattr(upload, "upload_description")
+                        else upload.get("description", ""),
+                        "status": upload.status.value
+                        if hasattr(upload, "status")
+                        else upload.get("status", "pending_admin_approval"),
+                        "uploaded_at": upload.detected_at.isoformat()
+                        if hasattr(upload, "detected_at") and upload.detected_at
+                        else upload.get("uploaded_at"),
+                        "uploaded_by": None,
+                        "merge_status": "error",
+                        "error": str(e),
+                        "can_auto_merge": False,
+                    }
+                )
 
-                        live_conflicts.append(
-                            {
-                                "filename": filename,
-                                "status": status,
-                                "needs_resolution": status in ["M", "D"],
-                            }
-                        )
-
-            return {
-                "files": live_conflicts,
-                "has_conflicts": any(f["needs_resolution"] for f in live_conflicts),
-                "branch_exists": True,
-            }
-
-        except Exception as e:
-            raise RuntimeError(f"Failed to get conflicts: {e}") from e
+        return {
+            "project_name": project_name,
+            "pending_uploads": upload_status,
+            "total_pending": len(upload_status),
+            "ready_count": ready_count,
+            "conflicts_count": conflicts_count,
+        }
 
     def _build_upload_response(
         self,
         project_name: str,
-        branch_name: str,
         uploaded_files,
         failed_files,
         existing_files: list[str],
-        merge_result: dict[str, Any],
+        upload_info: dict[str, Any],
     ) -> dict[str, Any]:
-        """Build the upload response."""
-        # Determine final status
-        if merge_result["status"] == "merged_successfully":
-            final_status = "uploaded_and_merged"
-        elif merge_result.get("has_conflicts", False):
-            final_status = "uploaded_with_conflicts"
-        else:
-            final_status = "uploaded_pending_review"
-
+        """Build the upload response for the admin approval workflow."""
         return {
             "project_name": project_name,
-            "branch_name": branch_name,
+            "branch_name": upload_info.get("branch_name"),  # Use approval branch name
             "uploaded_files": [self._convert_upload_result(f) for f in uploaded_files],
             "failed_files": [self._convert_upload_result(f) for f in failed_files],
             "total_uploaded": len(uploaded_files),
             "total_failed": len(failed_files),
             "existing_files_updated": len(existing_files),
             "new_files_added": len(uploaded_files) - len(existing_files),
-            "merge_status": merge_result["status"],
-            "has_conflicts": merge_result.get("has_conflicts", False),
-            "conflicts": merge_result.get("file_changes", []),
-            "new_files_in_merge": merge_result.get("new_files", []),
-            "modified_files_in_merge": merge_result.get("modified_files", []),
-            "status": final_status,
+            # Workflow status
+            "status": upload_info["status"],  # "pending_admin_approval"
+            "requires_approval": upload_info.get("requires_approval", True),
+            "has_differences": upload_info.get("has_differences", False),
+            # Upload summary
+            "upload_summary": {
+                "new_files": upload_info.get("new_files", []),
+                "modified_files": upload_info.get("modified_files", []),
+                "deleted_files": upload_info.get("deleted_files", []),
+            },
+            # Admin workflow info
+            "admin_info": {
+                "pending_approval_since": upload_info.get("pending_approval_since"),
+                "approval_branch": upload_info.get("branch_name"),
+                "original_branch": upload_info.get("original_branch"),
+                "next_steps": "Upload saved for admin approval. Admin needs to test merge and resolve any conflicts.",
+            },
             "uploaded_at": datetime.now().isoformat(),
-            "message": merge_result.get("message", "Batch upload completed"),
+            "message": upload_info.get(
+                "message", "Upload completed and saved for admin approval"
+            ),
         }
 
     def _convert_upload_result(self, result) -> dict:
@@ -971,81 +1021,3 @@ class GitService:
         )
 
         return {"new_project_name": new_project_name}
-
-    def _extract_conflicts_from_merge_result(
-        self, merge_result: dict, project_path: Path
-    ) -> list[dict]:
-        """Extract detailed conflict information from merge result."""
-        conflicts = []
-
-        # Handle selective merge conflicts
-        if merge_result.get("status") == "selective_merge_completed":
-            # Files that were isolated in conflict branch
-            conflict_files = merge_result.get("conflict_files", [])
-            for filename in conflict_files:
-                conflict_details = self._get_conflict_details(project_path, filename)
-                conflicts.append(
-                    {
-                        "filename": filename,
-                        "type": "selective_merge_conflict",
-                        "details": {
-                            "change_type": "modified",
-                            "conflict_info": conflict_details,
-                            "isolated_in_branch": merge_result.get("conflict_branch"),
-                            "status": "requires_review",
-                        },
-                    }
-                )
-
-            # Files that were deleted
-            deleted_files = merge_result.get("deleted_files", [])
-            for filename in deleted_files:
-                conflicts.append(
-                    {
-                        "filename": filename,
-                        "type": "selective_merge_conflict",
-                        "details": {
-                            "change_type": "deleted",
-                            "status": "file_deleted_in_branch",
-                            "isolated_in_branch": merge_result.get("conflict_branch"),
-                        },
-                    }
-                )
-
-        # Handle regular merge conflicts
-        if "file_changes" in merge_result:
-            for change in merge_result["file_changes"]:
-                conflict_details = self._get_conflict_details(
-                    project_path, change["filename"]
-                )
-                conflicts.append(
-                    {
-                        "filename": change["filename"],
-                        "type": "merge_conflict",
-                        "details": {
-                            "change_type": change.get("change_type", "unknown"),
-                            "conflict_info": conflict_details,
-                            "branch_content": change.get("branch_content", ""),
-                            "master_content": change.get("master_content", ""),
-                            "additions": change.get("total_additions", 0),
-                            "deletions": change.get("total_deletions", 0),
-                        },
-                    }
-                )
-
-        # Also check for actual git conflict markers
-        runner = GitCommandRunner(project_path)
-        conflicted_files = runner.get_conflicted_files()
-
-        for filename in conflicted_files:
-            if not any(c["filename"] == filename for c in conflicts):
-                conflict_details = runner.get_conflict_details(filename)
-                conflicts.append(
-                    {
-                        "filename": filename,
-                        "type": "content_conflict",
-                        "details": conflict_details,
-                    }
-                )
-
-        return conflicts

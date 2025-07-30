@@ -1,77 +1,23 @@
 <template>
-  <div class="conflicts-page">
-    <div class="conflicts-container">
-      <h1 class="conflicts-title">Manage Conflicts</h1>
-      
-      <!-- Project Selection -->
-      <div class="project-selection">
-        <label for="projectSelect" class="project-label">Select Project:</label>
-        <select 
-          id="projectSelect" 
-          v-model="selectedProject" 
-          class="project-select"
-          :disabled="loading"
-          @change="fetchBranches"
-        >
-          <option value="">Choose a project...</option>
-          <option v-for="project in projects" :key="project" :value="project">
-            {{ project }}
-          </option>
-        </select>
-      </div>
+  <div class="pendingUploads-page">
+    <div class="pendingUploads-container">
+      <!-- TODO Add a locale for the title -->
+      <h1 class="pendingUploads-title">Manage Pending Uploads</h1>
 
-      <!-- Branch Selection -->
-      <div v-if="selectedProject" class="branch-selection">
-        <label for="branchSelect" class="branch-label">Select Branch:</label>
-        <select 
-          id="branchSelect" 
-          v-model="selectedBranch" 
-          class="branch-select"
-          :disabled="branchesLoading"
-          @change="fetchConflicts"
-        >
-          <option value="">Choose a branch...</option>
-          <option v-for="branch in branches" :key="branch" :value="branch">
-            {{ branch.name }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Conflicts List -->
-      <div v-if="selectedProject && selectedBranch" class="conflicts-section">
-        <div class="conflicts-header">
-          <h2>Conflicts in "{{ selectedBranch.name }}"</h2>
-          <div class="conflicts-actions">
-            <button 
-              @click="refreshConflicts" 
-              class="refresh-btn"
-              :disabled="conflictsLoading || refreshing"
-            >
-              {{ refreshing ? '🔄 Refreshing...' : '🔄 Refresh' }}
-            </button>
-            <button 
-              v-if="conflicts.length > 0"
-              @click="showBatchResolution = true" 
-              class="batch-btn"
-            >
-              Resolve All
-            </button>
-          </div>
+      <div v-if="selectedProject">
+        <div v-if="pendingUploadsLoading" class="loading">
+          Loading pendingUploads...
         </div>
 
-        <div v-if="conflictsLoading" class="loading">
-          Loading conflicts...
-        </div>
-
-        <div v-else-if="conflicts.length === 0" class="no-conflicts">
-          <div class="no-conflicts-icon">✅</div>
-          <h3>No conflicts found</h3>
+        <div v-else-if="pendingUploads.length === 0" class="no-pendingUploads">
+          <div class="no-pendingUploads-icon">✅</div>
+          <h3>No pendingUploads found</h3>
           <p>All files are in sync for this branch.</p>
         </div>
 
-        <div v-else class="conflicts-list">
+        <div v-else class="pendingUploads-list">
           <div 
-            v-for="conflict in conflicts" 
+            v-for="conflict in pendingUploads" 
             :key="conflict.filename"
             class="conflict-item"
           >
@@ -103,11 +49,11 @@
         </div>
 
         <!-- Cache Info Display -->
-        <div v-if="conflicts.length > 0" class="cache-info">
+        <div v-if="pendingUploads.length > 0" class="cache-info">
           <small class="cache-status">
-            Source: {{ conflicts.source || 'unknown' }}
-            <span v-if="conflicts.cache_age_hours">
-              (cached {{ conflicts.cache_age_hours }}h ago)
+            Source: {{ pendingUploads.source || 'unknown' }}
+            <span v-if="pendingUploads.cache_age_hours">
+              (cached {{ pendingUploads.cache_age_hours }}h ago)
             </span>
           </small>
         </div>
@@ -186,7 +132,7 @@
           </div>
           
           <div class="batch-content">
-            <p>Resolve all {{ conflicts.length }} conflicts using the same strategy:</p>
+            <p>Resolve all {{ pendingUploads.length }} pendingUploads using the same strategy:</p>
             
             <div class="strategy-options">
               <label class="strategy-option">
@@ -228,6 +174,27 @@
         </div>
       </div>
 
+      <!-- Merge View Modal -->
+      <div v-if="showMergeView" class="modal-overlay large" @click="onMergeViewCancelled">
+        <div class="modal-content large" @click.stop>
+          <div class="modal-header">
+            <h2>Resolve Merge Conflict</h2>
+            <button @click="onMergeViewCancelled" class="close-btn">×</button>
+          </div>
+          
+          <div class="modal-body">
+            <ConflictMergeView
+              v-if="selectedConflictFile"
+              :project-name="selectedProject"
+              :branch-name="selectedBranch.name || selectedBranch"
+              :filename="selectedConflictFile.filename"
+              @resolved="onConflictResolved"
+              @cancelled="onMergeViewCancelled"
+            />
+          </div>
+        </div>
+      </div>
+
       <!-- Error Messages -->
       <div v-if="error" class="error-message">
         {{ error }}
@@ -239,16 +206,17 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import gitService from '@/api/service/gitService';
-import "@/assets/css/conflicts-page.css";
+import "@/assets/css/pendingUploads-page.css";
+import ConflictMergeView from '@/components/common/ConflictMergeView.vue';
 
 const projects = ref([]);
 const branches = ref([]);
-const conflicts = ref([]);
+const pendingUploads = ref([]);
 const selectedProject = ref('');
 const selectedBranch = ref('');
 const loading = ref(true);
 const branchesLoading = ref(false);
-const conflictsLoading = ref(false);
+const pendingUploadsLoading = ref(false);
 const error = ref('');
 
 // Resolution modal state
@@ -261,6 +229,10 @@ const resolving = ref(false);
 const showBatchResolution = ref(false);
 const batchResolutionStrategy = ref('');
 const batchResolving = ref(false);
+
+// Merge view state
+const showMergeView = ref(false);
+const selectedConflictFile = ref(null);
 
 // Add a refresh indicator
 const refreshing = ref(false);
@@ -289,7 +261,7 @@ async function fetchBranches() {
     branchesLoading.value = true;
     branches.value = [];
     selectedBranch.value = '';
-    conflicts.value = [];
+    pendingUploads.value = [];
     
     const response = await gitService.getBranches(selectedProject.value);
     branches.value = response.branches || [];
@@ -301,27 +273,26 @@ async function fetchBranches() {
   }
 }
 
-async function fetchConflicts() {
+async function fetchPendingUploads() {
   if (!selectedProject.value || !selectedBranch.value) return;
   
   try {
-    conflictsLoading.value = true;
-    const response = await gitService.getConflicts(
-      selectedProject.value, 
-      selectedBranch.value.name || selectedBranch.value
+    pendingUploadsLoading.value = true;
+    const response = await gitService.getPendingUploads(
+      selectedProject.value
     );
-    conflicts.value = response.conflicts || [];
+    pendingUploads.value = response.pendingUploads || [];
     
     // Show cache info if available
     if (response.source === 'database' && response.cache_age_hours !== undefined) {
-      console.log(`Loaded conflicts from cache (${response.cache_age_hours}h old)`);
+      console.log(`Loaded pendingUploads from cache (${response.cache_age_hours}h old)`);
     }
   } catch (e) {
-    error.value = 'Failed to load conflicts';
-    console.error('Error fetching conflicts:', e);
-    conflicts.value = [];
+    error.value = 'Failed to load pendingUploads';
+    console.error('Error fetching pendingUploads:', e);
+    pendingUploads.value = [];
   } finally {
-    conflictsLoading.value = false;
+    pendingUploadsLoading.value = false;
   }
 }
 
@@ -334,10 +305,10 @@ async function refreshConflicts() {
       selectedProject.value, 
       selectedBranch.value.name || selectedBranch.value
     );
-    conflicts.value = response.conflicts || [];
+    pendingUploads.value = response.pendingUploads || [];
   } catch (e) {
-    error.value = 'Failed to refresh conflicts';
-    console.error('Error refreshing conflicts:', e);
+    error.value = 'Failed to refresh pendingUploads';
+    console.error('Error refreshing pendingUploads:', e);
   } finally {
     refreshing.value = false;
   }
@@ -383,9 +354,8 @@ function viewConflictDetails(conflict) {
 }
 
 function resolveConflict(conflict) {
-  currentConflict.value = conflict;
-  resolutionStrategy.value = '';
-  showResolutionModal.value = true;
+  selectedConflictFile.value = conflict;
+  showMergeView.value = true;
 }
 
 function closeResolutionModal() {
@@ -408,9 +378,9 @@ async function applyResolution() {
     );
     
     // Remove resolved conflict from list
-    const index = conflicts.value.findIndex(c => c.filename === currentConflict.value.filename);
+    const index = pendingUploads.value.findIndex(c => c.filename === currentConflict.value.filename);
     if (index !== -1) {
-      conflicts.value.splice(index, 1);
+      pendingUploads.value.splice(index, 1);
     }
     
     closeResolutionModal();
@@ -432,19 +402,31 @@ async function applyBatchResolution() {
       selectedProject.value,
       selectedBranch.value.name || selectedBranch.value,
       batchResolutionStrategy.value
-      // No filename = resolve all conflicts
+      // No filename = resolve all pendingUploads
     );
     
-    // Clear all conflicts
-    conflicts.value = [];
+    // Clear all pendingUploads
+    pendingUploads.value = [];
     showBatchResolution.value = false;
     batchResolutionStrategy.value = '';
   } catch (e) {
-    error.value = e?.response?.data?.detail || 'Failed to resolve conflicts';
+    error.value = e?.response?.data?.detail || 'Failed to resolve pendingUploads';
     console.error('Batch resolution error:', e);
   } finally {
     batchResolving.value = false;
   }
+}
+
+function onConflictResolved() {
+  showMergeView.value = false;
+  selectedConflictFile.value = null;
+  // Refresh pendingUploads list
+  fetchConflicts();
+}
+
+function onMergeViewCancelled() {
+  showMergeView.value = false;
+  selectedConflictFile.value = null;
 }
 
 function formatConflictType(type) {

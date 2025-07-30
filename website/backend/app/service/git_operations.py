@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from app.core.centralized_logging import get_logger
+from app.service.git_diff_parser import GitDiffParser
 
 logger = get_logger()
 
@@ -29,7 +30,7 @@ class MergeAnalysis:
     modified_files: list[str]
     deleted_files: list[str]
     has_conflicts: bool
-    file_changes: list[dict] | None = None
+    file_diffs: dict[str, dict] | None = None
 
 
 class GitBranchManager:
@@ -75,13 +76,14 @@ class GitDiffAnalyzer:
         """Initialize with the project path."""
         self.project_path = project_path
 
-    def analyze_merge_differences(self, branch_name: str, diff_parser) -> MergeAnalysis:
-        """Analyze differences between master and branch using Git's diff."""
+    def analyze_merge_differences(self, branch_name: str) -> MergeAnalysis:
+        """Analyze differences and return structured data with parsed diffs."""
         logger.info(
             f"Analyzing merge differences for branch '{branch_name}' using Git diff"
         )
+        diff_parser = GitDiffParser()
 
-        diff_result = subprocess.run(
+        diff_name_status_result = subprocess.run(
             ["git", "diff", f"master...{branch_name}", "--name-status"],
             cwd=self.project_path,
             capture_output=True,
@@ -89,24 +91,11 @@ class GitDiffAnalyzer:
             check=False,
         )
 
-        new_files = []
-        modified_files = []
-        deleted_files = []
+        logger.debug(f"Git diff output: {diff_name_status_result.stdout}")
 
-        logger.debug(f"Git diff output: {diff_result.stdout}")
-
-        for line in diff_result.stdout.strip().split("\n"):
-            if line.strip():
-                parts = line.split("\t", 1)
-                if len(parts) == 2:
-                    status, filename = parts
-                    logger.debug(f"Git detected: {status} {filename}")
-                    if status == "A":
-                        new_files.append(filename)
-                    elif status == "M":
-                        modified_files.append(filename)
-                    elif status == "D":
-                        deleted_files.append(filename)
+        new_files, modified_files, deleted_files = diff_parser.parse_name_status_output(
+            diff_name_status_result.stdout
+        )
 
         has_conflicts = len(modified_files) > 0 or len(deleted_files) > 0
 
@@ -114,25 +103,9 @@ class GitDiffAnalyzer:
             f"Git diff analysis - New: {len(new_files)}, Modified: {len(modified_files)}, Deleted: {len(deleted_files)}"
         )
 
-        file_changes = []
-        if has_conflicts:
-            file_changes = self._get_detailed_changes(
-                branch_name, modified_files, diff_parser
-            )
+        file_diffs = {}
 
-        return MergeAnalysis(
-            new_files=new_files,
-            modified_files=modified_files,
-            deleted_files=deleted_files,
-            has_conflicts=has_conflicts,
-            file_changes=file_changes,
-        )
-
-    def _get_detailed_changes(
-        self, branch_name: str, modified_files: list[str], diff_parser
-    ) -> list[dict]:
-        """Get detailed changes for modified files."""
-        file_changes = []
+        # For each modified file, parse the diff ONCE
         for filename in modified_files:
             file_diff_result = subprocess.run(
                 ["git", "diff", f"master...{branch_name}", "--", filename],
@@ -143,12 +116,18 @@ class GitDiffAnalyzer:
             )
 
             if file_diff_result.stdout:
-                parsed_changes = diff_parser.parse_git_diff_output(
-                    file_diff_result.stdout, filename
+                parsed_diff = diff_parser.parse_single_file_diff(
+                    file_diff_result.stdout
                 )
-                file_changes.append(parsed_changes)
+                file_diffs[filename] = parsed_diff  # STORE PARSED DATA
 
-        return file_changes
+        return MergeAnalysis(
+            new_files=new_files,
+            modified_files=modified_files,
+            deleted_files=deleted_files,
+            has_conflicts=has_conflicts,
+            file_diffs=file_diffs,
+        )
 
 
 class GitMerger:
@@ -253,10 +232,7 @@ class GitMerger:
             runner.checkout("master")
 
             # Check what's actually different (should be only new files now)
-            diff_check = runner.run(["diff", "--name-only", f"master...{branch_name}"])
-            files_to_merge = [
-                f.strip() for f in diff_check.stdout.splitlines() if f.strip()
-            ]
+            files_to_merge = analysis.new_files.copy()
 
             if files_to_merge:
                 merge_message = (
@@ -279,6 +255,7 @@ class GitMerger:
                 "conflict_branch": conflict_branch_name,
                 "deleted_files": analysis.deleted_files,
                 "message": f"Merged {len(files_to_merge)} new files. {len(analysis.modified_files)} modified files isolated for review in '{conflict_branch_name}'",
+                "analysis": analysis,
             }
 
         except Exception as e:
@@ -650,6 +627,19 @@ class GitCommandRunner:
                         }
                     )
         return conflicts
+
+    def get_current_branch(self) -> str:
+        """Get the current branch name."""
+        try:
+            result = self.run(["branch", "--show-current"])
+            return result.stdout.strip()
+        except:
+            # Fallback method
+            try:
+                result = self.run(["rev-parse", "--abbrev-ref", "HEAD"])
+                return result.stdout.strip()
+            except:
+                return "master"
 
 
 def delete_project_folder(project_path: Path) -> None:

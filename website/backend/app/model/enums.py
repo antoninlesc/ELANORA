@@ -31,20 +31,25 @@ class InvitationStatus(str, Enum):
     EXPIRED = "expired"
 
 
-class ConflictType(str, Enum):
+class Type(str, Enum):
     """Enumeration for conflict types."""
 
+    # Original ELAN conflict types
     ANNOTATION_OVERLAP = "annotation_overlap"
     TIER_MISMATCH = "tier_mismatch"
     VALUE_DIFFERENCE = "value_difference"
     STRUCTURAL = "structural"
     OTHER = "other"
-    GIT_MERGE_CONFLICT = "GIT_MERGE_CONFLICT"
-    GIT_CONTENT_CONFLICT = "GIT_CONTENT_CONFLICT"
-    GIT_FILE_CONFLICT = "GIT_FILE_CONFLICT"
+
+    # Upload workflow types
+    PENDING_UPLOAD = "pending_upload"
+    UPLOAD_NEW_FILES_ONLY = "upload_new_files_only"
+    UPLOAD_WITH_MODIFICATIONS = "upload_with_modifications"
+    UPLOAD_WITH_DELETIONS = "upload_with_deletions"
+    UPLOAD_MIXED_CHANGES = "upload_mixed_changes"
 
 
-class ConflictSeverity(str, Enum):
+class Severity(str, Enum):
     """Enumeration for conflict severity levels."""
 
     LOW = "low"
@@ -53,13 +58,16 @@ class ConflictSeverity(str, Enum):
     CRITICAL = "critical"
 
 
-class ConflictStatus(str, Enum):
+class Status(str, Enum):
     """Enumeration for conflict status."""
 
-    DETECTED = "detected"
-    IN_PROGRESS = "in_progress"
-    RESOLVED = "resolved"
-    DISMISSED = "dismissed"
+    PENDING_ADMIN_APPROVAL = "pending_admin_approval"
+    READY_TO_MERGE = "ready_to_merge"
+    NEEDS_RESOLUTION = "needs_resolution"
+    BEING_REVIEWED = "being_reviewed"
+    # Final statuses
+    RESOLVED = "resolved"  # Successfully merged
+    DISMISSED = "dismissed"  # Rejected/cancelled
 
 
 class CommentTargetType(str, Enum):

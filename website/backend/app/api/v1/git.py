@@ -20,6 +20,7 @@ from app.schema.responses.git import (
     ProjectListResponse,
     ProjectRenameResponse,
     ProjectStatusResponse,
+    PendingUploadsResponse,
 )
 from app.service.git import GitService
 
@@ -333,22 +334,19 @@ async def get_branch_conflicts(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-# TODO: Implement conflict resolution logic as for now it was AI generated
-@router.post("/projects/{project_name}/branches/{branch_name}/resolve-conflicts")
-async def resolve_branch_conflicts(
+@router.get(
+    "/projects/{project_name}/admin/pending-uploads",
+    response_model=PendingUploadsResponse,
+)
+async def get_pending_uploads(
     project_name: str,
-    branch_name: str,
-    resolution_strategy: str = "accept_incoming",
-    filename: str = None,  # Optional query parameter
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
-    """Resolve conflicts for a branch (all or specific file)."""
+    """Get all uploads pending admin approval."""
     try:
-        result = await git_service.resolve_conflicts(
-            project_name, branch_name, resolution_strategy, db, user.user_id, filename
-        )
-        return result
+        result = await git_service.get_pending_uploads_with_status(project_name, db)
+        return PendingUploadsResponse(**result)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:

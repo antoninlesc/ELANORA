@@ -55,7 +55,8 @@
     "upload": "File Upload",
     "conflicts": "Conflicts",
     "tiers": "Tiers",
-    "export": "Export"
+    "export": "Export",
+    "contribution": "Contribution"
   },
   "footer": {
     "platform_description": "Collaborative linguistic annotation platform for ELAN corpora.",

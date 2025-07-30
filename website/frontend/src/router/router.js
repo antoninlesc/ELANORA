@@ -11,7 +11,7 @@ import ResetPassword from '@views/ResetPassword.vue';
 import EmailVerificationPage from '@views/EmailVerificationPage.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
 import UploadPage from '@views/UploadPage.vue';
-import ConflictsPage from '@views/ConflictsPage.vue';
+import ContributionPage from '@views/ContributionPage.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import TiersPage from '@views/TiersPage.vue';
@@ -74,9 +74,9 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
-        path: 'conflicts',
-        name: 'Conflicts',
-        component: ConflictsPage,
+        path: 'contribution',
+        name: 'Contribution',
+        component: ContributionPage,
         meta: { requiresAuth: true },
       },
       {

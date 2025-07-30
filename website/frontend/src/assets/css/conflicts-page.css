@@ -287,3 +287,18 @@
   text-align: center;
   margin-top: 24px;
 }
+.modal-overlay.large {
+  align-items: flex-start;
+  padding: 20px;
+}
+
+.modal-content.large {
+  width: 95%;
+  max-width: 1400px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-body {
+  padding: 0;
+}
