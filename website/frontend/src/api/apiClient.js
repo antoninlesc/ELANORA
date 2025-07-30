@@ -55,9 +55,16 @@ const MAX_REFRESH_ATTEMPTS = 3;
 const waitingRequests = [];
 
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    failedRefreshAttempts = 0;
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
+    const isRefreshEndpoint =
+      originalRequest.url?.includes('/auth/refresh') ||
+      originalRequest.url?.includes('/auth/login') ||
+      originalRequest.url?.includes('/auth/logout');
 
     // Handle CSRF token expiration (403)
     if (
@@ -83,6 +90,7 @@ axiosInstance.interceptors.response.use(
 
     if (
       error.response?.status === 401 &&
+      !isRefreshEndpoint &&
       !originalRequest._retry &&
       failedRefreshAttempts < MAX_REFRESH_ATTEMPTS
     ) {

@@ -9,6 +9,7 @@
         autofocus
         @keyup.enter="submit"
       />
+      <div v-if="warning" class="user-prompt-warning">{{ warning }}</div>
       <div class="user-prompt-actions">
         <button class="user-prompt-btn" @click="submit">OK</button>
         <button class="user-prompt-btn cancel" @click="cancel">Cancel</button>
@@ -25,23 +26,39 @@ const props = defineProps({
   message: { type: String, default: '' },
   defaultValue: { type: [String, Number], default: '' },
   type: { type: String, default: 'number' },
+  validator: { type: Function, default: null },
 });
 const emit = defineEmits(['update:modelValue', 'submit', 'cancel']);
 
 const visible = ref(props.modelValue);
 const inputValue = ref(props.defaultValue ?? '');
+const warning = ref('');
 
+let wasVisible = false;
 watch(
   () => props.modelValue,
-  (v) => (visible.value = v)
-);
-watch(
-  () => props.defaultValue,
-  (v) => (inputValue.value = v)
+  (v) => {
+    visible.value = v;
+    if (v && !wasVisible) {
+      inputValue.value = props.defaultValue ?? '';
+    }
+    wasVisible = v;
+  }
 );
 
+// Live validation
+watch(inputValue, (val) => {
+  if (props.validator) {
+    const msg = props.validator(val);
+    warning.value = typeof msg === 'string' ? msg : '';
+  } else {
+    warning.value = '';
+  }
+});
+
 function submit() {
-  emit('submit', inputValue.value);
+  const trimmed = (inputValue.value ?? '').toString().trim();
+  emit('submit', trimmed);
   emit('update:modelValue', false);
 }
 function cancel() {
@@ -86,6 +103,13 @@ defineExpose({ inputValue });
   border: 1px solid #d1d5db;
   border-radius: 5px;
   margin-bottom: 18px;
+}
+
+.user-prompt-warning {
+  color: #e74c3c;
+  font-size: 0.98em;
+  margin-bottom: 8px;
+  margin-top: -10px;
 }
 
 .user-prompt-actions {

@@ -13,6 +13,12 @@ async def get_standards_by_project(
         db, ProjectNamingStandard, {"project_id": project_id}
     )
 
+async def get_standards_ids_by_project(
+    db: AsyncSession, project_id: int
+) -> list[int]:
+    standards = await get_standards_by_project(db, project_id)
+    return [standard.id for standard in standards]
+
 
 async def get_standard_by_id(
     db: AsyncSession, standard_id: int
@@ -42,15 +48,14 @@ async def create_standard(
     return standard
 
 
-async def update_standard(
-    db: AsyncSession, standard_id: int, update_fields: dict
-) -> int:
-    return await DatabaseUtils.update_by_filter(
-        db, ProjectNamingStandard, {"id": standard_id}, update_fields
-    )
-
-
 async def delete_standard(db: AsyncSession, standard_id: int) -> int:
-    return await DatabaseUtils.delete_by_filter(
-        db, ProjectNamingStandard, id=standard_id
-    )
+    try:
+        result = await DatabaseUtils.delete_by_filter(
+            db, ProjectNamingStandard, id=standard_id
+        )
+        await db.flush()
+        return result
+    except Exception as e:
+        await db.rollback()
+        raise e
+

@@ -122,12 +122,6 @@
               </div>
               <div class="configure-naming-accordion-actions">
                 <button
-                  class="configure-naming-btn"
-                  @click="editStandard(std)"
-                >
-                  Edit
-                </button>
-                <button
                   class="configure-naming-btn delete"
                   @click="deleteStandard(std.id)"
                 >
@@ -222,7 +216,7 @@
               <input
                 id="example-file-input"
                 v-model="exampleFilename"
-                placeholder="e.g. CLSFBI1912A_S040_B.mp4"
+                placeholder="e.g. CLSFBI1912A_S040_B"
                 class="configure-naming-example-input"
               />
               <button
@@ -260,8 +254,8 @@
                     <input
                       v-model="comp.name"
                       placeholder="Component name"
-                      :readonly="idx === 0 && comp.name.startsWith('prefix_')"
-                      :class="{ 'configure-naming-components-table-prefix-disabled': idx === 0 && comp.name.startsWith('prefix_') }"
+                      readonly
+                      class="configure-naming-components-table-prefix-disabled"
                       :tabindex="idx === 0 && comp.name.startsWith('prefix_') ? -1 : 0"
                     />
                   </td>
@@ -282,7 +276,6 @@
                   </td>
                   <td>
                     <input
-                      v-if="showAcceptedValuesInput(comp)"
                       v-model="comp.accepted_values_str"
                       :placeholder="getAcceptedValuesPlaceholder(comp)"
                       :title="getAcceptedValuesPlaceholder(comp)"
@@ -338,6 +331,8 @@
       v-model="userPromptVisible"
       :message="userPromptMessage"
       :default-value="userPromptDefault"
+      :validator="userPromptValidator"
+      :type="userPromptType"
       @submit="handleUserPromptSubmit"
       @cancel="handleUserPromptCancel"
     />
@@ -348,11 +343,11 @@
 import UserPrompt from '@components/common/UserPrompt.vue';
 import projectNamingStandardApi from '@/api/service/projectNamingStandard.js';
 import { ref, onMounted, watch, computed } from 'vue';
-import { useProjectStore } from '@/stores/project';
 import { useFileTypeStore } from '@stores/fileType';
+import { useRoute } from 'vue-router';
 
-const projectStore = useProjectStore();
-const projectId = projectStore.currentProject?.project_id;
+const route = useRoute();
+const projectId = computed(() => Number(route.params.projectId));
 
 const loading = ref(true);
 const standards = ref([]);
@@ -369,16 +364,22 @@ const newStandard = ref({
 const userPromptVisible = ref(false);
 const userPromptMessage = ref('');
 const userPromptDefault = ref('');
+const userPromptValidator = ref(null);
+const userPromptType = ref('text');
+
 let userPromptResolve = null;
 
-function showUserPrompt(message, defaultValue = '') {
+function showUserPrompt(message, defaultValue = '', validator = null, type = 'text') {
   userPromptMessage.value = message;
   userPromptDefault.value = defaultValue;
+  userPromptValidator.value = validator;
+  userPromptType.value = type;
   userPromptVisible.value = true;
   return new Promise((resolve) => {
     userPromptResolve = resolve;
   });
 }
+
 function handleUserPromptSubmit(val) {
   userPromptVisible.value = false;
   if (userPromptResolve) userPromptResolve(val);
@@ -386,11 +387,6 @@ function handleUserPromptSubmit(val) {
 function handleUserPromptCancel() {
   userPromptVisible.value = false;
   if (userPromptResolve) userPromptResolve(null);
-}
-
-function showAcceptedValuesInput(comp) {
-  if (comp.name.startsWith('prefix_')) return true;
-  return comp.type === 'L' || comp.type === 'l' || comp.type === 'D';
 }
 
 function onAcceptedValuesInput(comp) {
@@ -438,7 +434,7 @@ function onAcceptedValuesInput(comp) {
         }
       }
       comp.accepted_values = normalizedParts;
-      // Optionally, update the input field to show the normalized version:
+      // Update the input field to show the normalized version:
       comp.accepted_values_str = normalizedParts.join(', ');
       return;
     }
@@ -507,14 +503,8 @@ const knownSeparators = ['_', '-', '.', ' '];
 async function fetchStandardsAndComponentNames() {
   loading.value = true;
   try {
-    const { data } = await projectNamingStandardApi.getProjectNamingStandardsFull(projectId);
-    // Flatten standards to a single object with components
-    standards.value = Array.isArray(data.standards)
-      ? data.standards.map(s => ({
-          ...s.standard,
-          components: s.components || [],
-        }))
-      : [];
+    const { data } = await projectNamingStandardApi.getProjectNamingStandardsFull(projectId.value);
+    standards.value = Array.isArray(data.standards) ? data.standards : [];
     allComponentNames.value = Array.isArray(data.component_names) ? data.component_names : [];
     // Ensure accepted_values_str for editing
     for (const std of standards.value) {
@@ -674,7 +664,7 @@ async function extractRegexFromExample() {
         if (/[A-Z]/.test(char)) prefix += char;
         else break;
       }
-      assignRegexAndAcceptable(comp, prefix);
+      await assignRegexAndAcceptable(comp, prefix);
       // Remove prefix from exBlock for further processing if more comps in block
       if (blockCompNames.length > 1) {
         await processBlockIterative(
@@ -701,9 +691,21 @@ async function extractRegexFromExample() {
       if (compNames.length - compIdx > typeGroups.length - groupIdx) {
         let remaining = typeGroups[groupIdx].length;
         let compsLeft = compNames.length - compIdx;
+        let lengthValidator = (input) => {
+          input = (input ?? '').toString().trim();
+          if (!input) return 'Please enter a correct numbered value.';
+          if (!/^\d+$/.test(input)) return 'Please enter a valid number.';
+          const num = parseInt(input, 10);
+          if (num < 1) return 'Length must be at least 1.';
+          if (num > remaining) return `Length must not exceed ${remaining}.`;
+          return false;
+        };
+
         let len = await showUserPrompt(
           `Ambiguous block "${typeGroups[groupIdx]}": Please specify the length for component "${compNames[compIdx]}"`,
-          Math.floor(remaining / compsLeft)
+          Math.floor(remaining / compsLeft),
+          lengthValidator,
+          'number'
         );
         len = parseInt(len);
         if (!len || isNaN(len) || len < 1 || len > remaining) {
@@ -711,7 +713,7 @@ async function extractRegexFromExample() {
           return;
         }
         const val = typeGroups[groupIdx].slice(0, len);
-        assignRegexAndAcceptable(
+        await assignRegexAndAcceptable(
           comps.find((c) => c.name === compNames[compIdx]),
           val
         );
@@ -729,30 +731,24 @@ async function extractRegexFromExample() {
       if (compNames.length - compIdx === typeGroups.length - groupIdx) {
         for (; compIdx < compNames.length; compIdx++, groupIdx++) {
           const comp = comps.find((c) => c.name === compNames[compIdx]);
-          assignRegexAndAcceptable(comp, typeGroups[groupIdx]);
+          await assignRegexAndAcceptable(comp, typeGroups[groupIdx]);
         }
         return;
       }
 
       // Otherwise, assign type group to component
       const comp = comps.find((c) => c.name === compNames[compIdx]);
-      assignRegexAndAcceptable(comp, typeGroups[groupIdx]);
+      await assignRegexAndAcceptable(comp, typeGroups[groupIdx]);
       compIdx++;
       groupIdx++;
     }
   }
 
-  // Set accepted_values_str for editing
-  for (const comp of comps) {
-    comp.accepted_values_str = (comp.accepted_values || []).join(', ');
-  }
-
   newStandard.value.components = comps;
 
-  function assignRegexAndAcceptable(comp, val) {
+  async function assignRegexAndAcceptable(comp, val) {
     if (!comp) return;
 
-    // Helper to collapse runs of the same type into {n} notation
     function collapseRegex(str) {
       let out = '';
       let i = 0;
@@ -774,10 +770,11 @@ async function extractRegexFromExample() {
           run++;
         }
         if (
-          run > 1 &&
           (charClass === '[A-Z]' ||
             charClass === '[a-z]' ||
-            charClass === '\\d')
+            charClass === '[a-zA-Z]' ||
+            charClass === '\\d') &&
+          run >= 1
         ) {
           out += `${charClass}{${run}}`;
         } else {
@@ -791,21 +788,42 @@ async function extractRegexFromExample() {
     // Assign type
     if (/^[A-Z]+$/.test(val)) comp.type = 'L';
     else if (/^[a-z]+$/.test(val)) comp.type = 'l';
+    else if (/^[A-Za-z]+$/.test(val)) comp.type = 'm';
     else if (/^\d+$/.test(val)) comp.type = 'D';
     else comp.type = 'O';
 
     // Prefix: accept only the full string, regex matches length and case
     if (comp.name.startsWith('prefix_')) {
-      comp.regex = collapseRegex(val);
+      // Detect case for regex
+      let regex = '';
+      if (/^[A-Z]+$/.test(val)) {
+        regex = `[A-Z]{${val.length}}`;
+      } else if (/^[a-z]+$/.test(val)) {
+        regex = `[a-z]{${val.length}}`;
+      } else if (/^[A-Za-z]+$/.test(val)) {
+        regex = `[a-zA-Z]{${val.length}}`;
+      } else {
+        regex = collapseRegex(val);
+      }
+      comp.regex = regex;
       comp.accepted_values = [val];
       comp.accepted_values_str = val;
-      comp.type = 'L'; // Prefix is always uppercase letters in your use case
       return;
     }
 
     // Letters (case sensitive, length 1 or more)
-    if (comp.type === 'L' || comp.type === 'l') {
-      comp.regex = collapseRegex(val);
+    if (comp.type === 'L' || comp.type === 'l' || comp.type === 'm') {
+      let regex = '';
+      if (/^[A-Z]+$/.test(val)) {
+        regex = `[A-Z]{${val.length}}`;
+      } else if (/^[a-z]+$/.test(val)) {
+        regex = `[a-z]{${val.length}}`;
+      } else if (/^[A-Za-z]+$/.test(val)) {
+        regex = `[a-zA-Z]{${val.length}}`;
+      } else {
+        regex = collapseRegex(val);
+      }
+      comp.regex = regex;
       comp.accepted_values = [val];
       comp.accepted_values_str = val;
       return;
@@ -813,9 +831,72 @@ async function extractRegexFromExample() {
 
     // Digits
     if (comp.type === 'D') {
-      comp.regex = collapseRegex(val);
-      comp.accepted_values = [];
-      comp.accepted_values_str = '';
+      comp.regex = `\\d{${val.length}}`;
+
+      // Prompt user for range or list, default to extracted value
+      const validator = (input) => {
+        if (!input) return 'Please enter a value, range, or list.';
+        const length = val.length;
+        // Accept single value
+        if (/^\d+$/.test(input)) {
+          if (input.length > length) return `Value must be at most ${length} digits.`;
+          return false;
+        }
+        // Accept comma/semicolon separated list
+        if (/^(\d+)\s*([,;]\s*\d+)*$/.test(input)) {
+          const parts = input.split(/[,;]/).map(s => s.trim());
+          for (const part of parts) {
+            if (part.length > length) return `Each value must be at most ${length} digits.`;
+          }
+          return false;
+        }
+        // Accept range
+        if (/^\d+-\d+$/.test(input)) {
+          const [start, end] = input.split('-').map(s => s.trim());
+          if (start.length > length || end.length > length) return `Range values must be at most ${length} digits.`;
+          if (parseInt(start) > parseInt(end)) return 'Range start must be less than or equal to end.';
+          return false;
+        }
+        return `Enter a single value, a comma/semicolon separated list, or a range (e.g. ${val}, 1-99, 1,2,3).`;
+      };
+
+      const userInput = await showUserPrompt(
+        `Extracted value "${val}" for "${comp.name}".\nYou can use this value, or enter a range or list (e.g. 1-99, 1,2,3):`,
+        val,
+        validator,
+        'text'
+      );
+      if (userInput === null) {
+        comp.accepted_values = [val];
+        comp.accepted_values_str = val;
+        return;
+      }
+
+      // Normalize and pad all values to required length
+      const length = val.length;
+      let inputParts = userInput.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+      let normalizedParts = [];
+      for (let part of inputParts) {
+        if (/^\d+-\d+$/.test(part)) {
+          let [start, end] = part.split('-').map(Number);
+          if (isNaN(start) || isNaN(end) || start > end) {
+            regexExtractionError.value = `Invalid range "${part}" for "${comp.name}".`;
+            return;
+          }
+          // Pad both start and end
+          let startStr = start.toString().padStart(length, '0');
+          let endStr = end.toString().padStart(length, '0');
+          normalizedParts.push(`${startStr}-${endStr}`);
+        } else if (/^\d+$/.test(part)) {
+          let numStr = Number(part).toString().padStart(length, '0');
+          normalizedParts.push(numStr);
+        } else {
+          regexExtractionError.value = `Invalid value "${part}" for "${comp.name}".`;
+          return;
+        }
+      }
+      comp.accepted_values = normalizedParts;
+      comp.accepted_values_str = normalizedParts.join(', ');
       return;
     }
 
@@ -830,7 +911,7 @@ async function addStandard() {
   if (regexExtractionError.value) return;
   try {
     await projectNamingStandardApi.createStandardWithComponents({
-      project_id: projectId,
+      project_id: projectId.value,
       name: newStandard.value.name,
       project_file_type_id: newStandard.value.project_file_type_id,
       pattern: newStandard.value.pattern,
@@ -875,10 +956,6 @@ async function deleteStandard(id) {
   } catch {
     alert('Failed to delete standard.');
   }
-}
-
-function editStandard() {
-  alert('Edit not implemented in this example.');
 }
 
 const fileTypeStore = useFileTypeStore();
@@ -1025,20 +1102,48 @@ const detectedUnusualAcceptedValue = computed(() => {
 const shouldShowAcceptedValuesWarning = computed(() => !!detectedUnusualAcceptedValue.value);
 
 function getAcceptedValuesPlaceholder(comp) {
-  if (comp.name.startsWith('prefix_') && comp.regex && /\[A-Z\]\{(\d+)\}/.test(comp.regex)) {
-    // Example: [A-Z]{6}
-    return 'e.g. CLSFBI or CLSFBI, CLSFAE';
+  if (!comp.regex) {
+    return 'Accepted Values';
   }
-  if (comp.regex && /\\d\{(\d+)\}/.test(comp.regex)) {
-    // Example: \d{2}
-    return 'e.g. 15, 1-50, 01-50';
+
+  // [A-Z]{n}
+  const upperMatch = comp.regex.match(/\[A-Z\]\{(\d+)\}/);
+  if (upperMatch) {
+    const len = parseInt(upperMatch[1]);
+    if (len === 1) return 'e.g. A, B, C';
+    if (len === 2) return 'e.g. AB, AC, BA';
+    if (len === 3) return 'e.g. ABC, BAC, CAB';
+    // For longer, show a generic example
+    return `e.g. ${'ABCDEFGH'.slice(0, len)}, ${'HGFEDCBA'.slice(0, len)}`;
   }
-  if (comp.regex && /\[A-Z\]\{(\d+)\}/.test(comp.regex)) {
-    // Example: [A-Z]{2}
-    return 'e.g. AB, AC, BA';
+
+  // [a-z]{n}
+  const lowerMatch = comp.regex.match(/\[a-z\]\{(\d+)\}/);
+  if (lowerMatch) {
+    const len = parseInt(lowerMatch[1]);
+    if (len === 1) return 'e.g. a, b, c';
+    if (len === 2) return 'e.g. ab, bc, ca';
+    if (len === 3) return 'e.g. abc, bac, cab';
+    return `e.g. ${'abcdefgh'.slice(0, len)}, ${'hgfedcba'.slice(0, len)}`;
   }
-  // Default
-  return 'e.g. B or B, A, W';
+
+  // [a-zA-Z]{n}
+  const mixedMatch = comp.regex.match(/\[a-zA-Z\]\{(\d+)\}/);
+  if (mixedMatch) {
+    const len = parseInt(mixedMatch[1]);
+    return `e.g. ${'AbCdEfGhIj'.slice(0, len)}, ${'jIgHeFdCbA'.slice(0, len)}`;
+  }
+
+  // Digits
+  const digitMatch = comp.regex.match(/\\d\{(\d+)\}/);
+  if (digitMatch) {
+    const len = parseInt(digitMatch[1]);
+    if (len === 1) return 'e.g. 1, 2, 3';
+    if (len === 2) return 'e.g. 01, 12, 99';
+    return `e.g. ${'0'.repeat(len - 1)}1, ${'9'.repeat(len)}`;
+  }
+
+  return 'Accepted Values';
 }
 </script>
 

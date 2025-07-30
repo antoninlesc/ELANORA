@@ -47,7 +47,6 @@ from .enums import (
 from .file_type import FileType
 from .instance import Instance
 from .invitation import Invitation
-from .naming_component import NamingComponent
 
 # Project model (depends on instance)
 from .project import Project

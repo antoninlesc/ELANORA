@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.database import Base
@@ -6,9 +6,9 @@ from app.db.database import Base
 
 class ComponentAcceptedValue(Base):
     __tablename__ = "COMPONENT_ACCEPTED_VALUE"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    naming_component_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("NAMING_COMPONENT.id", ondelete="CASCADE"), nullable=False
+    component_template_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("COMPONENT_TEMPLATE.id", ondelete="CASCADE"), primary_key=True
     )
-    value: Mapped[str] = mapped_column(String(100), nullable=False)
+    accepted_value_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("ACCEPTED_VALUE.id", ondelete="CASCADE"), primary_key=True
+    )

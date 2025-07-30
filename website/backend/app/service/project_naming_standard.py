@@ -4,9 +4,18 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud import naming_component, project_naming_standard
+from app.crud import (
+    project_naming_standard,
+    component_template,
+    accepted_value,
+    component_accepted_value,
+    standard_component,
+    file_type
+)
+from app.model.project_file_type import ProjectFileType
+from app.core.centralized_logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ProjectNamingStandardService:
@@ -19,22 +28,27 @@ class ProjectNamingStandardService:
         standard = await project_naming_standard.get_standard_by_id(db, standard_id)
         if not standard:
             return None
-        components = await naming_component.get_components_by_standard(db, standard_id)
-        # Serialize components to include accepted_values
-        components_serialized = [
-            {
-                "id": c.id,
-                "naming_standard_id": c.naming_standard_id,
-                "name": c.name,
-                "description": c.description,
-                "project_file_type_id": c.project_file_type_id,
-                "regex": c.regex,
-                "order": c.order,
-                "accepted_values": [v.value for v in getattr(c, "accepted_values", [])],
-            }
-            for c in components
-        ]
-        return {"standard": standard, "components": components_serialized}
+        std_components = await standard_component.get_components_by_standard(db, standard_id)
+        return {
+            "id": standard.id,
+            "project_id": standard.project_id,
+            "name": standard.name,
+            "project_file_type_id": standard.project_file_type_id,
+            "pattern": standard.pattern,
+            "description": standard.description,
+            "components": [
+                {
+                    "id": sc.component_template.id,
+                    "name": sc.component_template.name,
+                    "description": sc.component_template.description,
+                    "regex": sc.component_template.regex,
+                    "order": sc.order,
+                    "accepted_values": [v.value for v in sc.component_template.accepted_values],
+                    "project_file_type_id": standard.project_file_type_id,
+                }
+                for sc in sorted(std_components, key=lambda x: x.order)
+            ],
+        }
 
     @staticmethod
     async def create_standard_with_components(
@@ -50,41 +64,35 @@ class ProjectNamingStandardService:
             standard = await project_naming_standard.create_standard(
                 db, project_id, name, project_file_type_id, pattern, description
             )
+            # --- LOOKUP file_type_id ONCE ---
+            project_file_type = await db.get(ProjectFileType, project_file_type_id)
+            if not project_file_type:
+                raise HTTPException(status_code=400, detail="Invalid project_file_type_id")
+            file_type_id = project_file_type.file_type_id
+            # --------------------------------
             for idx, comp in enumerate(components):
-                await naming_component.create_component(
+                # Use the correct file_type_id
+                template = await component_template.get_or_create_component_template(
                     db,
-                    naming_standard_id=standard.id,
-                    project_file_type_id=project_file_type_id,
+                    file_type_id=file_type_id,
                     name=comp["name"],
                     regex=comp["regex"],
                     description=comp.get("description"),
-                    order=comp.get("order", idx + 1),
-                    accepted_values=comp.get("accepted_values", []),
                 )
+                await standard_component.link_standard_to_component(
+                    db,
+                    naming_standard_id=standard.id,
+                    component_template_id=template.id,
+                    order=comp.get("order", idx + 1),
+                )
+                for val in comp.get("accepted_values", []):
+                    acc_val = await accepted_value.get_or_create_accepted_value(db, val)
+                    await component_accepted_value.link_component_to_accepted_value(
+                        db, template.id, acc_val.id
+                    )
             await db.commit()
-            components_objs = await naming_component.get_components_by_standard(
-                db, standard.id
-            )
-            return {
-                "id": standard.id,
-                "project_id": standard.project_id,
-                "name": standard.name,
-                "project_file_type_id": standard.project_file_type_id,
-                "pattern": standard.pattern,
-                "description": standard.description,
-                "components": [
-                    {
-                        "id": c.id,
-                        "name": c.name,
-                        "regex": c.regex,
-                        "description": c.description,
-                        "order": c.order,
-                        "accepted_values": [v.value for v in c.accepted_values],
-                        "project_file_type_id": c.project_file_type_id,
-                    }
-                    for c in components_objs
-                ],
-            }
+            # Return the created standard with components
+            return await ProjectNamingStandardService.get_standard_with_components(db, standard.id)
         except IntegrityError as e:
             await db.rollback()
             msg = str(e.orig)
@@ -111,78 +119,45 @@ class ProjectNamingStandardService:
             raise
 
     @staticmethod
-    async def update_standard_and_components(
-        db: AsyncSession,
-        standard_id: int,
-        update_fields: dict,
-        components: list[dict],
-    ):
-        try:
-            await project_naming_standard.update_standard(
-                db, standard_id, update_fields
-            )
+    async def _delete_standard_and_cleanup(db: AsyncSession, standard_id: int):
+        logger.info(f"Deleting ProjectNamingStandard with id={standard_id}")
+        await project_naming_standard.delete_standard(db, standard_id)
 
-            # Fetch existing components for the standard
-            existing_components = await naming_component.get_components_by_standard(db, standard_id)
-            existing_components_by_id = {c.id: c for c in existing_components}
-            payload_ids = {c.get("id") for c in components if c.get("id") is not None}
-
-            # Update or create components
-            for idx, comp in enumerate(components):
-                if comp.get("id") in existing_components_by_id:
-                    # Update existing component
-                    await naming_component.update_component(
-                        db,
-                        component_id=comp["id"],
-                        update_fields={
-                            "name": comp["name"],
-                            "regex": comp["regex"],
-                            "description": comp.get("description"),
-                            "order": comp.get("order", idx + 1),
-                            "project_file_type_id": comp["project_file_type_id"],
-                        },
-                        accepted_values=comp.get("accepted_values"),
-                    )
-                else:
-                    # Create new component
-                    await naming_component.create_component(
-                        db,
-                        naming_standard_id=standard_id,
-                        project_file_type_id=comp["project_file_type_id"],
-                        name=comp["name"],
-                        regex=comp["regex"],
-                        description=comp.get("description"),
-                        order=comp.get("order", idx + 1),
-                        accepted_values=comp.get("accepted_values"),
-                    )
-
-            # Delete removed components
-            for c in existing_components:
-                if c.id not in payload_ids:
-                    await naming_component.delete_component(db, c.id)
-
-            await db.commit()
-            return True
-        except Exception:
-            await db.rollback()
-            raise
+        logger.info("Cleaning up orphaned ComponentAcceptedValue rows for orphaned templates...")
+        await component_accepted_value.delete_for_orphaned_templates(db)
+        logger.info("Cleaning up orphaned ComponentTemplate rows...")
+        await component_template.delete_orphaned_component_templates(db)
+        logger.info("Cleaning up orphaned AcceptedValue rows...")
+        await accepted_value.delete_orphaned_accepted_values(db)
 
     @staticmethod
     async def delete_standard(db: AsyncSession, standard_id: int):
         try:
-            await naming_component.delete_components_by_standard(db, standard_id)
-            await project_naming_standard.delete_standard(db, standard_id)
+            await ProjectNamingStandardService._delete_standard_and_cleanup(db, standard_id)
+            logger.info("Cleaning up orphaned FileType rows...")
+            await file_type.delete_orphaned_file_types(db)
             await db.commit()
+            logger.info("Delete and cleanup committed successfully.")
             return True
-        except Exception:
+        except Exception as e:
             await db.rollback()
+            logger.error(f"Error during delete_standard: {e}", exc_info=True)
+            raise
+
+    @staticmethod
+    async def delete_all_standards_by_project(db: AsyncSession, project_id: int):
+        try:
+            standard_ids = await project_naming_standard.get_standards_ids_by_project(db, project_id)
+            for standard_id in standard_ids:
+                await ProjectNamingStandardService._delete_standard_and_cleanup(db, standard_id)
+            logger.info("Bulk delete and cleanup committed successfully.")
+        except Exception as e:
+            logger.error(f"Error during delete_all_standards_by_project: {e}", exc_info=True)
             raise
 
     @staticmethod
     async def get_unique_component_names_by_project(db, project_id: int):
-        return await naming_component.get_unique_component_names_by_project(
-            db, project_id
-        )
+        return await component_template.get_unique_component_names_by_project(db, project_id)
 
     @staticmethod
     async def get_project_naming_standards_full(db: AsyncSession, project_id: int):
@@ -191,7 +166,7 @@ class ProjectNamingStandardService:
         for standard in standards:
             detail = await ProjectNamingStandardService.get_standard_with_components(db, standard.id)
             standards_with_components.append(detail)
-        component_names = await naming_component.get_unique_component_names_by_project(db, project_id)
+        component_names = await component_template.get_unique_component_names_by_project(db, project_id)
         return {
             "component_names": component_names,
             "standards": standards_with_components,

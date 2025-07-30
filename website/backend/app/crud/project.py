@@ -9,12 +9,15 @@ from app.crud.elan_file import delete_elan_file_full, get_orphan_elan_files_by_p
 from app.crud.elan_file_media import delete_orphaned_media
 from app.crud.invitation import delete_project_invitations
 from app.crud.tier import delete_tiers_for_elan_file
+from app.crud.file_type import delete_orphaned_file_types
 from app.model.association import UserToProject
 from app.model.enums import ProjectPermission
 from app.model.project import Project
 from app.model.tier_group import TierGroup
 from app.model.tier_section import TierSection
 from app.utils.database import DatabaseUtils
+
+from app.service.project_naming_standard import ProjectNamingStandardService
 
 logger = get_logger()
 
@@ -85,8 +88,11 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
         await DatabaseUtils.bulk_delete(
             db, TierSection, TierSection.project_id == project.project_id
         )
+        # Delete all standards for this project
+        await ProjectNamingStandardService.delete_all_standards_by_project(db, project.project_id)
         # Now delete project associations (users, standards, file links)
         await delete_project_associations(db, project.project_id)
+        await delete_orphaned_file_types(db)
         await delete_project_invitations(db, project.project_id)
         await delete_project_conflicts(db, project.project_id)
         await delete_project_comments(db, project.project_id)

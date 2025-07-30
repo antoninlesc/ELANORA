@@ -157,7 +157,6 @@ router.beforeEach(async (to, from, next) => {
 
   // Only verify authentication if we need it for this route
   if (needsAuthCheck && !userStore.authState.initialized) {
-    console.log('Authentication verification needed, verifying...');
     await userStore.verifyAuthentication();
   }
 

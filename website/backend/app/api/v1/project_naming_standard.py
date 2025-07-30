@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependency.database import get_db_dep
-from app.schema.requests.project_naming_standard import CreateNamingStandardRequest, UpdateNamingStandardRequest
+from app.schema.requests.project_naming_standard import CreateNamingStandardRequest
 from app.schema.responses.project_naming_standard import NamingStandardResponse
 from app.service.project_naming_standard import ProjectNamingStandardService
 
@@ -39,20 +39,6 @@ async def create_standard_with_components(
         req.description,
         components,
     )
-
-
-@router.put("/{standard_id}/update")
-async def update_standard_and_components(
-    standard_id: int,
-    req: UpdateNamingStandardRequest,
-    db: AsyncSession = get_db_dep,
-):
-    update_fields = req.model_dump(exclude={"components"})
-    components = [c.model_dump() for c in req.components]
-    return await ProjectNamingStandardService.update_standard_and_components(
-        db, standard_id, update_fields, components
-    )
-
 
 @router.delete("/{standard_id}")
 async def delete_standard(standard_id: int, db: AsyncSession = get_db_dep):

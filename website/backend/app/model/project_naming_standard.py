@@ -6,7 +6,7 @@ from app.db.database import Base
 class ProjectNamingStandard(Base):
     __tablename__ = "PROJECT_NAMING_STANDARD"
     __table_args__ = (
-        UniqueConstraint("project_id", "project_file_type_id", name="uq_project_filetype_standard"),
+        UniqueConstraint("project_id", "project_file_type_id", "name", name="uq_project_filetype_standard"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -17,6 +17,6 @@ class ProjectNamingStandard(Base):
     description: Mapped[str] = mapped_column(Text, nullable=True)
 
     project_file_type = relationship("ProjectFileType")
-    components = relationship(
-        "NamingComponent", back_populates="standard", cascade="all, delete-orphan"
+    standard_components = relationship(
+        "StandardComponent", back_populates="naming_standard", cascade="all, delete-orphan"
     )

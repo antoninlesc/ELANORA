@@ -3,13 +3,14 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
+from app.model.project_file_type import ProjectFileType
+
 from app.model.association import (
     ElanFileToMedia,
     ElanFileToProject,
     ElanFileToTier,
     ProjectAnnotStandard,
     UserToProject,
-    ProjectFileType,
 )
 from app.utils.database import DatabaseUtils
 
@@ -246,6 +247,9 @@ async def delete_project_associations(db: AsyncSession, project_id: int):
     logger.info(f"Bulk deleting project associations for project_id={project_id}")
     try:
         await DatabaseUtils.bulk_delete(
+            db, ProjectFileType, ProjectFileType.project_id == project_id
+        )
+        await DatabaseUtils.bulk_delete(
             db, ElanFileToProject, ElanFileToProject.project_id == project_id
         )
         await DatabaseUtils.bulk_delete(
@@ -255,7 +259,9 @@ async def delete_project_associations(db: AsyncSession, project_id: int):
             db, UserToProject, UserToProject.project_id == project_id
         )
         logger.info("Bulk deleted project associations successfully")
+        await db.flush()
     except Exception as e:
+        await db.rollback()
         logger.error(
             f"Failed to bulk delete project associations for project_id={project_id}: {e}"
         )

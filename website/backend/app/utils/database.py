@@ -1,6 +1,6 @@
 """Database utility functions for common operations."""
 
-from typing import Any, TypeVar
+from typing import Any, Sequence, TypeVar
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -203,6 +203,7 @@ class DatabaseUtils:
         """Bulk delete records matching the given where_clause.
         Returns the number of deleted rows.
         """
+        logger.info(f"bulk_delete: model={model.__name__} where_clause={where_clause}")
         result = await db.execute(delete(model).where(where_clause))
         logger.info(f"bulk_delete: model={model.__name__} deleted={result.rowcount}")
         return result.rowcount if result.rowcount is not None else 0
@@ -271,13 +272,49 @@ class DatabaseUtils:
         assoc_ref_field: str,
     ):
         """Return all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
+        Logs orphans and non-orphans with references.
         """
         main_id_col = getattr(main_model, main_id_field)
         assoc_ref_col = getattr(assoc_model, assoc_ref_field)
-        subq = select(assoc_ref_col).distinct()
-        query = select(main_model).where(~main_id_col.in_(subq))
-        result = await db.execute(query)
-        return list(result.scalars().all())
+
+        # Get all main IDs
+        all_main_ids_result = await db.execute(select(main_id_col))
+        all_main_ids = {row[0] for row in all_main_ids_result}
+
+        # Get all referenced IDs
+        referenced_ids_result = await db.execute(select(assoc_ref_col))
+        referenced_ids = {row[0] for row in referenced_ids_result if row[0] is not None}
+
+        # Find orphans and non-orphans
+        orphan_ids = all_main_ids - referenced_ids
+        non_orphan_ids = all_main_ids & referenced_ids
+
+        # Log orphans
+        logger.info(
+            f"get_fully_orphaned: {main_model.__name__} orphans (not in {assoc_model.__name__}.{assoc_ref_field}): {sorted(orphan_ids)}"
+        )
+
+        # Log non-orphans and where they are referenced
+        if non_orphan_ids:
+            pk_fields = [key.name for key in assoc_model.__table__.primary_key.columns]
+            for oid in sorted(non_orphan_ids):
+                refs = await db.execute(
+                    select(assoc_model).where(assoc_ref_col == oid)
+                )
+                ref_rows = refs.scalars().all()
+                logger.info(
+                    f"{main_model.__name__} id={oid} is still referenced in {assoc_model.__name__} rows: "
+                    f"{[{k: getattr(r, k, None) for k in pk_fields} for r in ref_rows]}"
+                )
+
+        # Return orphan objects
+        if orphan_ids:
+            query = select(main_model).where(main_id_col.in_(orphan_ids))
+            result = await db.execute(query)
+            orphans = list(result.scalars().all())
+        else:
+            orphans = []
+        return orphans
 
     @staticmethod
     async def delete_fully_orphaned(
@@ -288,12 +325,47 @@ class DatabaseUtils:
         assoc_ref_field: str,
     ) -> int:
         """Delete all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
-        Returns the number of deleted rows.
+        Logs what is deleted.
         """
         orphans = await DatabaseUtils.get_fully_orphaned(
             db, main_model, assoc_model, main_id_field, assoc_ref_field
         )
         count = len(orphans)
+        logger.info(
+            f"delete_fully_orphaned: Deleting {count} orphaned {main_model.__name__} records: {[getattr(o, main_id_field) for o in orphans]}"
+        )
         for orphan in orphans:
             await db.delete(orphan)
         return count
+
+    @staticmethod
+    async def get_distinct_column_values(
+        db: AsyncSession,
+        model,
+        column,
+        filters: dict[str, Any] = None,
+        in_filter: tuple = None,
+        order_by=None,
+    ) -> Sequence[Any]:
+        """
+        Utility to get distinct values for a column, with optional filters and IN clause.
+        - model: SQLAlchemy model class
+        - column: model.column to select
+        - filters: dict of {column_name: value}
+        - in_filter: tuple of (column, list_of_values)
+        - order_by: model.column or list of columns
+        """
+        stmt = select(column).distinct()
+        if filters:
+            for k, v in filters.items():
+                stmt = stmt.where(getattr(model, k) == v)
+        if in_filter:
+            col, values = in_filter
+            stmt = stmt.where(col.in_(values))
+        if order_by is not None:
+            if isinstance(order_by, list):
+                stmt = stmt.order_by(*order_by)
+            else:
+                stmt = stmt.order_by(order_by)
+        result = await db.execute(stmt)
+        return [row[0] for row in result.all()]
