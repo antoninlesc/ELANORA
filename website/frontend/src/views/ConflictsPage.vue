@@ -272,7 +272,7 @@ onMounted(async () => {
 async function fetchProjects() {
   try {
     loading.value = true;
-    const response = await gitService.listProjects();
+    const response = await gitService.listUserProjects();
     projects.value = response.projects;
   } catch (e) {
     error.value = 'Failed to load projects';

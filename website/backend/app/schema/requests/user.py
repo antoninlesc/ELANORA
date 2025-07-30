@@ -9,7 +9,8 @@ class AddressRequest(CustomBaseModel):
     street_number: str | None = None
     street_name: str
     city_name: str
-    country_id: int
+    country_code: str
+    country_name: str
     postal_code: str
     address_line_2: str | None = None
 

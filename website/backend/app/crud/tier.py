@@ -144,3 +144,10 @@ async def get_tier_statistics(db: AsyncSession) -> list[tuple[str, int]]:
         .order_by(func.count(Annotation.annotation_id).desc())
     )
     return [tuple(row) for row in result]
+
+
+async def get_tiers_by_ids(db, tier_ids: list[int]) -> list[Tier]:
+    """Get all tiers for a list of tier_ids."""
+    if not tier_ids:
+        return []
+    return await DatabaseUtils.get_by_filter(db, Tier, {"tier_id": tier_ids})

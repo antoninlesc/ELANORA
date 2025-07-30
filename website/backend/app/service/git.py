@@ -17,6 +17,7 @@ from app.crud.project import (
     delete_project_db,
     get_project_by_name,
     list_projects_by_instance,
+    list_projects_by_user,
     project_exists_by_name,
 )
 from app.crud.conflict import save_git_conflicts, get_git_conflicts_for_branch
@@ -298,6 +299,13 @@ class GitService:
 
     async def list_projects(self, db: AsyncSession, instance_id: int) -> list[str]:
         projects = await list_projects_by_instance(db, instance_id)
+        return [p.project_name for p in projects]
+
+    async def list_user_projects(
+        self, db: AsyncSession, user_id: int, instance_id: int
+    ) -> list[str]:
+        """List projects that a specific user has access to."""
+        projects = await list_projects_by_user(db, user_id, instance_id)
         return [p.project_name for p in projects]
 
     async def init_project_from_folder_upload(

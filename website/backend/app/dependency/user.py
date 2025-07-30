@@ -4,13 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.jwt import verify_access_token
-from app.db.database import get_db
+from app.dependency.database import get_db_dep
 from app.model.user import User, UserRole
 
 # Base HTTP bearer security scheme
 security = HTTPBearer(auto_error=False)
-
-get_db_dep = Depends(get_db)
 
 # Role constants using the enum
 ROLE_PUBLIC = UserRole.PUBLIC

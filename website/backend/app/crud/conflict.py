@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.centralized_logging import get_logger
 from sqlalchemy.future import select
 from sqlalchemy.sql import func
+from app.model.association import ConflictOfElanFile
 from app.model.conflict import Conflict
 from app.model.elan_file import ElanFile
 from app.model.association import ConflictOfElanFile, ElanFileToProject

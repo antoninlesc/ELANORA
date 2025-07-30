@@ -7,7 +7,7 @@ from app.schema.common.base import CustomBaseModel
 
 
 class InvitationSendRequest(CustomBaseModel):
-    """Schema for sending an invitation."""
+    """Schema for sending an invitation by email."""
 
     receiver_email: EmailStr
     project_name: str

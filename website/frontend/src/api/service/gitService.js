@@ -13,6 +13,12 @@ const gitService = {
     return data;
   },
 
+  // List projects accessible to the current user
+  async listUserProjects() {
+    const { data } = await axiosInstance.get(`${GIT_PREFIX}/user-projects`);
+    return data;
+  },
+
   // Create a new project
   async createProject(projectData) {
     const { data } = await axiosInstance.post(

@@ -232,7 +232,10 @@ const loadSentInvitations = async () => {
 
   try {
     const response = await getSentInvitations();
-    sentInvitations.value = response.data.invitations || [];
+    const invitations = response.data.invitations || [];
+
+    // Sort invitations by creation date, newest first
+    sentInvitations.value = invitations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   } catch (error) {
     console.error('Failed to load sent invitations:', error);
     sentInvitations.value = [];

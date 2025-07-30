@@ -41,7 +41,7 @@
       <div v-else class="project-page-list">
         <!-- Replace your project list loop with this -->
         <div
-          v-for="project in projects"
+          v-for="project in projectStore.projects"
           :key="project"
           :class="[
             'project-page-project-box',
@@ -64,6 +64,14 @@
               @click.stop="openRenameDialog(project)"
             >
               <font-awesome-icon icon="fa-regular fa-pen-to-square" />
+            </button>
+            <button
+              v-if="isAdmin"
+              class="project-page-share-btn"
+              title="Share Project"
+              @click.stop="openShareModal(project)"
+            >
+              <font-awesome-icon icon="share" />
             </button>
             <button
               class="project-page-delete-btn"
@@ -174,6 +182,14 @@
           <div v-else class="project-page-loading">No files found.</div>
         </div>
       </div>
+
+      <!-- Project Share Modal -->
+      <ProjectShareModal
+        :show="showShareModal"
+        :project-name="shareProjectName"
+        @close="closeShareModal"
+        @success="onShareSuccess"
+      />
     </div>
   </div>
 </template>
@@ -181,11 +197,14 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import { useProjectStore } from '@stores/project';
+import { useUserStore } from '@stores/user';
 import gitService from '@api/service/gitService';
 import FileTree from '@components/common/FileTree.vue';
 import UploadFolder from '@components/common/UploadFolder.vue';
+import ProjectShareModal from '@components/common/ProjectShareModal.vue';
 
 const projectStore = useProjectStore();
+const userStore = useUserStore();
 const projects = ref([]);
 const loading = ref(true);
 
@@ -220,11 +239,19 @@ const renaming = ref(false);
 const renameError = ref('');
 const renamingProject = ref(null);
 
+// Share modal state
+const showShareModal = ref(false);
+const shareProjectName = ref('');
+
+// Check if user is admin
+const isAdmin = computed(() => userStore.user?.role === 'admin');
+
 async function fetchProjects() {
   loading.value = true;
   try {
-    const res = await gitService.listProjects();
+    const res = await gitService.listUserProjects();
     projects.value = res.projects;
+    projectStore.setProjects(res.projects);
   } finally {
     loading.value = false;
   }
@@ -374,6 +401,22 @@ async function renameProject() {
   } finally {
     renaming.value = false;
   }
+}
+
+// Share modal functions
+function openShareModal(project) {
+  shareProjectName.value = project;
+  showShareModal.value = true;
+}
+
+function closeShareModal() {
+  showShareModal.value = false;
+  shareProjectName.value = '';
+}
+
+function onShareSuccess() {
+  // Optionally reload projects or show a success message
+  console.log('Project shared successfully');
 }
 
 // Fetch files when current project changes

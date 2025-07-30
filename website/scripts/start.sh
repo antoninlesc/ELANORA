@@ -61,21 +61,21 @@ while true; do
                 if command -v gnome-terminal &> /dev/null; then
                     gnome-terminal \
                         --tab --title="Database" -- bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && export ENVIRONMENT=dev && docker-compose up db; exec bash" \
-                        --tab --title="Frontend" -- bash -c "cd \"$SCRIPTS_ROOT/frontend\" && export ENVIRONMENT=dev && npm install && npm run dev; exec bash" \
+                        --tab --title="Frontend" -- bash -c "cd \"$SCRIPTS_ROOT/frontend\" && export ENVIRONMENT=dev && npm install && npm audit fix && npm run dev; exec bash" \
                         --tab --title="Backend" -- bash -c "cd \"$SCRIPTS_ROOT/backend\" && export ENVIRONMENT=dev && poetry install && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8018; exec bash"
                 elif command -v konsole &> /dev/null; then
                     konsole \
                         --new-tab -p tabtitle="Database" -e bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && export ENVIRONMENT=dev && docker-compose up db" \
-                        --new-tab -p tabtitle="Frontend" -e bash -c "cd \"$SCRIPTS_ROOT/frontend\" && export ENVIRONMENT=dev && npm install && npm run dev" \
+                        --new-tab -p tabtitle="Frontend" -e bash -c "cd \"$SCRIPTS_ROOT/frontend\" && export ENVIRONMENT=dev && npm install && npm audit fix && npm run dev" \
                         --new-tab -p tabtitle="Backend" -e bash -c "cd \"$SCRIPTS_ROOT/backend\" && export ENVIRONMENT=dev && poetry install && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8018"
                 elif command -v x-terminal-emulator &> /dev/null; then
                     x-terminal-emulator -T "Database" -e bash -c "cd \"$SCRIPTS_ROOT/docker/website-dev\" && export ENVIRONMENT=dev && docker-compose up db" &
-                    x-terminal-emulator -T "Frontend" -e bash -c "cd \"$SCRIPTS_ROOT/frontend\" && export ENVIRONMENT=dev && npm install && npm run dev" &
+                    x-terminal-emulator -T "Frontend" -e bash -c "cd \"$SCRIPTS_ROOT/frontend\" && export ENVIRONMENT=dev && npm install && npm audit fix && npm run dev" &
                     x-terminal-emulator -T "Backend" -e bash -c "cd \"$SCRIPTS_ROOT/backend\" && export ENVIRONMENT=dev && poetry install && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8018" &
                 else
                     echo "No multi-tab terminal found. Running all services in the current terminal."
                     (cd website/docker/website-dev && export ENVIRONMENT=dev && docker-compose up db &) 
-                    (cd website/frontend && export ENVIRONMENT=dev && npm install && npm run dev &)
+                    (cd website/frontend && export ENVIRONMENT=dev && npm install && npm audit fix && npm run dev &)
                     (cd website/backend && export ENVIRONMENT=dev && poetry install && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8018)
                 fi
                 exit 0

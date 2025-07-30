@@ -81,7 +81,8 @@ async def update_user_profile(db: AsyncSession, user: User, **update_fields) -> 
 async def validate_user_exists_and_active(db: AsyncSession, user_id: int) -> bool:
     """Validate that a user exists and has an active account."""
     filters = {"user_id": user_id, "is_active": True}
-    return await DatabaseUtils.exists(db, User, "user_id", user_id)
+    user = await DatabaseUtils.get_one_by_filter(db, User, filters)
+    return user is not None
 
 
 async def get_admin_emails(db: AsyncSession) -> list[str]:
@@ -104,3 +105,9 @@ async def check_user_exists_by_email(db: AsyncSession, email: str) -> bool:
     """Check if a user with the given email exists."""
     # Use DatabaseUtils.exists
     return await DatabaseUtils.exists(db, User, "email", email)
+
+
+async def get_all_active_users(db: AsyncSession) -> list[User]:
+    """Get all active users."""
+    filters = {"is_active": True}
+    return await DatabaseUtils.get_by_filter(db, User, filters)

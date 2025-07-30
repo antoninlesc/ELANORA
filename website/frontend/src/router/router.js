@@ -14,6 +14,7 @@ import UploadPage from '@views/UploadPage.vue';
 import ConflictsPage from '@views/ConflictsPage.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
+import TiersPage from '@views/TiersPage.vue';
 
 // Define routes
 const routes = [
@@ -79,6 +80,12 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'tiers',
+        name: 'TiersPage',
+        component: TiersPage,
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'error/:statusCode',
         name: 'HTTPStatus',
         props: (route) => ({
@@ -130,6 +137,22 @@ router.beforeEach(async (to, from, next) => {
   const eventMessageStore = useEventMessageStore();
   const userStore = useUserStore();
 
+
+  // Always wait for authentication to be initialized before allowing navigation to public auth pages
+  const publicAuthPages = ['LoginPage', 'RegisterPage', 'ForgotPassword', 'ResetPassword', 'EmailVerificationPage'];
+  if (publicAuthPages.includes(to.name)) {
+    // If auth state is not initialized, verify authentication first
+    if (!userStore.authState.initialized) {
+      await userStore.verifyAuthentication();
+    }
+    // If authenticated, block access
+    if (userStore.isAuthenticated) {
+      eventMessageStore.addMessage('event_messages.already_logged_in', 'info');
+      if (from.name) return next(false);
+      return next({ name: 'HomePage' });
+    }
+  }
+
   // Check if authentication verification is needed for this route
   const needsAuthCheck =
     to.meta.requiresAuth || to.meta.requiresAdmin || to.name === 'LoginPage';
@@ -138,13 +161,6 @@ router.beforeEach(async (to, from, next) => {
   if (needsAuthCheck && !userStore.authState.initialized) {
     console.log('Authentication verification needed, verifying...');
     await userStore.verifyAuthentication();
-  }
-
-  // Handle login route: redirect if already authenticated
-  if (to.name === 'LoginPage' && userStore.isAuthenticated) {
-    eventMessageStore.addMessage('event_messages.already_logged_in', 'info');
-    if (from.name) return next(false);
-    return next({ name: 'HomePage' });
   }
 
   // Check auth for protected routes
