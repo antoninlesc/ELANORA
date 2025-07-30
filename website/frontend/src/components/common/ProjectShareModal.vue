@@ -78,6 +78,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useEventMessageStore } from '@stores/eventMessage';
 import { sendInvitation as sendInvitationAPI } from '@/api/service/invitationService';
 import '@/assets/css/ProjectShareModal.css';
 
@@ -95,6 +96,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'success']);
 
 const { t } = useI18n();
+const eventMessageStore = useEventMessageStore();
 
 // Form data
 const form = ref({
@@ -106,8 +108,6 @@ const form = ref({
 // States
 const sending = ref(false);
 const emailError = ref('');
-const successMessage = ref('');
-const errorMessage = ref('');
 
 const projectName = computed(() => props.projectName);
 
@@ -119,15 +119,11 @@ const closeModal = () => {
     language: 'fr'
   };
   emailError.value = '';
-  successMessage.value = '';
-  errorMessage.value = '';
   emit('close');
 };
 
 const sendProjectInvitation = async () => {
   emailError.value = '';
-  errorMessage.value = '';
-  successMessage.value = '';
   
   if (!form.value.email) {
     emailError.value = t('project.share.email_required');
@@ -149,16 +145,16 @@ const sendProjectInvitation = async () => {
     const response = await sendInvitationAPI(invitationData);
     
     if (response.data.success) {
-      successMessage.value = t('project.share.invitation_sent_success', { email: form.value.email });
+      eventMessageStore.addMessage('project.share.invitation_sent_success', 'success');
       form.value.email = '';
       form.value.message = '';
       emit('success');
     } else {
-      errorMessage.value = response.data.message || t('project.share.invitation_send_error');
+      eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
     }
   } catch (error) {
     console.error('Error sending invitation:', error);
-    errorMessage.value = t('project.share.invitation_send_error');
+    eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
   } finally {
     sending.value = false;
   }
