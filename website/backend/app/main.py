@@ -13,6 +13,7 @@ from app.api.v1.invitation import router as invitation_router
 from app.api.v1.location import router as location_router
 from app.api.v1.user import router as user_router
 from app.api.v1.instance import router as instance_router
+from app.api.v1.project_associations import router as project_associations_router
 from app.core.centralized_logging import get_logger
 from app.core.config import BACKEND_HOST, ENVIRONMENT, FRONTEND_HOST
 from app.core.exception_handler import (
@@ -82,6 +83,11 @@ app.include_router(
 )
 app.include_router(
     instance_router, prefix=f"{API_V1_PREFIX}/instance", tags=["INSTANCE"]
+)
+app.include_router(
+    project_associations_router,
+    prefix=f"{API_V1_PREFIX}/project-associations",
+    tags=["PROJECT ASSOCIATIONS"],
 )
 
 

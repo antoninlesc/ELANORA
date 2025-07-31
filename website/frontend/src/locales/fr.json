@@ -274,6 +274,35 @@
   },
   "project": {
     "load_error": "Échec du chargement des projets",
+    "users": {
+      "title": "Utilisateurs du projet \"{projectName}\"",
+      "add_user": "Ajouter un utilisateur",
+      "no_users": "Aucun utilisateur trouvé",
+      "user": "Utilisateur",
+      "permission": "Permission",
+      "load_error": "Erreur lors du chargement des utilisateurs",
+      "permission_updated": "Permission mise à jour avec succès",
+      "permission_update_error": "Erreur lors de la mise à jour de la permission",
+      "user_added": "Utilisateur ajouté avec succès",
+      "add_error": "Erreur lors de l'ajout de l'utilisateur",
+      "user_removed": "Utilisateur retiré avec succès",
+      "remove_error": "Erreur lors de la suppression de l'utilisateur",
+      "add_user_modal": {
+        "title": "Ajouter un utilisateur au projet",
+        "user_id": "ID de l'utilisateur",
+        "permission": "Permission"
+      },
+      "remove_modal": {
+        "title": "Confirmer la suppression",
+        "message": "Êtes-vous sûr de vouloir retirer {username} de ce projet ?"
+      }
+    },
+    "permissions": {
+      "read": "Lecture seule",
+      "write": "Lecture/Écriture",
+      "admin": "Administrateur",
+      "owner": "Propriétaire"
+    },
     "share": {
       "title": "Partager le projet \"{projectName}\"",
       "send_by_email": "Envoyer par email",

@@ -16,6 +16,7 @@ import ProjectsPage from '@views/ProjectsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import InvitationResponsePage from '@views/InvitationResponsePage.vue';
 import TiersPage from '@views/TiersPage.vue';
+import TestProjectUsersPage from '@views/TestProjectUsersPage.vue';
 
 // Define routes
 const routes = [
@@ -92,6 +93,12 @@ const routes = [
         path: 'tiers',
         name: 'TiersPage',
         component: TiersPage,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'test/project-users',
+        name: 'TestProjectUsersPage',
+        component: TestProjectUsersPage,
         meta: { requiresAuth: true },
       },
       {
