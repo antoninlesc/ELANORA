@@ -1,17 +1,17 @@
 <template>
   <div class="configure-filetypes-page">
-    <h2 class="configure-filetypes-title">{{ t('fileTypes.title') }}</h2>
-    <div v-if="isLoading" class="configure-filetypes-loading">{{ t('fileTypes.loading') }}</div>
+    <h2 class="configure-filetypes-title">{{ t('configureFileTypes.title') }}</h2>
+    <div v-if="isLoading" class="configure-filetypes-loading">{{ t('configureFileTypes.loading') }}</div>
     <div v-else>
       <div v-if="fileTypes.length === 0" class="configure-filetypes-empty">
-        <em>{{ t('fileTypes.empty') }}</em>
+        <em>{{ t('configureFileTypes.empty') }}</em>
       </div>
       <table v-if="fileTypes.length" class="configure-filetypes-table">
         <thead>
           <tr>
-            <th>{{ t('fileTypes.name') }}</th>
-            <th>{{ t('fileTypes.extension') }}</th>
-            <th>{{ t('fileTypes.actions') }}</th>
+            <th>{{ t('configureFileTypes.name') }}</th>
+            <th>{{ t('configureFileTypes.extension') }}</th>
+            <th>{{ t('configureFileTypes.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -48,14 +48,14 @@
                 <template v-if="editId === ft.id">
                   <button
                     class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    :title="t('fileTypes.edit')"
+                    :title="t('configureFileTypes.edit')"
                     @click="saveEdit(ft.id)"
                   >
                     <font-awesome-icon icon="fa-regular fa-pen-to-square" />
                   </button>
                   <button
                     class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    :title="t('fileTypes.delete')"
+                    :title="t('configureFileTypes.delete')"
                     @click="cancelEdit"
                   >
                     <span style="font-size: 1.1em">✖</span>
@@ -64,14 +64,14 @@
                 <template v-else>
                   <button
                     class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    :title="t('fileTypes.edit')"
+                    :title="t('configureFileTypes.edit')"
                     @click="startEdit(ft)"
                   >
                     <font-awesome-icon icon="fa-regular fa-pen-to-square" />
                   </button>
                   <button
                     class="configure-file-types-action-btn configure-file-types-delete-btn"
-                    :title="t('fileTypes.delete')"
+                    :title="t('configureFileTypes.delete')"
                     @click="deleteFileType(ft.id)"
                   >
                     <font-awesome-icon icon="trash" />
@@ -84,14 +84,14 @@
       </table>
       <div class="configure-filetypes-add-form">
         <div class="add-form-col">
-          <input v-model="newFileType.name" :placeholder="t('fileTypes.name')" />
+          <input v-model="newFileType.name" :placeholder="t('configureFileTypes.name')" />
           <span v-if="addNameError" class="configure-file-types-input-error">{{ addNameError }}</span>
         </div>
         <div class="add-form-col">
-          <input v-model="newFileType.extension" :placeholder="t('fileTypes.extension')" />
+          <input v-model="newFileType.extension" :placeholder="t('configureFileTypes.extension')" />
           <span v-if="addExtensionError" class="configure-file-types-input-error">{{ addExtensionError }}</span>
         </div>
-        <button @click="addFileType">{{ t('fileTypes.createFileType') }}</button>
+        <button @click="addFileType">{{ t('configureFileTypes.createFileType') }}</button>
       </div>
     </div>
   </div>
@@ -104,12 +104,15 @@ import { useFileTypeStore } from '@/stores/fileType.js';
 import { useEventMessageStore } from '@/stores/eventMessage.js';
 import FontAwesomeIcon from '@/plugins/fontawesome';
 import { useI18n } from 'vue-i18n';
+import { useUserConfirm } from '@/composables/useUserConfirm';
 
 const { t } = useI18n();
 const route = useRoute();
 
 const fileTypeStore = useFileTypeStore();
 const eventMessageStore = useEventMessageStore();
+
+const userConfirm = useUserConfirm();
 
 const projectId = computed(() => Number(route.params.projectId));
 
@@ -167,38 +170,51 @@ async function saveEdit(id) {
     editFileType.value.extension = '.' + editFileType.value.extension;
   }
   if (!isValidName(editFileType.value.name)) {
-    eventMessageStore.addMessage('fileTypes.invalidName', 'error', 5000);
+    eventMessageStore.addMessage('configureFileTypes.invalidName', 'error', 5000);
     return;
   }
   if (!isValidExtension(editFileType.value.extension)) {
-    eventMessageStore.addMessage('fileTypes.invalidExtension', 'error', 5000);
+    eventMessageStore.addMessage('configureFileTypes.invalidExtension', 'error', 5000);
     return;
   }
-  await fileTypeStore.updateFileType(id, { ...editFileType.value }, projectId.value);
+  try {
+    await fileTypeStore.updateFileType(id, { ...editFileType.value }, projectId.value);
+    eventMessageStore.addMessage('configureFileTypes.eventMessages.updateSuccess', 'success', 4000);
+  } catch {
+    eventMessageStore.addMessage('configureFileTypes.eventMessages.updateFailed', 'error', 7000);
+  }
   cancelEdit();
 }
+
 async function deleteFileType(id) {
-  if (confirm(t('fileTypes.delete') + '?')) {
-    try {
-      await fileTypeStore.deleteFileType(id, projectId.value);
-    } catch (e) {
-      const detail = e?.response?.data?.detail;
-      if (detail && detail.includes('used by a naming standard')) {
-        eventMessageStore.addMessage(
-          'fileTypes.eventMessages.cannotDeleteUsed',
-          'error',
-          7000
-        );
-      } else {
-        eventMessageStore.addMessage(
-          'fileTypes.eventMessages.deleteFailed',
-          'error',
-          7000
-        );
-      }
+  const ok = await userConfirm({
+    message: t('configureFileTypes.delete') + '?\n' + t('configureFileTypes.deleteMessage'),
+    title: t('configureFileTypes.deleteTitle'),
+    confirmText: t('common.confirm'),
+    cancelText: t('common.cancel')
+  });
+  if (!ok) return;
+  try {
+    await fileTypeStore.deleteFileType(id, projectId.value);
+    eventMessageStore.addMessage('configureFileTypes.eventMessages.deleteSuccess', 'success', 4000);
+  } catch (e) {
+    const detail = e?.response?.data?.detail;
+    if (detail && detail.includes('used by a naming standard')) {
+      eventMessageStore.addMessage(
+        'configureFileTypes.eventMessages.cannotDeleteUsed',
+        'error',
+        7000
+      );
+    } else {
+      eventMessageStore.addMessage(
+        'configureFileTypes.eventMessages.deleteFailed',
+        'error',
+        7000
+      );
     }
   }
 }
+
 async function addFileType() {
   addNameError.value = '';
   addExtensionError.value = '';
@@ -209,11 +225,11 @@ async function addFileType() {
   }
   let valid = true;
   if (!isValidName(newFileType.value.name)) {
-    addNameError.value = t('fileTypes.invalidName');
+    addNameError.value = t('configureFileTypes.invalidName');
     valid = false;
   }
   if (!isValidExtension(newFileType.value.extension)) {
-    addExtensionError.value = t('fileTypes.invalidExtension');
+    addExtensionError.value = t('configureFileTypes.invalidExtension');
     valid = false;
   }
   if (!valid) return;
@@ -222,17 +238,22 @@ async function addFileType() {
   );
   if (duplicate) {
     eventMessageStore.addMessage(
-      'fileTypes.eventMessages.duplicateName',
+      'configureFileTypes.eventMessages.duplicateName',
       'error',
       5000
     );
     return;
   }
-  await fileTypeStore.addFileType(
-    { ...newFileType.value, project_id: projectId.value },
-    projectId.value
-  );
-  newFileType.value = { name: '', extension: '' };
+  try {
+    await fileTypeStore.addFileType(
+      { ...newFileType.value, project_id: projectId.value },
+      projectId.value
+    );
+    eventMessageStore.addMessage('configureFileTypes.eventMessages.addSuccess', 'success', 4000);
+    newFileType.value = { name: '', extension: '' };
+  } catch {
+    eventMessageStore.addMessage('configureFileTypes.eventMessages.addFailed', 'error', 7000);
+  }
 }
 </script>
 

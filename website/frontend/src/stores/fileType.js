@@ -14,8 +14,10 @@ export const useFileTypeStore = defineStore('fileType', {
           this.fileTypes = [];
           return;
         }
-        const { data } = await fileTypeService.getProjectFileTypes(projectId);
-        this.fileTypes = Array.isArray(data) ? data : [];
+        const response = await fileTypeService.getProjectFileTypes(projectId);
+        this.fileTypes = [...response.data];
+      } catch (err) {
+        console.error('[fileTypeStore] fetchFileTypes error:', err);
       } finally {
         this.isLoading = false;
       }

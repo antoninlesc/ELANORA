@@ -1,9 +1,8 @@
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Any
 
 from app.dependency.database import get_db_dep
-from app.schema.requests.file_type import FileTypeCreateRequest, FileTypeUpdateRequest
+from app.schema.requests.file_type import FileTypeCreateRequest, FileTypeUpdateRequest, FileTypeImportSelectedRequest
 from app.schema.responses.file_type import FileTypeResponse
 from app.service.file_type import FileTypeService
 
@@ -21,6 +20,7 @@ async def get_file_types_for_project(project_id: int, db: AsyncSession = get_db_
                 id=pft.id,
                 name=pft.name,
                 extension=extension,
+                file_type_id=pft.file_type_id if pft.file_type else None,
             )
         )
     return result
@@ -44,6 +44,7 @@ async def remove_file_type_from_project(
         id=ft.id,
         name=ft.name,
         extension=extension,
+        file_type_id=ft.file_type_id if ft.file_type else None
     )
 
 
@@ -66,6 +67,7 @@ async def preview_importable_file_types(
                 id=ft.id,
                 name=ft.name,
                 extension=ft.extension,
+                file_type_id=ft.file_type_id,
                 exists_in_target=ft.name in target_names
             )
         )
@@ -76,20 +78,18 @@ async def preview_importable_file_types(
 async def import_selected_file_types(
     source_project_id: int,
     target_project_id: int,
-    file_type_names: None,
+    req: FileTypeImportSelectedRequest,
     db: AsyncSession = get_db_dep
 ):
-    if file_type_names is None:
-        file_type_names = Body(..., embed=True)
     imported = await FileTypeService.import_selected_file_types(
-        db, source_project_id, target_project_id, file_type_names
+        db, source_project_id, target_project_id, req.file_type_names
     )
-    # Convert to response model
     return [
         FileTypeResponse(
             id=ft.id,
             name=ft.name,
             extension=ft.file_type.extension if hasattr(ft, "file_type") else ft.extension,
+            file_type_id=ft.file_type_id if hasattr(ft, "file_type") else None,
             exists_in_target=False,
         )
         for ft in imported
@@ -109,6 +109,7 @@ async def add_project_file_type(
         id=result["id"],
         name=result["name"],
         extension=result["extension"],
+        file_type_id=result.get("file_type_id"),
         exists_in_target=result.get("exists_in_target", False)
     )
 
@@ -125,4 +126,5 @@ async def update_project_file_type(
         id=result["id"],
         name=result["name"],
         extension=result["extension"],
+        file_type_id=result.get("file_type_id"),
     )

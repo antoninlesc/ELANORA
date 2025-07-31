@@ -56,3 +56,6 @@ async def delete_orphaned_component_templates(db: AsyncSession):
     except Exception:
         await db.rollback()
         raise
+
+async def get_by_id(db: AsyncSession, template_id: int):
+    return await DatabaseUtils.get_by_id(db, ComponentTemplate, "id", template_id)

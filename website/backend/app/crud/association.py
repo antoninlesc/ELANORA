@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy.future import select
+from app.model.project_file_type import ProjectFileType
 
 from app.core.centralized_logging import get_logger
 from app.model.project_file_type import ProjectFileType
@@ -282,3 +283,11 @@ async def get_tier_ids_for_elan_file(db, elan_id: int) -> list[int]:
         db, ElanFileToTier, {"elan_id": elan_id}
     )
     return [r.tier_id for r in records]
+
+async def get_project_file_type_with_file_type(db, project_file_type_id: int):
+    result = await db.execute(
+        select(ProjectFileType)
+        .options(selectinload(ProjectFileType.file_type))
+        .where(ProjectFileType.id == project_file_type_id)
+    )
+    return result.scalar_one_or_none()

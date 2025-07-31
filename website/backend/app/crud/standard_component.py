@@ -38,3 +38,6 @@ async def get_components_by_standard(db: AsyncSession, naming_standard_id: int):
             .selectinload(ComponentTemplate.accepted_values)
         ]
     )
+
+async def get_by_standard(db: AsyncSession, standard_id: int):
+    return await DatabaseUtils.get_by_filter(db, StandardComponent, {"naming_standard_id": standard_id})

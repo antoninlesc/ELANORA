@@ -1,4 +1,10 @@
-{
+{ 
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "or": "or"
+  },
+
   "app": {
     "title": "ELANORA"
   },
@@ -153,11 +159,6 @@
     "password_too_short": "Password must be at least 8 characters long",
     "email_required": "Email is required to reset the password",
     "code_6_digits": "Verification code must be 6 digits"
-  },
-  "common": {
-    "or": "or",
-    "loading": "Loading...",
-    "logout": "Logout"
   },
   "event_messages": {
     "already_logged_in": "You are already logged in."
@@ -335,7 +336,7 @@
     }
   },
 
-  "fileTypes": {
+  "configureFileTypes": {
     "title": "Manage file types for your project",
     "loading": "Loading file types...",
     "empty": "No file types found. Create your first file type!",
@@ -348,9 +349,73 @@
     "invalidName": "Enter a valid name (letters, numbers, spaces, dashes, underscores, 2-40 chars).",
     "invalidExtension": "Enter a valid extension (e.g., .mp4, .txt, 1-10 lowercase letters or numbers).",
     "eventMessages": {
+      "addSuccess": "File type added successfully.",
+      "addFailed": "Failed to add file type.",
+      "updateSuccess": "File type updated successfully.",
+      "updateFailed": "Failed to update file type.",
+      "deleteSuccess": "File type deleted successfully.",
+      "deleteFailed": "Failed to delete file type.",
       "duplicateName": "A file type with this name already exists.",
-      "cannotDeleteUsed": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first.",
-      "deleteFailed": "Failed to delete file type."
-    }
+      "cannotDeleteUsed": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first."
+    },
+    "deleteTitle": "Delete File Type",
+    "deleteMessage": "Are you sure you want to delete this file type? This action cannot be undone."
+  },
+  
+  "configureNamingStandards": {
+    "title": "Configure naming standards for your project",
+    "loading": "Loading naming standards...",
+    "empty": "No naming standards configured yet.",
+    "import": "Import from another project",
+    "createStandard": "Add standard",
+    "cancel": "Cancel",
+    "exampleFile": "Example file",
+    "extractRegex": "Extract regex",
+    "commaPattern": "Comma pattern (e.g. session,task,letter1,_,signer_letter,signer_digits,_,camera)",
+    "exampleCommaPatternDesc": "Example: {example}",
+    "acceptedSeparators": "Accepted separators",
+    "componentsTable": "Components",
+    "componentName": "Component name",
+    "componentRegex": "Regex",
+    "componentDescription": "Description",
+    "componentAcceptedValues": "Accepted Values",
+    "componentOrder": "Order",
+    "noteAcceptedValues": "Note: You entered [{value}] as an accepted value. This will be saved as a single value. To save multiple accepted values, separate them with a comma or semicolon (e.g. B,A,W or B;A;W).",
+    "deleteConfirm": "Delete this standard?",
+    "deleteError": "Failed to delete standard.",
+    "patternExample": "Pattern example",
+    "importModal": {
+      "selectProject": "Select a project to import from:",
+      "chooseProject": "-- Choose a project --",
+      "next": "Next",
+      "selectStandards": "Select standards to import",
+      "allFiltered": "All standards from the selected project have been filtered out because they are already present in this project under a same name and for the same file type.",
+      "noStandards": "No standards found in this project.",
+      "fileTypeNotAvailable": "File type not available in this project",
+      "importFileType": "Import file type",
+      "pattern": "Pattern",
+      "description": "Description",
+      "exampleFilename": "Example filename",
+      "components": "Components",
+      "importSelected": "Import Selected",
+      "importFailed": "Failed to import standards."
+    },
+    "selectFileTypeFirst": "Please select a file type before extracting regex.",
+    "commaPatternRequired": "Please enter a comma-separated pattern.",
+    "exampleFileRequired": "Please enter an example file.",
+    "patternRequired": "Please enter a valid pattern.",
+    "patternExampleBlockCount": "Pattern and example file do not have the same number of blocks.",
+    "invalidRange": "Invalid range \"{value}\" for \"{name}\".",
+    "acceptedValuesLength": "All accepted values for \"{name}\" must be exactly {length} characters long.",
+    "invalidValue": "Invalid value \"{value}\" for \"{name}\".",
+    "invalidRegex": "Invalid regex for \"{name}\".",
+    "acceptedValueDoesNotMatch": "Accepted value \"{value}\" does not match regex \"{regex}\" for \"{name}\".",
+    "valueExceedsDigits": "Value \"{value}\" exceeds {length} digits for \"{name}\".",
+    "valuesExceedDigits": "Values in range \"{value}\" exceed {length} digits for \"{name}\".",
+    "pleaseEnterValue": "Please enter a value, range, or list.",
+    "rangeStartEnd": "Range start must be less than or equal to end.",
+    "enterSingleOrListOrRange": "Enter a single value, a comma/semicolon separated list, or a range (e.g. {example}).",
+    "invalidLength": "Invalid length for \"{name}\".",
+    "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle"
   }
 }

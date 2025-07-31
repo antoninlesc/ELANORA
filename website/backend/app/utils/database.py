@@ -369,3 +369,27 @@ class DatabaseUtils:
                 stmt = stmt.order_by(order_by)
         result = await db.execute(stmt)
         return [row[0] for row in result.all()]
+
+    @staticmethod
+    async def get_all_with_related_exists(
+        db: AsyncSession,
+        model: type[ModelType],
+        related_model: type[ModelType],
+        related_field: str,
+        model_field: str,
+    ) -> list[ModelType]:
+        """
+        Returns all instances of `model` where at least one `related_model` exists
+        such that related_model.<related_field> == model.<model_field>
+        """
+        from sqlalchemy import select, exists
+        stmt = (
+            select(model)
+            .where(
+                exists().where(
+                    getattr(related_model, related_field) == getattr(model, model_field)
+                )
+            )
+        )
+        result = await db.execute(stmt)
+        return list(result.scalars().all())

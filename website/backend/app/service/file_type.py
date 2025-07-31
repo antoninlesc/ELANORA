@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 
 from app.crud import file_type as file_type_crud
 from app.crud.association import (
@@ -10,6 +11,7 @@ from app.crud.association import (
     update_project_file_type_file_type_id,
     get_project_file_type_by_id,
     count_project_file_types_by_file_type_id,
+    get_project_file_type_with_file_type,
 )
 from app.crud.file_type import (
     get_file_type_by_id,
@@ -108,7 +110,9 @@ class FileTypeService:
                 db, target_project_id, name, file_type_id
             )
             await db.commit()
-            return project_file_type
+            # Use the CRUD function to reload with relationship
+            refreshed = await get_project_file_type_with_file_type(db, project_file_type.id)
+            return refreshed
         except Exception:
             await db.rollback()
             raise
@@ -156,12 +160,20 @@ class FileTypeService:
         # Update extension if present
         if "extension" in update_fields:
             new_ext = update_fields["extension"]
-            count = await count_project_file_types_by_file_type_id(db, pft.file_type_id)
-            if count == 1:
-                await file_type_crud.update_file_type(db, pft.file_type_id, {"extension": new_ext})
+            # Check if a FileType with this extension already exists
+            existing_ft = await get_file_type_by_extension(db, new_ext)
+            if existing_ft:
+                # Point this ProjectFileType to the existing FileType
+                await update_project_file_type_file_type_id(db, project_file_type_id, existing_ft.id)
             else:
-                new_ft = await file_type_crud.create_file_type(db, new_ext)
-                await update_project_file_type_file_type_id(db, project_file_type_id, new_ft.id)
+                count = await count_project_file_types_by_file_type_id(db, pft.file_type_id)
+                if count == 1:
+                    # Safe to update the extension directly
+                    await file_type_crud.update_file_type(db, pft.file_type_id, {"extension": new_ext})
+                else:
+                    # Create a new FileType and point to it
+                    new_ft = await file_type_crud.create_file_type(db, new_ext)
+                    await update_project_file_type_file_type_id(db, project_file_type_id, new_ft.id)
 
         await db.commit()
 
@@ -172,4 +184,5 @@ class FileTypeService:
             "id": updated_pft.id,
             "name": updated_pft.name,
             "extension": updated_pft.file_type.extension if updated_pft.file_type else None,
+            "file_type_id": updated_pft.file_type_id,
         }

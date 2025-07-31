@@ -1,6 +1,5 @@
 from app.schema.common.base import CustomBaseModel
 
-
 class NamingComponentRequest(CustomBaseModel):
     name: str
     regex: str
@@ -17,3 +16,7 @@ class CreateNamingStandardRequest(CustomBaseModel):
     pattern: str
     description: str | None = ""
     components: list[NamingComponentRequest]
+
+class ImportSelectedStandardsRequest(CustomBaseModel):
+    target_project_id: int
+    standard_ids: list[int]
