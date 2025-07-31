@@ -78,7 +78,7 @@ const gitService = {
   },
 
   // Resolve conflicts and merge a branch
-  async getPendingUploads(projectName, forceRefresh = false) {
+  async getPendingUploadsWithStatus(projectName, forceRefresh = false) {
     const params = new URLSearchParams();
     if (forceRefresh) {
       params.append('force_refresh', 'true');

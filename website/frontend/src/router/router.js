@@ -11,7 +11,7 @@ import ResetPassword from '@views/ResetPassword.vue';
 import EmailVerificationPage from '@views/EmailVerificationPage.vue';
 import HTTPStatus from '@views/HTTPStatus.vue';
 import UploadPage from '@views/UploadPage.vue';
-import ContributionPage from '@views/ContributionPage.vue';
+import PendingUploadPage from '@views/PendingUploadPage.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import TiersPage from '@views/TiersPage.vue';
@@ -75,8 +75,8 @@ const routes = [
       },
       {
         path: 'contribution',
-        name: 'Contribution',
-        component: ContributionPage,
+        name: 'PendingUpload',
+        component: PendingUploadPage,
         meta: { requiresAuth: true },
       },
       {

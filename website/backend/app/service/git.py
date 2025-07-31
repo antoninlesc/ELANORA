@@ -271,7 +271,7 @@ class GitService:
                 diff_analyzer,
                 branch_name,
                 db=db,
-                user_id=user_id,
+                username=user_name,
                 project_path=project_path,
             )
 
@@ -297,7 +297,7 @@ class GitService:
         diff_analyzer: GitDiffAnalyzer,
         branch_name: str,
         db: AsyncSession,
-        user_id: int,
+        username: str,
         project_path: Path,
     ) -> dict[str, Any]:
         """Save upload for admin approval instead of attempting immediate merge."""
@@ -336,12 +336,12 @@ class GitService:
                 "analysis": analysis,
                 "message": f"Upload saved for admin approval. {len(analysis.new_files)} new files, {len(analysis.modified_files)} modified files.",
                 "pending_approval_since": datetime.now().isoformat(),
-                "uploaded_by": user_id,
+                "uploaded_by": username,
             }
 
             # Save upload info to database for admin dashboard
             await self._save_pending_upload_to_db(
-                upload_info, project_path, db, user_id
+                upload_info, project_path, db, username
             )
 
             return upload_info
@@ -356,7 +356,7 @@ class GitService:
             raise RuntimeError(f"Failed to save upload for approval: {e}") from e
 
     async def _save_pending_upload_to_db(
-        self, upload_info: dict, project_path: Path, db: AsyncSession, user_id: int
+        self, upload_info: dict, project_path: Path, db: AsyncSession, username: str
     ):
         """Save pending upload info to database for admin review."""
         try:
@@ -370,7 +370,7 @@ class GitService:
                     "upload_data": {
                         "branch_name": upload_info["branch_name"],
                         "original_branch": upload_info["original_branch"],
-                        "uploaded_by": user_id,
+                        "uploaded_by": username,
                         "new_files_count": len(upload_info["new_files"]),
                         "modified_files_count": len(upload_info["modified_files"]),
                         "deleted_files_count": len(upload_info["deleted_files"]),

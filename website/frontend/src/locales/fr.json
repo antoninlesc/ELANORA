@@ -323,5 +323,64 @@
       "verificationFailed": "Échec de la vérification de l'email",
       "resendFailed": "Échec de l'envoi du code de vérification"
     }
+  },
+  "pendingUploads": {
+    "title": "Gérer les téléchargements en attente pour",
+    "loading": "Chargement des téléchargements en attente...",
+    "noProjectSelected": {
+      "title": "Aucun projet sélectionné",
+      "message": "Veuillez sélectionner un projet pour voir les téléchargements en attente.",
+      "selectProject": "Sélectionner un projet"
+    },
+    "noUploads": {
+      "title": "Aucun téléchargement en attente",
+      "message": "Tous les téléchargements ont été traités pour ce projet."
+    },
+    "summary": {
+      "totalPending": "Total en attente",
+      "readyToMerge": "Prêt à fusionner",
+      "needResolution": "Nécessite une résolution"
+    },
+    "uploadedBy": "par l'utilisateur {user}",
+    "fileTypes": {
+      "new": "nouveau",
+      "modified": "modifié",
+      "deleted": "supprimé"
+    },
+    "conflictedFiles": "Fichiers en conflit",
+    "actions": {
+      "viewDetails": "Voir les détails",
+      "mergeNow": "Fusionner maintenant",
+      "merging": "Fusion en cours...",
+      "resolveConflicts": "Résoudre les conflits",
+      "testMerge": "Tester la fusion",
+      "testing": "Test en cours...",
+      "mergeAllReady": "Fusionner tous les prêts ({count})",
+      "mergingAll": "Fusion de tous en cours..."
+    },
+    "modal": {
+      "uploadDetails": "Détails du téléchargement",
+      "resolveConflicts": "Résoudre les conflits de téléchargement"
+    },
+    "status": {
+      "readyToMerge": "Prêt à fusionner",
+      "needsResolution": "Nécessite une résolution",
+      "error": "Erreur",
+      "pendingReview": "En attente de révision"
+    },
+    "uploadTypes": {
+      "newFiles": "Nouveaux fichiers",
+      "withModifications": "Avec modifications",
+      "withDeletions": "Avec suppressions"
+    },
+    "errors": {
+      "loadFailed": "Échec du chargement des téléchargements en attente",
+      "testMergeFailed": "Échec du test de fusion",
+      "notReadyToMerge": "Le téléchargement n'est pas prêt à être fusionné. Veuillez d'abord tester la fusion.",
+      "mergeFailed": "Échec de la fusion du téléchargement",
+      "noReadyUploads": "Aucun téléchargement n'est prêt à être fusionné",
+      "batchMergeFailed": "Échec de la fusion des téléchargements"
+    },
+    "unknown": "Inconnu"
   }
 }
