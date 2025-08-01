@@ -13,7 +13,6 @@ import HTTPStatusPage from '@views/HTTPStatusPage.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import UploadPage from '@views/UploadPage.vue';
 import ConflictsPage from '@views/ConflictsPage.vue';
-import ProjectsPage from '@views/ProjectsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import TiersPage from '@views/TiersPage.vue';
 import ProjectConfigurationPage from '@views/ProjectConfigurationPage.vue';
