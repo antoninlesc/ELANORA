@@ -66,6 +66,28 @@ axiosInstance.interceptors.response.use(
       originalRequest.url?.includes('/auth/login') ||
       originalRequest.url?.includes('/auth/logout');
 
+    // Handle CSRF token expiration (403)
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.detail === "CSRF token missing or invalid." &&
+      !originalRequest._csrfRetry
+    ) {
+      originalRequest._csrfRetry = true;
+      try {
+        // Attempt to refresh session (which should set a new CSRF token)
+        await axiosInstance.post('/auth/refresh');
+        // Retry the original request
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        // If refresh fails, redirect to login or handle as needed
+        localStorage.setItem('redirectTo', window.location.pathname);
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
+      }
+    }
+
     if (
       error.response?.status === 401 &&
       !isRefreshEndpoint &&
@@ -100,8 +122,10 @@ axiosInstance.interceptors.response.use(
         failedRefreshAttempts++;
         if (failedRefreshAttempts >= MAX_REFRESH_ATTEMPTS) {
           localStorage.setItem('redirectTo', window.location.pathname);
-          if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
+          if (
+            !'/'.includes(window.location.pathname)
+          ) {
+            window.location.href = '/';
           }
         }
         waitingRequests.forEach((request) => {

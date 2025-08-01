@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependency.database import get_db_dep
-from app.service import instance as instance_service
 from app.schema.responses.instance import InstanceResponse
+from app.service import instance as instance_service
 
 router = APIRouter()
 

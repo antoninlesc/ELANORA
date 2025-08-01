@@ -1,16 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependency.database import get_db
-from app.service.tier import TierService
+from app.dependency.database import get_db_dep
+from app.schema.requests.tier import (
+    CreateSectionRequest,
+    DeleteSectionRequest,
+    MoveTierGroupRequest,
+    RenameSectionRequest,
+)
+from app.schema.responses.tier import SectionsAndGroupsResponse, TierTreeResponse
+from app.service.tier import TierGroupService, TierSectionService, TierService
 
 router = APIRouter()
 
 
-@router.get("/{project_name}", response_model=list)
-async def get_tiers(project_name: str, db: AsyncSession = Depends(get_db)):
-    """
-    Get all tiers for a project, grouped by ELAN file.
+@router.get("/{project_name}", response_model=TierTreeResponse)
+async def get_tiers(project_name: str, db: AsyncSession = get_db_dep):
+    """Get all tiers for a project, grouped by ELAN file.
     Returns a list of tier trees (one per file).
     """
     result = await TierService.get_project_tiers_grouped_by_file(db, project_name)
@@ -18,4 +24,39 @@ async def get_tiers(project_name: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(
             status_code=404, detail="Project not found or no tiers available."
         )
-    return result
+
+    # Unwrap the 'tiers' key if present
+    tiers_dict = result["tiers"] if "tiers" in result else result
+
+    # Now serialize
+    serialized = {k: [n.model_dump() for n in v] for k, v in tiers_dict.items()}
+    return {"tiers": serialized}
+
+
+@router.get("/{project_id}/sections", response_model=SectionsAndGroupsResponse)
+async def get_sections_and_groups(project_id: int, db: AsyncSession = get_db_dep):
+    return await TierSectionService.get_sections_and_groups(db, project_id)
+
+
+@router.post("/sections/create")
+async def create_section(request: CreateSectionRequest, db: AsyncSession = get_db_dep):
+    return await TierSectionService.create_section(db, request.project_id, request.name)
+
+
+@router.post("/sections/rename")
+async def rename_section(request: RenameSectionRequest, db: AsyncSession = get_db_dep):
+    return await TierSectionService.rename_section(
+        db, request.section_id, request.new_name
+    )
+
+
+@router.post("/sections/delete")
+async def delete_section(request: DeleteSectionRequest, db: AsyncSession = get_db_dep):
+    return await TierSectionService.delete_section(db, request.section_id)
+
+
+@router.post("/tier_group/move")
+async def move_tier_group(request: MoveTierGroupRequest, db: AsyncSession = get_db_dep):
+    return await TierGroupService.assign_group_to_section(
+        db, request.tier_group_id, request.section_id
+    )

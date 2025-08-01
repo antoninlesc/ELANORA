@@ -1,6 +1,6 @@
 """Database utility functions for common operations."""
 
-from typing import Any, TypeVar
+from typing import Any, Sequence, TypeVar
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,22 +18,28 @@ class DatabaseUtils:
 
     @staticmethod
     async def get_by_id(
-        db: AsyncSession, model: type[ModelType], id_field: str, id_value: Any
+        db: AsyncSession, model: type[ModelType], id_field: str, id_value: Any, options: list | None = None
     ) -> ModelType | None:
         logger.info(
             f"get_by_id: model={model.__name__} id_field={id_field} id_value={id_value}"
         )
-        result = await db.execute(
-            select(model).filter(getattr(model, id_field) == id_value)
-        )
+        query = select(model).filter(getattr(model, id_field) == id_value)
+        if options:
+            for opt in options:
+                query = query.options(opt)
+        result = await db.execute(query)
         instance = result.scalar_one_or_none()
         logger.debug(f"get_by_id: found={instance is not None}")
         return instance
 
     @staticmethod
-    async def get_all(db: AsyncSession, model: type[ModelType]) -> list[ModelType]:
+    async def get_all(db: AsyncSession, model: type[ModelType], options: list = None) -> list[ModelType]:
         logger.info(f"get_all: model={model.__name__}")
-        result = await db.execute(select(model))
+        query = select(model)
+        if options:
+            for opt in options:
+                query = query.options(opt)
+        result = await db.execute(query)
         all_results = list(result.scalars().all())
         logger.debug(f"get_all: count={len(all_results)}")
         return all_results
@@ -51,41 +57,26 @@ class DatabaseUtils:
         return exists
 
     @staticmethod
-    async def create_and_commit(db: AsyncSession, instance: ModelType) -> ModelType:
-        logger.info(f"create_and_commit: instance={instance}")
-        try:
-            db.add(instance)
-            await db.commit()
-            await db.refresh(instance)
-            logger.info(f"create_and_commit: committed instance={instance}")
-            return instance
-        except Exception as e:
-            logger.error(f"create_and_commit: error={e}")
-            await db.rollback()
-            raise
+    async def create(db: AsyncSession, instance: ModelType) -> ModelType:
+        logger.info(f"create: instance={instance}")
+        db.add(instance)
+        return instance
 
     @staticmethod
     async def delete_by_filter(
         db: AsyncSession, model: type[ModelType], auto_commit: bool = False, **filters
     ) -> int:
         logger.info(f"delete_by_filter: model={model.__name__} filters={filters}")
-        try:
-            query = select(model)
-            for field, value in filters.items():
-                query = query.filter(getattr(model, field) == value)
-            result = await db.execute(query)
-            instances = list(result.scalars().all())
-            count = len(instances)
-            for instance in instances:
-                await db.delete(instance)
-            if auto_commit:
-                await db.commit()
-            logger.info(f"delete_by_filter: deleted count={count}")
-            return count
-        except Exception as e:
-            logger.error(f"delete_by_filter: error={e}")
-            await db.rollback()
-            raise
+        query = select(model)
+        for field, value in filters.items():
+            query = query.filter(getattr(model, field) == value)
+        result = await db.execute(query)
+        instances = list(result.scalars().all())
+        count = len(instances)
+        for instance in instances:
+            await db.delete(instance)
+        logger.info(f"delete_by_filter: deleted count={count}")
+        return count
 
     @staticmethod
     async def bulk_insert(
@@ -99,7 +90,6 @@ class DatabaseUtils:
 
         stmt = mysql_insert(model).values(values)
         if ignore_duplicates:
-            # Exclude auto-increment primary keys from update
             pk_names = [key.name for key in model.__table__.primary_key]
             update_cols = {
                 c.name: stmt.inserted[c.name]
@@ -108,7 +98,6 @@ class DatabaseUtils:
             }
             stmt = stmt.on_duplicate_key_update(**update_cols)
         await db.execute(stmt)
-        await db.commit()
 
     @staticmethod
     async def update_by_filter(
@@ -120,7 +109,6 @@ class DatabaseUtils:
             query = query.where(getattr(model, field) == value)
         query = query.values(**update_fields)
         result = await db.execute(query)
-        await db.commit()
         return result.rowcount
 
     @staticmethod
@@ -129,6 +117,7 @@ class DatabaseUtils:
         model: type[ModelType],
         filters: dict,
         order_by: list | None = None,
+        options: list | None = None,
     ) -> list[ModelType]:
         """Get records matching filters, optionally ordered."""
         query = select(model)
@@ -139,6 +128,9 @@ class DatabaseUtils:
                 query = query.where(getattr(model, field) == value)
         if order_by:
             query = query.order_by(*order_by)
+        if options:
+            for opt in options:
+                query = query.options(opt)
         result = await db.execute(query)
         return list(result.scalars().all())
 
@@ -148,6 +140,7 @@ class DatabaseUtils:
         model: type[ModelType],
         filters: dict,
         order_by: list | None = None,
+        options: list | None = None,
     ) -> ModelType | None:
         """Get a single record matching filters, optionally ordered."""
         query = select(model)
@@ -158,6 +151,9 @@ class DatabaseUtils:
                 query = query.where(getattr(model, field) == value)
         if order_by:
             query = query.order_by(*order_by)
+        if options:
+            for opt in options:
+                query = query.options(opt)
         result = await db.execute(query)
         return result.scalar_one_or_none()
 
@@ -168,6 +164,7 @@ class DatabaseUtils:
         page: int,
         page_size: int,
         filters: dict | None,
+        options: list | None = None,
     ) -> list[ModelType]:
         """Paginate records with optional filters."""
         query = select(model)
@@ -177,6 +174,9 @@ class DatabaseUtils:
                 query = query.where(getattr(model, field).in_(tuple(value)))
             else:
                 query = query.where(getattr(model, field) == value)
+        if options:
+            for opt in options:
+                query = query.options(opt)
         query = query.offset((page - 1) * page_size).limit(page_size)
         result = await db.execute(query)
         return list(result.scalars().all())
@@ -203,16 +203,10 @@ class DatabaseUtils:
         """Bulk delete records matching the given where_clause.
         Returns the number of deleted rows.
         """
-        try:
-            result = await db.execute(delete(model).where(where_clause))
-            logger.info(
-                f"bulk_delete: model={model.__name__} deleted={result.rowcount}"
-            )
-            return result.rowcount if result.rowcount is not None else 0
-        except Exception as e:
-            logger.error(f"bulk_delete: error={e}")
-            await db.rollback()
-            raise
+        logger.info(f"bulk_delete: model={model.__name__} where_clause={where_clause}")
+        result = await db.execute(delete(model).where(where_clause))
+        logger.info(f"bulk_delete: model={model.__name__} deleted={result.rowcount}")
+        return result.rowcount if result.rowcount is not None else 0
 
     @staticmethod
     async def bulk_update(
@@ -227,24 +221,18 @@ class DatabaseUtils:
         """
         if not data:
             return 0
-        try:
-            total = 0
-            for row in data:
-                pk_value = row[pk_field]
-                update_data = {k: v for k, v in row.items() if k != pk_field}
-                result = await db.execute(
-                    update(model)
-                    .where(getattr(model, pk_field) == pk_value)
-                    .values(**update_data)
-                )
-                total += result.rowcount if result.rowcount else 0
-            await db.commit()
-            logger.info(f"bulk_update: model={model.__name__} updated={total}")
-            return total
-        except Exception as e:
-            logger.error(f"bulk_update: error={e}")
-            await db.rollback()
-            raise
+        total = 0
+        for row in data:
+            pk_value = row[pk_field]
+            update_data = {k: v for k, v in row.items() if k != pk_field}
+            result = await db.execute(
+                update(model)
+                .where(getattr(model, pk_field) == pk_value)
+                .values(**update_data)
+            )
+            total += result.rowcount if result.rowcount else 0
+        logger.info(f"bulk_update: model={model.__name__} updated={total}")
+        return total
 
     @staticmethod
     async def get_orphaned_by_association(
@@ -270,6 +258,137 @@ class DatabaseUtils:
             .having(
                 func.count(assoc_parent_col) == 1,
                 func.max(assoc_parent_col) == parent_id,
+            )
+        )
+        result = await db.execute(stmt)
+        return list(result.scalars().all())
+
+    @staticmethod
+    async def get_fully_orphaned(
+        db,
+        main_model,
+        assoc_model,
+        main_id_field: str,
+        assoc_ref_field: str,
+    ):
+        """Return all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
+        Logs orphans and non-orphans with references.
+        """
+        main_id_col = getattr(main_model, main_id_field)
+        assoc_ref_col = getattr(assoc_model, assoc_ref_field)
+
+        # Get all main IDs
+        all_main_ids_result = await db.execute(select(main_id_col))
+        all_main_ids = {row[0] for row in all_main_ids_result}
+
+        # Get all referenced IDs
+        referenced_ids_result = await db.execute(select(assoc_ref_col))
+        referenced_ids = {row[0] for row in referenced_ids_result if row[0] is not None}
+
+        # Find orphans and non-orphans
+        orphan_ids = all_main_ids - referenced_ids
+        non_orphan_ids = all_main_ids & referenced_ids
+
+        # Log orphans
+        logger.info(
+            f"get_fully_orphaned: {main_model.__name__} orphans (not in {assoc_model.__name__}.{assoc_ref_field}): {sorted(orphan_ids)}"
+        )
+
+        # Log non-orphans and where they are referenced
+        if non_orphan_ids:
+            pk_fields = [key.name for key in assoc_model.__table__.primary_key.columns]
+            for oid in sorted(non_orphan_ids):
+                refs = await db.execute(
+                    select(assoc_model).where(assoc_ref_col == oid)
+                )
+                ref_rows = refs.scalars().all()
+                logger.info(
+                    f"{main_model.__name__} id={oid} is still referenced in {assoc_model.__name__} rows: "
+                    f"{[{k: getattr(r, k, None) for k in pk_fields} for r in ref_rows]}"
+                )
+
+        # Return orphan objects
+        if orphan_ids:
+            query = select(main_model).where(main_id_col.in_(orphan_ids))
+            result = await db.execute(query)
+            orphans = list(result.scalars().all())
+        else:
+            orphans = []
+        return orphans
+
+    @staticmethod
+    async def delete_fully_orphaned(
+        db,
+        main_model,
+        assoc_model,
+        main_id_field: str,
+        assoc_ref_field: str,
+    ) -> int:
+        """Delete all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
+        Logs what is deleted.
+        """
+        orphans = await DatabaseUtils.get_fully_orphaned(
+            db, main_model, assoc_model, main_id_field, assoc_ref_field
+        )
+        count = len(orphans)
+        logger.info(
+            f"delete_fully_orphaned: Deleting {count} orphaned {main_model.__name__} records: {[getattr(o, main_id_field) for o in orphans]}"
+        )
+        for orphan in orphans:
+            await db.delete(orphan)
+        return count
+
+    @staticmethod
+    async def get_distinct_column_values(
+        db: AsyncSession,
+        model,
+        column,
+        filters: dict[str, Any] = None,
+        in_filter: tuple = None,
+        order_by=None,
+    ) -> Sequence[Any]:
+        """
+        Utility to get distinct values for a column, with optional filters and IN clause.
+        - model: SQLAlchemy model class
+        - column: model.column to select
+        - filters: dict of {column_name: value}
+        - in_filter: tuple of (column, list_of_values)
+        - order_by: model.column or list of columns
+        """
+        stmt = select(column).distinct()
+        if filters:
+            for k, v in filters.items():
+                stmt = stmt.where(getattr(model, k) == v)
+        if in_filter:
+            col, values = in_filter
+            stmt = stmt.where(col.in_(values))
+        if order_by is not None:
+            if isinstance(order_by, list):
+                stmt = stmt.order_by(*order_by)
+            else:
+                stmt = stmt.order_by(order_by)
+        result = await db.execute(stmt)
+        return [row[0] for row in result.all()]
+
+    @staticmethod
+    async def get_all_with_related_exists(
+        db: AsyncSession,
+        model: type[ModelType],
+        related_model: type[ModelType],
+        related_field: str,
+        model_field: str,
+    ) -> list[ModelType]:
+        """
+        Returns all instances of `model` where at least one `related_model` exists
+        such that related_model.<related_field> == model.<model_field>
+        """
+        from sqlalchemy import select, exists
+        stmt = (
+            select(model)
+            .where(
+                exists().where(
+                    getattr(related_model, related_field) == getattr(model, model_field)
+                )
             )
         )
         result = await db.execute(stmt)

@@ -177,12 +177,14 @@ onBeforeUnmount(() => {
 .event-message {
   min-width: 300px;
   max-width: 450px;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   padding: 0.75rem 1.25rem;
   border-radius: 0.5rem;
   box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
   gap: 1rem;
+  word-break: break-word;
 }
 
 .event-message-icon {
@@ -194,9 +196,12 @@ onBeforeUnmount(() => {
 }
 
 .event-message-text {
-  flex-grow: 1;
   font-size: 1rem;
   text-align: left;
+  word-break: break-word;
+  white-space: pre-line;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .event-message-close {
@@ -208,6 +213,7 @@ onBeforeUnmount(() => {
   padding: 0.25rem;
   font-size: 1.2rem;
   transition: color 0.15s;
+  justify-self: end;
 }
 
 .event-message-close:hover {

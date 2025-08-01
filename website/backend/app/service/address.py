@@ -53,19 +53,23 @@ class AddressService:
             await db.flush()
             await db.refresh(city)
 
-        address = Address(
-            street_number=address_data.street_number,
-            street_name=address_data.street_name,
-            city_id=city.city_id,
-            postal_code=address_data.postal_code,
-            address_line_2=address_data.address_line_2,
-        )
+            address = Address(
+                street_number=address_data.street_number,
+                street_name=address_data.street_name,
+                city_id=city.city_id,
+                postal_code=address_data.postal_code,
+                address_line_2=address_data.address_line_2,
+            )
 
-        db.add(address)
-        await db.flush()  # Flush to get the address_id
-        await db.refresh(address)
+            db.add(address)
+            await db.flush()  # Flush to get the address_id
+            await db.refresh(address)
 
-        return address
+            await db.commit()
+            return address
+        except Exception:
+            await db.rollback()
+            raise
 
     @classmethod
     async def get_address_by_id(
@@ -139,13 +143,17 @@ class AddressService:
             await db.flush()
             await db.refresh(city)
 
-        address.street_number = address_data.street_number
-        address.street_name = address_data.street_name
-        address.city_id = city.city_id
-        address.postal_code = address_data.postal_code
-        address.address_line_2 = address_data.address_line_2
+            address.street_number = address_data.street_number
+            address.street_name = address_data.street_name
+            address.city_id = city.city_id
+            address.postal_code = address_data.postal_code
+            address.address_line_2 = address_data.address_line_2
 
-        await db.flush()
-        await db.refresh(address)
+            await db.flush()
+            await db.refresh(address)
 
-        return address
+            await db.commit()
+            return address
+        except Exception:
+            await db.rollback()
+            raise

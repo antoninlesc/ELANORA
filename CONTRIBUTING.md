@@ -77,7 +77,7 @@ ci(deploy): add staging environment deployment
 
 1. Keep commits atomic and focused.
 2. Write meaningful commit messages.
-3. Reference issue numbers in commit body or footer.
+3. Reference issue numbers in commit body or appFooter.
 4. Separate subject from body with a blank line.
 5. Wrap body at 72 characters.
 6. Use the body to explain what and why, not how.

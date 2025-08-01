@@ -12,22 +12,19 @@
         <InstanceSection />
         <nav class="elanora-header-nav">
           <a href="/projects" class="elanora-header-menu-link">
-            {{ t('navigation.projects') }}
+            {{ t('appHeader.projects') }}
           </a>
           <a href="/upload" class="elanora-header-menu-link">
-            {{ t('navigation.upload') }}
+            {{ t('appHeader.upload') }}
           </a>
           <a href="/conflicts" class="elanora-header-menu-link">
-            {{ t('navigation.conflicts') }}
+            {{ t('appHeader.conflicts') }}
           </a>
           <router-link
-            :to="{
-              name: 'TiersPage',
-              params: { projectName: currentProjectName },
-            }"
+            :to="{ name: 'TiersPage' }"
             class="elanora-header-menu-link"
           >
-            {{ t('navigation.tiers') || 'Tiers' }}
+            {{ t('appHeader.tiers') || 'Tiers' }}
           </router-link>
         </nav>
       </div>
@@ -47,8 +44,8 @@
 
 <script setup>
 import { useI18n } from 'vue-i18n';
-import InstanceSection from '@/components/common/InstanceSection.vue';
-import ProjectSection from '@/components/common/ProjectSection.vue';
+import InstanceSection from '@/components/pageSpecific/appHeader/InstanceSection.vue';
+import ProjectSection from '@/components/pageSpecific/appHeader/ProjectSection.vue';
 
 const { t } = useI18n();
 </script>
@@ -96,7 +93,7 @@ const { t } = useI18n();
   margin-left: auto;
 }
 
-.elanora-header-instance-logo-container {
+.elanora-header-insdtance-logo-container {
   height: 5rem;
   width: 5rem;
   display: flex;

@@ -8,6 +8,7 @@ import {
   faShare,
   faCircleUser,
   faDiagramProject,
+  faGears,
 } from '@fortawesome/free-solid-svg-icons';
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons';
 
@@ -19,7 +20,8 @@ library.add(
   faShare,
   faPenToSquare,
   faCircleUser,
-  faDiagramProject
+  faDiagramProject,
+  faGears
 );
 
 export default FontAwesomeIcon;

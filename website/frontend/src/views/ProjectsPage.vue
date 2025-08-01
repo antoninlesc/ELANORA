@@ -42,24 +42,19 @@
         <!-- Replace your project list loop with this -->
         <div
           v-for="project in projectStore.projects"
-          :key="project"
+          :key="project.project_id"
           :class="[
             'project-page-project-box',
-            { 'project-page-active': project === currentProjectName },
+            { 'project-page-active': project.project_id === currentProjectId },
           ]"
           @click="selectProject(project)"
         >
-          <div style="display: flex; align-items: center">
-            <span class="project-page-project-name">{{ project }}</span>
-            <span
-              v-if="project === currentProjectName"
-              class="project-page-feedback"
-              >Active</span
-            >
-          </div>
+          <span class="project-page-project-name">{{
+            project.project_name
+          }}</span>
           <div class="project-page-actions">
             <button
-              class="project-page-edit-btn"
+              class="project-page-action-btn project-page-edit-btn"
               title="Rename Project"
               @click.stop="openRenameDialog(project)"
             >
@@ -74,9 +69,24 @@
               <font-awesome-icon icon="share" />
             </button>
             <button
-              class="project-page-delete-btn"
+              v-if="isAdmin"
+              class="project-page-share-btn"
+              title="Share Project"
+              @click.stop="openShareModal(project)"
+            >
+              <font-awesome-icon icon="share" />
+            </button>
+            <button
+              class="project-page-action-btn project-page-config-btn"
+              :title="t('projectsPage.project.buttons.settings')"
+              @click.stop="goToStandardsPage(project)"
+            >
+              <font-awesome-icon icon="fa-solid fa-gears" />
+            </button>
+            <button
+              class="project-page-action-btn project-page-delete-btn"
               title="Delete Project"
-              @click.stop="deleteProject(project)"
+              @click.stop="deleteProject(project.project_name)"
             >
               <font-awesome-icon icon="trash" />
             </button>
@@ -202,11 +212,15 @@ import gitService from '@api/service/gitService';
 import FileTree from '@components/common/FileTree.vue';
 import UploadFolder from '@components/common/UploadFolder.vue';
 import ProjectShareModal from '@components/common/ProjectShareModal.vue';
+import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 
 const projectStore = useProjectStore();
 const userStore = useUserStore();
+const router = useRouter();
 const projects = ref([]);
 const loading = ref(true);
+const { t } = useI18n();
 
 const newProjectName = ref('');
 const newProjectDescription = ref('');
@@ -224,11 +238,11 @@ const filesLoading = ref(false);
 
 const selectedFiles = ref([]);
 
+const currentProjectId = computed(
+  () => projectStore.currentProject?.project_id
+);
 const currentProjectName = computed(
-  () =>
-    projectStore.currentProject?.project_name ||
-    projectStore.currentProject?.name ||
-    projectStore.currentProject
+  () => projectStore.currentProject?.project_name
 );
 
 const syncing = ref(false);
@@ -365,7 +379,7 @@ async function deleteProject(projectName) {
 
 function openRenameDialog(project) {
   renamingProject.value = project;
-  renameInput.value = project;
+  renameInput.value = project.project_name;
   renameError.value = '';
   renameDialogVisible.value = true;
 }
@@ -391,8 +405,12 @@ async function renameProject() {
     );
     // Update project list and current project reactively
     await fetchProjects();
-    if (currentProjectName.value === renamingProject.value) {
-      projectStore.renameCurrentProject(renameInput.value.trim());
+    // Find the updated project in the new list and set as current
+    const updated = projectStore.projects.find(
+      (p) => p.project_id === renamingProject.value.project_id
+    );
+    if (updated) {
+      projectStore.setCurrentProject(updated);
     }
     closeRenameDialog();
   } catch (e) {
@@ -421,12 +439,12 @@ function onShareSuccess() {
 
 // Fetch files when current project changes
 watch(
-  [projects, currentProjectName],
+  [() => projectStore.projects, currentProjectName],
   ([projectsVal, currentProjectVal]) => {
     if (
       projectsVal.length > 0 &&
       currentProjectVal &&
-      projectsVal.includes(currentProjectVal)
+      projectsVal.some((p) => p.project_name === currentProjectVal)
     ) {
       fetchProjectFiles();
     }
@@ -438,6 +456,13 @@ onMounted(() => {
   fetchProjects();
   projectStore.loadCurrentProject();
 });
+
+function goToStandardsPage(project) {
+  router.push({
+    name: 'ProjectConfigurationPage',
+    params: { projectId: project.project_id },
+  });
+}
 </script>
 
-<style src="@/assets/css/project-page.css"></style>
+<style src="@/assets/css/projects-page.css"></style>
