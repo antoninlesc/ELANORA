@@ -62,19 +62,11 @@
             </button>
             <button
               v-if="isAdmin"
-              class="project-page-share-btn"
+              class="project-page-action-btn project-page-share-btn"
               title="Share Project"
               @click.stop="openShareModal(project)"
             >
-              <font-awesome-icon icon="share" />
-            </button>
-            <button
-              v-if="isAdmin"
-              class="project-page-share-btn"
-              title="Share Project"
-              @click.stop="openShareModal(project)"
-            >
-              <font-awesome-icon icon="share" />
+              <font-awesome-icon icon="fa-regular fa-share-from-square" />
             </button>
             <button
               class="project-page-action-btn project-page-config-btn"
@@ -423,7 +415,7 @@ async function renameProject() {
 
 // Share modal functions
 function openShareModal(project) {
-  shareProjectName.value = project;
+  shareProjectName.value = project.project_name;
   showShareModal.value = true;
 }
 

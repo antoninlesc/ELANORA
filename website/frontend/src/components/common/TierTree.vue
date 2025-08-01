@@ -33,6 +33,7 @@ const props = defineProps({
   groupLabel: { type: String, required: false, default: '' },
 });
 
+console.log('TiersTree props:', props);
 const open = ref(false);
 
 const sortedRootTiers = computed(() => {

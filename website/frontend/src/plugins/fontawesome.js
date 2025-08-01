@@ -10,7 +10,7 @@ import {
   faDiagramProject,
   faGears,
 } from '@fortawesome/free-solid-svg-icons';
-import { faPenToSquare } from '@fortawesome/free-regular-svg-icons';
+import { faPenToSquare, faShareFromSquare } from '@fortawesome/free-regular-svg-icons';
 
 library.add(
   faTrash,
@@ -21,7 +21,8 @@ library.add(
   faPenToSquare,
   faCircleUser,
   faDiagramProject,
-  faGears
+  faGears,
+  faShareFromSquare
 );
 
 export default FontAwesomeIcon;
