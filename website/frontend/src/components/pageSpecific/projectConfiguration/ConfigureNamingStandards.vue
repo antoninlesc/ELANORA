@@ -135,13 +135,13 @@
         </div>
       </div>
       <button class="configure-naming-add-btn" @click="showAddStandard = true">
-        + {{ t('configureNamingStandards.createStandard') }}
+        + {{ t('configureNamingStandards.add') }}
       </button>
       <button class="configure-naming-add-btn" @click="startImportFlow">
         {{ t('configureNamingStandards.import') || 'Import from another project' }}
       </button>
       <div v-if="showAddStandard" class="configure-naming-add-form">
-        <div class="configure-naming-add-title">{{ t('configureNamingStandards.createStandard') }}</div>
+        <div class="configure-naming-add-title">{{ t('configureNamingStandards.add') }}</div>
         <form class="configure-naming-add-fields" @submit.prevent="addStandard">
           <!-- Name -->
           <div class="configure-naming-form-row">
@@ -509,11 +509,13 @@ import { ref, onMounted, watch, computed, nextTick } from 'vue';
 import { useFileTypeStore } from '@stores/fileType';
 import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage';
+import { useUserConfirm } from '@/composables/useUserConfirm';
 import { useI18n } from 'vue-i18n';
 
 const route = useRoute();
 const { t } = useI18n();
 const projectId = computed(() => Number(route.params.projectId));
+const userConfirm = useUserConfirm();
 
 const loading = ref(true);
 const standards = ref([]);
@@ -758,7 +760,7 @@ function onCommaPatternInput() {
 async function extractRegexFromExample() {
   regexExtractionError.value = '';
   const pattern = newStandard.value.pattern;
-  const example = exampleFilename.value;
+  const example = exampleFilename.value.trim();
 
   // Check if file type is selected
   if (!newStandard.value.project_file_type_id) {
@@ -786,8 +788,15 @@ async function extractRegexFromExample() {
   let sep = separators.find((s) => pattern.includes(s));
   if (!sep) sep = '_'; // fallback
 
-  const patternBlocks = pattern.split(sep);
+  const patternBlocks = splitPatternBlocks(pattern, sep);
   const exampleBlocks = example.split(sep);
+
+    console.log('Pattern:', pattern);
+  console.log('Example:', example);
+  console.log('Separator:', sep);
+  console.log('Pattern blocks:', patternBlocks);
+  console.log('Example blocks:', exampleBlocks);
+
 
   if (patternBlocks.length !== exampleBlocks.length) {
     regexExtractionError.value = t('configureNamingStandards.patternExampleBlockCount');
@@ -1062,10 +1071,10 @@ async function addStandard() {
   try {
     await projectNamingStandardApi.createStandardWithComponents({
       project_id: projectId.value,
-      name: newStandard.value.name,
+      name: newStandard.value.name.trim(),
       project_file_type_id: newStandard.value.project_file_type_id,
       pattern: newStandard.value.pattern,
-      description: newStandard.value.description,
+      description: newStandard.value.description.trim(),
       components: newStandard.value.components.map((c) => ({
         name: c.name,
         regex: c.regex,
@@ -1088,23 +1097,34 @@ async function addStandard() {
     await fetchStandardsAndComponentNames();
   } catch (err) {
     if (err?.response?.status === 409) {
-      alert(err?.response?.data?.detail);
+      eventMessageStore.addMessage(
+        t('configureNamingStandards.eventMessages.addFailedDuplicate'),
+        'error',
+        7000
+      );
     } else {
-      alert(
-        t('configureNamingStandards.eventMessages.addFailed') +
-          (err?.response?.data?.detail ? '\n' + err.response.data.detail : '')
+      eventMessageStore.addMessage(
+        'configureNamingStandards.eventMessages.addFailed',
+        'error',
+        7000,
       );
     }
   }
 }
 
 async function deleteStandard(id) {
-  if (!confirm(t('configureNamingStandards.deleteConfirm'))) return;
+  const confirmed = await userConfirm({
+    message: t('configureNamingStandards.deleteConfirm'),
+    confirmText: t('common.confirm'),
+    cancelText: t('common.cancel'),
+  });
+  if (!confirmed) return;
   try {
     await projectNamingStandardApi.deleteStandard(id);
     await fetchStandardsAndComponentNames();
+    eventMessageStore.addMessage('configureNamingStandards.eventMessages.deleteSuccess', 'success', 4000);
   } catch {
-    alert(t('configureNamingStandards.deleteError'));
+    eventMessageStore.addMessage('configureNamingStandards.eventMessages.deleteFailed', 'error', 7000);
   }
 }
 
@@ -1118,8 +1138,26 @@ async function importMissingFileType(std) {
     await fileTypeStore.fetchFileTypes(projectId.value);
     fileTypes.value = [...fileTypeStore.fileTypes];
     await fetchStandardsForImportProject();
+    // Add this line for success feedback:
+    eventMessageStore.addMessage(
+      t('configureNamingStandards.eventMessages.importSuccessFileType'),
+      'success',
+      4000
+    );
   } catch (err) {
-    alert(t('configureNamingStandards.importModal.importFailed') + ': ' + (err?.response?.data?.detail || err));
+    if (err?.response?.status === 409) {
+      eventMessageStore.addMessage(
+        t('configureNamingStandards.eventMessages.importFailedDuplicateFileType'),
+        'error',
+        7000
+      );
+    } else {
+      eventMessageStore.addMessage(
+        t('configureNamingStandards.eventMessages.importFailedFileType'),
+        'error',
+        7000
+      );
+    }
   }
 }
 
@@ -1435,12 +1473,22 @@ async function importSelectedStandards() {
       standard_ids: selectedStandardIds.value,
     });
     showImportModal.value = false;
+    eventMessageStore.addMessage('configureNamingStandards.eventMessages.importSuccessStandard', 'success');
     await fetchStandardsAndComponentNames();
-    eventMessageStore.addMessage('event_messages.import.success', 'success');
   } catch (err) {
-    // Use backend error message if available, otherwise fallback
-    const detail = err?.response?.data?.detail || 'Failed to import standards.';
-    eventMessageStore.addMessage(detail, 'error', 7000);
+    if (err?.response?.status === 409) {
+      eventMessageStore.addMessage(
+        t('configureNamingStandards.eventMessages.importFailedDuplicateStandard'),
+        'error',
+        7000
+      );
+    } else {
+      eventMessageStore.addMessage(
+        t('configureNamingStandards.eventMessages.importFailedStandard'),
+        'error',
+        7000
+      );
+    }
   }
 }
 
@@ -1486,6 +1534,24 @@ function splitTypeGroups(str) {
   }
   if (current) groups.push(current);
   return groups;
+}
+
+function splitPatternBlocks(pattern, sep) {
+  const blocks = [];
+  let current = '';
+  let depth = 0;
+  for (const c of pattern) {
+    if (c === '{') depth++;
+    if (c === '}') depth--;
+    if (c === sep && depth === 0) {
+      blocks.push(current);
+      current = '';
+    } else {
+      current += c;
+    }
+  }
+  if (current) blocks.push(current);
+  return blocks;
 }
 </script>
 

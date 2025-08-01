@@ -199,9 +199,9 @@ async function deleteFileType(id) {
     eventMessageStore.addMessage('configureFileTypes.eventMessages.deleteSuccess', 'success', 4000);
   } catch (e) {
     const detail = e?.response?.data?.detail;
-    if (detail && detail.includes('used by a naming standard')) {
+    if (detail && detail.error === 'file_type_in_use') {
       eventMessageStore.addMessage(
-        'configureFileTypes.eventMessages.cannotDeleteUsed',
+        'configureNamingStandards.eventMessages.cannotDeleteUsedFileType',
         'error',
         7000
       );

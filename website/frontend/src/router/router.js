@@ -103,7 +103,7 @@ const routes = [
         path: 'error/:statusCode',
         name: 'HTTPStatusPage',
         props: (route) => ({
-          statusCode: String(route.params.statusCode),
+          statusCode: Number(route.params.statusCode),
           message: getErrorMessage(route.params.statusCode),
         }),
         component: HTTPStatusPage,

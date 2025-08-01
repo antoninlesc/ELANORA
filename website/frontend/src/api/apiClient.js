@@ -122,8 +122,10 @@ axiosInstance.interceptors.response.use(
         failedRefreshAttempts++;
         if (failedRefreshAttempts >= MAX_REFRESH_ATTEMPTS) {
           localStorage.setItem('redirectTo', window.location.pathname);
-          if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
+          if (
+            !'/'.includes(window.location.pathname)
+          ) {
+            window.location.href = '/';
           }
         }
         waitingRequests.forEach((request) => {

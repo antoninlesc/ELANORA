@@ -13,8 +13,8 @@ import { useLanguageStore } from '@stores/language';
 import { useUserStore } from '@/stores/user';
 import { useProjectStore } from '@/stores/project';
 import { useAppInfoStore } from '@/stores/appInfo';
-import gitService from '@/api/service/gitService'; // <-- Import your service
-import instanceService from '@/api/service/instanceService'; // <-- If you have this
+import gitService from '@/api/service/gitService'; 
+import instanceService from '@/api/service/instanceService';
 
 import EventMessageContainer from '@components/eventComponent/eventMessageContainer.vue';
 
@@ -39,7 +39,6 @@ onMounted(async () => {
   userStore.initializeFromStorage();
   projectStore.initializeFromStorage();
 
-  // Fetch instance info (if needed)
   try {
     const response = await instanceService.getInstanceInfo();
     if (response) {
@@ -53,19 +52,19 @@ onMounted(async () => {
     }
   }
 
-  // Fetch projects from backend and save to store
-  try {
-    const res = await gitService.listProjects();
-    if (res && res.projects) {
-      projectStore.setProjects(res.projects);
-      // Set the first project as current if none is set
-      if (!projectStore.currentProject && res.projects.length > 0) {
-        projectStore.setCurrentProject(res.projects[0]);
+  // Only fetch projects if authenticated
+  if (userStore.isAuthenticated) {
+    try {
+      const res = await gitService.listProjects();
+      if (res && res.projects) {
+        projectStore.setProjects(res.projects);
+        if (!projectStore.currentProject && res.projects.length > 0) {
+          projectStore.setCurrentProject(res.projects[0]);
+        }
       }
+    } catch (e) {
+      console.error('Failed to fetch projects:', e);
     }
-  } catch (e) {
-    // Optionally handle error or fallback
-    console.error('Failed to fetch projects:', e);
   }
 
   locale.value = languageStore.language;

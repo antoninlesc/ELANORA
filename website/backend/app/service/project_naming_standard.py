@@ -13,6 +13,7 @@ from app.crud import (
 from app.model.project_file_type import ProjectFileType
 from app.core.centralized_logging import get_logger
 from app.crud.project_naming_standard import get_standard_with_components_full
+from app.crud.association import get_project_file_type_by_project_and_file_type
 
 from app.schema.responses.project_naming_standard import (
     NamingStandardResponse,
@@ -99,11 +100,7 @@ class ProjectNamingStandardService:
             if "uq_project_filetype_standard" in msg:
                 raise HTTPException(
                     status_code=409,
-                    detail="A naming standard with this name and file type already exists in this project.",
-                ) from e
-            else:
-                raise HTTPException(
-                    status_code=409, detail=f"A database constraint was violated: {msg}"
+                    detail="configureNamingStandards.eventMessages.addFailedDuplicate",
                 ) from e
         except Exception as e:
             await db.rollback()
@@ -202,7 +199,18 @@ class ProjectNamingStandardService:
                 if not source_standard:
                     continue
 
-                # Prepare components for creation
+                # Get the file_type_id from the source's project_file_type_id
+                source_pft = await db.get(ProjectFileType, source_standard["project_file_type_id"])
+                file_type_id = source_pft.file_type_id
+
+                # Use the new CRUD util to get the ProjectFileType for the target project
+                target_pft = await get_project_file_type_by_project_and_file_type(
+                    db, target_project_id, file_type_id
+                )
+                if not target_pft:
+                    raise HTTPException(status_code=400, detail="Target project does not have the required file type.")
+
+                # Prepare components for creation (no need to set project_file_type_id in components)
                 components = [
                     {
                         "name": c["name"],
@@ -210,22 +218,34 @@ class ProjectNamingStandardService:
                         "description": c.get("description", ""),
                         "order": c["order"],
                         "accepted_values": c.get("accepted_values", []),
-                        "project_file_type_id": c["project_file_type_id"],
                     }
                     for c in source_standard["components"]
                 ]
 
-                # Create the new standard in the target project
-                new_standard = await ProjectNamingStandardService.create_standard_with_components(
-                    db,
-                    target_project_id,
-                    source_standard["name"],
-                    source_standard["project_file_type_id"],
-                    source_standard["pattern"],
-                    source_standard.get("description", ""),
-                    components,
-                )
-                imported_standards.append(NamingStandardResponse(**new_standard))
+                # Create the new standard with components from the source standard in the target project
+                try:
+                    new_standard = await ProjectNamingStandardService.create_standard_with_components(
+                        db,
+                        target_project_id,
+                        source_standard["name"],
+                        target_pft.id,
+                        source_standard["pattern"],
+                        source_standard.get("description", ""),
+                        components,
+                    )
+                    imported_standards.append(NamingStandardResponse(**new_standard))
+                except IntegrityError as e:
+                    await db.rollback()
+                    msg = str(e.orig)
+                    if "uq_project_filetype_standard" in msg:
+                        raise HTTPException(
+                            status_code=409,
+                            detail="configureNamingStandards.eventMessages.importFailedDuplicate",
+                        ) from e
+                    else:
+                        logger.error(f"Unexpected error while importing standards: {e}", exc_info=True)
+                        raise
+
             await db.commit()
             return ImportSelectedStandardsResponse(imported_standards=imported_standards)
         except Exception as e:

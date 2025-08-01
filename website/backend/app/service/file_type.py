@@ -47,12 +47,17 @@ class FileTypeService:
         try:
             await file_type_crud.delete_file_type(db, file_type_id)
             await db.commit()
-        except IntegrityError:
+        except IntegrityError as exc:
             await db.rollback()
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first.",
-            )
+            # Check for the specific constraint name
+            if "fk_project_file_type" in str(exc.orig):
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "error": "file_type_in_use",
+                        "message": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first."
+                    }
+                ) from exc
         except Exception:
             await db.rollback()
             raise
@@ -139,11 +144,26 @@ class FileTypeService:
 
     @staticmethod
     async def remove_file_type_from_project(db, project_file_type_id: int, project_id: int):
-        await delete_project_file_type(db, project_file_type_id, project_id)
-        await db.commit()
-        # Clean up orphaned FileTypes
-        await delete_orphaned_file_types(db)
-        await db.commit()
+        try:
+            await delete_project_file_type(db, project_file_type_id, project_id)
+            await db.commit()
+            # Clean up orphaned FileTypes
+            await delete_orphaned_file_types(db)
+            await db.commit()
+        except IntegrityError as exc:
+            await db.rollback()
+            if "fk_project_file_type" in str(exc.orig):
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "error": "file_type_in_use",
+                        "message": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first."
+                    }
+                ) from exc
+            raise
+        except Exception:
+            await db.rollback()
+            raise
 
     @staticmethod
     async def update_project_file_type(db, project_id: int, project_file_type_id: int, update_fields: dict):

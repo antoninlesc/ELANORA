@@ -241,6 +241,26 @@ async def update_project_file_type_file_type_id(db: AsyncSession, project_file_t
         db, ProjectFileType, {"id": project_file_type_id}, {"file_type_id": new_file_type_id}
     )
 
+async def get_project_file_type_by_project_and_file_type(
+    db, project_id: int, file_type_id: int
+):
+    """Get the ProjectFileType for a given project and file_type_id."""
+    from app.model.project_file_type import ProjectFileType
+    return await DatabaseUtils.get_one_by_filter(
+        db,
+        ProjectFileType,
+        {"project_id": project_id, "file_type_id": file_type_id}
+    )
+
+async def get_project_file_type_with_file_type(db, project_file_type_id: int):
+    result = await db.execute(
+        select(ProjectFileType)
+        .options(selectinload(ProjectFileType.file_type))
+        .where(ProjectFileType.id == project_file_type_id)
+    )
+    return result.scalar_one_or_none()
+
+
 # --- Bulk delete for project associations (unchanged) ---
 
 
@@ -283,11 +303,3 @@ async def get_tier_ids_for_elan_file(db, elan_id: int) -> list[int]:
         db, ElanFileToTier, {"elan_id": elan_id}
     )
     return [r.tier_id for r in records]
-
-async def get_project_file_type_with_file_type(db, project_file_type_id: int):
-    result = await db.execute(
-        select(ProjectFileType)
-        .options(selectinload(ProjectFileType.file_type))
-        .where(ProjectFileType.id == project_file_type_id)
-    )
-    return result.scalar_one_or_none()
