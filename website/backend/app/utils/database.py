@@ -18,7 +18,11 @@ class DatabaseUtils:
 
     @staticmethod
     async def get_by_id(
-        db: AsyncSession, model: type[ModelType], id_field: str, id_value: Any, options: list | None = None
+        db: AsyncSession,
+        model: type[ModelType],
+        id_field: str,
+        id_value: Any,
+        options: list | None = None,
     ) -> ModelType | None:
         logger.info(
             f"get_by_id: model={model.__name__} id_field={id_field} id_value={id_value}"
@@ -33,7 +37,9 @@ class DatabaseUtils:
         return instance
 
     @staticmethod
-    async def get_all(db: AsyncSession, model: type[ModelType], options: list = None) -> list[ModelType]:
+    async def get_all(
+        db: AsyncSession, model: type[ModelType], options: list = None
+    ) -> list[ModelType]:
         logger.info(f"get_all: model={model.__name__}")
         query = select(model)
         if options:
@@ -298,9 +304,7 @@ class DatabaseUtils:
         if non_orphan_ids:
             pk_fields = [key.name for key in assoc_model.__table__.primary_key.columns]
             for oid in sorted(non_orphan_ids):
-                refs = await db.execute(
-                    select(assoc_model).where(assoc_ref_col == oid)
-                )
+                refs = await db.execute(select(assoc_model).where(assoc_ref_col == oid))
                 ref_rows = refs.scalars().all()
                 logger.info(
                     f"{main_model.__name__} id={oid} is still referenced in {assoc_model.__name__} rows: "
@@ -383,12 +387,10 @@ class DatabaseUtils:
         such that related_model.<related_field> == model.<model_field>
         """
         from sqlalchemy import select, exists
-        stmt = (
-            select(model)
-            .where(
-                exists().where(
-                    getattr(related_model, related_field) == getattr(model, model_field)
-                )
+
+        stmt = select(model).where(
+            exists().where(
+                getattr(related_model, related_field) == getattr(model, model_field)
             )
         )
         result = await db.execute(stmt)

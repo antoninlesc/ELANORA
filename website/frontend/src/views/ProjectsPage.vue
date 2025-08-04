@@ -69,14 +69,6 @@
               <font-awesome-icon icon="share" />
             </button>
             <button
-              v-if="isAdmin"
-              class="project-page-share-btn"
-              title="Share Project"
-              @click.stop="openShareModal(project)"
-            >
-              <font-awesome-icon icon="share" />
-            </button>
-            <button
               class="project-page-action-btn project-page-config-btn"
               :title="t('projectsPage.project.buttons.settings')"
               @click.stop="goToStandardsPage(project)"
@@ -272,7 +264,8 @@ async function fetchProjects() {
 }
 
 function selectProject(project) {
-  projectStore.setCurrentProject(project);
+  const projectName = project.project_name || project;
+  projectStore.setCurrentProject(projectName);
 }
 
 async function createProject() {
@@ -379,7 +372,7 @@ async function deleteProject(projectName) {
 
 function openRenameDialog(project) {
   renamingProject.value = project;
-  renameInput.value = project.project_name;
+  renameInput.value = project.project_name || project;
   renameError.value = '';
   renameDialogVisible.value = true;
 }
@@ -423,7 +416,7 @@ async function renameProject() {
 
 // Share modal functions
 function openShareModal(project) {
-  shareProjectName.value = project;
+  shareProjectName.value = project.project_name || project;
   showShareModal.value = true;
 }
 

@@ -1,4 +1,3 @@
-
 from pydantic import Field
 
 from app.schema.common.base import CustomBaseModel
@@ -16,9 +15,6 @@ TierNode.model_rebuild()
 
 class TierTreeResponse(CustomBaseModel):
     tiers: dict[str, list[TierNode]]
-
-
-
 
 
 class SectionInfo(CustomBaseModel):

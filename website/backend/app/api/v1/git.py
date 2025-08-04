@@ -243,8 +243,8 @@ async def list_user_projects(
 ):
     """List project names that the current user has access to."""
     instance_id = 1
-    project_names = await git_service.list_user_projects(db, user.user_id, instance_id)
-    return ProjectListResponse(projects=project_names)
+    projects = await git_service.list_user_projects(db, user.user_id, instance_id)
+    return ProjectListResponse(projects=projects)
 
 
 @router.post("/projects/init-from-folder-upload", response_model=ProjectCreateResponse)

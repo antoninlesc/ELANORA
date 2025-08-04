@@ -16,7 +16,10 @@ from app.service.project_naming_standard import ProjectNamingStandardService
 
 router = APIRouter()
 
-@router.get("/projects-with-standards", response_model=list[ProjectWithStandardsResponse])
+
+@router.get(
+    "/projects-with-standards", response_model=list[ProjectWithStandardsResponse]
+)
 async def get_projects_with_standards(db: AsyncSession = get_db_dep):
     return await ProjectNamingStandardService.get_projects_with_standards(db)
 
@@ -29,6 +32,7 @@ async def import_selected_standards(
     return await ProjectNamingStandardService.import_selected_standards(
         db, req.target_project_id, req.standard_ids
     )
+
 
 @router.post("/create", response_model=NamingStandardResponse)
 async def create_standard_with_components(
@@ -45,6 +49,7 @@ async def create_standard_with_components(
         req.description,
         components,
     )
+
 
 @router.get("/project/{project_id}")
 async def get_standards_for_project(project_id: int, db: AsyncSession = get_db_dep):
@@ -74,5 +79,9 @@ async def get_component_names(project_id: int, db: AsyncSession = get_db_dep):
 
 
 @router.get("/project/{project_id}/full")
-async def get_project_naming_standards_full(project_id: int, db: AsyncSession = get_db_dep):
-    return await ProjectNamingStandardService.get_project_naming_standards_full(db, project_id)
+async def get_project_naming_standards_full(
+    project_id: int, db: AsyncSession = get_db_dep
+):
+    return await ProjectNamingStandardService.get_project_naming_standards_full(
+        db, project_id
+    )

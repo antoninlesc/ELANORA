@@ -101,6 +101,7 @@ app.include_router(
     file_type_router, prefix=f"{API_V1_PREFIX}/file-type", tags=["FILE TYPE"]
 )
 
+
 # Root endpoint
 @app.get("/")
 async def root():

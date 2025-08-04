@@ -4,7 +4,10 @@ from app.model.component_template import ComponentTemplate
 from app.utils.database import DatabaseUtils
 from sqlalchemy.ext.asyncio import AsyncSession
 
-async def link_standard_to_component(db: AsyncSession, naming_standard_id: int, component_template_id: int, order: int):
+
+async def link_standard_to_component(
+    db: AsyncSession, naming_standard_id: int, component_template_id: int, order: int
+):
     filters = {
         "naming_standard_id": naming_standard_id,
         "component_template_id": component_template_id,
@@ -20,12 +23,17 @@ async def link_standard_to_component(db: AsyncSession, naming_standard_id: int, 
         await db.flush()
     return link
 
-async def unlink_standard_from_component(db: AsyncSession, naming_standard_id: int, component_template_id: int):
+
+async def unlink_standard_from_component(
+    db: AsyncSession, naming_standard_id: int, component_template_id: int
+):
     return await DatabaseUtils.delete_by_filter(
-        db, StandardComponent,
+        db,
+        StandardComponent,
         naming_standard_id=naming_standard_id,
-        component_template_id=component_template_id
+        component_template_id=component_template_id,
     )
+
 
 async def get_components_by_standard(db: AsyncSession, naming_standard_id: int):
     return await DatabaseUtils.get_by_filter(
@@ -34,10 +42,14 @@ async def get_components_by_standard(db: AsyncSession, naming_standard_id: int):
         filters={"naming_standard_id": naming_standard_id},
         order_by=[StandardComponent.order],
         options=[
-            selectinload(StandardComponent.component_template)
-            .selectinload(ComponentTemplate.accepted_values)
-        ]
+            selectinload(StandardComponent.component_template).selectinload(
+                ComponentTemplate.accepted_values
+            )
+        ],
     )
 
+
 async def get_by_standard(db: AsyncSession, standard_id: int):
-    return await DatabaseUtils.get_by_filter(db, StandardComponent, {"naming_standard_id": standard_id})
+    return await DatabaseUtils.get_by_filter(
+        db, StandardComponent, {"naming_standard_id": standard_id}
+    )
