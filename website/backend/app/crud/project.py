@@ -89,7 +89,9 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
             db, TierSection, TierSection.project_id == project.project_id
         )
         # Delete all standards for this project
-        await ProjectNamingStandardService.delete_all_standards_by_project(db, project.project_id)
+        await ProjectNamingStandardService.delete_all_standards_by_project(
+            db, project.project_id
+        )
         # Now delete project associations (users, standards, file links)
         await delete_project_associations(db, project.project_id)
         await delete_orphaned_file_types(db)

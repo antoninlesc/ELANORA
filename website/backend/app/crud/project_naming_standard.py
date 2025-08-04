@@ -18,9 +18,8 @@ async def get_standards_by_project(
         db, ProjectNamingStandard, {"project_id": project_id}
     )
 
-async def get_standards_ids_by_project(
-    db: AsyncSession, project_id: int
-) -> list[int]:
+
+async def get_standards_ids_by_project(db: AsyncSession, project_id: int) -> list[int]:
     standards = await get_standards_by_project(db, project_id)
     return [standard.id for standard in standards]
 
@@ -64,6 +63,7 @@ async def delete_standard(db: AsyncSession, standard_id: int) -> int:
         await db.rollback()
         raise e
 
+
 async def get_projects_with_standards(db: AsyncSession) -> list[Project]:
     """
     Returns all projects that have at least one naming standard.
@@ -80,7 +80,10 @@ async def get_projects_with_standards(db: AsyncSession) -> list[Project]:
         await db.rollback()
         raise e
 
-async def get_standards_by_ids(db: AsyncSession, ids: list[int]) -> list[ProjectNamingStandard]:
+
+async def get_standards_by_ids(
+    db: AsyncSession, ids: list[int]
+) -> list[ProjectNamingStandard]:
     """
     Returns all ProjectNamingStandard objects matching the given ids.
     """
@@ -90,30 +93,39 @@ async def get_standards_by_ids(db: AsyncSession, ids: list[int]) -> list[Project
         await db.rollback()
         raise e
 
+
 async def get_standard_with_components_full(db, standard_id: int):
     # Get the standard
-    standard = await DatabaseUtils.get_by_id(db, ProjectNamingStandard, "id", standard_id)
+    standard = await DatabaseUtils.get_by_id(
+        db, ProjectNamingStandard, "id", standard_id
+    )
     if not standard:
         return None
 
     # Get the project_file_type
-    project_file_type = await DatabaseUtils.get_by_id(db, ProjectFileType, "id", standard.project_file_type_id)
+    project_file_type = await DatabaseUtils.get_by_id(
+        db, ProjectFileType, "id", standard.project_file_type_id
+    )
 
     # Eagerly load components, templates, and accepted values
     std_components = await get_components_by_standard(db, standard_id)
     components = []
     for sc in std_components:
         template = sc.component_template
-        accepted_values = [v.value for v in template.accepted_values] if template else []
-        components.append({
-            "id": template.id if template else None,
-            "name": template.name if template else None,
-            "description": template.description if template else None,
-            "regex": template.regex if template else None,
-            "order": sc.order,
-            "accepted_values": accepted_values,
-            "project_file_type_id": standard.project_file_type_id,
-        })
+        accepted_values = (
+            [v.value for v in template.accepted_values] if template else []
+        )
+        components.append(
+            {
+                "id": template.id if template else None,
+                "name": template.name if template else None,
+                "description": template.description if template else None,
+                "regex": template.regex if template else None,
+                "order": sc.order,
+                "accepted_values": accepted_values,
+                "project_file_type_id": standard.project_file_type_id,
+            }
+        )
 
     return {
         "id": standard.id,
@@ -126,4 +138,3 @@ async def get_standard_with_components_full(db, standard_id: int):
         "description": standard.description,
         "components": components,
     }
-

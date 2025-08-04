@@ -42,10 +42,10 @@
               <option value="">{{ t('invitation.selectProject') }}</option>
               <option 
                 v-for="project in projects" 
-                :key="project" 
-                :value="project"
+                :key="project.project_id || project" 
+                :value="project.project_name || project"
               >
-                {{ project }}
+                {{ project.project_name || project }}
               </option>
             </select>
             <div v-if="projectError" class="error-message">

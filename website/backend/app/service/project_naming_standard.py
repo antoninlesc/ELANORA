@@ -8,7 +8,7 @@ from app.crud import (
     accepted_value,
     component_accepted_value,
     standard_component,
-    file_type
+    file_type,
 )
 from app.model.project_file_type import ProjectFileType
 from app.core.centralized_logging import get_logger
@@ -28,7 +28,9 @@ class ProjectNamingStandardService:
     @staticmethod
     async def get_standards_for_project(db: AsyncSession, project_id: int):
         try:
-            standards = await project_naming_standard.get_standards_by_project(db, project_id)
+            standards = await project_naming_standard.get_standards_by_project(
+                db, project_id
+            )
             return [
                 {
                     "id": s.id,
@@ -70,7 +72,9 @@ class ProjectNamingStandardService:
             )
             project_file_type = await db.get(ProjectFileType, project_file_type_id)
             if not project_file_type:
-                raise HTTPException(status_code=400, detail="Invalid project_file_type_id")
+                raise HTTPException(
+                    status_code=400, detail="Invalid project_file_type_id"
+                )
             file_type_id = project_file_type.file_type_id
             for idx, comp in enumerate(components):
                 template = await component_template.get_or_create_component_template(
@@ -92,7 +96,9 @@ class ProjectNamingStandardService:
                         db, template.id, acc_val.id
                     )
             await db.commit()
-            return await ProjectNamingStandardService.get_standard_with_components(db, standard.id)
+            return await ProjectNamingStandardService.get_standard_with_components(
+                db, standard.id
+            )
         except IntegrityError as e:
             await db.rollback()
             msg = str(e.orig)
@@ -113,7 +119,9 @@ class ProjectNamingStandardService:
     async def _delete_standard_and_cleanup(db: AsyncSession, standard_id: int):
         logger.info(f"Deleting ProjectNamingStandard with id={standard_id}")
         await project_naming_standard.delete_standard(db, standard_id)
-        logger.info("Cleaning up orphaned ComponentAcceptedValue rows for orphaned templates...")
+        logger.info(
+            "Cleaning up orphaned ComponentAcceptedValue rows for orphaned templates..."
+        )
         await component_accepted_value.delete_for_orphaned_templates(db)
         logger.info("Cleaning up orphaned ComponentTemplate rows...")
         await component_template.delete_orphaned_component_templates(db)
@@ -123,7 +131,9 @@ class ProjectNamingStandardService:
     @staticmethod
     async def delete_standard(db: AsyncSession, standard_id: int):
         try:
-            await ProjectNamingStandardService._delete_standard_and_cleanup(db, standard_id)
+            await ProjectNamingStandardService._delete_standard_and_cleanup(
+                db, standard_id
+            )
             logger.info("Cleaning up orphaned FileType rows...")
             await file_type.delete_orphaned_file_types(db)
             await db.commit()
@@ -137,39 +147,61 @@ class ProjectNamingStandardService:
     @staticmethod
     async def delete_all_standards_by_project(db: AsyncSession, project_id: int):
         try:
-            standard_ids = await project_naming_standard.get_standards_ids_by_project(db, project_id)
+            standard_ids = await project_naming_standard.get_standards_ids_by_project(
+                db, project_id
+            )
             for standard_id in standard_ids:
-                await ProjectNamingStandardService._delete_standard_and_cleanup(db, standard_id)
+                await ProjectNamingStandardService._delete_standard_and_cleanup(
+                    db, standard_id
+                )
             logger.info("Bulk delete and cleanup committed successfully.")
         except Exception as e:
-            logger.error(f"Error during delete_all_standards_by_project: {e}", exc_info=True)
+            logger.error(
+                f"Error during delete_all_standards_by_project: {e}", exc_info=True
+            )
             raise
 
     @staticmethod
     async def get_unique_component_names_by_project(db, project_id: int):
         try:
-            return await component_template.get_unique_component_names_by_project(db, project_id)
+            return await component_template.get_unique_component_names_by_project(
+                db, project_id
+            )
         except Exception as e:
             await db.rollback()
-            logger.error(f"Error in get_unique_component_names_by_project: {e}", exc_info=True)
+            logger.error(
+                f"Error in get_unique_component_names_by_project: {e}", exc_info=True
+            )
             raise
 
     @staticmethod
     async def get_project_naming_standards_full(db: AsyncSession, project_id: int):
         try:
-            standards = await project_naming_standard.get_standards_by_project(db, project_id)
+            standards = await project_naming_standard.get_standards_by_project(
+                db, project_id
+            )
             standards_with_components = []
             for standard in standards:
-                detail = await ProjectNamingStandardService.get_standard_with_components(db, standard.id)
+                detail = (
+                    await ProjectNamingStandardService.get_standard_with_components(
+                        db, standard.id
+                    )
+                )
                 standards_with_components.append(detail)
-            component_names = await component_template.get_unique_component_names_by_project(db, project_id)
+            component_names = (
+                await component_template.get_unique_component_names_by_project(
+                    db, project_id
+                )
+            )
             return {
                 "component_names": component_names,
                 "standards": standards_with_components,
             }
         except Exception as e:
             await db.rollback()
-            logger.error(f"Error in get_project_naming_standards_full: {e}", exc_info=True)
+            logger.error(
+                f"Error in get_project_naming_standards_full: {e}", exc_info=True
+            )
             raise
 
     @staticmethod
@@ -195,12 +227,18 @@ class ProjectNamingStandardService:
             imported_standards = []
             for standard_id in standard_ids:
                 # Get the source standard with components
-                source_standard = await ProjectNamingStandardService.get_standard_with_components(db, standard_id)
+                source_standard = (
+                    await ProjectNamingStandardService.get_standard_with_components(
+                        db, standard_id
+                    )
+                )
                 if not source_standard:
                     continue
 
                 # Get the file_type_id from the source's project_file_type_id
-                source_pft = await db.get(ProjectFileType, source_standard["project_file_type_id"])
+                source_pft = await db.get(
+                    ProjectFileType, source_standard["project_file_type_id"]
+                )
                 file_type_id = source_pft.file_type_id
 
                 # Use the new CRUD util to get the ProjectFileType for the target project
@@ -208,7 +246,10 @@ class ProjectNamingStandardService:
                     db, target_project_id, file_type_id
                 )
                 if not target_pft:
-                    raise HTTPException(status_code=400, detail="Target project does not have the required file type.")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Target project does not have the required file type.",
+                    )
 
                 # Prepare components for creation (no need to set project_file_type_id in components)
                 components = [
@@ -243,11 +284,16 @@ class ProjectNamingStandardService:
                             detail="configureNamingStandards.eventMessages.importFailedDuplicate",
                         ) from e
                     else:
-                        logger.error(f"Unexpected error while importing standards: {e}", exc_info=True)
+                        logger.error(
+                            f"Unexpected error while importing standards: {e}",
+                            exc_info=True,
+                        )
                         raise
 
             await db.commit()
-            return ImportSelectedStandardsResponse(imported_standards=imported_standards)
+            return ImportSelectedStandardsResponse(
+                imported_standards=imported_standards
+            )
         except Exception as e:
             await db.rollback()
             logger.error(f"Error in import_selected_standards: {e}", exc_info=True)

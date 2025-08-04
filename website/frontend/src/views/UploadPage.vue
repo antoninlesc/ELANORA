@@ -13,8 +13,12 @@
           :disabled="loading"
         >
           <option value="">Choose a project...</option>
-          <option v-for="project in projects" :key="project" :value="project">
-            {{ project }}
+          <option 
+            v-for="project in projects" 
+            :key="project.project_id || project" 
+            :value="project.project_name || project"
+          >
+            {{ project.project_name || project }}
           </option>
         </select>
       </div>
@@ -122,7 +126,7 @@ async function fetchProjects() {
   try {
     loading.value = true;
     const response = await gitService.listUserProjects();
-    projects.value = response.projects;
+    projects.value = response.projects || [];
   } catch (e) {
     error.value = 'Failed to load projects';
     console.error('Error fetching projects:', e);

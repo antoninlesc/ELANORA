@@ -55,15 +55,17 @@ class FileTypeService:
                     status_code=409,
                     detail={
                         "error": "file_type_in_use",
-                        "message": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first."
-                    }
+                        "message": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first.",
+                    },
                 ) from exc
         except Exception:
             await db.rollback()
             raise
 
     @staticmethod
-    async def create_file_type_for_project(db, name: str, extension: str, project_id: int):
+    async def create_file_type_for_project(
+        db, name: str, extension: str, project_id: int
+    ):
         # Get or create the global FileType (by extension)
         file_type = await get_file_type_by_extension(db, extension)
         if not file_type:
@@ -71,9 +73,13 @@ class FileTypeService:
         # Check for existing ProjectFileType with same name in this project
         project_types = await get_project_file_types(db, project_id)
         if any(pt.name == name for pt in project_types):
-            raise HTTPException(status_code=409, detail="File type name already exists in this project")
+            raise HTTPException(
+                status_code=409, detail="File type name already exists in this project"
+            )
         # Create the ProjectFileType association
-        project_file_type = await add_project_file_type(db, project_id, name, file_type.id)
+        project_file_type = await add_project_file_type(
+            db, project_id, name, file_type.id
+        )
         await db.commit()
         # Fetch the related FileType for the extension
         file_type = await get_file_type_by_id(db, project_file_type.file_type_id)
@@ -91,7 +97,9 @@ class FileTypeService:
         return await get_project_file_types(db, project_id)
 
     @staticmethod
-    async def add_existing_file_type_to_project(db, file_type_id: int, project_id: int, name: str):
+    async def add_existing_file_type_to_project(
+        db, file_type_id: int, project_id: int, name: str
+    ):
         file_type = await get_file_type_by_id(db, file_type_id)
         if not file_type:
             raise HTTPException(status_code=404, detail="File type not found")
@@ -116,7 +124,9 @@ class FileTypeService:
             )
             await db.commit()
             # Use the CRUD function to reload with relationship
-            refreshed = await get_project_file_type_with_file_type(db, project_file_type.id)
+            refreshed = await get_project_file_type_with_file_type(
+                db, project_file_type.id
+            )
             return refreshed
         except Exception:
             await db.rollback()
@@ -129,7 +139,9 @@ class FileTypeService:
         """
         Import selected file types (by name) from source_project_id to target_project_id.
         """
-        source_types = await FileTypeService.get_file_types_for_project(db, source_project_id)
+        source_types = await FileTypeService.get_file_types_for_project(
+            db, source_project_id
+        )
         imported = []
         for ft in source_types:
             if ft.name in file_type_names:
@@ -143,7 +155,9 @@ class FileTypeService:
         return imported
 
     @staticmethod
-    async def remove_file_type_from_project(db, project_file_type_id: int, project_id: int):
+    async def remove_file_type_from_project(
+        db, project_file_type_id: int, project_id: int
+    ):
         try:
             await delete_project_file_type(db, project_file_type_id, project_id)
             await db.commit()
@@ -157,8 +171,8 @@ class FileTypeService:
                     status_code=409,
                     detail={
                         "error": "file_type_in_use",
-                        "message": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first."
-                    }
+                        "message": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first.",
+                    },
                 ) from exc
             raise
         except Exception:
@@ -166,16 +180,22 @@ class FileTypeService:
             raise
 
     @staticmethod
-    async def update_project_file_type(db, project_id: int, project_file_type_id: int, update_fields: dict):
+    async def update_project_file_type(
+        db, project_id: int, project_file_type_id: int, update_fields: dict
+    ):
         pft = await get_project_file_type_by_id(db, project_file_type_id)
         if not pft:
             raise HTTPException(status_code=404, detail="Project file type not found")
         if pft.project_id != project_id:
-            raise HTTPException(status_code=403, detail="File type does not belong to this project")
+            raise HTTPException(
+                status_code=403, detail="File type does not belong to this project"
+            )
 
         # Update name if present
         if "name" in update_fields:
-            await update_project_file_type_name(db, project_file_type_id, update_fields["name"])
+            await update_project_file_type_name(
+                db, project_file_type_id, update_fields["name"]
+            )
 
         # Update extension if present
         if "extension" in update_fields:
@@ -184,25 +204,37 @@ class FileTypeService:
             existing_ft = await get_file_type_by_extension(db, new_ext)
             if existing_ft:
                 # Point this ProjectFileType to the existing FileType
-                await update_project_file_type_file_type_id(db, project_file_type_id, existing_ft.id)
+                await update_project_file_type_file_type_id(
+                    db, project_file_type_id, existing_ft.id
+                )
             else:
-                count = await count_project_file_types_by_file_type_id(db, pft.file_type_id)
+                count = await count_project_file_types_by_file_type_id(
+                    db, pft.file_type_id
+                )
                 if count == 1:
                     # Safe to update the extension directly
-                    await file_type_crud.update_file_type(db, pft.file_type_id, {"extension": new_ext})
+                    await file_type_crud.update_file_type(
+                        db, pft.file_type_id, {"extension": new_ext}
+                    )
                 else:
                     # Create a new FileType and point to it
                     new_ft = await file_type_crud.create_file_type(db, new_ext)
-                    await update_project_file_type_file_type_id(db, project_file_type_id, new_ft.id)
+                    await update_project_file_type_file_type_id(
+                        db, project_file_type_id, new_ft.id
+                    )
 
         await db.commit()
 
         updated_pft = await get_project_file_type_by_id(db, project_file_type_id)
         if not updated_pft:
-            raise HTTPException(status_code=404, detail="Project file type not found after update")
+            raise HTTPException(
+                status_code=404, detail="Project file type not found after update"
+            )
         return {
             "id": updated_pft.id,
             "name": updated_pft.name,
-            "extension": updated_pft.file_type.extension if updated_pft.file_type else None,
+            "extension": updated_pft.file_type.extension
+            if updated_pft.file_type
+            else None,
             "file_type_id": updated_pft.file_type_id,
         }

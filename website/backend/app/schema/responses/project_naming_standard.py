@@ -1,5 +1,6 @@
 from app.schema.common.base import CustomBaseModel
 
+
 class NamingComponentResponse(CustomBaseModel):
     id: int
     name: str
@@ -8,6 +9,7 @@ class NamingComponentResponse(CustomBaseModel):
     order: int
     accepted_values: list[str] | None = None
     project_file_type_id: int
+
 
 class NamingStandardResponse(CustomBaseModel):
     id: int
@@ -20,9 +22,11 @@ class NamingStandardResponse(CustomBaseModel):
     description: str | None = ""
     components: list[NamingComponentResponse]
 
+
 class ProjectWithStandardsResponse(CustomBaseModel):
     id: int
     name: str
+
 
 class ImportSelectedStandardsResponse(CustomBaseModel):
     imported_standards: list[NamingStandardResponse]

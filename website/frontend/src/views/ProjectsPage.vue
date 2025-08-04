@@ -264,7 +264,8 @@ async function fetchProjects() {
 }
 
 function selectProject(project) {
-  projectStore.setCurrentProject(project);
+  const projectName = project.project_name || project;
+  projectStore.setCurrentProject(projectName);
 }
 
 async function createProject() {
@@ -371,7 +372,7 @@ async function deleteProject(projectName) {
 
 function openRenameDialog(project) {
   renamingProject.value = project;
-  renameInput.value = project.project_name;
+  renameInput.value = project.project_name || project;
   renameError.value = '';
   renameDialogVisible.value = true;
 }
@@ -415,7 +416,7 @@ async function renameProject() {
 
 // Share modal functions
 function openShareModal(project) {
-  shareProjectName.value = project;
+  shareProjectName.value = project.project_name || project;
   showShareModal.value = true;
 }
 

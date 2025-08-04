@@ -6,6 +6,7 @@ from sqlalchemy import select, func
 
 logger = get_logger(__name__)
 
+
 async def get_or_create_accepted_value(db: AsyncSession, value: str) -> AcceptedValue:
     filters = {"value": value}
     obj = await DatabaseUtils.get_one_by_filter(db, AcceptedValue, filters)
@@ -16,27 +17,31 @@ async def get_or_create_accepted_value(db: AsyncSession, value: str) -> Accepted
     await db.flush()
     return obj
 
+
 async def delete_orphaned_accepted_values(db: AsyncSession):
     from app.model.component_accepted_value import ComponentAcceptedValue
+
     try:
         logger.info("Starting orphaned AcceptedValue cleanup...")
         # Count before
-        before = (await db.execute(select(func.count()).select_from(AcceptedValue))).scalar()
+        before = (
+            await db.execute(select(func.count()).select_from(AcceptedValue))
+        ).scalar()
         logger.info(f"AcceptedValue rows before cleanup: {before}")
         # Delete orphans
         result = await DatabaseUtils.delete_fully_orphaned(
-            db,
-            AcceptedValue,
-            ComponentAcceptedValue,
-            "id",
-            "accepted_value_id"
+            db, AcceptedValue, ComponentAcceptedValue, "id", "accepted_value_id"
         )
         # Count after
-        after = (await db.execute(select(func.count()).select_from(AcceptedValue))).scalar()
+        after = (
+            await db.execute(select(func.count()).select_from(AcceptedValue))
+        ).scalar()
         logger.info(f"AcceptedValue rows after cleanup: {after}")
         await db.flush()
         return result
     except Exception as e:
         await db.rollback()
-        logger.error(f"Error during delete_orphaned_accepted_values: {e}", exc_info=True)
+        logger.error(
+            f"Error during delete_orphaned_accepted_values: {e}", exc_info=True
+        )
         raise

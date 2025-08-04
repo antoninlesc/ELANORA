@@ -1,4 +1,3 @@
-
 from app.schema.common.base import CustomBaseModel
 
 
