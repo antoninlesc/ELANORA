@@ -293,6 +293,35 @@
   },
   "project": {
     "load_error": "Failed to load projects",
+    "users": {
+      "title": "Users in project \"{projectName}\"",
+      "add_user": "Add User",
+      "no_users": "No users found",
+      "user": "User",
+      "permission": "Permission",
+      "load_error": "Error loading users",
+      "permission_updated": "Permission updated successfully",
+      "permission_update_error": "Error updating permission",
+      "user_added": "User added successfully",
+      "add_error": "Error adding user",
+      "user_removed": "User removed successfully",
+      "remove_error": "Error removing user",
+      "add_user_modal": {
+        "title": "Add user to project",
+        "user_id": "User ID",
+        "permission": "Permission"
+      },
+      "remove_modal": {
+        "title": "Confirm removal",
+        "message": "Are you sure you want to remove {username} from this project?"
+      }
+    },
+    "permissions": {
+      "read": "Read Only",
+      "write": "Read/Write",
+      "admin": "Administrator",
+      "owner": "Owner"
+    },
     "share": {
       "title": "Share project \"{projectName}\"",
       "send_by_email": "Send by email",

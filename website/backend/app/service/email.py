@@ -21,6 +21,12 @@ EMAIL_VERIFICATION_TEMPLATE_EN = TEMPLATES_DIR / "email_verification_en.html"
 EMAIL_VERIFICATION_TEMPLATE_FR = TEMPLATES_DIR / "email_verification_fr.html"
 INVITATION_TEMPLATE_EN = TEMPLATES_DIR / "invitation_en.html"
 INVITATION_TEMPLATE_FR = TEMPLATES_DIR / "invitation_fr.html"
+EXISTING_USER_INVITATION_TEMPLATE_EN = (
+    TEMPLATES_DIR / "existing_user_invitation_en.html"
+)
+EXISTING_USER_INVITATION_TEMPLATE_FR = (
+    TEMPLATES_DIR / "existing_user_invitation_fr.html"
+)
 
 
 class EmailService:
@@ -328,4 +334,125 @@ class EmailService:
             return True
         except Exception as e:
             print(f"[EmailService] Failed to send email verification code: {e}")
+            raise e
+
+    async def send_existing_user_invitation_email(
+        self,
+        email: str,
+        invitation_id: int,
+        sender_name: str,
+        project_name: str | None = None,
+        custom_message: str | None = None,
+        language: str = "en",
+    ) -> bool:
+        """Send an invitation email to an existing user with accept/reject buttons.
+
+        Args:
+            email (str): The email address to send the invitation to
+            invitation_id (int): The invitation ID for accept/reject links
+            sender_name (str): The name of the person sending the invitation
+            project_name (str): The name of the project (optional)
+            custom_message (str): Custom message from the sender (optional)
+            language (str): The language for the email ("en" or "fr")
+
+        Returns:
+            bool: True if the email was sent successfully, False otherwise
+
+        """
+        current_year = datetime.datetime.now().year
+        contact_url = f"{config.FRONTEND_HOST}/contact"
+        accept_url = f"{config.FRONTEND_HOST}/invitation/accept/{invitation_id}"
+        reject_url = f"{config.FRONTEND_HOST}/invitation/reject/{invitation_id}"
+
+        # Determine email template and subject based on language
+        if language.lower() == "fr":
+            subject = "ELANORA - Invitation à rejoindre un projet"
+            template_path = EXISTING_USER_INVITATION_TEMPLATE_FR
+            project_info = f" '{project_name}'" if project_name else ""
+        else:
+            subject = "ELANORA - Project Invitation"
+            template_path = EXISTING_USER_INVITATION_TEMPLATE_EN
+            project_info = f" '{project_name}'" if project_name else ""
+
+        # Format custom message if provided
+        formatted_custom_message = ""
+        if custom_message:
+            if language.lower() == "fr":
+                formatted_custom_message = f"""
+                <div style="background:#e8f0fe;border:1px solid #2563eb;border-radius:0.75rem;padding:1.5rem;margin:1.5rem 0;">
+                    <div style="font-size:1rem;color:#1d4ed8;font-weight:600;margin-bottom:0.5rem;">Message personnel :</div>
+                    <div style="font-size:0.95rem;color:#4b5563;line-height:1.6;">{custom_message}</div>
+                </div>
+                """
+            else:
+                formatted_custom_message = f"""
+                <div style="background:#e8f0fe;border:1px solid #2563eb;border-radius:0.75rem;padding:1.5rem;margin:1.5rem 0;">
+                    <div style="font-size:1rem;color:#1d4ed8;font-weight:600;margin-bottom:0.5rem;">Personal message:</div>
+                    <div style="font-size:0.95rem;color:#4b5563;line-height:1.6;">{custom_message}</div>
+                </div>
+                """
+
+        # Load and format the email template
+        try:
+            template = self.load_template(template_path)
+            email_body = template.format(
+                sender_name=sender_name,
+                project_info=project_info,
+                custom_message=formatted_custom_message,
+                accept_url=accept_url,
+                reject_url=reject_url,
+                year=current_year,
+                contact_url=contact_url,
+            )
+        except Exception as e:
+            print(
+                f"[EmailService] Failed to load or format existing user invitation template: {e}"
+            )
+            # Fallback to simple template
+            if language.lower() == "fr":
+                fallback_subject = "ELANORA - Invitation à rejoindre un projet"
+                fallback_intro = f"{sender_name} vous invite à rejoindre le projet{project_info} sur ELANORA."
+                fallback_accept = "Accepter"
+                fallback_reject = "Refuser"
+                fallback_footer = "Cette invitation expirera dans 7 jours."
+            else:
+                fallback_subject = "ELANORA - Project Invitation"
+                fallback_intro = f"{sender_name} has invited you to join the project{project_info} on ELANORA."
+                fallback_accept = "Accept"
+                fallback_reject = "Reject"
+                fallback_footer = "This invitation will expire in 7 days."
+
+            email_body = f"""
+            <html>
+              <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <h1 style="color: #2563eb;">ELANORA</h1>
+                  <h2>Project Invitation</h2>
+                  <p>{fallback_intro}</p>
+                  {formatted_custom_message if custom_message else ""}
+                  <div style="text-align: center; margin: 30px 0;">
+                    <a href="{accept_url}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 0 10px;">{fallback_accept}</a>
+                    <a href="{reject_url}" style="background: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 0 10px;">{fallback_reject}</a>
+                  </div>
+                  <p style="font-size: 14px; color: #666;">{fallback_footer}</p>
+                  <p style="font-size: 12px; color: #999;">© {current_year} ELANORA. All rights reserved.</p>
+                </div>
+              </body>
+            </html>
+            """
+            subject = fallback_subject
+
+        message = MessageSchema(
+            subject=subject,
+            recipients=[email],
+            body=email_body,
+            subtype=MessageType.html,
+        )
+
+        try:
+            fm = FastMail(self.conf)
+            await fm.send_message(message)
+            return True
+        except Exception as e:
+            print(f"[EmailService] Failed to send existing user invitation email: {e}")
             raise e

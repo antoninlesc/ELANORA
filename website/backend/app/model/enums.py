@@ -21,6 +21,14 @@ class ProjectPermission(str, Enum):
     ADMIN = "admin"
     OWNER = "owner"
 
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            for member in cls:
+                if member.value == value.lower():
+                    return member
+        return None
+
 
 class InvitationStatus(str, Enum):
     """Enumeration for invitation status."""

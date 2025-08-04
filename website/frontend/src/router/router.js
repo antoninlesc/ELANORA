@@ -14,7 +14,9 @@ import ProjectsPage from '@views/ProjectsPage.vue';
 import UploadPage from '@views/UploadPage.vue';
 import ConflictsPage from '@views/ConflictsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
+import InvitationResponsePage from '@views/InvitationResponsePage.vue';
 import TiersPage from '@views/TiersPage.vue';
+import TestProjectUsersPage from '@views/TestProjectUsersPage.vue';
 import ProjectConfigurationPage from '@views/ProjectConfigurationPage.vue';
 import ProfilePage from '@views/ProfilePage.vue';
 
@@ -45,6 +47,14 @@ const routes = [
     path: '/verify-email',
     name: 'EmailVerificationPage',
     component: EmailVerificationPage,
+  },
+  // Invitation response routes (public, for email links)
+  {
+    path: '/invitation/:action/:invitationId',
+    name: 'InvitationResponse',
+    component: InvitationResponsePage,
+    props: true,
+    meta: { requiresAuth: true },
   },
   // Authenticated routes with layout
   {
@@ -85,6 +95,12 @@ const routes = [
         path: 'tiers',
         name: 'TiersPage',
         component: TiersPage,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'test/project-users',
+        name: 'TestProjectUsersPage',
+        component: TestProjectUsersPage,
         meta: { requiresAuth: true },
       },
       {
