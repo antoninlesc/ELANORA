@@ -2,11 +2,17 @@ import { defineStore } from 'pinia';
 
 export const useProjectStore = defineStore('project', {
   state: () => ({
+    currentProject: null, // { project_id: <int>, project_name: <string> }
     projects: [],
-    currentProject: null,
-    Projects: [],
     isLoading: false,
   }),
+
+  getters: {
+    projectId: (state) => state.currentProject?.project_id ?? null,
+    projectName: (state) => state.currentProject?.project_name ?? '',
+    projectList: (state) => state.projects ?? [],
+  },
+
   actions: {
     initializeFromStorage() {
       this.isLoading = true;
@@ -49,9 +55,6 @@ export const useProjectStore = defineStore('project', {
           'currentProject',
           JSON.stringify(this.currentProject)
         );
-      } else if (typeof this.currentProject === 'string') {
-        this.currentProject = newName;
-        localStorage.setItem('currentProject', JSON.stringify(newName));
       }
     },
   },

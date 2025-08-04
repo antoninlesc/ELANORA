@@ -1,16 +1,38 @@
+
+from pydantic import Field
+
 from app.schema.common.base import CustomBaseModel
-from typing import List, Optional
 
 
 class TierNode(CustomBaseModel):
     tier_id: int
     tier_name: str
-    parent_tier_id: Optional[int] = None
-    children: List["TierNode"] = []
+    parent_tier_id: int | None = None
+    children: list["TierNode"] = Field(default_factory=list)
 
 
 TierNode.model_rebuild()
 
 
 class TierTreeResponse(CustomBaseModel):
-    tiers: List[TierNode]
+    tiers: dict[str, list[TierNode]]
+
+
+
+
+
+class SectionInfo(CustomBaseModel):
+    section_id: int
+    name: str
+
+
+class TierGroupInfo(CustomBaseModel):
+    tier_group_id: int
+    elan_file_name: str
+    section_id: int | None
+    tiers: list[TierNode] = []
+
+
+class SectionsAndGroupsResponse(CustomBaseModel):
+    sections: list[SectionInfo]
+    tier_groups: list[TierGroupInfo]

@@ -10,6 +10,7 @@ from .annotation import Annotation
 
 # Base models with no dependencies
 from .annotation_standard import AnnotationStandard
+from .annotation_value import AnnotationValue
 
 # Association tables (import last)
 from .association import (
@@ -17,6 +18,7 @@ from .association import (
     CommentElanFile,
     CommentProject,
     ConflictOfElanFile,
+    ElanFileToMedia,
     ElanFileToProject,
     ElanFileToTier,
     ProjectAnnotStandard,
@@ -32,6 +34,7 @@ from .country import Country
 
 # Models with dependencies on user/project
 from .elan_file import ElanFile
+from .elan_file_media import ElanFileMedia
 from .enums import (
     CommentTargetType,
     ConflictSeverity,
@@ -41,14 +44,18 @@ from .enums import (
     ProjectPermission,
     UserRole,
 )
+from .file_type import FileType
 from .instance import Instance
 from .invitation import Invitation
 
 # Project model (depends on instance)
 from .project import Project
+from .project_naming_standard import ProjectNamingStandard
 
 # Tier and annotation models
 from .tier import Tier
+from .tier_group import TierGroup
+from .tier_section import TierSection
 
 # User model (depends on address)
 from .user import User
@@ -57,6 +64,7 @@ __all__ = [
     "Address",
     "Annotation",
     "AnnotationStandard",
+    "AnnotationValue",
     "City",
     "Comment",
     "CommentConflict",
@@ -70,15 +78,22 @@ __all__ = [
     "ConflictType",
     "Country",
     "ElanFile",
+    "ElanFileMedia",
+    "ElanFileToMedia",
     "ElanFileToProject",
     "ElanFileToTier",
+    "FileType",
     "Instance",
     "Invitation",
     "InvitationStatus",
+    "NamingComponent",
     "Project",
     "ProjectAnnotStandard",
+    "ProjectNamingStandard",
     "ProjectPermission",
     "Tier",
+    "TierGroup",
+    "TierSection",
     "User",
     "UserRole",
     "UserToProject",

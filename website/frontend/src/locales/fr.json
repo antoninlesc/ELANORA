@@ -1,4 +1,9 @@
-{
+{ 
+  "common": {
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "or": "ou"
+  },
   "app": {
     "title": "ELANORA"
   },
@@ -85,20 +90,21 @@
     "access_request_error": "Échec de l'envoi de la demande d'accès.",
     "retrieving_lab_info": "Récupération des informations du laboratoire..."
   },
-  "common": {
-    "or": "ou",
-    "loading": "Chargement...",
-    "logout": "Déconnexion"
-  },
-  "navigation": {
+
+  "appHeader": {
     "projects": "Projets",
     "dashboard": "Tableau de bord",
     "upload": "File Upload",
     "conflicts": "Conflits",
     "tiers": "Tiers",
-    "export": "Export"
+    "export": "Export",
+    "projectSection": {
+      "selectProject": "Sélectionnez un projet",
+      "noProjectAvailable": "Aucun projet disponible",
+      "loadError": "Échec du chargement des projets"
+    }
   },
-  "footer": {
+  "appFooter": {
     "platform_description": "Plateforme collaborative d'annotation linguistique pour les corpus ELAN.",
     "resources": "Ressources",
     "documentation": "Documentation",
@@ -261,7 +267,7 @@
     "email_label": "Adresse email",
     "email_placeholder": "Saisissez l'email du destinataire",
     "project_label": "Projet",
-    "select_project": "Sélectionnez un projet",
+    "selectProject": "Sélectionnez un projet",
     "project_required": "Veuillez sélectionner un projet",
     "message_label": "Message personnel (Optionnel)",
     "message_placeholder": "Ajoutez un message personnel à l'invitation",
@@ -351,5 +357,139 @@
       "verificationFailed": "Échec de la vérification de l'email",
       "resendFailed": "Échec de l'envoi du code de vérification"
     }
+  },
+
+  "projectsPage": {
+    "title": "Projets",
+    "subtitle": "Gérez vos projets et corpus linguistiques",
+    "createProject": "Créer un Nouveau Projet",
+    "noProjects": "Aucun projet disponible, créez votre premier projet !",
+    "project": {
+      "buttons": {
+        "settings": "Paramètres du projet",
+        "share": "Partager le projet",
+        "delete": "Supprimer le projet",
+        "Rename": "Renommer le projet"
+      }
+    }
+  },
+
+  "projectSettings": {
+    "title": "Configuration du projet {projectName}",
+    "subtitle": "Personnalisez les paramètres de votre projet",
+    "sectionNames": {
+      "sections": {
+        "technical": "Paramètres techniques",
+        "collaborators": "Collaborateurs",
+        "subsections": {
+          "fileTypes": "Types de Fichiers",
+          "namingStandards": "Normes de Nommage",
+          "membersAndAccess": "Membres et Accès",
+          "invitations": "Invitations"
+        }
+      }
+    }
+  },
+
+  "configureFileTypes": {
+    "title": "Gérer les types de fichiers pour votre projet",
+    "loading": "Chargement des types de fichiers...",
+    "empty": "Aucun type de fichier trouvé. Créez votre premier type de fichier !",
+    "createFileType": "Ajouter",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "name": "Nom",
+    "extension": "Extension",
+    "actions": "Actions",
+    "invalidName": "Entrez un nom valide (lettres, chiffres, espaces, tirets, underscores, 2-40 caractères).",
+    "invalidExtension": "Entrez une extension valide (ex. : .mp4, .txt, 1-10 lettres minuscules ou chiffres).",
+    "eventMessages": {
+      "addSuccess": "Type de fichier ajouté avec succès.",
+      "addFailed": "Échec de l'ajout du type de fichier.",
+      "updateSuccess": "Type de fichier mis à jour avec succès.",
+      "updateFailed": "Échec de la mise à jour du type de fichier.",
+      "deleteSuccess": "Type de fichier supprimé avec succès.",
+      "deleteFailed": "Échec de la suppression du type de fichier.",
+      "duplicateName": "Un type de fichier avec ce nom existe déjà.",
+      "cannotDeleteUsed": "Impossible de supprimer : Ce type de fichier est utilisé par une norme de nommage ou un composant. Veuillez d'abord supprimer la norme de nommage associée."
+    },
+    "deleteTitle": "Supprimer le type de fichier",
+    "deleteMessage": "Êtes-vous sûr de vouloir supprimer ce type de fichier ? Cette action est irréversible."
+  },
+
+  "configureNamingStandards": {
+    "title": "Configurer les normes de nommage pour votre projet",
+    "loading": "Chargement des normes de nommage...",
+    "empty": "Aucune norme de nommage configurée pour le moment.",
+    "import": "Importer depuis un autre projet",
+    "add": "Ajouter une norme",
+    "delete": "Supprimer la norme",
+    "cancel": "Annuler",
+    "name": "Nom de la norme",
+    "description": "Description",
+    "fileType": "Type de fichier",
+    "pattern": "Pattern",
+    "exampleFile": "Fichier exemple",
+    "extractRegex": "Extraire l'expression régulière",
+    "commaPattern": "Pattern à virgules (ex. : session,tâche,lettre1,_,lettre_signeur,numéro_signeur,_,caméra)",
+    "exampleCommaPatternDesc": "Exemple : {example}",
+    "acceptedSeparators": "Séparateurs acceptés",
+    "componentsTable": "Composants",
+    "componentName": "Nom du composant",
+    "componentRegex": "Expression régulière",
+    "componentDescription": "Description",
+    "componentAcceptedValues": "Valeurs acceptées",
+    "componentOrder": "Ordre",
+    "noteAcceptedValues": "Remarque : Vous avez saisi [{value}] comme valeur acceptée. Cela sera enregistré comme une seule valeur. Pour enregistrer plusieurs valeurs acceptées, séparez-les par une virgule ou un point-virgule (ex. : B,A,W ou B;A;W).",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette norme ? Cette action est irréversible.",
+    "deleteError": "Échec de la suppression de la norme.",
+    "patternExample": "Exemple de pattern",
+    "importModal": {
+      "selectProject": "Sélectionnez un projet depuis lequel importer :",
+      "chooseProject": "-- Choisissez un projet --",
+      "next": "Suivant",
+      "selectStandards": "Sélectionnez les normes à importer",
+      "allFiltered": "Toutes les normes du projet sélectionné ont été filtrées car elles sont déjà présentes dans ce projet sous le même nom et pour le même type de fichier.",
+      "noStandards": "Aucune norme trouvée dans ce projet.",
+      "fileTypeNotAvailable": "Type de fichier non disponible dans ce projet",
+      "importFileType": "Importer le type de fichier",
+      "pattern": "Pattern",
+      "description": "Description",
+      "exampleFilename": "Nom de fichier exemple",
+      "components": "Composants",
+      "importSelected": "Importer la sélection",
+      "importFailed": "Échec de l'importation des normes."
+    },
+    "eventMessages": {
+      "addSuccess": "Norme de nommage ajoutée avec succès.",
+      "addFailed": "Échec de l'ajout de la norme de nommage.",
+      "addFailedDuplicate": "Une norme de nommage avec ce nom et ce type de fichier existe déjà dans ce projet.",
+      "deleteSuccess": "Norme de nommage supprimée avec succès.",
+      "deleteFailed": "Échec de la suppression de la norme de nommage.",
+      "importSuccessstandard": "Normes de nommage importées avec succès.",
+      "importFailedStandard": "Échec de l'importation des normes de nommage.",
+      "importFailedDuplicateStandard": "Certaines normes de nommage pour le type de fichier sélectionné existent déjà sous le même nom dans ce projet. Veuillez les renommer avant d'importer.",
+      "importSuccessFileType": "Type de fichier importé avec succès.",
+      "importFailedFileType": "Échec de l'importation du type de fichier.",
+      "importFailedDuplicateFileType": "Un type de fichier avec ce nom existe déjà dans ce projet pour la même extension.",
+      "cannotDeleteUsedFileType": "Échec de la suppression du type de fichier : il est encore utilisé par une norme de nommage. Veuillez d'abord supprimer la norme de nommage associée."
+    },
+    "selectFileTypeFirst": "Veuillez sélectionner un type de fichier avant d'extraire l'expression régulière.",
+    "commaPatternRequired": "Veuillez entrer un pattern sous forme de liste séparée par des virgules.",
+    "exampleFileRequired": "Veuillez entrer un fichier exemple.",
+    "patternRequired": "Veuillez entrer un pattern valide.",
+    "patternExampleBlockCount": "Le pattern et le fichier exemple n'ont pas le même nombre de blocs.",
+    "invalidRange": "Plage invalide \"{value}\" pour \"{name}\".",
+    "acceptedValuesLength": "Toutes les valeurs acceptées pour \"{name}\" doivent comporter exactement {length} caractères.",
+    "invalidValue": "Valeur invalide \"{value}\" pour \"{name}\".",
+    "invalidRegex": "Expression régulière invalide pour \"{name}\".",
+    "acceptedValueDoesNotMatch": "La valeur acceptée \"{value}\" ne correspond pas à l'expression régulière \"{regex}\" pour \"{name}\".",
+    "valueExceedsDigits": "La valeur \"{value}\" dépasse {length} chiffres pour \"{name}\".",
+    "valuesExceedDigits": "Les valeurs de la plage \"{value}\" dépassent {length} chiffres pour \"{name}\".",
+    "pleaseEnterValue": "Veuillez entrer une valeur, une plage ou une liste.",
+    "rangeStartEnd": "Le début de la plage doit être inférieur ou égal à la fin.",
+    "enterSingleOrListOrRange": "Entrez une seule valeur, une liste séparée par des virgules/points-virgules, ou une plage (ex. : {example}).",
+    "invalidLength": "Longueur invalide pour \"{name}\".",
+    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra"
   }
 }

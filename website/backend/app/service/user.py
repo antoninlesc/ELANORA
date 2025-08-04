@@ -207,67 +207,50 @@ class UserService:
         phone_number: str | None = None,
         address_data: AddressRequest | None = None,
     ) -> User:
-        """Create a new user with bcrypt password hashing.
+        """Create a new user with bcrypt password hashing."""
+        try:
+            logger.info(f"Creating new user: {username}")
 
-        Args:
-            db (AsyncSession): Database session.
-            username (str): Username for the new user.
-            email (str): Email address.
-            password (str): Plain text password.
-            first_name (str): First name.
-            last_name (str): Last name.
-            affiliation (str): User affiliation.
-            department (str): User department.
-            is_verified (bool): Whether the account should be marked as verified.
-            phone_number (str | None): User's phone number (optional).
-            address_data (AddressRequest | None): User's address data (optional).
+            # Hash the password
+            hashed_password = cls.hash_password(password)
 
-        Returns:
-            User: The created user object.
+            # Determine activation code logic
+            activation_code = ""
+            if not is_verified:
+                # If email is not verified, generate activation code
+                activation_code = cls._generate_verification_code()
+                activation_code = cls._hash_verification_code(activation_code)
 
-        Raises:
-            ValueError: If user creation validation fails.
-            Exception: If database operation fails.
+            # Create address if provided
+            address_id = None
+            if address_data:
+                address = await AddressService.create_address(db, address_data)
+                address_id = address.address_id
 
-        """
-        logger.info(f"Creating new user: {username}")
+            # Create UserCreateData object
+            user_data = UserCreateData(
+                username=username,
+                hashed_password=hashed_password,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                phone_number=phone_number,
+                affiliation=affiliation,
+                department=department,
+                activation_code=activation_code,
+                is_verified_account=is_verified,
+                address_id=address_id,
+            )
 
-        # Hash the password
-        hashed_password = cls.hash_password(password)
+            # Create user in database
+            user = await create_user_in_db(db, user_data)
 
-        # Determine activation code logic
-        activation_code = ""
-        if not is_verified:
-            # If email is not verified, generate activation code
-            activation_code = cls._generate_verification_code()
-            activation_code = cls._hash_verification_code(activation_code)
-
-        # Create address if provided
-        address_id = None
-        if address_data:
-            address = await AddressService.create_address(db, address_data)
-            address_id = address.address_id
-
-        # Create UserCreateData object
-        user_data = UserCreateData(
-            username=username,
-            hashed_password=hashed_password,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            phone_number=phone_number,
-            affiliation=affiliation,
-            department=department,
-            activation_code=activation_code,
-            is_verified_account=is_verified,
-            address_id=address_id,
-        )
-
-        # Create user in database
-        user = await create_user_in_db(db, user_data)
-
-        logger.info(f"User created successfully: {user.username}")
-        return user
+            await db.commit()
+            logger.info(f"User created successfully: {user.username}")
+            return user
+        except Exception:
+            await db.rollback()
+            raise
 
     @classmethod
     async def update_password(
@@ -332,66 +315,62 @@ class UserService:
         user: User,
         profile_data: ProfileUpdateRequest,
     ) -> dict[str, Any]:
-        """Update user profile with validation.
+        """Update user profile with validation."""
+        try:
+            logger.info(f"Updating profile for user: {user.username}")
 
-        Args:
-            db (AsyncSession): Database session.
-            user (User): User object to update.
-            profile_data (ProfileUpdateRequest): Profile update data.
+            # Prepare update fields
+            update_fields = {}
+            updated_field_names = []
 
-        Returns:
-            Dict[str, Any]: Result with updated fields and success status.
-
-        """
-        logger.info(f"Updating profile for user: {user.username}")
-
-        # Prepare update fields
-        update_fields = {}
-        updated_field_names = []
-
-        field_mapping = {
-            "email": profile_data.email,
-            "first_name": profile_data.first_name,
-            "last_name": profile_data.last_name,
-            "phone_number": profile_data.phone_number,
-            "affiliation": profile_data.affiliation,
-            "department": profile_data.department,
-        }
-
-        for field_name, field_value in field_mapping.items():
-            if field_value is not None:
-                update_fields[field_name] = field_value
-                updated_field_names.append(field_name)
-
-        if not update_fields:
-            logger.warning(
-                f"Profile update attempted with no fields to update: {user.username}"
-            )
-            return {
-                "success": False,
-                "message": "No fields to update",
-                "updated_fields": [],
+            field_mapping = {
+                "email": profile_data.email,
+                "first_name": profile_data.first_name,
+                "last_name": profile_data.last_name,
+                "phone_number": profile_data.phone_number,
+                "affiliation": profile_data.affiliation,
+                "department": profile_data.department,
             }
 
-        update_fields["updated_at"] = datetime.now(UTC)
+            for field_name, field_value in field_mapping.items():
+                if field_value is not None:
+                    update_fields[field_name] = field_value
+                    updated_field_names.append(field_name)
 
-        # Update in database
-        success = await update_user_profile(db, user, **update_fields)
+            if not update_fields:
+                logger.warning(
+                    f"Profile update attempted with no fields to update: {user.username}"
+                )
+                return {
+                    "success": False,
+                    "message": "No fields to update",
+                    "updated_fields": [],
+                }
 
-        if success:
-            logger.info(
-                f"Profile updated successfully for user {user.username}: {updated_field_names}"
-            )
-        else:
-            logger.error(f"Profile update failed for user: {user.username}")
+            update_fields["updated_at"] = datetime.now(UTC)
 
-        return {
-            "success": success,
-            "message": "Profile updated successfully"
-            if success
-            else "Profile update failed",
-            "updated_fields": updated_field_names if success else [],
-        }
+            # Update in database
+            success = await update_user_profile(db, user, **update_fields)
+
+            if success:
+                await db.commit()
+                logger.info(
+                    f"Profile updated successfully for user {user.username}: {updated_field_names}"
+                )
+            else:
+                await db.rollback()
+                logger.error(f"Profile update failed for user: {user.username}")
+
+            return {
+                "success": success,
+                "message": "Profile updated successfully"
+                if success
+                else "Profile update failed",
+                "updated_fields": updated_field_names if success else [],
+            }
+        except Exception:
+            await db.rollback()
+            raise
 
     @classmethod
     async def check_username_availability(cls, db: AsyncSession, username: str) -> bool:

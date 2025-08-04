@@ -83,6 +83,20 @@ class ElanFileProcessor:
         logger.info(f"Found {len(files)} ELAN files in directory")
         return files
 
+    @staticmethod
+    def extract_media_descriptors(root: ET._Element) -> list[dict]:
+        """Extract all MEDIA_DESCRIPTOR elements from ELAN XML root."""
+        media_descriptors = []
+        for media_elem in root.findall(".//MEDIA_DESCRIPTOR", namespaces=None):
+            media_info = {
+                "media_url": media_elem.get("MEDIA_URL"),
+                "mime_type": media_elem.get("MIME_TYPE"),
+                "relative_media_url": media_elem.get("RELATIVE_MEDIA_URL"),
+            }
+            media_descriptors.append(media_info)
+        logger.info(f"Extracted {len(media_descriptors)} media descriptors")
+        return media_descriptors
+
 
 class XmlAttributeExtractor:
     """Utilities for extracting attributes from XML elements."""

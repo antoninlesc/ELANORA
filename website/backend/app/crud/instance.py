@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.model.instance import Instance
 from app.utils.database import DatabaseUtils
 
@@ -9,7 +10,7 @@ async def get_instance_count(db: AsyncSession) -> int:
 
 async def create_instance(db: AsyncSession, data: dict):
     instance = Instance(**data)
-    return await DatabaseUtils.create_and_commit(db, instance)
+    return await DatabaseUtils.create(db, instance)
 
 
 async def get_instance_by_name(db: AsyncSession, name: str):

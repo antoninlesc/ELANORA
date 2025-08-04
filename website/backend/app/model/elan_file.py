@@ -7,6 +7,7 @@ from app.db.database import Base
 
 if TYPE_CHECKING:
     from .tier import Tier
+    from .association import ElanFileToMedia
     from .user import User
 
 
@@ -25,6 +26,9 @@ class ElanFile(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="elan_files")
+    media_links: Mapped[list["ElanFileToMedia"]] = relationship(
+        "ElanFileToMedia", back_populates="elan_file", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         """Return a string representation of the ElanFile."""

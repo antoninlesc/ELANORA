@@ -125,8 +125,13 @@ class ProjectCheckoutResponse(CustomBaseModel):
     message: str | None = None
 
 
+class ProjectInfo(CustomBaseModel):
+    project_id: int
+    project_name: str
+
+
 class ProjectListResponse(CustomBaseModel):
-    projects: list[str]
+    projects: list[ProjectInfo]
 
 
 class ProjectRenameResponse(CustomBaseModel):

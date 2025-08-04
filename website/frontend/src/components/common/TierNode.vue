@@ -16,7 +16,7 @@
     <transition name="fade">
       <ul v-if="hasChildren && open" class="tiers-tree-children">
         <TierNode
-          v-for="child in tier.children"
+          v-for="child in sortedChildren"
           :key="child.tier_id"
           :tier="child"
         />
@@ -32,12 +32,31 @@ import TierNode from './TierNode.vue';
 const props = defineProps({
   tier: { type: Object, required: true },
 });
-const open = ref(true);
+
+const open = ref(false);
+
 const hasChildren = computed(
   () => props.tier.children && props.tier.children.length > 0
 );
+
+// Sort children: folders first (alphabetical), then files (alphabetical)
+const sortedChildren = computed(() => {
+  if (!props.tier.children) return [];
+  const folders = props.tier.children
+    .filter(
+      (child) => Array.isArray(child.children) && child.children.length > 0
+    )
+    .sort((a, b) => a.tier_name.localeCompare(b.tier_name));
+  const files = props.tier.children
+    .filter(
+      (child) => !Array.isArray(child.children) || child.children.length === 0
+    )
+    .sort((a, b) => a.tier_name.localeCompare(b.tier_name));
+  return [...folders, ...files];
+});
+
 function toggle() {
-  if (hasChildren.value) open.value = !open.value;
+  open.value = !open.value;
 }
 </script>
 

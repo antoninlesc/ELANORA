@@ -46,11 +46,6 @@ export const useUserStore = defineStore('user', {
           this.user = userResponse.data;
           this.authState.isAuthenticated = true;
           this.authState.initialized = true;
-          console.log(
-            'verifyAuthentication successful:',
-            userResponse.data,
-            this.authState.isAuthenticated
-          );
           return true;
         } else {
           this.clearAuth();
