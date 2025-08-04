@@ -69,14 +69,6 @@
               <font-awesome-icon icon="share" />
             </button>
             <button
-              v-if="isAdmin"
-              class="project-page-share-btn"
-              title="Share Project"
-              @click.stop="openShareModal(project)"
-            >
-              <font-awesome-icon icon="share" />
-            </button>
-            <button
               class="project-page-action-btn project-page-config-btn"
               :title="t('projectsPage.project.buttons.settings')"
               @click.stop="goToStandardsPage(project)"
