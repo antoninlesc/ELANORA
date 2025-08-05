@@ -1,5 +1,7 @@
 """Invitation API endpoints."""
 
+from typing import Any
+
 from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -91,4 +93,34 @@ async def get_received_invitations(
     return await invitation_service.get_user_invitations(
         db=db,
         email=email,
+    )
+
+
+@router.post("/accept/{invitation_id}")
+async def accept_invitation(
+    invitation_id: int,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> dict[str, Any]:
+    """Accept an invitation (for existing users)."""
+    invitation_service = InvitationService()
+    return await invitation_service.accept_invitation_by_user(
+        db=db,
+        invitation_id=invitation_id,
+        user_id=user.user_id,
+    )
+
+
+@router.post("/reject/{invitation_id}")
+async def reject_invitation(
+    invitation_id: int,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> dict[str, Any]:
+    """Reject an invitation (for existing users)."""
+    invitation_service = InvitationService()
+    return await invitation_service.reject_invitation_by_user(
+        db=db,
+        invitation_id=invitation_id,
+        user_id=user.user_id,
     )

@@ -46,3 +46,21 @@ export async function getSentInvitations() {
 export async function getReceivedInvitations(email) {
   return await axiosInstance.get(`/invitation/received/${email}`);
 }
+
+/**
+ * Accept an invitation (for existing users).
+ * @param {number} invitationId
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function acceptInvitation(invitationId) {
+  return await axiosInstance.post(`/invitation/accept/${invitationId}`);
+}
+
+/**
+ * Reject an invitation (for existing users).
+ * @param {number} invitationId
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function rejectInvitation(invitationId) {
+  return await axiosInstance.post(`/invitation/reject/${invitationId}`);
+}

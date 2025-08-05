@@ -264,6 +264,7 @@ async function fetchProjects() {
 }
 
 function selectProject(project) {
+  // Pass the complete project object to the store
   projectStore.setCurrentProject(project);
 }
 
@@ -371,7 +372,7 @@ async function deleteProject(projectName) {
 
 function openRenameDialog(project) {
   renamingProject.value = project;
-  renameInput.value = project.project_name;
+  renameInput.value = project.project_name || project;
   renameError.value = '';
   renameDialogVisible.value = true;
 }

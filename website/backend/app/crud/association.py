@@ -176,7 +176,9 @@ async def update_user_project(
 
 
 # --- ProjectFileType ---
-async def remove_file_type_from_project(db: AsyncSession, project_id: int, file_type_id: int):
+async def remove_file_type_from_project(
+    db: AsyncSession, project_id: int, file_type_id: int
+):
     await DatabaseUtils.delete_by_filter(
         db, ProjectFileType, project_id=project_id, file_type_id=file_type_id
     )
@@ -188,11 +190,14 @@ async def add_project_file_type(
     filters = {"project_id": project_id, "name": name}
     exists = await DatabaseUtils.get_one_by_filter(db, ProjectFileType, filters)
     if not exists:
-        assoc = ProjectFileType(project_id=project_id, name=name, file_type_id=file_type_id)
+        assoc = ProjectFileType(
+            project_id=project_id, name=name, file_type_id=file_type_id
+        )
         await DatabaseUtils.create(db, assoc)
         await db.flush()
         return assoc
     return exists
+
 
 async def get_project_file_types(db: AsyncSession, project_id: int):
     return await DatabaseUtils.get_by_filter(
@@ -202,14 +207,15 @@ async def get_project_file_types(db: AsyncSession, project_id: int):
         options=[selectinload(ProjectFileType.file_type)],
     )
 
-async def delete_project_file_type(db: AsyncSession, project_file_type_id: int, project_id: int):
+
+async def delete_project_file_type(
+    db: AsyncSession, project_file_type_id: int, project_id: int
+):
     # Delete the association between the project and the project file type
     await DatabaseUtils.delete_by_filter(
-        db,
-        ProjectFileType,
-        project_id=project_id,
-        id=project_file_type_id
+        db, ProjectFileType, project_id=project_id, id=project_file_type_id
     )
+
 
 async def update_project_file_type(
     db: AsyncSession, project_file_type_id: int, update_fields: dict
@@ -225,34 +231,53 @@ async def update_project_file_type(
             db, ProjectFileType, {"id": project_file_type_id}, allowed
         )
 
+
 async def get_project_file_type_by_id(db: AsyncSession, project_file_type_id: int):
     return await DatabaseUtils.get_one_by_filter(
-        db, ProjectFileType, {"id": project_file_type_id}, options=[selectinload(ProjectFileType.file_type)]
+        db,
+        ProjectFileType,
+        {"id": project_file_type_id},
+        options=[selectinload(ProjectFileType.file_type)],
     )
 
-async def count_project_file_types_by_file_type_id(db: AsyncSession, file_type_id: int) -> int:
-    return await DatabaseUtils.count(db, ProjectFileType, {"file_type_id": file_type_id})
 
-async def update_project_file_type_name(db: AsyncSession, project_file_type_id: int, name: str):
+async def count_project_file_types_by_file_type_id(
+    db: AsyncSession, file_type_id: int
+) -> int:
+    return await DatabaseUtils.count(
+        db, ProjectFileType, {"file_type_id": file_type_id}
+    )
+
+
+async def update_project_file_type_name(
+    db: AsyncSession, project_file_type_id: int, name: str
+):
     return await DatabaseUtils.update_by_filter(
         db, ProjectFileType, {"id": project_file_type_id}, {"name": name}
     )
 
-async def update_project_file_type_file_type_id(db: AsyncSession, project_file_type_id: int, new_file_type_id: int):
+
+async def update_project_file_type_file_type_id(
+    db: AsyncSession, project_file_type_id: int, new_file_type_id: int
+):
     return await DatabaseUtils.update_by_filter(
-        db, ProjectFileType, {"id": project_file_type_id}, {"file_type_id": new_file_type_id}
+        db,
+        ProjectFileType,
+        {"id": project_file_type_id},
+        {"file_type_id": new_file_type_id},
     )
+
 
 async def get_project_file_type_by_project_and_file_type(
     db, project_id: int, file_type_id: int
 ):
     """Get the ProjectFileType for a given project and file_type_id."""
     from app.model.project_file_type import ProjectFileType
+
     return await DatabaseUtils.get_one_by_filter(
-        db,
-        ProjectFileType,
-        {"project_id": project_id, "file_type_id": file_type_id}
+        db, ProjectFileType, {"project_id": project_id, "file_type_id": file_type_id}
     )
+
 
 async def get_project_file_type_with_file_type(db, project_file_type_id: int):
     result = await db.execute(

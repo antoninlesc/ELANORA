@@ -4,6 +4,7 @@ from app.model.component_template import ComponentTemplate
 from app.model.project_file_type import ProjectFileType
 from app.utils.database import DatabaseUtils
 
+
 async def get_or_create_component_template(
     db: AsyncSession, file_type_id: int, name: str, regex: str, description: str | None
 ) -> ComponentTemplate:
@@ -23,11 +24,17 @@ async def get_or_create_component_template(
     await db.flush()
     return template
 
+
 async def get_component_templates_by_file_type(db: AsyncSession, file_type_id: int):
-    return await DatabaseUtils.get_by_filter(db, ComponentTemplate, {"file_type_id": file_type_id})
+    return await DatabaseUtils.get_by_filter(
+        db, ComponentTemplate, {"file_type_id": file_type_id}
+    )
+
 
 async def get_unique_component_names_by_project(db: AsyncSession, project_id: int):
-    file_type_ids_stmt = select(ProjectFileType.file_type_id).where(ProjectFileType.project_id == project_id)
+    file_type_ids_stmt = select(ProjectFileType.file_type_id).where(
+        ProjectFileType.project_id == project_id
+    )
     file_type_ids_result = await db.execute(file_type_ids_stmt)
     file_type_ids = [row[0] for row in file_type_ids_result.all()]
     if not file_type_ids:
@@ -40,22 +47,21 @@ async def get_unique_component_names_by_project(db: AsyncSession, project_id: in
         order_by=ComponentTemplate.name,
     )
 
+
 async def delete_orphaned_component_templates(db: AsyncSession):
     from app.model.standard_component import StandardComponent
+
     try:
         # Delete ComponentTemplates not referenced by any StandardComponent
         result = await DatabaseUtils.delete_fully_orphaned(
-            db,
-            ComponentTemplate,
-            StandardComponent,
-            "id",
-            "component_template_id"
+            db, ComponentTemplate, StandardComponent, "id", "component_template_id"
         )
         await db.flush()
         return result
     except Exception:
         await db.rollback()
         raise
+
 
 async def get_by_id(db: AsyncSession, template_id: int):
     return await DatabaseUtils.get_by_id(db, ComponentTemplate, "id", template_id)

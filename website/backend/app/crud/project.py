@@ -89,7 +89,9 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
             db, TierSection, TierSection.project_id == project.project_id
         )
         # Delete all standards for this project
-        await ProjectNamingStandardService.delete_all_standards_by_project(db, project.project_id)
+        await ProjectNamingStandardService.delete_all_standards_by_project(
+            db, project.project_id
+        )
         # Now delete project associations (users, standards, file links)
         await delete_project_associations(db, project.project_id)
         await delete_orphaned_file_types(db)
@@ -169,3 +171,29 @@ async def list_projects_by_user(
 
     result = await db.execute(stmt)
     return list(result.scalars().all())
+
+
+async def update_user_project_permission(
+    db: AsyncSession,
+    user_id: int,
+    project_id: int,
+    permission: ProjectPermission,
+) -> UserToProject | None:
+    """Update a user's permission for a project."""
+    # Check if user is in the project
+    existing_membership = await user_in_project(db, user_id, project_id)
+    if not existing_membership:
+        logger.warning(
+            "User is not in project",
+            extra={
+                "user_id": user_id,
+                "project_id": project_id,
+            },
+        )
+        return None
+
+    # Update permission
+    existing_membership.permission = permission
+    await db.commit()
+    await db.refresh(existing_membership)
+    return existing_membership

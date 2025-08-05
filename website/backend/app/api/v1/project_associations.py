@@ -9,12 +9,16 @@ from app.crud.project import (
     get_project_by_name,
     list_projects_by_instance,
     list_projects_by_user,
+    update_user_project_permission,
 )
 from app.crud.user import get_all_active_users, get_user_by_id
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep
 from app.model.user import User
-from app.schema.requests.project_association import AddUserToProjectRequest
+from app.schema.requests.project_association import (
+    AddUserToProjectRequest,
+    UpdateUserPermissionRequest,
+)
 from app.schema.responses.project_association import (
     ProjectAssociationResponse,
     ProjectUserListResponse,
@@ -127,6 +131,56 @@ async def add_user_to_project_admin(
             username=target_user.username,
             permission=association.permission,
             message=f"User {target_user.username} added to project {project_name}",
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.put(
+    "/projects/{project_name}/users/{user_id}",
+    response_model=ProjectAssociationResponse,
+)
+async def update_user_project_permission_admin(
+    project_name: str,
+    user_id: int,
+    request: UpdateUserPermissionRequest,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Update a user's permission in a project (admin only)."""
+    try:
+        # check if the project exists
+        project = await get_project_by_name(db, project_name)
+        if not project:
+            raise HTTPException(status_code=404, detail=PROJECT_NOT_FOUND)
+
+        # check if the user exists
+        target_user = await get_user_by_id(db, user_id)
+        if not target_user:
+            raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
+
+        # Update the user's permission
+        association = await update_user_project_permission(
+            db=db,
+            user_id=user_id,
+            project_id=project.project_id,
+            permission=request.permission,
+        )
+
+        if not association:
+            raise HTTPException(
+                status_code=404, detail="User is not associated with this project"
+            )
+
+        return ProjectAssociationResponse(
+            project_name=project_name,
+            user_id=user_id,
+            username=target_user.username,
+            permission=association.permission,
+            message=f"User {target_user.username} permission updated to {request.permission} in project {project_name}",
         )
 
     except ValueError as e:
