@@ -264,8 +264,8 @@ async function fetchProjects() {
 }
 
 function selectProject(project) {
-  const projectName = project.project_name || project;
-  projectStore.setCurrentProject(projectName);
+  // Pass the complete project object to the store
+  projectStore.setCurrentProject(project);
 }
 
 async function createProject() {
