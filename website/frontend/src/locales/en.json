@@ -397,10 +397,41 @@
         "subsections" : {
           "fileTypes": "File Types",
           "namingStandards": "Naming Standards",
-          "membersAndAccess": "Members and Access",
+          "members": "Members and Access",
           "invitations": "Invitations"
         }
       }
+    },
+    "members": {
+      "title": "Members Management",
+      "add_member": "Add Member",
+      "no_members": "No members found",
+      "no_members_desc": "Add members to start collaborating on this project",
+      "no_project_selected": "No project selected",
+      "load_error": "Error loading members",
+      "permission_updated": "Permission updated successfully",
+      "permission_update_error": "Error updating permission",
+      "user_added": "User added successfully",
+      "add_error": "Error adding user",
+      "user_removed": "User removed successfully",
+      "remove_error": "Error removing user",
+      "add_modal": {
+        "title": "Add New Member",
+        "user_id": "User ID",
+        "user_id_placeholder": "Enter user ID",
+        "permission": "Permission"
+      },
+      "remove_modal": {
+        "title": "Remove Member",
+        "message": "Are you sure you want to remove {username} from this project?",
+        "warning": "This action will permanently remove this user's access to the project."
+      }
+    },
+    "permissions": {
+      "read": "Read",
+      "write": "Write",
+      "admin": "Administrator",
+      "owner": "Owner"
     }
   },
 

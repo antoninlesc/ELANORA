@@ -384,10 +384,77 @@
         "subsections": {
           "fileTypes": "Types de Fichiers",
           "namingStandards": "Normes de Nommage",
-          "membersAndAccess": "Membres et Accès",
+          "members": "Membres et Accès",
           "invitations": "Invitations"
         }
       }
+    },
+    "members": {
+      "title": "Gestion des membres",
+      "add_member": "Ajouter un membre",
+      "no_members": "Aucun membre trouvé",
+      "no_members_desc": "Ajoutez des membres pour commencer à collaborer sur ce projet",
+      "no_project_selected": "Aucun projet sélectionné",
+      "load_error": "Erreur lors du chargement des membres",
+      "permission_updated": "Permission mise à jour avec succès",
+      "permission_update_error": "Erreur lors de la mise à jour de la permission",
+      "user_added": "Utilisateur ajouté avec succès",
+      "add_error": "Erreur lors de l'ajout de l'utilisateur",
+      "user_removed": "Utilisateur supprimé avec succès",
+      "remove_error": "Erreur lors de la suppression de l'utilisateur",
+      "add_modal": {
+        "title": "Ajouter un nouveau membre",
+        "user_id": "ID de l'utilisateur",
+        "user_id_placeholder": "Entrez l'ID de l'utilisateur",
+        "permission": "Permission"
+      },
+      "remove_modal": {
+        "title": "Supprimer le membre",
+        "message": "Êtes-vous sûr de vouloir supprimer {username} de ce projet ?",
+        "warning": "Cette action supprimera définitivement l'accès de cet utilisateur au projet."
+      }
+    },
+    "invitations": {
+      "title": "Invitations en attente",
+      "send_invitation": "Envoyer une invitation",
+      "no_invitations": "Aucune invitation en attente",
+      "no_invitations_desc": "Envoyez des invitations pour inviter de nouveaux collaborateurs",
+      "load_error": "Erreur lors du chargement des invitations",
+      "sent_on": "Envoyée le",
+      "resend": "Renvoyer",
+      "cancel": "Annuler l'invitation",
+      "invitation_sent": "Invitation envoyée avec succès",
+      "send_error": "Erreur lors de l'envoi de l'invitation",
+      "invitation_resent": "Invitation renvoyée avec succès",
+      "resend_error": "Erreur lors du renvoi de l'invitation",
+      "invitation_canceled": "Invitation annulée avec succès",
+      "cancel_error": "Erreur lors de l'annulation de l'invitation",
+      "send": "Envoyer",
+      "status": {
+        "pending": "En attente",
+        "accepted": "Acceptée",
+        "declined": "Refusée",
+        "expired": "Expirée"
+      },
+      "send_modal": {
+        "title": "Envoyer une invitation",
+        "email": "Adresse e-mail",
+        "email_placeholder": "exemple@domaine.com",
+        "permission": "Permission",
+        "message": "Message personnalisé (optionnel)",
+        "message_placeholder": "Ajoutez un message personnel à votre invitation..."
+      },
+      "cancel_modal": {
+        "title": "Annuler l'invitation",
+        "message": "Êtes-vous sûr de vouloir annuler l'invitation envoyée à {email} ?",
+        "warning": "Cette action supprimera définitivement l'invitation et l'utilisateur ne pourra plus rejoindre le projet avec ce lien."
+      }
+    },
+    "permissions": {
+      "read": "Lecture",
+      "write": "Écriture",
+      "admin": "Administrateur",
+      "owner": "Propriétaire"
     }
   },
 
