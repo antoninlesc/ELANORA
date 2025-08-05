@@ -10,6 +10,7 @@ from app.crud.invitation import (
     get_invitation_by_code,
     get_invitation_by_id,
     get_invitations_by_email,
+    get_invitations_by_project,
     get_invitations_by_sender,
     get_pending_invitations_by_email,
     update_invitation_status,
@@ -455,6 +456,45 @@ class InvitationService:
                 "Failed to get sent invitations",
                 extra={
                     "sender_id": sender_id,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            return InvitationListResponse(invitations=[], total=0)
+
+    async def get_project_invitations(
+        self,
+        db: AsyncSession,
+        project_name: str,
+    ) -> InvitationListResponse:
+        """Get all invitations for a specific project."""
+        try:
+            # Get project by name first
+            project = await get_project_by_name(db, project_name)
+            if not project:
+                logger.warning(
+                    "Project not found",
+                    extra={"project_name": project_name},
+                )
+                return InvitationListResponse(invitations=[], total=0)
+
+            # Get invitations for this project
+            invitations = await get_invitations_by_project(db, project.project_id)
+            invitation_responses = []
+
+            for invitation in invitations:
+                response = await self._convert_to_response(db, invitation)
+                invitation_responses.append(response)
+
+            return InvitationListResponse(
+                invitations=invitation_responses, total=len(invitation_responses)
+            )
+
+        except Exception as e:
+            logger.error(
+                "Failed to get project invitations",
+                extra={
+                    "project_name": project_name,
                     "error": str(e),
                 },
                 exc_info=True,

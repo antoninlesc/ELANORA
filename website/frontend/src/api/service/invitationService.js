@@ -39,6 +39,15 @@ export async function getSentInvitations() {
 }
 
 /**
+ * Get invitations for a specific project.
+ * @param {string} projectName
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function getProjectInvitations(projectName) {
+  return await axiosInstance.get(`/invitation/project/${encodeURIComponent(projectName)}`);
+}
+
+/**
  * Get invitations received by email.
  * @param {string} email
  * @returns {Promise<import('axios').AxiosResponse>}
@@ -63,4 +72,24 @@ export async function acceptInvitation(invitationId) {
  */
 export async function rejectInvitation(invitationId) {
   return await axiosInstance.post(`/invitation/reject/${invitationId}`);
+}
+
+/**
+ * Resend an invitation.
+ * @param {number} invitationId
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function resendInvitation(invitationId) {
+  // TODO: Implement endpoint in backend
+  throw new Error('Resend invitation functionality not yet implemented in backend');
+}
+
+/**
+ * Cancel an invitation.
+ * @param {number} invitationId
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function cancelInvitation(invitationId) {
+  // TODO: Implement endpoint in backend
+  throw new Error('Cancel invitation functionality not yet implemented in backend');
 }

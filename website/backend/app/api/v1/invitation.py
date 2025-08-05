@@ -96,6 +96,27 @@ async def get_received_invitations(
     )
 
 
+@router.get("/project/{project_name}", response_model=InvitationListResponse)
+async def get_project_invitations(
+    project_name: str,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> InvitationListResponse:
+    """Get invitations for a specific project (Admin only)."""
+    # Check if user is admin
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can view project invitations",
+        )
+
+    invitation_service = InvitationService()
+    return await invitation_service.get_project_invitations(
+        db=db,
+        project_name=project_name,
+    )
+
+
 @router.post("/accept/{invitation_id}")
 async def accept_invitation(
     invitation_id: int,

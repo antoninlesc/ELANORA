@@ -44,7 +44,7 @@
             <div class="invitation-email">
               <span class="email-icon">📧</span>
               <div class="email-details">
-                <div class="email-address">{{ invitation.email }}</div>
+                <div class="email-address">{{ invitation.receiver_email }}</div>
                 <div class="invitation-date">
                   {{ t('projectSettings.invitations.sent_on') }} 
                   {{ formatDate(invitation.created_at) }}
@@ -54,8 +54,8 @@
           </div>
           
           <div class="invitation-permission">
-            <span class="permission-badge" :class="invitation.permission">
-              {{ t(`projectSettings.permissions.${invitation.permission}`) }}
+            <span class="permission-badge" :class="invitation.project_permission">
+              {{ t(`projectSettings.permissions.${invitation.project_permission}`) }}
             </span>
           </div>
           
@@ -151,7 +151,7 @@
         </div>
         
         <div class="modal-body">
-          <p>{{ t('projectSettings.invitations.cancel_modal.message', { email: invitationToCancel?.email }) }}</p>
+          <p>{{ t('projectSettings.invitations.cancel_modal.message', { email: invitationToCancel?.receiver_email }) }}</p>
           <p class="warning-text">{{ t('projectSettings.invitations.cancel_modal.warning') }}</p>
         </div>
         
@@ -174,14 +174,21 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@/stores/eventMessage';
-// Import your invitation service here
-// import { getProjectInvitations, sendProjectInvitation, resendProjectInvitation, cancelProjectInvitation } from '@/api/service/invitationService';
+import { useProjectStore } from '@/stores/project';
+import { 
+  getProjectInvitations, 
+  sendInvitation as sendInvitationAPI, 
+  resendInvitation as resendInvitationAPI, 
+  cancelInvitation as cancelInvitationAPI 
+} from '@/api/service/invitationService';
 
 const { t } = useI18n();
 const route = useRoute();
 const eventMessageStore = useEventMessageStore();
+const projectStore = useProjectStore();
 
 const projectId = computed(() => Number(route.params.projectId));
+const projectName = computed(() => projectStore.projectName);
 
 // Props - in a real implementation, you'd get the current user role from a store
 const currentUserRole = ref('admin'); // This should come from props or store
@@ -219,30 +226,20 @@ const loadInvitations = async () => {
   error.value = '';
   
   try {
-    // Mock data for demonstration - replace with actual API call
-    // const response = await getProjectInvitations(projectId.value);
+    if (!projectName.value) {
+      console.warn('No project name available');
+      invitations.value = [];
+      return;
+    }
     
-    // Mock response
-    invitations.value = [
-      {
-        invitation_id: 1,
-        email: 'user@example.com',
-        permission: 'read',
-        status: 'pending',
-        created_at: new Date().toISOString(),
-      },
-      {
-        invitation_id: 2,
-        email: 'admin@example.com',
-        permission: 'admin',
-        status: 'expired',
-        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      }
-    ];
+    const response = await getProjectInvitations(projectName.value);
+    // La réponse du backend est une InvitationListResponse avec { invitations: [], total: number }
+    invitations.value = response.data.invitations || [];
     
   } catch (err) {
     console.error('Error loading invitations:', err);
     error.value = err.response?.data?.detail || t('projectSettings.invitations.load_error');
+    invitations.value = [];
   } finally {
     loading.value = false;
   }
@@ -269,12 +266,29 @@ const sendInvitation = async () => {
   sendingInvitation.value = true;
   
   try {
-    // Implementation will be added when the invitation service is ready
-    console.log('Sending invitation to:', newInvitation.email);
+    if (!projectName.value) {
+      eventMessageStore.addMessage('projectSettings.invitations.no_project_error', 'error');
+      return;
+    }
+
+    const invitationData = {
+      receiver_email: newInvitation.email,
+      project_name: projectName.value,
+      message: newInvitation.message,
+      language: 'fr', // You might want to get this from i18n or user preferences
+      expires_in_days: 7,
+      project_permission: newInvitation.permission
+    };
+
+    const response = await sendInvitationAPI(invitationData);
     
-    eventMessageStore.addMessage('projectSettings.invitations.invitation_sent', 'success');
-    closeInviteModal();
-    await loadInvitations(); // Refresh the list
+    if (response.data.success !== false) {
+      eventMessageStore.addMessage('projectSettings.invitations.invitation_sent', 'success');
+      closeInviteModal();
+      await loadInvitations(); // Refresh the list
+    } else {
+      eventMessageStore.addMessage('projectSettings.invitations.send_error', 'error');
+    }
   } catch (err) {
     console.error('Error sending invitation:', err);
     eventMessageStore.addMessage(
@@ -290,13 +304,15 @@ const resendInvitation = async (invitation) => {
   processingInvitations.value.add(invitation.invitation_id);
   
   try {
-    // Implementation will be added when the invitation service is ready
-    console.log('Resending invitation for:', invitation.invitation_id);
+    await resendInvitationAPI(invitation.invitation_id);
     eventMessageStore.addMessage('projectSettings.invitations.invitation_resent', 'success');
     await loadInvitations();
   } catch (err) {
     console.error('Error resending invitation:', err);
-    eventMessageStore.addMessage('projectSettings.invitations.resend_error', 'error');
+    eventMessageStore.addMessage(
+      err.response?.data?.detail || 'projectSettings.invitations.resend_error', 
+      'error'
+    );
   } finally {
     processingInvitations.value.delete(invitation.invitation_id);
   }
@@ -318,21 +334,33 @@ const cancelInvitation = async () => {
   cancelingInvitation.value = true;
   
   try {
-    // Implementation will be added when the invitation service is ready
-    console.log('Canceling invitation for:', invitationToCancel.value.invitation_id);
+    await cancelInvitationAPI(invitationToCancel.value.invitation_id);
     eventMessageStore.addMessage('projectSettings.invitations.invitation_canceled', 'success');
     closeCancelModal();
     await loadInvitations(); // Refresh the list
   } catch (err) {
     console.error('Error canceling invitation:', err);
-    eventMessageStore.addMessage('projectSettings.invitations.cancel_error', 'error');
+    eventMessageStore.addMessage(
+      err.response?.data?.detail || 'projectSettings.invitations.cancel_error', 
+      'error'
+    );
   } finally {
     cancelingInvitation.value = false;
   }
 };
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  // Ensure project is loaded before loading invitations
+  if (!projectStore.currentProject && !projectStore.isLoading) {
+    projectStore.initializeFromStorage();
+  }
+  
+  // Wait a bit for project to be loaded if needed
+  if (!projectName.value && projectStore.isLoading) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
   loadInvitations();
 });
 
