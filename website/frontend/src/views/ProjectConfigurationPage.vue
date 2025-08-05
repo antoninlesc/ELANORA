@@ -71,6 +71,7 @@ const ConfigurePendingInvitations = {
 import { ref, computed } from 'vue';
 import { useProjectStore } from '@stores/project.js';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 
 import '@/assets/css/ProjectConfigurationPage.css';
 
@@ -89,10 +90,16 @@ function toggleSection(section) {
     openSections.value.splice(idx, 1);
   }
 }
-
+const route = useRoute();
 const { t } = useI18n();
 const projectStore = useProjectStore();
-const projectName = computed(() => projectStore.projectName || '');
+const projectId = computed(() => Number(route.params.projectId));
+const projectName = computed(() => {
+  const project = projectStore.projects.find(
+    (p) => p.project_id === projectId.value
+  );
+  return project ? project.project_name : '';
+});
 
 const titleParts = computed(() => {
   // Get the translation with a unique placeholder
