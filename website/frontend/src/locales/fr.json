@@ -2,7 +2,13 @@
   "common": {
     "confirm": "Confirmer",
     "cancel": "Annuler",
-    "or": "ou"
+    "or": "ou",
+    "loading": "Chargement...",
+    "retry": "Réessayer",
+    "sending": "Envoi en cours",
+    "no": "Non",
+    "yes_cancel": "Oui, annuler",
+    "canceling": "Annulation en cours"
   },
   "app": {
     "title": "ELANORA"
@@ -420,6 +426,7 @@
       "no_invitations": "Aucune invitation en attente",
       "no_invitations_desc": "Envoyez des invitations pour inviter de nouveaux collaborateurs",
       "load_error": "Erreur lors du chargement des invitations",
+      "no_project_error": "Aucun projet sélectionné",
       "sent_on": "Envoyée le",
       "resend": "Renvoyer",
       "cancel": "Annuler l'invitation",

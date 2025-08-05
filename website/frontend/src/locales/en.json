@@ -2,7 +2,13 @@
   "common": {
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "or": "or"
+    "or": "or",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "sending": "Sending",
+    "no": "No",
+    "yes_cancel": "Yes, Cancel",
+    "canceling": "Canceling"
   },
 
   "app": {
@@ -432,6 +438,43 @@
       "write": "Write",
       "admin": "Administrator",
       "owner": "Owner"
+    },
+    "invitations": {
+      "title": "Pending Invitations",
+      "send_invitation": "Send Invitation",
+      "no_invitations": "No pending invitations",
+      "no_invitations_desc": "There are currently no pending invitations for this project.",
+      "sent_on": "Sent on",
+      "resend": "Resend",
+      "cancel": "Cancel",
+      "send_modal": {
+        "title": "Send Project Invitation",
+        "email": "Email Address",
+        "email_placeholder": "Enter recipient's email address",
+        "permission": "Permission Level",
+        "message": "Personal Message",
+        "message_placeholder": "Add a personal message to the invitation (optional)"
+      },
+      "send": "Send Invitation",
+      "cancel_modal": {
+        "title": "Cancel Invitation",
+        "message": "Are you sure you want to cancel the invitation for {email}?",
+        "warning": "This action cannot be undone."
+      },
+      "status": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "declined": "Declined",
+        "expired": "Expired"
+      },
+      "load_error": "Failed to load invitations",
+      "no_project_error": "No project selected",
+      "invitation_sent": "Invitation sent successfully",
+      "send_error": "Failed to send invitation",
+      "invitation_resent": "Invitation resent successfully",
+      "resend_error": "Failed to resend invitation",
+      "invitation_canceled": "Invitation canceled successfully",
+      "cancel_error": "Failed to cancel invitation"
     }
   },
 
