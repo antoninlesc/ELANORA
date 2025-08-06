@@ -51,20 +51,27 @@
           </div>
           
           <div class="member-permission">
-            <select
-              v-if="canEditUser(user)"
-              v-model="user.permission"
-              class="permission-select"
-              :disabled="updatingUsers.has(user.user_id)"
-              @change="updateUserPermissionHandler(user)"
-            >
-              <option value="read">{{ t('projectSettings.permissions.read') }}</option>
-              <option value="write">{{ t('projectSettings.permissions.write') }}</option>
-              <option value="admin">{{ t('projectSettings.permissions.admin') }}</option>
-              <option v-if="user.permission === 'owner'" value="owner">
-                {{ t('projectSettings.permissions.owner') }}
-              </option>
-            </select>
+            <div v-if="canEditUser(user)" class="permission-selector">
+              <select
+                :value="user.permission"
+                :disabled="updatingUsers.has(user.user_id)"
+                class="permission-select"
+                :class="{ updating: updatingUsers.has(user.user_id) }"
+                @change="handlePermissionChange(user, $event.target.value)"
+              >
+                <option
+                  v-for="permission in getAvailablePermissions(user)"
+                  :key="permission"
+                  :value="permission"
+                  :class="permission"
+                >
+                  {{ t(`projectSettings.permissions.${permission}`) }}
+                </option>
+              </select>
+              <div v-if="updatingUsers.has(user.user_id)" class="update-spinner">
+                <div class="spinner-small"></div>
+              </div>
+            </div>
             <span v-else class="permission-badge" :class="user.permission">
               {{ t(`projectSettings.permissions.${user.permission}`) }}
             </span>
@@ -133,38 +140,15 @@
         </form>
       </div>
     </div>
-
-    <!-- Confirm Remove Modal -->
-    <div v-if="showRemoveModal" class="modal-overlay" @click="closeRemoveModal">
-      <div class="modal-content confirm-modal" @click.stop>
-        <div class="modal-header">
-          <h4>{{ t('projectSettings.members.remove_modal.title') }}</h4>
-        </div>
-        
-        <div class="modal-body">
-          <p>{{ t('projectSettings.members.remove_modal.message', { username: userToRemove?.username }) }}</p>
-          <p class="warning-text">{{ t('projectSettings.members.remove_modal.warning') }}</p>
-        </div>
-        
-        <div class="modal-actions">
-          <button class="btn-cancel" @click="closeRemoveModal">
-            {{ t('common.cancel') }}
-          </button>
-          <button class="btn-danger" :disabled="removingUser" @click="removeUser">
-            <span v-if="removingUser" class="loading-text">{{ t('common.removing') }}...</span>
-            <span v-else>{{ t('common.remove') }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue';
+import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useProjectStore } from '@/stores/project';
 import { useEventMessageStore } from '@/stores/eventMessage';
+import { useUserConfirm } from '@/composables/useUserConfirm';
 import {
   getProjectUsers,
   addUserToProject,
@@ -175,6 +159,7 @@ import {
 const { t } = useI18n();
 const projectStore = useProjectStore();
 const eventMessageStore = useEventMessageStore();
+const userConfirm = useUserConfirm();
 
 const projectName = computed(() => projectStore.projectName);
 
@@ -188,8 +173,6 @@ const error = ref('');
 
 // Modal states
 const showAddUserModal = ref(false);
-const showRemoveModal = ref(false);
-const userToRemove = ref(null);
 
 // Operation states
 const updatingUsers = ref(new Set());
@@ -256,14 +239,65 @@ const canRemoveUser = (user) => {
   return true;
 };
 
-const updateUserPermissionHandler = async (user) => {
+const getAvailablePermissions = (user) => {
+  const allPermissions = ['read', 'write', 'admin'];
+  
+  // Filter permissions based on current user role
+  if (currentUserRole.value === 'owner') {
+    return allPermissions;
+  } else if (currentUserRole.value === 'admin') {
+    // Admins can only set read/write permissions
+    return ['read', 'write'];
+  }
+  
+  return [];
+};
+
+const handlePermissionChange = async (user, newPermission) => {
+  if (user.permission === newPermission) return;
+  
+  const oldPermission = user.permission;
+  const confirmed = await userConfirm({
+    title: t('projectSettings.members.confirm_permission_change.title'),
+    message: t('projectSettings.members.confirm_permission_change.message', {
+      username: user.username,
+      oldPermission: t(`projectSettings.permissions.${oldPermission}`),
+      newPermission: t(`projectSettings.permissions.${newPermission}`)
+    }),
+    confirmText: t('common.confirm'),
+    cancelText: t('common.cancel')
+  });
+  
+  if (confirmed) {
+    await updateUserPermissionHandler(user, newPermission);
+  } else {
+    // Force re-render to reset select value
+    nextTick(() => {
+      const selectElement = event.target;
+      if (selectElement) {
+        selectElement.value = oldPermission;
+      }
+    });
+  }
+};
+
+const confirmPermissionChange = async (user, newPermission) => {
+  return handlePermissionChange(user, newPermission);
+};
+
+const updateUserPermissionHandler = async (user, newPermission = null) => {
+  const permission = newPermission || user.permission;
+  const oldPermission = user.permission;
+  
+  // Optimistically update the UI
+  user.permission = permission;
   updatingUsers.value.add(user.user_id);
   
   try {
     const response = await updateUserPermission(
       projectName.value,
       user.user_id,
-      { permission: user.permission }
+      { permission }
     );
     
     if (response.data) {
@@ -271,11 +305,24 @@ const updateUserPermissionHandler = async (user) => {
     }
   } catch (err) {
     console.error('Error updating user permission:', err);
+    // Revert the change
+    user.permission = oldPermission;
     eventMessageStore.addMessage('projectSettings.members.permission_update_error', 'error');
-    // Reload users to reset the select value
-    await loadUsers();
   } finally {
     updatingUsers.value.delete(user.user_id);
+  }
+};
+
+const confirmRemoveUser = async (user) => {
+  const confirmed = await userConfirm({
+    title: t('projectSettings.members.confirm_remove.title'),
+    message: t('projectSettings.members.confirm_remove.message', { username: user.username }),
+    confirmText: t('common.remove'),
+    cancelText: t('common.cancel')
+  });
+  
+  if (confirmed) {
+    await removeUser(user);
   }
 };
 
@@ -310,30 +357,19 @@ const addUser = async () => {
   }
 };
 
-const confirmRemoveUser = (user) => {
-  userToRemove.value = user;
-  showRemoveModal.value = true;
-};
-
-const closeRemoveModal = () => {
-  showRemoveModal.value = false;
-  userToRemove.value = null;
-};
-
-const removeUser = async () => {
-  if (!userToRemove.value) return;
+const removeUser = async (user) => {
+  if (!user) return;
   
   removingUser.value = true;
   
   try {
     const response = await removeUserFromProject(
       projectName.value,
-      userToRemove.value.user_id
+      user.user_id
     );
     
     if (response.data) {
       eventMessageStore.addMessage('projectSettings.members.user_removed', 'success');
-      closeRemoveModal();
       await loadUsers(); // Refresh the list
     }
   } catch (err) {
@@ -531,20 +567,65 @@ defineExpose({
   color: #6b7280;
 }
 
+
+
 .permission-select {
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border-radius: 8px;
   background: white;
   font-size: 0.875rem;
-  min-width: 100px;
+  min-width: 120px;
   cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+}
+
+.permission-select:hover:not(:disabled) {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.permission-select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .permission-select:disabled {
   background: #f3f4f6;
   color: #6b7280;
   cursor: not-allowed;
+  border-color: #e5e7eb;
+}
+
+.permission-select.updating {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: wait;
+}
+
+.update-spinner {
+  display: flex;
+  align-items: center;
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #6366f1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .permission-badge {
@@ -573,6 +654,27 @@ defineExpose({
 
 .permission-badge.owner {
   background: #ede9fe;
+  color: #6b21a8;
+}
+
+/* Styles pour les options du select */
+.permission-select option.read {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.permission-select option.write {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.permission-select option.admin {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.permission-select option.owner {
+  background-color: #ede9fe;
   color: #6b21a8;
 }
 

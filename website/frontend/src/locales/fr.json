@@ -8,7 +8,11 @@
     "sending": "Envoi en cours",
     "no": "Non",
     "yes_cancel": "Oui, annuler",
-    "canceling": "Annulation en cours"
+    "canceling": "Annulation en cours",
+    "add": "Ajouter",
+    "adding": "Ajout en cours",
+    "remove": "Supprimer",
+    "removing": "Suppression en cours"
   },
   "app": {
     "title": "ELANORA"
@@ -418,6 +422,14 @@
         "title": "Supprimer le membre",
         "message": "Êtes-vous sûr de vouloir supprimer {username} de ce projet ?",
         "warning": "Cette action supprimera définitivement l'accès de cet utilisateur au projet."
+      },
+      "confirm_permission_change": {
+        "title": "Confirmer le changement de permission",
+        "message": "Voulez-vous changer la permission de {username} de {oldPermission} à {newPermission} ?"
+      },
+      "confirm_remove": {
+        "title": "Supprimer le membre",
+        "message": "Êtes-vous sûr de vouloir supprimer {username} de ce projet ?"
       }
     },
     "invitations": {

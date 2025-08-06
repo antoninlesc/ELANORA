@@ -1,4 +1,4 @@
-{ 
+{
   "common": {
     "confirm": "Confirm",
     "cancel": "Cancel",
@@ -7,8 +7,12 @@
     "retry": "Retry",
     "sending": "Sending",
     "no": "No",
-    "yes_cancel": "Yes, Cancel",
-    "canceling": "Canceling"
+    "yes_cancel": "Yes, cancel",
+    "canceling": "Canceling",
+    "add": "Add",
+    "adding": "Adding",
+    "remove": "Remove",
+    "removing": "Removing"
   },
 
   "app": {
@@ -431,6 +435,14 @@
         "title": "Remove Member",
         "message": "Are you sure you want to remove {username} from this project?",
         "warning": "This action will permanently remove this user's access to the project."
+      },
+      "confirm_permission_change": {
+        "title": "Confirm Permission Change",
+        "message": "Are you sure you want to change {username}'s permission from {oldPermission} to {newPermission}?"
+      },
+      "confirm_remove": {
+        "title": "Remove Member",
+        "message": "Are you sure you want to remove {username} from this project?"
       }
     },
     "permissions": {
