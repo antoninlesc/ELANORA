@@ -118,8 +118,7 @@ import {
   moveTierGroup,
 } from '@/api/service/tierService';
 import TierTree from '@/components/common/TierTree.vue';
-import { VueDraggable as draggable } from 'vue-draggable-plus';
-
+import draggable from 'vuedraggable';
 
 const projectStore = useProjectStore();
 const currentProject = computed(() => projectStore.currentProject);
