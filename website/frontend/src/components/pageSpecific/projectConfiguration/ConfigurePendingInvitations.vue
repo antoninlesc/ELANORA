@@ -89,59 +89,13 @@
       </div>
     </div>
 
-    <!-- Send Invitation Modal -->
-    <div v-if="showInviteModal" class="modal-overlay" @click="closeInviteModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h4>{{ t('projectSettings.invitations.send_modal.title') }}</h4>
-          <button class="modal-close" @click="closeInviteModal">×</button>
-        </div>
-        
-        <form @submit.prevent="sendInvitation" class="invite-form">
-          <div class="form-group">
-            <label for="inviteEmail">{{ t('projectSettings.invitations.send_modal.email') }}</label>
-            <input
-              id="inviteEmail"
-              v-model="newInvitation.email"
-              type="email"
-              class="form-input"
-              required
-              :placeholder="t('projectSettings.invitations.send_modal.email_placeholder')"
-            />
-          </div>
-          
-          <div class="form-group">
-            <label for="invitePermission">{{ t('projectSettings.invitations.send_modal.permission') }}</label>
-            <select id="invitePermission" v-model="newInvitation.permission" class="form-select" required>
-              <option value="read">{{ t('projectSettings.permissions.read') }}</option>
-              <option value="write">{{ t('projectSettings.permissions.write') }}</option>
-              <option value="admin">{{ t('projectSettings.permissions.admin') }}</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="inviteMessage">{{ t('projectSettings.invitations.send_modal.message') }}</label>
-            <textarea
-              id="inviteMessage"
-              v-model="newInvitation.message"
-              class="form-textarea"
-              rows="3"
-              :placeholder="t('projectSettings.invitations.send_modal.message_placeholder')"
-            ></textarea>
-          </div>
-          
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" @click="closeInviteModal">
-              {{ t('common.cancel') }}
-            </button>
-            <button type="submit" class="btn-submit" :disabled="sendingInvitation">
-              <span v-if="sendingInvitation" class="loading-text">{{ t('common.sending') }}...</span>
-              <span v-else>{{ t('projectSettings.invitations.send') }}</span>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <!-- Project Share Modal -->
+    <ProjectShareModal
+      :show="showInviteModal"
+      :project-name="projectName"
+      @close="closeInviteModal"
+      @success="onInvitationSuccess"
+    />
 
     <!-- Cancel Invitation Modal -->
     <div v-if="showCancelModal" class="modal-overlay" @click="closeCancelModal">
@@ -170,17 +124,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { useProjectStore } from '@/stores/project';
 import { 
   getProjectInvitations, 
-  sendInvitation as sendInvitationAPI, 
   resendInvitation as resendInvitationAPI, 
   cancelInvitation as cancelInvitationAPI 
 } from '@/api/service/invitationService';
+import ProjectShareModal from '@/components/common/ProjectShareModal.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -190,8 +144,7 @@ const projectStore = useProjectStore();
 const projectId = computed(() => Number(route.params.projectId));
 const projectName = computed(() => projectStore.projectName);
 
-// Props - in a real implementation, you'd get the current user role from a store
-const currentUserRole = ref('admin'); // This should come from props or store
+const currentUserRole = ref('admin');
 
 // Reactive state
 const invitations = ref([]);
@@ -205,15 +158,7 @@ const invitationToCancel = ref(null);
 
 // Operation states
 const processingInvitations = ref(new Set());
-const sendingInvitation = ref(false);
 const cancelingInvitation = ref(false);
-
-// Form data
-const newInvitation = reactive({
-  email: '',
-  permission: 'read',
-  message: ''
-});
 
 // Computed properties
 const canManageInvitations = computed(() => {
@@ -233,7 +178,6 @@ const loadInvitations = async () => {
     }
     
     const response = await getProjectInvitations(projectName.value);
-    // La réponse du backend est une InvitationListResponse avec { invitations: [], total: number }
     invitations.value = response.data.invitations || [];
     
   } catch (err) {
@@ -257,47 +201,11 @@ const formatDate = (dateString) => {
 
 const closeInviteModal = () => {
   showInviteModal.value = false;
-  newInvitation.email = '';
-  newInvitation.permission = 'read';
-  newInvitation.message = '';
 };
 
-const sendInvitation = async () => {
-  sendingInvitation.value = true;
-  
-  try {
-    if (!projectName.value) {
-      eventMessageStore.addMessage('projectSettings.invitations.no_project_error', 'error');
-      return;
-    }
-
-    const invitationData = {
-      receiver_email: newInvitation.email,
-      project_name: projectName.value,
-      message: newInvitation.message,
-      language: 'fr', // You might want to get this from i18n or user preferences
-      expires_in_days: 7,
-      project_permission: newInvitation.permission
-    };
-
-    const response = await sendInvitationAPI(invitationData);
-    
-    if (response.data.success !== false) {
-      eventMessageStore.addMessage('projectSettings.invitations.invitation_sent', 'success');
-      closeInviteModal();
-      await loadInvitations(); // Refresh the list
-    } else {
-      eventMessageStore.addMessage('projectSettings.invitations.send_error', 'error');
-    }
-  } catch (err) {
-    console.error('Error sending invitation:', err);
-    eventMessageStore.addMessage(
-      err.response?.data?.detail || 'projectSettings.invitations.send_error',
-      'error'
-    );
-  } finally {
-    sendingInvitation.value = false;
-  }
+const onInvitationSuccess = async () => {
+  // Reload invitations when a new invitation is sent successfully
+  await loadInvitations();
 };
 
 const resendInvitation = async (invitation) => {
@@ -669,69 +577,33 @@ defineExpose({
   font-weight: 600;
 }
 
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
-
-.modal-close:hover {
-  color: #374151;
-  background: #f3f4f6;
-}
-
-.invite-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.875rem;
-}
-
-.form-input, .form-select, .form-textarea {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
-}
-
-.form-input:focus, .form-select:focus, .form-textarea:focus {
-  outline: none;
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.form-actions, .modal-actions {
+.modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .confirm-modal .modal-body {
