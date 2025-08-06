@@ -170,7 +170,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@/stores/eventMessage';
@@ -348,6 +348,14 @@ const cancelInvitation = async () => {
     cancelingInvitation.value = false;
   }
 };
+
+watch(
+  projectName,
+  async () => {
+    await loadInvitations();
+  },
+  { immediate: true }
+);
 
 // Lifecycle
 onMounted(async () => {
