@@ -145,3 +145,47 @@ async def reject_invitation(
         invitation_id=invitation_id,
         user_id=user.user_id,
     )
+
+
+@router.post("/resend/{invitation_id}")
+async def resend_invitation(
+    invitation_id: int,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> dict[str, Any]:
+    """Resend an invitation (Admin only)."""
+    # Check if user is admin
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can resend invitations",
+        )
+
+    invitation_service = InvitationService()
+    return await invitation_service.resend_invitation(
+        db=db,
+        invitation_id=invitation_id,
+        sender_id=user.user_id,
+    )
+
+
+@router.post("/cancel/{invitation_id}")
+async def cancel_invitation(
+    invitation_id: int,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> dict[str, Any]:
+    """Cancel an invitation (Admin only)."""
+    # Check if user is admin
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can cancel invitations",
+        )
+
+    invitation_service = InvitationService()
+    return await invitation_service.cancel_invitation(
+        db=db,
+        invitation_id=invitation_id,
+        sender_id=user.user_id,
+    )

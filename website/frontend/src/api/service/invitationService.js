@@ -80,8 +80,7 @@ export async function rejectInvitation(invitationId) {
  * @returns {Promise<import('axios').AxiosResponse>}
  */
 export async function resendInvitation(invitationId) {
-  // TODO: Implement endpoint in backend
-  throw new Error('Resend invitation functionality not yet implemented in backend');
+  return await axiosInstance.post(`/invitation/resend/${invitationId}`);
 }
 
 /**
@@ -90,6 +89,5 @@ export async function resendInvitation(invitationId) {
  * @returns {Promise<import('axios').AxiosResponse>}
  */
 export async function cancelInvitation(invitationId) {
-  // TODO: Implement endpoint in backend
-  throw new Error('Cancel invitation functionality not yet implemented in backend');
+  return await axiosInstance.post(`/invitation/cancel/${invitationId}`);
 }
