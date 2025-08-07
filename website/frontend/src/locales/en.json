@@ -360,6 +360,8 @@
       "user_added_success": "User added to project successfully",
       "user_add_error": "Error adding user",
       "user_already_in_project": "This user is already part of the project",
+      "user_already_invited": "This user has already been invited to the project",
+      "user_email_not_found": "Unable to find email for selected user",
       "error_loading_users": "Error loading users",
       "generate_code_info": "Generate an invitation code that you can share manually",
       "generate_code": "Generate code",

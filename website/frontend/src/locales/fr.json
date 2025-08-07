@@ -347,6 +347,8 @@
       "user_added_success": "Utilisateur ajouté au projet avec succès",
       "user_add_error": "Erreur lors de l'ajout de l'utilisateur",
       "user_already_in_project": "Cet utilisateur fait déjà partie du projet",
+      "user_already_invited": "Cet utilisateur a déjà été invité au projet",
+      "user_email_not_found": "Impossible de trouver l'email de l'utilisateur sélectionné",
       "error_loading_users": "Erreur lors du chargement des utilisateurs",
       "generate_code_info": "Générez un code d'invitation que vous pouvez partager manuellement",
       "generate_code": "Générer un code",
