@@ -97,29 +97,6 @@
       @success="onInvitationSuccess"
     />
 
-    <!-- Cancel Invitation Modal -->
-    <div v-if="showCancelModal" class="modal-overlay" @click="closeCancelModal">
-      <div class="modal-content confirm-modal" @click.stop>
-        <div class="modal-header">
-          <h4>{{ t('projectSettings.invitations.cancel_modal.title') }}</h4>
-        </div>
-        
-        <div class="modal-body">
-          <p>{{ t('projectSettings.invitations.cancel_modal.message', { email: invitationToCancel?.receiver_email }) }}</p>
-          <p class="warning-text">{{ t('projectSettings.invitations.cancel_modal.warning') }}</p>
-        </div>
-        
-        <div class="modal-actions">
-          <button class="btn-cancel" @click="closeCancelModal">
-            {{ t('common.no') }}
-          </button>
-          <button class="btn-danger" :disabled="cancelingInvitation" @click="cancelInvitation">
-            <span v-if="cancelingInvitation" class="loading-text">{{ t('common.canceling') }}...</span>
-            <span v-else>{{ t('common.yes_cancel') }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -129,6 +106,7 @@ import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { useProjectStore } from '@/stores/project';
+import { useUserConfirm } from '@/composables/useUserConfirm';
 import { 
   getProjectInvitations, 
   resendInvitation as resendInvitationAPI, 
@@ -140,6 +118,7 @@ const { t } = useI18n();
 const route = useRoute();
 const eventMessageStore = useEventMessageStore();
 const projectStore = useProjectStore();
+const userConfirm = useUserConfirm();
 
 const projectId = computed(() => Number(route.params.projectId));
 const projectName = computed(() => projectStore.projectName);
@@ -153,12 +132,9 @@ const error = ref('');
 
 // Modal states
 const showInviteModal = ref(false);
-const showCancelModal = ref(false);
-const invitationToCancel = ref(null);
 
 // Operation states
 const processingInvitations = ref(new Set());
-const cancelingInvitation = ref(false);
 
 // Computed properties
 const canManageInvitations = computed(() => {
@@ -226,25 +202,27 @@ const resendInvitation = async (invitation) => {
   }
 };
 
-const confirmCancelInvitation = (invitation) => {
-  invitationToCancel.value = invitation;
-  showCancelModal.value = true;
-};
-
-const closeCancelModal = () => {
-  showCancelModal.value = false;
-  invitationToCancel.value = null;
-};
-
-const cancelInvitation = async () => {
-  if (!invitationToCancel.value) return;
+const confirmCancelInvitation = async (invitation) => {
+  const confirmed = await userConfirm({
+    title: t('projectSettings.invitations.cancel_modal.title'),
+    message: t('projectSettings.invitations.cancel_modal.message', { email: invitation.receiver_email }),
+    confirmText: t('common.yes_cancel'),
+    cancelText: t('common.no')
+  });
   
-  cancelingInvitation.value = true;
+  if (confirmed) {
+    await cancelInvitation(invitation);
+  }
+};
+
+const cancelInvitation = async (invitation) => {
+  if (!invitation) return;
+  
+  processingInvitations.value.add(invitation.invitation_id);
   
   try {
-    await cancelInvitationAPI(invitationToCancel.value.invitation_id);
+    await cancelInvitationAPI(invitation.invitation_id);
     eventMessageStore.addMessage('projectSettings.invitations.invitation_canceled', 'success');
-    closeCancelModal();
     await loadInvitations(); // Refresh the list
   } catch (err) {
     console.error('Error canceling invitation:', err);
@@ -253,7 +231,7 @@ const cancelInvitation = async () => {
       'error'
     );
   } finally {
-    cancelingInvitation.value = false;
+    processingInvitations.value.delete(invitation.invitation_id);
   }
 };
 
@@ -537,104 +515,4 @@ defineExpose({
   cursor: not-allowed;
 }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(2px);
-}
-
-.modal-content {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  width: 90%;
-  max-width: 480px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.modal-header h4 {
-  margin: 0;
-  color: #1f2937;
-  font-size: 1.125rem;
-  font-weight: 600;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-
-.btn-danger {
-  background: #dc2626;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.625rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #b91c1c;
-  transform: translateY(-1px);
-}
-
-.btn-danger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.confirm-modal .modal-body {
-  margin-bottom: 1.5rem;
-}
-
-.confirm-modal .modal-body p {
-  margin: 0 0 0.75rem 0;
-  color: #374151;
-  line-height: 1.5;
-}
-
-.warning-text {
-  font-size: 0.875rem;
-  color: #dc2626;
-  font-weight: 500;
-}
-
-.loading-text {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.loading-text::after {
-  content: '';
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
 </style>
