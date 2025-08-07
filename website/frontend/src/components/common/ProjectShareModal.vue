@@ -7,8 +7,26 @@
       </div>
       
       <div class="share-options">
-        <!-- Send by Email Form -->
-        <div class="tab-content">
+        <!-- Tab Selector -->
+        <div class="tab-selector">
+          <button 
+            class="tab-button" 
+            :class="{ active: inviteMode === 'email' }"
+            @click="setInviteMode('email')"
+          >
+            {{ t('project.share.invite_by_email') }}
+          </button>
+          <button 
+            class="tab-button" 
+            :class="{ active: inviteMode === 'user' }"
+            @click="setInviteMode('user')"
+          >
+            {{ t('project.share.invite_existing_user') }}
+          </button>
+        </div>
+
+        <!-- Email Invitation Form -->
+        <div v-if="inviteMode === 'email'" class="tab-content">
           <form @submit.prevent="sendProjectInvitation" class="invitation-form">
             <div class="share-form-group">
               <label for="share-email" class="form-label">
@@ -50,6 +68,17 @@
               </select>
             </div>
 
+            <div class="share-form-group">
+              <label for="share-email-permission" class="form-label">
+                {{ t('project.share.permission_label') }}
+              </label>
+              <select id="share-email-permission" v-model="form.emailPermission" class="share-form-select">
+                <option value="read">{{ t('project.share.permission_read') }}</option>
+                <option value="write">{{ t('project.share.permission_write') }}</option>
+                <option value="admin">{{ t('project.share.permission_admin') }}</option>
+              </select>
+            </div>
+
             <button 
               type="submit" 
               class="btn-primary send-btn" 
@@ -57,6 +86,58 @@
             >
               <span v-if="sending">{{ t('project.share.sending') }}</span>
               <span v-else>{{ t('project.share.send_invitation') }}</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- User Selection Form -->
+        <div v-if="inviteMode === 'user'" class="tab-content">
+          <form @submit.prevent="addExistingUser" class="invitation-form">
+            <div class="share-form-group">
+              <label for="share-user" class="form-label">
+                {{ t('project.share.select_user') }}
+                <span class="share-required">*</span>
+              </label>
+              <select
+                id="share-user"
+                v-model="form.selectedUserId"
+                class="form-input"
+                :class="{ error: userError }"
+                required
+                :disabled="loadingUsers"
+              >
+                <option value="" disabled>
+                  {{ loadingUsers ? t('common.loading') : t('project.share.choose_user') }}
+                </option>
+                <option 
+                  v-for="user in availableUsers" 
+                  :key="user.user_id" 
+                  :value="user.user_id"
+                >
+                  {{ user.first_name }} {{ user.last_name }} ({{ user.username }}) - {{ user.email }}
+                </option>
+              </select>
+              <div v-if="userError" class="share-error-message">{{ userError }}</div>
+            </div>
+
+            <div class="share-form-group">
+              <label for="share-permission" class="form-label">
+                {{ t('project.share.permission_label') }}
+              </label>
+              <select id="share-permission" v-model="form.permission" class="share-form-select">
+                <option value="read">{{ t('project.share.permission_read') }}</option>
+                <option value="write">{{ t('project.share.permission_write') }}</option>
+                <option value="admin">{{ t('project.share.permission_admin') }}</option>
+              </select>
+            </div>
+
+            <button 
+              type="submit" 
+              class="btn-primary send-btn" 
+              :disabled="sending || !form.selectedUserId"
+            >
+              <span v-if="sending">{{ t('project.share.adding_user') }}</span>
+              <span v-else>{{ t('project.share.add_user_to_project') }}</span>
             </button>
           </form>
         </div>
@@ -76,10 +157,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { sendInvitation as sendInvitationAPI } from '@/api/service/invitationService';
+import { fetchActiveUsers } from '@/api/service/userService';
+import { addUserToProject } from '@/api/service/projectAssociationService';
 import '@/assets/css/ProjectShareModal.css';
 
 const props = defineProps({
@@ -98,27 +181,92 @@ const emit = defineEmits(['close', 'success']);
 const { t } = useI18n();
 const eventMessageStore = useEventMessageStore();
 
+// Invitation mode: 'email' or 'user'
+const inviteMode = ref('email');
+
 // Form data
 const form = ref({
   email: '',
   message: '',
-  language: 'fr'
+  language: 'fr',
+  emailPermission: 'read',
+  selectedUserId: '',
+  permission: 'read'
 });
 
 // States
 const sending = ref(false);
 const emailError = ref('');
+const userError = ref('');
+const successMessage = ref('');
+const errorMessage = ref('');
+const loadingUsers = ref(false);
+const availableUsers = ref([]);
 
 const projectName = computed(() => props.projectName);
+
+// Load users when modal opens and user mode is selected
+const loadActiveUsers = async () => {
+  if (loadingUsers.value) return;
+  
+  loadingUsers.value = true;
+  try {
+    const response = await fetchActiveUsers();
+    if (response.data && response.data.users) {
+      availableUsers.value = response.data.users;
+    }
+  } catch (error) {
+    console.error('Error loading users:', error);
+    eventMessageStore.addMessage('project.share.error_loading_users', 'error');
+  } finally {
+    loadingUsers.value = false;
+  }
+};
+
+// Watch for mode changes and modal visibility
+watch(() => props.show, (newShow) => {
+  if (newShow && inviteMode.value === 'user') {
+    loadActiveUsers();
+  }
+});
+
+watch(inviteMode, (newMode) => {
+  if (newMode === 'user' && props.show) {
+    loadActiveUsers();
+  }
+});
+
+// Load users on component mount if needed
+onMounted(() => {
+  if (props.show && inviteMode.value === 'user') {
+    loadActiveUsers();
+  }
+});
+
+const setInviteMode = (mode) => {
+  inviteMode.value = mode;
+  // Clear errors when switching modes
+  emailError.value = '';
+  userError.value = '';
+  successMessage.value = '';
+  errorMessage.value = '';
+};
 
 const closeModal = () => {
   // Reset form and states
   form.value = {
     email: '',
     message: '',
-    language: 'fr'
+    language: 'fr',
+    emailPermission: 'read',
+    selectedUserId: '',
+    permission: 'read'
   };
   emailError.value = '';
+  userError.value = '';
+  successMessage.value = '';
+  errorMessage.value = '';
+  inviteMode.value = 'email';
   emit('close');
 };
 
@@ -139,7 +287,7 @@ const sendProjectInvitation = async () => {
       message: form.value.message,
       language: form.value.language,
       expires_in_days: 7,
-      project_permission: 'read'
+      project_permission: form.value.emailPermission
     };
 
     const response = await sendInvitationAPI(invitationData);
@@ -148,6 +296,7 @@ const sendProjectInvitation = async () => {
       eventMessageStore.addMessage('project.share.invitation_sent_success', 'success');
       form.value.email = '';
       form.value.message = '';
+      form.value.emailPermission = 'read';
       emit('success');
     } else {
       eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
@@ -155,6 +304,44 @@ const sendProjectInvitation = async () => {
   } catch (error) {
     console.error('Error sending invitation:', error);
     eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
+  } finally {
+    sending.value = false;
+  }
+};
+
+const addExistingUser = async () => {
+  userError.value = '';
+  
+  if (!form.value.selectedUserId) {
+    userError.value = t('project.share.user_required');
+    return;
+  }
+
+  sending.value = true;
+  
+  try {
+    const userData = {
+      user_id: parseInt(form.value.selectedUserId),
+      permission: form.value.permission
+    };
+
+    const response = await addUserToProject(projectName.value, userData);
+    
+    if (response.data) {
+      eventMessageStore.addMessage('project.share.user_added_success', 'success');
+      form.value.selectedUserId = '';
+      form.value.permission = 'read';
+      emit('success');
+    } else {
+      eventMessageStore.addMessage('project.share.user_add_error', 'error');
+    }
+  } catch (error) {
+    console.error('Error adding user to project:', error);
+    if (error.response?.status === 409) {
+      eventMessageStore.addMessage('project.share.user_already_in_project', 'warning');
+    } else {
+      eventMessageStore.addMessage('project.share.user_add_error', 'error');
+    }
   } finally {
     sending.value = false;
   }

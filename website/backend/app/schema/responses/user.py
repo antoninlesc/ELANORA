@@ -41,6 +41,12 @@ class UserResponse(CustomBaseModel):
     created_at: datetime
 
 
+class UserListResponse(CustomBaseModel):
+    """Response schema for list of users."""
+
+    users: list[UserResponse]
+
+
 class UserProfileResponse(CustomBaseModel):
     """Extended user profile response with address."""
 

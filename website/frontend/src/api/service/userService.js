@@ -9,6 +9,14 @@ export async function fetchUser() {
 }
 
 /**
+ * Fetch all active users.
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function fetchActiveUsers() {
+  return await axiosInstance.get('/user/active');
+}
+
+/**
  * Check if a username is available for registration.
  * @param {string} username
  * @returns {Promise<{ available: boolean, message: string }>}
