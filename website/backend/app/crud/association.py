@@ -159,6 +159,7 @@ async def add_user_to_project(db: AsyncSession, user_id: int, project_id: int):
 
 
 async def remove_user_from_project(db: AsyncSession, user_id: int, project_id: int):
+    """Remove a user from a project using simple delete by filter."""
     await DatabaseUtils.delete_by_filter(
         db, UserToProject, user_id=user_id, project_id=project_id
     )
@@ -358,13 +359,15 @@ async def remove_user_from_project(
 ) -> bool:
     """Remove a user from a project."""
     try:
-        await DatabaseUtils.bulk_delete(
+        result = await DatabaseUtils.bulk_delete(
             db,
             UserToProject,
             (UserToProject.user_id == user_id)
             & (UserToProject.project_id == project_id),
         )
-        return True
+        await db.commit()
+        return result > 0
     except Exception as e:
         logger.error(f"Failed to remove user {user_id} from project {project_id}: {e}")
+        await db.rollback()
         return False
