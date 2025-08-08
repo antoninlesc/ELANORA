@@ -274,6 +274,36 @@ onMounted(() => {
   }
 });
 
+// Helper function to handle invitation errors
+const handleInvitationError = (error, userEmail = null) => {
+  console.error('Error sending invitation:', error);
+  
+  // Check if it's a server response with a specific message
+  if (error.response?.data?.message) {
+    const message = error.response.data.message.toLowerCase();
+    
+    if (message.includes('active invitation already exists')) {
+      eventMessageStore.addMessage('project.share.invitation_send_error_already_invited', 'warning');
+    } else if (message.includes('already a member')) {
+      eventMessageStore.addMessage('project.share.invitation_send_error_already_member', 'warning');
+    } else if (message.includes('project not found')) {
+      eventMessageStore.addMessage('project.share.invitation_send_error_project_not_found', 'error');
+    } else {
+      // Generic error with server message
+      eventMessageStore.addMessage(error.response.data.message, 'error');
+    }
+  } else if (error.response?.status === 409) {
+    // Conflict status usually means already invited or already member
+    eventMessageStore.addMessage('project.share.invitation_send_error_already_invited', 'warning');
+  } else if (error.response?.status === 400) {
+    // Bad request - could be validation error
+    eventMessageStore.addMessage(error.response?.data?.detail || 'project.share.invitation_send_error_generic', 'error');
+  } else {
+    // Generic network or unknown error
+    eventMessageStore.addMessage('project.share.invitation_send_error_generic', 'error');
+  }
+};
+
 const setInviteMode = (mode) => {
   inviteMode.value = mode;
   // Clear errors when switching modes
@@ -330,12 +360,23 @@ const sendProjectInvitation = async () => {
       form.value.email = '';
       form.value.message = '';
       emit('success');
+    } else if (response.data.message) {
+      // Handle specific error from server response
+      const message = response.data.message.toLowerCase();
+      if (message.includes('active invitation already exists')) {
+        eventMessageStore.addMessage('project.share.invitation_send_error_already_invited', 'warning');
+      } else if (message.includes('already a member')) {
+        eventMessageStore.addMessage('project.share.invitation_send_error_already_member', 'warning');
+      } else if (message.includes('project not found')) {
+        eventMessageStore.addMessage('project.share.invitation_send_error_project_not_found', 'error');
+      } else {
+        eventMessageStore.addMessage(response.data.message, 'error');
+      }
     } else {
       eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
     }
   } catch (error) {
-    console.error('Error sending invitation:', error);
-    eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
+    handleInvitationError(error, form.value.email);
   } finally {
     sending.value = false;
   }
@@ -374,16 +415,23 @@ const sendUserInvitation = async () => {
       form.value.selectedUserId = '';
       form.value.userMessage = '';
       emit('success');
+    } else if (response.data.message) {
+      // Handle specific error from server response
+      const message = response.data.message.toLowerCase();
+      if (message.includes('active invitation already exists')) {
+        eventMessageStore.addMessage('project.share.invitation_send_error_already_invited', 'warning');
+      } else if (message.includes('already a member')) {
+        eventMessageStore.addMessage('project.share.invitation_send_error_already_member', 'warning');
+      } else if (message.includes('project not found')) {
+        eventMessageStore.addMessage('project.share.invitation_send_error_project_not_found', 'error');
+      } else {
+        eventMessageStore.addMessage(response.data.message, 'error');
+      }
     } else {
       eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
     }
   } catch (error) {
-    console.error('Error sending invitation:', error);
-    if (error.response?.status === 409) {
-      eventMessageStore.addMessage('project.share.user_already_invited', 'warning');
-    } else {
-      eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
-    }
+    handleInvitationError(error, userEmail);
   } finally {
     sending.value = false;
   }
