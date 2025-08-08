@@ -107,16 +107,25 @@
         
         <form @submit.prevent="addUser" class="add-member-form">
           <div class="form-group">
-            <label for="userId">{{ t('projectSettings.members.add_modal.user_id') }}</label>
-            <input
+            <label for="userId">{{ t('project.share.select_user') }} <span class="share-required">*</span></label>
+            <select
               id="userId"
               v-model="newUser.user_id"
-              type="number"
-              class="form-input"
+              class="form-select"
+              :disabled="loadingAvailableUsers"
               required
-              min="1"
-              :placeholder="t('projectSettings.members.add_modal.user_id_placeholder')"
-            />
+            >
+              <option value="" disabled>
+                {{ loadingAvailableUsers ? t('common.loading') : t('project.share.choose_user') }}
+              </option>
+              <option
+                v-for="user in filteredAvailableUsers"
+                :key="user.user_id"
+                :value="user.user_id"
+              >
+                {{ user.first_name }} {{ user.last_name }} ({{ user.username }}) - {{ user.email }}
+              </option>
+            </select>
           </div>
           
           <div class="form-group">
@@ -155,6 +164,7 @@ import {
   updateUserPermission,
   removeUserFromProject
 } from '@/api/service/projectAssociationService';
+import { fetchActiveUsers } from '@/api/service/userService';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
@@ -178,11 +188,19 @@ const showAddUserModal = ref(false);
 const updatingUsers = ref(new Set());
 const addingUser = ref(false);
 const removingUser = ref(false);
+const loadingAvailableUsers = ref(false);
 
 // Form data
 const newUser = reactive({
   user_id: '',
   permission: 'read'
+});
+
+// Available users list for Add Member modal
+const availableUsers = ref([]);
+const filteredAvailableUsers = computed(() => {
+  const existingIds = new Set(users.value.map((u) => u.user_id));
+  return availableUsers.value.filter((u) => !existingIds.has(u.user_id));
 });
 
 // Computed properties
@@ -210,6 +228,23 @@ const loadUsers = async () => {
     error.value = err.response?.data?.detail || t('projectSettings.members.load_error');
   } finally {
     loading.value = false;
+  }
+};
+
+// Load active users for the Add Member modal (similar to ProjectShareModal)
+const loadActiveUsers = async () => {
+  if (loadingAvailableUsers.value) return;
+  loadingAvailableUsers.value = true;
+  try {
+    const response = await fetchActiveUsers();
+    if (response.data && response.data.users) {
+      availableUsers.value = response.data.users;
+    }
+  } catch (err) {
+    console.error('Error loading available users:', err);
+    eventMessageStore.addMessage('project.share.error_loading_users', 'error');
+  } finally {
+    loadingAvailableUsers.value = false;
   }
 };
 
@@ -337,7 +372,7 @@ const addUser = async () => {
   
   try {
     const response = await addUserToProject(projectName.value, {
-      user_id: parseInt(newUser.user_id),
+  user_id: parseInt(newUser.user_id, 10),
       permission: newUser.permission
     });
     
@@ -385,6 +420,13 @@ onMounted(() => {
   // Only load users if we have a project name
   if (projectName.value) {
     loadUsers();
+  }
+});
+
+// When opening the Add Member modal, load available users
+watch(showAddUserModal, (open) => {
+  if (open) {
+    loadActiveUsers();
   }
 });
 
