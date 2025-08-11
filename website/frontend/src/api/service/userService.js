@@ -47,3 +47,12 @@ export async function checkEmailAvailability(email) {
   );
   return response.data;
 }
+
+/**
+ * Update current user's profile.
+ * @param {Object} profileData - Profile data to update
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function updateUserProfile(profileData) {
+  return await axiosInstance.put('/user/me/profile', profileData);
+}

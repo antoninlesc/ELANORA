@@ -40,6 +40,8 @@
           :user-profile="userProfile"
           :loading="loading"
           :error="error"
+          @profile-updated="loadUserProfile"
+          @show-message="handleMessage"
         />
 
         <!-- Settings Section (placeholder) -->
@@ -74,11 +76,13 @@
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLanguageStore } from '@/stores/language.js';
+import { useEventMessageStore } from '@/stores/eventMessage.js';
 import { fetchUserProfile } from '@/api/service/userService.js';
 import ProfileOverview from '@/components/pageSpecific/profile/ProfileOverview.vue';
 
 const { t } = useI18n();
 const languageStore = useLanguageStore();
+const eventMessageStore = useEventMessageStore();
 const language = computed(() => languageStore.language);
 
 // State
@@ -126,6 +130,10 @@ const currentMenuItem = computed(() =>
 // Methods
 function toggleLanguage() {
   languageStore.setLanguage(language.value === 'en' ? 'fr' : 'en');
+}
+
+function handleMessage(message) {
+  eventMessageStore.addMessage(message.text, message.type);
 }
 
 async function loadUserProfile() {

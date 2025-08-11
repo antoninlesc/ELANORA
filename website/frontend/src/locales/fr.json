@@ -2,17 +2,19 @@
   "common": {
     "confirm": "Confirmer",
     "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
     "or": "ou",
     "loading": "Chargement...",
     "retry": "Réessayer",
-    "sending": "Envoi en cours",
+    "sending": "Envoi",
     "no": "Non",
     "yes_cancel": "Oui, annuler",
-    "canceling": "Annulation en cours",
+    "canceling": "Annulation",
     "add": "Ajouter",
-    "adding": "Ajout en cours",
+    "adding": "Ajout",
     "remove": "Supprimer",
-    "removing": "Suppression en cours"
+    "removing": "Suppression"
   },
   "app": {
     "title": "ELANORA"

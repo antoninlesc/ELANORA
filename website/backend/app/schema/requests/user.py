@@ -57,6 +57,7 @@ class RegistrationRequest(CustomBaseModel):
 class ProfileUpdateRequest(CustomBaseModel):
     """Schema for updating user profile information."""
 
+    username: str | None = None
     email: EmailStr | None = None
     first_name: str | None = None
     last_name: str | None = None

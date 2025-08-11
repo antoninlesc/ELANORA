@@ -29,6 +29,9 @@ from app.schema.requests.user import (
 from app.service.address import AddressService
 from app.service.email import EmailService
 
+from app.utils.database import DatabaseUtils
+
+
 # Get logger for this module
 logger = get_logger()
 
@@ -324,6 +327,7 @@ class UserService:
             updated_field_names = []
 
             field_mapping = {
+                "username": profile_data.username,
                 "email": profile_data.email,
                 "first_name": profile_data.first_name,
                 "last_name": profile_data.last_name,
@@ -331,6 +335,20 @@ class UserService:
                 "affiliation": profile_data.affiliation,
                 "department": profile_data.department,
             }
+
+            # Special validation for username if provided
+            if profile_data.username is not None:
+                # Check if username is already taken by another user (exclude current user)
+                username_available = await cls.check_username_availability_for_update(
+                    db, profile_data.username, user.user_id
+                )
+                if not username_available:
+                    logger.warning(f"Username {profile_data.username} already taken during profile update")
+                    return {
+                        "success": False,
+                        "message": "Username already taken",
+                        "updated_fields": [],
+                    }
 
             for field_name, field_value in field_mapping.items():
                 if field_value is not None:
@@ -389,6 +407,33 @@ class UserService:
             f"Username availability check for '{username}': {'available' if is_available else 'taken'}"
         )
         return is_available
+
+    @classmethod
+    async def check_username_availability_for_update(
+        cls, db: AsyncSession, username: str, exclude_user_id: int
+    ) -> bool:
+        """Check if a username is available for profile update (excluding current user).
+
+        Args:
+            db (AsyncSession): Database session.
+            username (str): Username to check.
+            exclude_user_id (int): User ID to exclude from check.
+
+        Returns:
+            bool: True if available, False if taken by another user.
+
+        """
+        # Get user with this username (if any)
+        existing_user = await DatabaseUtils.get_one_by_filter(
+            db, User, {"username": username}
+        )
+        
+        # If no user exists with this username, it's available
+        if not existing_user:
+            return True
+            
+        # If the user with this username is the current user, it's available
+        return existing_user.user_id == exclude_user_id
 
     @classmethod
     async def check_email_availability(cls, db: AsyncSession, email: str) -> bool:

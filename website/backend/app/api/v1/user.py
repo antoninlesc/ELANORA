@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -14,7 +14,10 @@ from app.schema.responses.user import (
     UserProfileResponse,
     UserResponse,
     CityResponse,
+    ProfileUpdateResponse,
 )
+from app.schema.requests.user import ProfileUpdateRequest
+from app.service.user import UserService
 from app.utils.database import DatabaseUtils
 
 router = APIRouter()
@@ -99,6 +102,34 @@ async def get_current_user_profile(
         last_login=target_user.last_login,
         address=address_data,
     )
+
+
+@router.put("/me/profile", response_model=ProfileUpdateResponse)
+async def update_current_user_profile(
+    profile_data: ProfileUpdateRequest,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> ProfileUpdateResponse:
+    """Update the current user's profile."""
+    try:
+        result = await UserService.update_user_profile(db, user, profile_data)
+        
+        if result["success"]:
+            return ProfileUpdateResponse(
+                message=result["message"],
+                updated_fields=result["updated_fields"],
+                address_updated=False,  # TODO: Handle address updates separately
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result["message"]
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating profile: {e!s}"
+        ) from e
 
 
 @router.get("/active", response_model=UserListResponse)

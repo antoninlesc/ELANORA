@@ -19,7 +19,7 @@
       <div class="profile-card">
         <div class="profile-card-header">
           <h3>{{ t('profile.overview.personal_info.title') }}</h3>
-          <button class="edit-button" @click="editPersonalInfo">
+          <button class="edit-button" v-if="!editUsernameMode" @click="startEditUsername">
             {{ t('profile.overview.edit') }}
           </button>
         </div>
@@ -34,7 +34,18 @@
             <div class="profile-field">
               <span class="profile-field-label">{{ t('profile.overview.personal_info.username') }}</span>
               <div class="profile-field-value">
-                {{ userProfile.username }}
+                <template v-if="editUsernameMode">
+                  <input v-model="editedUsername" class="username-input" :disabled="saving" />
+                  <button class="save-button" @click="saveUsername" :disabled="saving">
+                    {{ saving ? t('common.saving') : t('common.save') }}
+                  </button>
+                  <button class="cancel-button" @click="cancelEditUsername" :disabled="saving">
+                    {{ t('common.cancel') }}
+                  </button>
+                </template>
+                <template v-else>
+                  {{ userProfile.username }}
+                </template>
               </div>
             </div>
             <div class="profile-field">
@@ -179,11 +190,13 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { updateUserProfile } from '@/api/service/userService.js';
 
 const { t } = useI18n();
 
-defineProps({
+const props = defineProps({
   userProfile: {
     type: Object,
     default: null,
@@ -198,7 +211,79 @@ defineProps({
   },
 });
 
-// Methods
+const emit = defineEmits(['profile-updated', 'show-message']);
+
+const editUsernameMode = ref(false);
+const editedUsername = ref('');
+const saving = ref(false);
+
+watch(
+  () => props.userProfile,
+  (newVal) => {
+    if (newVal && !editUsernameMode.value) {
+      editedUsername.value = newVal.username;
+    }
+  },
+  { immediate: true }
+);
+
+function startEditUsername() {
+  editUsernameMode.value = true;
+  editedUsername.value = props.userProfile?.username || '';
+}
+
+function cancelEditUsername() {
+  editUsernameMode.value = false;
+  editedUsername.value = props.userProfile?.username || '';
+}
+
+async function saveUsername() {
+  if (saving.value) return;
+  
+  // Validate username
+  if (!editedUsername.value.trim()) {
+    emit('show-message', { text: 'Le nom d\'utilisateur ne peut pas être vide', type: 'error' });
+    return;
+  }
+  
+  if (editedUsername.value === props.userProfile?.username) {
+    // No change, just exit edit mode
+    editUsernameMode.value = false;
+    return;
+  }
+  
+  try {
+    saving.value = true;
+    
+    const response = await updateUserProfile({
+      username: editedUsername.value
+    });
+    
+    if (response.data) {
+      emit('show-message', { text: 'Nom d\'utilisateur mis à jour avec succès', type: 'success' });
+      emit('profile-updated'); // Tell parent to reload profile
+      editUsernameMode.value = false;
+    }
+  } catch (error) {
+    console.error('Error updating username:', error);
+    let errorMessage = 'Erreur lors de la mise à jour du nom d\'utilisateur';
+    
+    if (error.response?.data?.detail) {
+      if (error.response.data.detail.includes('already taken')) {
+        errorMessage = 'Ce nom d\'utilisateur est déjà pris';
+      } else {
+        errorMessage = error.response.data.detail;
+      }
+    }
+    
+    emit('show-message', { text: errorMessage, type: 'error' });
+    // Reset to original value on error
+    editedUsername.value = props.userProfile?.username || '';
+  } finally {
+    saving.value = false;
+  }
+}
+
 function formatDate(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);
@@ -207,11 +292,6 @@ function formatDate(dateString) {
     month: 'long',
     day: 'numeric',
   });
-}
-
-function editPersonalInfo() {
-  // TODO: Implement edit personal info
-  console.log('Edit personal info');
 }
 
 function editProfessionalInfo() {
@@ -224,6 +304,51 @@ function editAddress() {
   console.log('Edit address');
 }
 </script>
+/* Username edit styles */
+.username-input {
+  font-size: 1rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  margin-right: 0.5rem;
+}
+.save-button {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  margin-right: 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.save-button:hover {
+  background: #1d4ed8;
+}
+.save-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+.cancel-button {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cancel-button:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+.cancel-button:disabled {
+  background: #f9fafb;
+  color: #d1d5db;
+  cursor: not-allowed;
+}
 
 <style scoped>
 .profile-overview {
