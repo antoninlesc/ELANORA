@@ -138,6 +138,16 @@ async def get_invitations_by_sender(
     return list(result.scalars().all())
 
 
+async def get_invitations_by_project(
+    db: AsyncSession, project_id: int
+) -> list[Invitation]:
+    """Get all invitations for a specific project."""
+    result = await db.execute(
+        select(Invitation).filter(Invitation.project_id == project_id)
+    )
+    return list(result.scalars().all())
+
+
 async def expire_old_invitations(db: AsyncSession) -> int:
     """Mark expired invitations as expired and return count."""
     result = await db.execute(

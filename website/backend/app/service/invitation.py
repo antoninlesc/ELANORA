@@ -10,6 +10,7 @@ from app.crud.invitation import (
     get_invitation_by_code,
     get_invitation_by_id,
     get_invitations_by_email,
+    get_invitations_by_project,
     get_invitations_by_sender,
     get_pending_invitations_by_email,
     update_invitation_status,
@@ -461,6 +462,45 @@ class InvitationService:
             )
             return InvitationListResponse(invitations=[], total=0)
 
+    async def get_project_invitations(
+        self,
+        db: AsyncSession,
+        project_name: str,
+    ) -> InvitationListResponse:
+        """Get all invitations for a specific project."""
+        try:
+            # Get project by name first
+            project = await get_project_by_name(db, project_name)
+            if not project:
+                logger.warning(
+                    "Project not found",
+                    extra={"project_name": project_name},
+                )
+                return InvitationListResponse(invitations=[], total=0)
+
+            # Get invitations for this project
+            invitations = await get_invitations_by_project(db, project.project_id)
+            invitation_responses = []
+
+            for invitation in invitations:
+                response = await self._convert_to_response(db, invitation)
+                invitation_responses.append(response)
+
+            return InvitationListResponse(
+                invitations=invitation_responses, total=len(invitation_responses)
+            )
+
+        except Exception as e:
+            logger.error(
+                "Failed to get project invitations",
+                extra={
+                    "project_name": project_name,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            return InvitationListResponse(invitations=[], total=0)
+
     async def _convert_to_response(
         self,
         db: AsyncSession,
@@ -623,6 +663,190 @@ class InvitationService:
                 extra={
                     "invitation_id": invitation_id,
                     "user_id": user_id,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            return {"success": False, "message": "Internal server error"}
+
+    async def resend_invitation(
+        self,
+        db: AsyncSession,
+        invitation_id: int,
+        sender_id: int,
+    ) -> dict[str, Any]:
+        """Resend an invitation email."""
+        try:
+            # Get invitation details
+            invitation = await get_invitation_by_id(db, invitation_id)
+            if not invitation:
+                return {"success": False, "message": "Invitation not found"}
+
+            # Verify the sender owns this invitation
+            if invitation.sender != sender_id:
+                return {
+                    "success": False,
+                    "message": "You can only resend invitations you sent",
+                }
+
+            # Check if invitation is still pending
+            if invitation.status != InvitationStatus.PENDING:
+                return {
+                    "success": False,
+                    "message": "Can only resend pending invitations",
+                }
+
+            # Get sender and project information
+            sender = await get_user_by_id(db, sender_id)
+            if not sender:
+                return {"success": False, "message": "Sender not found"}
+
+            project = await get_project_by_id(db, invitation.project_id)
+            if not project:
+                return {"success": False, "message": "Project not found"}
+
+            # Check if receiver is an existing user
+            existing_user = await get_user_by_username_or_email(
+                db, invitation.receiver_email
+            )
+
+            # Send appropriate email based on user existence
+            email_sent = False
+            new_invitation = None
+
+            if existing_user:
+                # Send existing user invitation email with accept/reject buttons
+                email_sent = (
+                    await self.email_service.send_existing_user_invitation_email(
+                        email=invitation.receiver_email,
+                        invitation_id=invitation.invitation_id,
+                        sender_name=f"{sender.first_name} {sender.last_name}",
+                        project_name=project.project_name,
+                        custom_message="This is a reminder invitation.",
+                        language="en",  # You might want to store language in invitation
+                    )
+                )
+            else:
+                # For new users, create a new invitation with new code
+                new_invitation, raw_code = await create_invitation(
+                    db=db,
+                    sender_id=sender_id,
+                    receiver_email=invitation.receiver_email,
+                    project_id=invitation.project_id,
+                    project_permission=invitation.project_permission,
+                    expires_in_days=7,  # Reset expiration
+                )
+
+                # Deactivate old invitation
+                await update_invitation_status(
+                    db=db,
+                    invitation_id=invitation_id,
+                    status=InvitationStatus.EXPIRED,
+                )
+
+                # Send new user invitation email with registration link
+                email_sent = await self.email_service.send_invitation_email(
+                    email=invitation.receiver_email,
+                    invitation_code=raw_code,
+                    sender_name=f"{sender.first_name} {sender.last_name}",
+                    project_name=project.project_name,
+                    custom_message="This is a reminder invitation.",
+                    language="en",
+                )
+
+            # Handle result for both existing and new users
+            if email_sent:
+                log_extra = {
+                    "sender_id": sender_id,
+                    "receiver_email": invitation.receiver_email,
+                }
+
+                if existing_user:
+                    log_extra.update(
+                        {
+                            "invitation_id": invitation_id,
+                            "user_exists": True,
+                        }
+                    )
+                    logger.info("Invitation resent successfully", extra=log_extra)
+                else:
+                    log_extra.update(
+                        {
+                            "old_invitation_id": invitation_id,
+                            "new_invitation_id": new_invitation.invitation_id,
+                        }
+                    )
+                    logger.info("Invitation resent with new code", extra=log_extra)
+
+                return {"success": True, "message": "Invitation resent successfully"}
+
+            return {"success": False, "message": "Failed to send invitation email"}
+
+        except Exception as e:
+            logger.error(
+                "Failed to resend invitation",
+                extra={
+                    "invitation_id": invitation_id,
+                    "sender_id": sender_id,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            return {"success": False, "message": "Internal server error"}
+
+    async def cancel_invitation(
+        self,
+        db: AsyncSession,
+        invitation_id: int,
+        sender_id: int,
+    ) -> dict[str, Any]:
+        """Cancel an invitation."""
+        try:
+            # Get invitation details
+            invitation = await get_invitation_by_id(db, invitation_id)
+            if not invitation:
+                return {"success": False, "message": "Invitation not found"}
+
+            # Verify the sender owns this invitation
+            if invitation.sender != sender_id:
+                return {
+                    "success": False,
+                    "message": "You can only cancel invitations you sent",
+                }
+
+            # Check if invitation is still pending
+            if invitation.status != InvitationStatus.PENDING:
+                return {
+                    "success": False,
+                    "message": "Can only cancel pending invitations",
+                }
+
+            # Update invitation status to cancelled
+            success = await update_invitation_status(
+                db=db,
+                invitation_id=invitation_id,
+                status=InvitationStatus.EXPIRED,  # Using EXPIRED as "cancelled"
+            )
+
+            if success:
+                logger.info(
+                    "Invitation cancelled successfully",
+                    extra={
+                        "invitation_id": invitation_id,
+                        "sender_id": sender_id,
+                        "receiver_email": invitation.receiver_email,
+                    },
+                )
+                return {"success": True, "message": "Invitation cancelled successfully"}
+            else:
+                return {"success": False, "message": "Failed to cancel invitation"}
+
+        except Exception as e:
+            logger.error(
+                "Failed to cancel invitation",
+                extra={
+                    "invitation_id": invitation_id,
+                    "sender_id": sender_id,
                     "error": str(e),
                 },
                 exc_info=True,

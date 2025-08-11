@@ -211,11 +211,7 @@ async def remove_user_from_project_admin(
         if not target_user:
             raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
 
-        success = await remove_user_from_project(db, user_id, project.project_id)
-        if not success:
-            raise HTTPException(
-                status_code=404, detail="User is not associated with this project"
-            )
+        await remove_user_from_project(db, user_id, project.project_id)
 
         return ProjectAssociationResponse(
             project_name=project_name,

@@ -56,17 +56,8 @@
 <script setup>
 import ConfigureNamingStandards from '@components/pageSpecific/projectConfiguration/ConfigureNamingStandards.vue';
 import ConfigureFileTypes from '@components/pageSpecific/projectConfiguration/ConfigureFileTypes.vue';
-// Stub components for demo
-const ConfigureProjectMembers = {
-  render() {
-    return null; // renders nothing
-  }
-};
-const ConfigurePendingInvitations = {
-  render() {
-    return null;
-  }
-};
+import ConfigureProjectMembers from '@components/pageSpecific/projectConfiguration/ConfigureProjectMembers.vue';
+import ConfigurePendingInvitations from '@components/pageSpecific/projectConfiguration/ConfigurePendingInvitations.vue';
 
 import { ref, computed } from 'vue';
 import { useProjectStore } from '@stores/project.js';
@@ -131,7 +122,7 @@ const sectionGroups = [
     sections: [
       {
         key: 'members',
-        titleKey: 'projectSettings.sectionNames.sections.subsections.membersAndAccess',
+        titleKey: 'projectSettings.sectionNames.sections.subsections.members',
         component: ConfigureProjectMembers,
       },
       {

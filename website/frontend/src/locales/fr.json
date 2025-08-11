@@ -2,7 +2,17 @@
   "common": {
     "confirm": "Confirmer",
     "cancel": "Annuler",
-    "or": "ou"
+    "or": "ou",
+    "loading": "Chargement...",
+    "retry": "Réessayer",
+    "sending": "Envoi en cours",
+    "no": "Non",
+    "yes_cancel": "Oui, annuler",
+    "canceling": "Annulation en cours",
+    "add": "Ajouter",
+    "adding": "Ajout en cours",
+    "remove": "Supprimer",
+    "removing": "Suppression en cours"
   },
   "app": {
     "title": "ELANORA"
@@ -311,18 +321,39 @@
     },
     "share": {
       "title": "Partager le projet \"{projectName}\"",
+      "invite_by_email": "Inviter par email",
+      "invite_existing_user": "Inviter un utilisateur existant",
       "send_by_email": "Envoyer par email",
       "get_code": "Obtenir un code",
       "email_label": "Adresse email",
       "email_placeholder": "Entrez l'email du destinataire",
       "email_required": "L'email est requis",
+      "select_user": "Sélectionner un utilisateur",
+      "choose_user": "Choisissez un utilisateur",
+      "user_required": "Veuillez sélectionner un utilisateur",
+      "permission_label": "Permission",
+      "permission_read": "Lecture",
+      "permission_write": "Écriture",
+      "permission_admin": "Administrateur",
       "message_label": "Message personnel (optionnel)",
       "message_placeholder": "Ajoutez un message d'accompagnement...",
       "language_label": "Langue de l'invitation",
       "send_invitation": "Envoyer l'invitation",
+      "add_user_to_project": "Ajouter au projet",
       "sending": "Envoi en cours...",
+      "adding_user": "Ajout en cours...",
       "invitation_sent_success": "Invitation envoyée avec succès à {email}",
       "invitation_send_error": "Erreur lors de l'envoi de l'invitation",
+      "invitation_send_error_project_not_found": "Projet non trouvé",
+      "invitation_send_error_already_invited": "Une invitation active existe déjà pour cette adresse email",
+      "invitation_send_error_already_member": "L'utilisateur fait déjà partie de ce projet",
+      "invitation_send_error_generic": "Échec de l'envoi de l'invitation",
+      "user_added_success": "Utilisateur ajouté au projet avec succès",
+      "user_add_error": "Erreur lors de l'ajout de l'utilisateur",
+      "user_already_in_project": "Cet utilisateur fait déjà partie du projet",
+      "user_already_invited": "Cet utilisateur a déjà été invité au projet",
+      "user_email_not_found": "Impossible de trouver l'email de l'utilisateur sélectionné",
+      "error_loading_users": "Erreur lors du chargement des utilisateurs",
       "generate_code_info": "Générez un code d'invitation que vous pouvez partager manuellement",
       "generate_code": "Générer un code",
       "generating": "Génération...",
@@ -384,10 +415,86 @@
         "subsections": {
           "fileTypes": "Types de Fichiers",
           "namingStandards": "Normes de Nommage",
-          "membersAndAccess": "Membres et Accès",
+          "members": "Membres et Accès",
           "invitations": "Invitations"
         }
       }
+    },
+    "members": {
+      "title": "Gestion des membres",
+      "add_member": "Ajouter un membre",
+      "no_members": "Aucun membre trouvé",
+      "no_members_desc": "Ajoutez des membres pour commencer à collaborer sur ce projet",
+      "no_project_selected": "Aucun projet sélectionné",
+      "load_error": "Erreur lors du chargement des membres",
+      "permission_updated": "Permission mise à jour avec succès",
+      "permission_update_error": "Erreur lors de la mise à jour de la permission",
+      "user_added": "Utilisateur ajouté avec succès",
+      "add_error": "Erreur lors de l'ajout de l'utilisateur",
+      "user_removed": "Utilisateur supprimé avec succès",
+      "remove_error": "Erreur lors de la suppression de l'utilisateur",
+      "add_modal": {
+        "title": "Ajouter un nouveau membre",
+        "user_id": "ID de l'utilisateur",
+        "user_id_placeholder": "Entrez l'ID de l'utilisateur",
+        "permission": "Permission"
+      },
+      "remove_modal": {
+        "title": "Supprimer le membre",
+        "message": "Êtes-vous sûr de vouloir supprimer {username} de ce projet ?",
+        "warning": "Cette action supprimera définitivement l'accès de cet utilisateur au projet."
+      },
+      "confirm_permission_change": {
+        "title": "Confirmer le changement de permission",
+        "message": "Voulez-vous changer la permission de {username} de {oldPermission} à {newPermission} ?"
+      },
+      "confirm_remove": {
+        "title": "Supprimer le membre",
+        "message": "Êtes-vous sûr de vouloir supprimer {username} de ce projet ?"
+      }
+    },
+    "invitations": {
+      "title": "Invitations en attente",
+      "send_invitation": "Envoyer une invitation",
+      "no_invitations": "Aucune invitation en attente",
+      "no_invitations_desc": "Envoyez des invitations pour inviter de nouveaux collaborateurs",
+      "load_error": "Erreur lors du chargement des invitations",
+      "no_project_error": "Aucun projet sélectionné",
+      "sent_on": "Envoyée le",
+      "resend": "Renvoyer",
+      "cancel": "Annuler l'invitation",
+      "invitation_sent": "Invitation envoyée avec succès",
+      "send_error": "Erreur lors de l'envoi de l'invitation",
+      "invitation_resent": "Invitation renvoyée avec succès",
+      "resend_error": "Erreur lors du renvoi de l'invitation",
+      "invitation_canceled": "Invitation annulée avec succès",
+      "cancel_error": "Erreur lors de l'annulation de l'invitation",
+      "send": "Envoyer",
+      "status": {
+        "pending": "En attente",
+        "accepted": "Acceptée",
+        "declined": "Refusée",
+        "expired": "Expirée"
+      },
+      "send_modal": {
+        "title": "Envoyer une invitation",
+        "email": "Adresse e-mail",
+        "email_placeholder": "exemple@domaine.com",
+        "permission": "Permission",
+        "message": "Message personnalisé (optionnel)",
+        "message_placeholder": "Ajoutez un message personnel à votre invitation..."
+      },
+      "cancel_modal": {
+        "title": "Annuler l'invitation",
+        "message": "Êtes-vous sûr de vouloir annuler l'invitation envoyée à {email} ?",
+        "warning": "Cette action supprimera définitivement l'invitation et l'utilisateur ne pourra plus rejoindre le projet avec ce lien."
+      }
+    },
+    "permissions": {
+      "read": "Lecture",
+      "write": "Écriture",
+      "admin": "Administrateur",
+      "owner": "Propriétaire"
     }
   },
 
