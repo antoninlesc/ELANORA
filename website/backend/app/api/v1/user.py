@@ -6,11 +6,14 @@ from app.crud.user import get_all_active_users
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
 from app.model.user import User
+from app.model.address import Address
+from app.model.city import City
 from app.schema.responses.user import (
     AddressResponse,
     UserListResponse,
     UserProfileResponse,
     UserResponse,
+    CityResponse,
 )
 from app.utils.database import DatabaseUtils
 
@@ -41,19 +44,29 @@ async def get_current_user_profile(
     db: AsyncSession = get_db_dep,
 ) -> UserProfileResponse:
     """Retrieve the current user's complete profile including address."""
-    # Fetch user with address relationship preloaded
+    # Fetch user with address, city, and country relationships preloaded
     user_with_address = await DatabaseUtils.get_by_id(
         db,
         User,
         "user_id",
         user.user_id,
-        options=[selectinload(User.address)]
+        options=[
+            selectinload(User.address)
+            .selectinload(Address.city)
+            .selectinload(City.country)
+        ]
     )
 
     address_data = None
     if user_with_address and user_with_address.address:
-        # For now, we'll skip the city information to avoid complexity
-        # We can add it later when needed
+        city_obj = user_with_address.address.city
+        city_response = None
+        if city_obj:
+            city_response = CityResponse(
+                city_id=city_obj.city_id,
+                name=city_obj.city_name,
+                country=city_obj.country.country_name if city_obj.country else None,
+            )
         address_data = AddressResponse(
             address_id=user_with_address.address.address_id,
             street_number=user_with_address.address.street_number,
@@ -63,7 +76,7 @@ async def get_current_user_profile(
             address_line_2=user_with_address.address.address_line_2,
             created_at=user_with_address.address.created_at,
             updated_at=user_with_address.address.updated_at,
-            city=None,  # Skip city for now
+            city=city_response,
         )
 
     # Use current user data or fetched user data
