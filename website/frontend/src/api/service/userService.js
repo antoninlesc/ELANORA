@@ -9,6 +9,14 @@ export async function fetchUser() {
 }
 
 /**
+ * Fetch current user's complete profile including address.
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function fetchUserProfile() {
+  return await axiosInstance.get('/user/me/profile');
+}
+
+/**
  * Fetch all active users.
  * @returns {Promise<import('axios').AxiosResponse>}
  */

@@ -610,5 +610,76 @@
     "enterSingleOrListOrRange": "Enter a single value, a comma/semicolon separated list, or a range (e.g. {example}).",
     "invalidLength": "Invalid length for \"{name}\".",
     "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle"
+  },
+
+  "profile": {
+    "title": "Profile",
+    "menu": {
+      "overview": "Overview",
+      "settings": "Settings",
+      "security": "Security",
+      "notifications": "Notifications"
+    },
+    "overview": {
+      "title": "Profile Overview",
+      "description": "View and manage your personal information",
+      "loading": "Loading your profile...",
+      "error_title": "Unable to load profile",
+      "empty_title": "No profile data",
+      "empty_message": "Your profile information is not available.",
+      "edit": "Edit",
+      "personal_info": {
+        "title": "Personal Information",
+        "full_name": "Full Name",
+        "username": "Username",
+        "email": "Email Address",
+        "phone": "Phone Number",
+        "verified": "Verified",
+        "unverified": "Unverified"
+      },
+      "professional_info": {
+        "title": "Professional Information",
+        "affiliation": "Affiliation",
+        "department": "Department",
+        "role": "Role",
+        "roles": {
+          "admin": "Administrator",
+          "public": "Public User"
+        }
+      },
+      "address_info": {
+        "title": "Address Information",
+        "street": "Street",
+        "address_line_2": "Address Line 2",
+        "city_postal": "City & Postal Code"
+      },
+      "account_info": {
+        "title": "Account Information",
+        "member_since": "Member Since",
+        "last_updated": "Last Updated",
+        "last_login": "Last Login",
+        "account_status": "Account Status",
+        "active": "Active",
+        "inactive": "Inactive"
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your preferences and account settings",
+      "coming_soon": "Settings management will be available soon."
+    },
+    "security": {
+      "title": "Security",
+      "description": "Manage your password and security preferences",
+      "coming_soon": "Security settings will be available soon."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Configure your notification preferences",
+      "coming_soon": "Notification settings will be available soon."
+    },
+    "errors": {
+      "load_failed": "Failed to load profile information. Please try again."
+    }
   }
 }

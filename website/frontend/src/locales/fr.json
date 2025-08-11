@@ -598,5 +598,76 @@
     "enterSingleOrListOrRange": "Entrez une seule valeur, une liste séparée par des virgules/points-virgules, ou une plage (ex. : {example}).",
     "invalidLength": "Longueur invalide pour \"{name}\".",
     "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra"
+  },
+
+  "profile": {
+    "title": "Profil",
+    "menu": {
+      "overview": "Aperçu",
+      "settings": "Paramètres",
+      "security": "Sécurité",
+      "notifications": "Notifications"
+    },
+    "overview": {
+      "title": "Aperçu du profil",
+      "description": "Consultez et gérez vos informations personnelles",
+      "loading": "Chargement de votre profil...",
+      "error_title": "Impossible de charger le profil",
+      "empty_title": "Aucune donnée de profil",
+      "empty_message": "Vos informations de profil ne sont pas disponibles.",
+      "edit": "Modifier",
+      "personal_info": {
+        "title": "Informations personnelles",
+        "full_name": "Nom complet",
+        "username": "Nom d'utilisateur",
+        "email": "Adresse e-mail",
+        "phone": "Numéro de téléphone",
+        "verified": "Vérifié",
+        "unverified": "Non vérifié"
+      },
+      "professional_info": {
+        "title": "Informations professionnelles",
+        "affiliation": "Affiliation",
+        "department": "Département",
+        "role": "Rôle",
+        "roles": {
+          "admin": "Administrateur",
+          "public": "Utilisateur public"
+        }
+      },
+      "address_info": {
+        "title": "Informations d'adresse",
+        "street": "Rue",
+        "address_line_2": "Ligne d'adresse 2",
+        "city_postal": "Ville et code postal"
+      },
+      "account_info": {
+        "title": "Informations du compte",
+        "member_since": "Membre depuis",
+        "last_updated": "Dernière mise à jour",
+        "last_login": "Dernière connexion",
+        "account_status": "Statut du compte",
+        "active": "Actif",
+        "inactive": "Inactif"
+      }
+    },
+    "settings": {
+      "title": "Paramètres",
+      "description": "Gérez vos préférences et paramètres de compte",
+      "coming_soon": "La gestion des paramètres sera bientôt disponible."
+    },
+    "security": {
+      "title": "Sécurité",
+      "description": "Gérez votre mot de passe et préférences de sécurité",
+      "coming_soon": "Les paramètres de sécurité seront bientôt disponibles."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Configurez vos préférences de notification",
+      "coming_soon": "Les paramètres de notification seront bientôt disponibles."
+    },
+    "errors": {
+      "load_failed": "Échec du chargement des informations de profil. Veuillez réessayer."
+    }
   }
 }
