@@ -1,9 +1,13 @@
 <template>
   <div class="profile-page">
+    <div class="profile-bg-gradient"></div>
     <div class="profile-container">
       <!-- Sidebar menu -->
       <aside class="profile-sidebar">
         <div class="profile-sidebar-header">
+          <div class="profile-avatar">
+            <span>{{ userProfile?.first_name?.[0] || '👤' }}</span>
+          </div>
           <h2>{{ t('profile.title') }}</h2>
         </div>
         <nav class="profile-menu">
@@ -28,43 +32,52 @@
       <!-- Main content area -->
       <main class="profile-content">
         <div class="profile-content-header">
-          <h1>{{ currentMenuItem?.title }}</h1>
-          <p v-if="currentMenuItem?.description" class="profile-content-subtitle">
-            {{ currentMenuItem.description }}
-          </p>
-        </div>
-
-        <!-- Profile Overview Section -->
-        <ProfileOverview
-          v-if="currentSection === 'overview'"
-          :user-profile="userProfile"
-          :loading="loading"
-          :error="error"
-          @profile-updated="loadUserProfile"
-          @show-message="handleMessage"
-        />
-
-        <!-- Settings Section (placeholder) -->
-        <div v-else-if="currentSection === 'settings'" class="profile-section">
-          <div class="profile-placeholder">
-            <h3>{{ t('profile.settings.title') }}</h3>
-            <p>{{ t('profile.settings.coming_soon') }}</p>
+          <div class="profile-header-flex">
+            <div class="profile-header-avatar">
+              <span>{{ userProfile?.first_name?.[0] || '👤' }}</span>
+            </div>
+            <div>
+              <h1>{{ currentMenuItem?.title }}</h1>
+              <p v-if="currentMenuItem?.description" class="profile-content-subtitle">
+                {{ currentMenuItem.description }}
+              </p>
+            </div>
           </div>
         </div>
 
-        <!-- Security Section (placeholder) -->
-        <div v-else-if="currentSection === 'security'" class="profile-section">
-          <div class="profile-placeholder">
-            <h3>{{ t('profile.security.title') }}</h3>
-            <p>{{ t('profile.security.coming_soon') }}</p>
-          </div>
-        </div>
+        <div class="profile-main-card">
+          <!-- Profile Overview Section -->
+          <ProfileOverview
+            v-if="currentSection === 'overview'"
+            :user-profile="userProfile"
+            :loading="loading"
+            :error="error"
+            @profile-updated="loadUserProfile"
+            @show-message="handleMessage"
+          />
 
-        <!-- Notifications Section (placeholder) -->
-        <div v-else-if="currentSection === 'notifications'" class="profile-section">
-          <div class="profile-placeholder">
-            <h3>{{ t('profile.notifications.title') }}</h3>
-            <p>{{ t('profile.notifications.coming_soon') }}</p>
+          <!-- Settings Section (placeholder) -->
+          <div v-else-if="currentSection === 'settings'" class="profile-section">
+            <div class="profile-placeholder">
+              <h3>{{ t('profile.settings.title') }}</h3>
+              <p>{{ t('profile.settings.coming_soon') }}</p>
+            </div>
+          </div>
+
+          <!-- Security Section (placeholder) -->
+          <div v-else-if="currentSection === 'security'" class="profile-section">
+            <div class="profile-placeholder">
+              <h3>{{ t('profile.security.title') }}</h3>
+              <p>{{ t('profile.security.coming_soon') }}</p>
+            </div>
+          </div>
+
+          <!-- Notifications Section (placeholder) -->
+          <div v-else-if="currentSection === 'notifications'" class="profile-section">
+            <div class="profile-placeholder">
+              <h3>{{ t('profile.notifications.title') }}</h3>
+              <p>{{ t('profile.notifications.coming_soon') }}</p>
+            </div>
           </div>
         </div>
       </main>
@@ -157,49 +170,88 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Fond dégradé moderne */
 .profile-page {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f8fafc;
+  position: relative;
+  background: transparent;
+}
+
+.profile-bg-gradient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(120deg, #e0e7ff 0%, #f8fafc 60%, #f0fdfa 100%);
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 .profile-container {
   display: flex;
   flex: 1;
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: 1200px;
+  margin: 3rem auto 2rem auto;
   width: 100%;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: rgba(255,255,255,0.95);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(60, 80, 180, 0.10), 0 1.5px 8px rgba(0,0,0,0.04);
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 /* Sidebar Styles */
+
 .profile-sidebar {
-  width: 280px;
-  background: #f8fafc;
+  width: 260px;
+  background: rgba(248,250,252,0.98);
   border-right: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
+  box-shadow: 2px 0 12px 0 rgba(60,80,180,0.04);
+  z-index: 2;
 }
 
 .profile-sidebar-header {
-  padding: 2rem 1.5rem 1rem;
+  padding: 2.5rem 1.5rem 1.5rem;
   border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a5b4fc 0%, #f0fdfa 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 2px 8px rgba(60,80,180,0.08);
 }
 
 .profile-sidebar-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: #1a202c;
+  letter-spacing: 0.01em;
 }
+
 
 .profile-menu {
   flex: 1;
-  padding: 1rem 0;
+  padding: 1.2rem 0 1.2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .profile-menu-item {
@@ -207,26 +259,28 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.875rem 1.5rem;
+  padding: 0.85rem 1.5rem;
   border: none;
   background: none;
   color: #4a5568;
-  font-size: 1rem;
+  font-size: 1.05rem;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s;
-  border-radius: 0;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+  border-radius: 8px 0 0 8px;
+  position: relative;
 }
-
 .profile-menu-item:hover {
-  background: #edf2f7;
-  color: #2d3748;
+  background: #e0e7ff;
+  color: #3730a3;
+  box-shadow: 2px 2px 8px 0 rgba(60,80,180,0.06);
 }
-
 .profile-menu-item.active {
-  background: #e6f3ff;
+  background: linear-gradient(90deg, #e0e7ff 80%, #f8fafc 100%);
   color: #2563eb;
   border-right: 3px solid #2563eb;
+  font-weight: 600;
+  box-shadow: 2px 2px 12px 0 rgba(60,80,180,0.08);
 }
 
 .profile-menu-icon {
@@ -239,53 +293,87 @@ onMounted(() => {
   font-weight: 500;
 }
 
+
 .profile-sidebar-footer {
-  padding: 1rem 1.5rem;
+  padding: 1.2rem 1.5rem 1.5rem 1.5rem;
   border-top: 1px solid #e2e8f0;
 }
 
 .language-toggle {
   width: 100%;
-  padding: 0.75rem;
-  background: #2563eb;
+  padding: 0.85rem;
+  background: linear-gradient(90deg, #2563eb 80%, #60a5fa 100%);
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  box-shadow: 0 2px 8px rgba(60,80,180,0.08);
 }
-
 .language-toggle:hover {
-  background: #1d4ed8;
+  background: linear-gradient(90deg, #1d4ed8 80%, #2563eb 100%);
 }
 
 /* Main Content Styles */
+
 .profile-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: transparent;
 }
 
 .profile-content-header {
-  padding: 2rem 2rem 1rem;
-  border-bottom: 1px solid #e2e8f0;
-  background: white;
+  padding: 2.5rem 2.5rem 1.5rem 2.5rem;
+  border-bottom: none;
+  background: transparent;
+}
+
+.profile-header-flex {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.profile-header-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a5b4fc 0%, #f0fdfa 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: #374151;
+  box-shadow: 0 2px 8px rgba(60,80,180,0.08);
 }
 
 .profile-content-header h1 {
   margin: 0 0 0.5rem 0;
-  font-size: 2rem;
+  font-size: 2.1rem;
   font-weight: 700;
   color: #1a202c;
+  letter-spacing: 0.01em;
 }
 
 .profile-content-subtitle {
   margin: 0;
   color: #6b7280;
-  font-size: 1.1rem;
+  font-size: 1.13rem;
+}
+
+.profile-main-card {
+  margin: 2.5rem 2.5rem 2.5rem 2.5rem;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(60,80,180,0.10), 0 1.5px 8px rgba(0,0,0,0.04);
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  min-height: 400px;
+  position: relative;
+  z-index: 2;
 }
 
 .profile-section {
@@ -312,47 +400,78 @@ onMounted(() => {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .profile-container {
     flex-direction: column;
     border-radius: 0;
-    height: 100vh;
+    margin: 0;
+    max-width: 100vw;
+    min-height: 100vh;
   }
-
   .profile-sidebar {
     width: 100%;
-    max-height: 200px;
-    overflow-y: auto;
+    max-height: 220px;
+    flex-direction: row;
+    border-radius: 0;
+    box-shadow: none;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    align-items: flex-start;
+    padding-bottom: 0;
   }
-
+  .profile-sidebar-header {
+    flex-direction: row;
+    gap: 1rem;
+    padding: 1.2rem 1rem 1.2rem 1rem;
+    border-bottom: none;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  .profile-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+    margin-bottom: 0;
+  }
   .profile-menu {
-    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
     overflow-x: auto;
-    padding: 1rem;
+    width: 100%;
   }
-
   .profile-menu-item {
-    min-width: 120px;
+    min-width: 110px;
     flex-direction: column;
-    gap: 0.25rem;
-    padding: 0.75rem;
+    gap: 0.2rem;
+    padding: 0.7rem 0.5rem;
     text-align: center;
     border-radius: 8px;
+    font-size: 0.98rem;
   }
-
   .profile-menu-item.active {
     border-right: none;
     border-bottom: 3px solid #2563eb;
+    background: linear-gradient(180deg, #e0e7ff 80%, #f8fafc 100%);
   }
-
+  .profile-sidebar-footer {
+    padding: 1rem;
+    border-top: none;
+  }
   .profile-content-header {
-    padding: 1.5rem 1rem 1rem;
+    padding: 1.2rem 1rem 1rem 1rem;
   }
-
-  .profile-content-header h1 {
-    font-size: 1.5rem;
+  .profile-header-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
   }
-
+  .profile-main-card {
+    margin: 1.2rem 0.5rem 1.2rem 0.5rem;
+    padding: 1.2rem 0.7rem 1rem 0.7rem;
+    border-radius: 12px;
+    min-height: 300px;
+  }
   .profile-section {
     padding: 1rem;
   }
