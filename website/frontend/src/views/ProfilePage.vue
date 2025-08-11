@@ -177,15 +177,6 @@ onMounted(() => {
   background: transparent;
 }
 
-.profile-bg-gradient {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 60%, #e2e8f0 100%);
-  opacity: 0.9;
-  pointer-events: none;
-}
-
 .profile-container {
   display: flex;
   flex: 1;
