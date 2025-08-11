@@ -33,9 +33,7 @@
       <main class="profile-content">
         <div class="profile-content-header">
           <div class="profile-header-flex">
-            <div class="profile-header-avatar">
-              <span>{{ userProfile?.first_name?.[0] || '👤' }}</span>
-            </div>
+            
             <div>
               <h1>{{ currentMenuItem?.title }}</h1>
               <p v-if="currentMenuItem?.description" class="profile-content-subtitle">
