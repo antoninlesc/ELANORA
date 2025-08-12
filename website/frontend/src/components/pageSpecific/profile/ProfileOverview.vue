@@ -164,7 +164,7 @@
             </div>
             <h3>{{ t('profile.overview.professional_info.title') }}</h3>
           </div>
-          <button class="edit-button modern-edit-btn" @click="editProfessionalInfo">
+          <button class="edit-button modern-edit-btn" v-if="!editProfessionalMode" @click="editProfessionalInfo">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M18.5 2.49998C18.8978 2.10216 19.4374 1.87866 20 1.87866C20.5626 1.87866 21.1022 2.10216 21.5 2.49998C21.8978 2.89781 22.1213 3.43737 22.1213 3.99998C22.1213 4.56259 21.8978 5.10216 21.5 5.49998L12 15L8 16L9 12L18.5 2.49998Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -173,54 +173,118 @@
           </button>
         </div>
         <div class="profile-card-content">
-          <div class="profile-field-group">
-            <div class="profile-field">
-              <span class="profile-field-label">{{ t('profile.overview.professional_info.affiliation') }}</span>
-              <div class="profile-field-value">
-                <div class="field-content">
-                  <div class="field-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M3 21H21M5 21V7L13 2L21 7V21M9 9H10M14 9H15M9 13H10M14 13H15M9 17H10M14 17H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+          <template v-if="editProfessionalMode">
+            <div class="edit-form-container">
+              <div class="edit-field-group">
+                <div class="edit-field">
+                  <label for="edit-affiliation" class="edit-field-label">{{ t('profile.overview.professional_info.affiliation') }}</label>
+                  <input 
+                    id="edit-affiliation"
+                    v-model="editedProfessional.affiliation" 
+                    class="modern-input" 
+                    :class="{
+                      'error': professionalValidation.affiliation.isValid === false,
+                      'valid': professionalValidation.affiliation.isValid === true
+                    }"
+                    :disabled="savingProfessional"
+                    placeholder="Votre affiliation"
+                    @blur="validateProfessionalField('affiliation')"
+                  />
+                  <div v-if="professionalValidation.affiliation.message" 
+                       class="validation-message" 
+                       :class="professionalValidation.affiliation.isValid ? 'success' : 'error'">
+                    {{ professionalValidation.affiliation.message }}
                   </div>
-                  <span class="field-text">{{ userProfile.affiliation }}</span>
+                </div>
+                <div class="edit-field">
+                  <label for="edit-department" class="edit-field-label">{{ t('profile.overview.professional_info.department') }}</label>
+                  <input 
+                    id="edit-department"
+                    v-model="editedProfessional.department" 
+                    class="modern-input" 
+                    :class="{
+                      'error': professionalValidation.department.isValid === false,
+                      'valid': professionalValidation.department.isValid === true
+                    }"
+                    :disabled="savingProfessional"
+                    placeholder="Votre département"
+                    @blur="validateProfessionalField('department')"
+                  />
+                  <div v-if="professionalValidation.department.message" 
+                       class="validation-message" 
+                       :class="professionalValidation.department.isValid ? 'success' : 'error'">
+                    {{ professionalValidation.department.message }}
+                  </div>
+                </div>
+              </div>
+              <div class="edit-actions">
+                <button class="save-button modern-save-btn" @click="saveProfessional" :disabled="savingProfessional">
+                  <svg v-if="!savingProfessional" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <div v-else class="mini-spinner"></div>
+                  {{ savingProfessional ? t('common.saving') : t('common.save') }}
+                </button>
+                <button class="cancel-button modern-cancel-btn" @click="cancelEditProfessional" :disabled="savingProfessional">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  {{ t('common.cancel') }}
+                </button>
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <div class="profile-field-group">
+              <div class="profile-field">
+                <span class="profile-field-label">{{ t('profile.overview.professional_info.affiliation') }}</span>
+                <div class="profile-field-value">
+                  <div class="field-content">
+                    <div class="field-icon">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 21H21M5 21V7L13 2L21 7V21M9 9H10M14 9H15M9 13H10M14 13H15M9 17H10M14 17H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                    <span class="field-text">{{ userProfile.affiliation }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="profile-field">
+                <span class="profile-field-label">{{ t('profile.overview.professional_info.department') }}</span>
+                <div class="profile-field-value">
+                  <div class="field-content">
+                    <div class="field-icon">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                    <span class="field-text">{{ userProfile.department }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="profile-field">
+                <span class="profile-field-label">{{ t('profile.overview.professional_info.role') }}</span>
+                <div class="profile-field-value">
+                  <div class="field-content">
+                    <div class="field-icon">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 6.253V16.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M18 9V21C18 21.6 17.6 22 17 22H7C6.4 22 6 21.6 6 21V9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M4 9H20L18.5 2H5.5L4 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                    <span class="role-badge modern-role-badge" :class="userProfile.role.toLowerCase()">
+                      {{ t(`profile.overview.professional_info.roles.${userProfile.role.toLowerCase()}`) }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="profile-field">
-              <span class="profile-field-label">{{ t('profile.overview.professional_info.department') }}</span>
-              <div class="profile-field-value">
-                <div class="field-content">
-                  <div class="field-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                  <span class="field-text">{{ userProfile.department }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="profile-field">
-              <span class="profile-field-label">{{ t('profile.overview.professional_info.role') }}</span>
-              <div class="profile-field-value">
-                <div class="field-content">
-                  <div class="field-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 6.253V16.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                      <path d="M18 9V21C18 21.6 17.6 22 17 22H7C6.4 22 6 21.6 6 21V9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      <path d="M4 9H20L18.5 2H5.5L4 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                  <span class="role-badge modern-role-badge" :class="userProfile.role.toLowerCase()">
-                    {{ t(`profile.overview.professional_info.roles.${userProfile.role.toLowerCase()}`) }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+          </template>
         </div>
       </div>
 
@@ -236,7 +300,7 @@
             </div>
             <h3>{{ t('profile.overview.address_info.title') }}</h3>
           </div>
-          <button class="edit-button modern-edit-btn" @click="editAddress">
+          <button class="edit-button modern-edit-btn" v-if="!editAddressMode" @click="editAddress">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M18.5 2.49998C18.8978 2.10216 19.4374 1.87866 20 1.87866C20.5626 1.87866 21.1022 2.10216 21.5 2.49998C21.8978 2.89781 22.1213 3.43737 22.1213 3.99998C22.1213 4.56259 21.8978 5.10216 21.5 5.49998L12 15L8 16L9 12L18.5 2.49998Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -245,63 +309,191 @@
           </button>
         </div>
         <div class="profile-card-content">
-          <div class="profile-field-group">
-            <div class="profile-field">
-              <span class="profile-field-label">{{ t('profile.overview.address_info.street') }}</span>
-              <div class="profile-field-value">
-                <div class="field-content">
-                  <div class="field-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      <polyline points="9,22 9,12 15,12 15,22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+          <template v-if="editAddressMode">
+            <div class="edit-form-container">
+              <div class="edit-field-group">
+                <div class="edit-field">
+                  <label for="edit-country" class="edit-field-label">{{ t('register.country_label') }} <span class="required">*</span></label>
+                  <select 
+                    id="edit-country"
+                    v-model="editedAddress.countryId" 
+                    class="modern-input" 
+                    :disabled="savingAddress"
+                    @change="onCountryChange"
+                  >
+                    <option value="">{{ t('register.country_placeholder') }}</option>
+                    <option 
+                      v-for="country in countries" 
+                      :key="country.country_id" 
+                      :value="country.country_id"
+                    >
+                      {{ country.country_name }}
+                    </option>
+                  </select>
+                </div>
+                
+                <div class="edit-field">
+                  <label for="edit-city" class="edit-field-label">{{ t('register.city_label') }} <span class="required">*</span></label>
+                  <input 
+                    id="edit-city"
+                    v-model="editedAddress.cityName" 
+                    class="modern-input" 
+                    :class="{
+                      'error': addressValidation.city.isValid === false,
+                      'valid': addressValidation.city.isValid === true,
+                      'loading': addressValidation.city.loading
+                    }"
+                    :disabled="!editedAddress.countryId || savingAddress"
+                    placeholder="Nom de la ville"
+                    @blur="validateCityField"
+                    @input="onCityChange"
+                  />
+                  <div v-if="cityValidationMessage" :class="`validation-message ${cityValidationMessage.type}`">
+                    {{ cityValidationMessage.text }}
                   </div>
-                  <span class="field-text">
-                    <span v-if="userProfile.address.street_number">
-                      {{ userProfile.address.street_number }}
+                </div>
+
+                <div class="edit-field">
+                  <label for="edit-postal-code" class="edit-field-label">{{ t('register.postal_code_label') }} <span class="required">*</span></label>
+                  <input 
+                    id="edit-postal-code"
+                    v-model="editedAddress.postalCode" 
+                    class="modern-input" 
+                    :class="{
+                      'error': addressValidation.postalCode.isValid === false,
+                      'valid': addressValidation.postalCode.isValid === true,
+                      'loading': addressValidation.postalCode.loading
+                    }"
+                    :disabled="!editedAddress.countryId || savingAddress"
+                    placeholder="Code postal"
+                    @blur="validatePostalCodeField"
+                    @input="onPostalCodeChange"
+                  />
+                  <div v-if="postalCodeValidationMessage" :class="`validation-message ${postalCodeValidationMessage.type}`">
+                    {{ postalCodeValidationMessage.text }}
+                  </div>
+                </div>
+
+                <div class="edit-field">
+                  <label for="edit-street-name" class="edit-field-label">{{ t('register.street_name_label') }} <span class="required">*</span></label>
+                  <input 
+                    id="edit-street-name"
+                    v-model="editedAddress.streetName" 
+                    class="modern-input" 
+                    :class="{
+                      'error': addressValidation.streetName.isValid === false,
+                      'valid': addressValidation.streetName.isValid === true,
+                      'loading': addressValidation.streetInCity.loading
+                    }"
+                    :disabled="savingAddress"
+                    placeholder="Nom de rue"
+                    @blur="validateStreetNameField"
+                    @input="onStreetNameChange"
+                  />
+                  <div v-if="streetValidationMessage" :class="`validation-message ${streetValidationMessage.type}`">
+                    {{ streetValidationMessage.text }}
+                  </div>
+                </div>
+
+                <div class="edit-field">
+                  <label for="edit-street-number" class="edit-field-label">{{ t('register.street_number_label') }}</label>
+                  <input 
+                    id="edit-street-number"
+                    v-model="editedAddress.streetNumber" 
+                    class="modern-input" 
+                    :disabled="savingAddress"
+                    placeholder="Numéro de rue (optionnel)"
+                  />
+                </div>
+
+                <div class="edit-field">
+                  <label for="edit-address-line2" class="edit-field-label">{{ t('register.address_line2_label') }}</label>
+                  <input 
+                    id="edit-address-line2"
+                    v-model="editedAddress.addressLine2" 
+                    class="modern-input" 
+                    :disabled="savingAddress"
+                    placeholder="Complément d'adresse (optionnel)"
+                  />
+                </div>
+              </div>
+              <div class="edit-actions">
+                <button class="save-button modern-save-btn" @click="saveAddress" :disabled="savingAddress">
+                  <svg v-if="!savingAddress" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <div v-else class="mini-spinner"></div>
+                  {{ savingAddress ? t('common.saving') : t('common.save') }}
+                </button>
+                <button class="cancel-button modern-cancel-btn" @click="cancelEditAddress" :disabled="savingAddress">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  {{ t('common.cancel') }}
+                </button>
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <div class="profile-field-group">
+              <div class="profile-field">
+                <span class="profile-field-label">{{ t('profile.overview.address_info.street') }}</span>
+                <div class="profile-field-value">
+                  <div class="field-content">
+                    <div class="field-icon">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <polyline points="9,22 9,12 15,12 15,22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                    <span class="field-text">
+                      <span v-if="userProfile.address.street_number">
+                        {{ userProfile.address.street_number }}
+                      </span>
+                      {{ userProfile.address.street_name }}
                     </span>
-                    {{ userProfile.address.street_name }}
-                  </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div v-if="userProfile.address.address_line_2" class="profile-field">
-              <span class="profile-field-label">{{ t('profile.overview.address_info.address_line_2') }}</span>
-              <div class="profile-field-value">
-                <div class="field-content">
-                  <div class="field-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      <line x1="7" y1="8" x2="17" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                      <line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                      <line x1="7" y1="16" x2="11" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
+              <div v-if="userProfile.address.address_line_2" class="profile-field">
+                <span class="profile-field-label">{{ t('profile.overview.address_info.address_line_2') }}</span>
+                <div class="profile-field-value">
+                  <div class="field-content">
+                    <div class="field-icon">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <line x1="7" y1="8" x2="17" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="7" y1="16" x2="11" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                    </div>
+                    <span class="field-text">{{ userProfile.address.address_line_2 }}</span>
                   </div>
-                  <span class="field-text">{{ userProfile.address.address_line_2 }}</span>
                 </div>
               </div>
-            </div>
-            <div class="profile-field">
-              <span class="profile-field-label">{{ t('profile.overview.address_info.city_postal') }}</span>
-              <div class="profile-field-value">
-                <div class="field-content">
-                  <div class="field-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                      <path d="M2 12H22" stroke="currentColor" stroke-width="2"/>
-                      <path d="M12 2C14.5013 4.73835 15.9228 8.29203 16 12C15.9228 15.708 14.5013 19.2616 12 22C9.49872 19.2616 8.07725 15.708 8 12C8.07725 8.29203 9.49872 4.73835 12 2Z" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                  </div>
-                  <span class="field-text">
-                    {{ userProfile.address.postal_code }}
-                    <span v-if="userProfile.address.city">
-                      {{ userProfile.address.city.name }}, {{ userProfile.address.city.country }}
+              <div class="profile-field">
+                <span class="profile-field-label">{{ t('profile.overview.address_info.city_postal') }}</span>
+                <div class="profile-field-value">
+                  <div class="field-content">
+                    <div class="field-icon">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <path d="M2 12H22" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 2C14.5013 4.73835 15.9228 8.29203 16 12C15.9228 15.708 14.5013 19.2616 12 22C9.49872 19.2616 8.07725 15.708 8 12C8.07725 8.29203 9.49872 4.73835 12 2Z" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                    </div>
+                    <span class="field-text">
+                      {{ userProfile.address.postal_code }}
+                      <span v-if="userProfile.address.city">
+                        {{ userProfile.address.city.name }}, {{ userProfile.address.city.country }}
+                      </span>
                     </span>
-                  </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
       </div>
 
@@ -401,9 +593,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { updateUserProfile } from '@/api/service/userService.js';
+import { updateUserProfile, updateUserAddress } from '@/api/service/userService.js';
 
 const { t } = useI18n();
 
@@ -424,20 +616,469 @@ const props = defineProps({
 
 const emit = defineEmits(['profile-updated', 'show-message']);
 
+// Username editing
 const editUsernameMode = ref(false);
 const editedUsername = ref('');
 const saving = ref(false);
 
+// Professional info editing
+const editProfessionalMode = ref(false);
+const editedProfessional = ref({
+  affiliation: '',
+  department: '',
+});
+const savingProfessional = ref(false);
+const professionalValidation = ref({
+  affiliation: { isValid: null, message: '' },
+  department: { isValid: null, message: '' },
+});
+
+// Address editing
+const editAddressMode = ref(false);
+const editedAddress = ref({
+  streetName: '',
+  streetNumber: '',
+  addressLine2: '',
+  cityName: '',
+  postalCode: '',
+  countryId: '',
+});
+const savingAddress = ref(false);
+const countries = ref([]);
+const addressValidation = ref({
+  city: { isValid: null, message: '', loading: false },
+  postalCode: { isValid: null, message: '', loading: false },
+  streetName: { isValid: null, message: '' },
+  streetInCity: { isValid: null, message: '', loading: false },
+  postalCodeInCity: { isValid: null, message: '', loading: false },
+});
+
+// Validation timeouts
+let cityValidationTimeout = null;
+let streetValidationTimeout = null;
+let postalCodeValidationTimeout = null;
+
+// Computed properties for validation messages
+const cityValidationMessage = computed(() => {
+  if (addressValidation.value.city.loading) {
+    return { type: 'info', text: t('register.validating_city') };
+  }
+  if (addressValidation.value.city.isValid === false) {
+    return { type: 'error', text: addressValidation.value.city.message };
+  }
+  if (addressValidation.value.city.isValid === true && addressValidation.value.city.message) {
+    return { type: 'success', text: addressValidation.value.city.message };
+  }
+  return null;
+});
+
+const streetValidationMessage = computed(() => {
+  if (addressValidation.value.streetInCity.loading) {
+    return { type: 'info', text: t('register.validating_street_in_city') };
+  }
+  if (addressValidation.value.streetInCity.isValid === false) {
+    return { type: 'warning', text: addressValidation.value.streetInCity.message };
+  }
+  if (addressValidation.value.streetInCity.isValid === true) {
+    return { type: 'success', text: addressValidation.value.streetInCity.message };
+  }
+  if (addressValidation.value.streetName.isValid === false) {
+    return { type: 'error', text: addressValidation.value.streetName.message };
+  }
+  if (addressValidation.value.streetName.isValid === true && addressValidation.value.streetName.message) {
+    return { type: 'success', text: addressValidation.value.streetName.message };
+  }
+  return null;
+});
+
+const postalCodeValidationMessage = computed(() => {
+  if (addressValidation.value.postalCode.loading) {
+    return { type: 'info', text: t('register.validating_postal_code') };
+  }
+  if (addressValidation.value.postalCodeInCity.loading) {
+    return { type: 'info', text: t('register.validating_postal_code_in_city') };
+  }
+  if (addressValidation.value.postalCodeInCity.isValid === false) {
+    return { type: 'warning', text: addressValidation.value.postalCodeInCity.message };
+  }
+  if (addressValidation.value.postalCodeInCity.isValid === true) {
+    return { type: 'success', text: addressValidation.value.postalCodeInCity.message };
+  }
+  if (addressValidation.value.postalCode.isValid === false) {
+    return { type: 'error', text: addressValidation.value.postalCode.message };
+  }
+  if (addressValidation.value.postalCode.isValid === true && addressValidation.value.postalCode.message) {
+    return { type: 'success', text: addressValidation.value.postalCode.message };
+  }
+  return null;
+});
+
+// Watchers
+
+// Watchers
 watch(
   () => props.userProfile,
   (newVal) => {
     if (newVal && !editUsernameMode.value) {
       editedUsername.value = newVal.username;
     }
+    if (newVal && !editProfessionalMode.value) {
+      editedProfessional.value = {
+        affiliation: newVal.affiliation || '',
+        department: newVal.department || '',
+      };
+    }
+    if (newVal && !editAddressMode.value) {
+      editedAddress.value = {
+        streetName: newVal.address?.street_name || '',
+        streetNumber: newVal.address?.street_number || '',
+        addressLine2: newVal.address?.address_line_2 || '',
+        cityName: newVal.address?.city?.name || '',
+        postalCode: newVal.address?.postal_code || '',
+        countryId: newVal.address?.city?.country || '',
+      };
+    }
   },
   { immediate: true }
 );
 
+// Load countries when component mounts
+const loadCountries = async () => {
+  try {
+    const { getCountries } = await import('@/api/service/locationService');
+    const result = await getCountries();
+    if (result.success) {
+      countries.value = result.data;
+    }
+  } catch (error) {
+    console.error('Error loading countries:', error);
+  }
+};
+
+// Professional validation functions
+function validateProfessionalField(fieldName) {
+  switch (fieldName) {
+    case 'affiliation':
+      if (!editedProfessional.value.affiliation) {
+        professionalValidation.value.affiliation = {
+          isValid: false,
+          message: t('register.affiliation_required')
+        };
+      } else if (editedProfessional.value.affiliation.length < 2) {
+        professionalValidation.value.affiliation = {
+          isValid: false,
+          message: 'Affiliation must be at least 2 characters'
+        };
+      } else if (editedProfessional.value.affiliation.length > 100) {
+        professionalValidation.value.affiliation = {
+          isValid: false,
+          message: 'Affiliation must be less than 100 characters'
+        };
+      } else {
+        professionalValidation.value.affiliation = {
+          isValid: true,
+          message: ''
+        };
+      }
+      break;
+
+    case 'department':
+      if (!editedProfessional.value.department) {
+        professionalValidation.value.department = {
+          isValid: false,
+          message: t('register.department_required')
+        };
+      } else if (editedProfessional.value.department.length < 2) {
+        professionalValidation.value.department = {
+          isValid: false,
+          message: 'Department must be at least 2 characters'
+        };
+      } else if (editedProfessional.value.department.length > 100) {
+        professionalValidation.value.department = {
+          isValid: false,
+          message: 'Department must be less than 100 characters'
+        };
+      } else {
+        professionalValidation.value.department = {
+          isValid: true,
+          message: ''
+        };
+      }
+      break;
+  }
+}
+
+// Address validation functions (matching RegisterPage.vue)
+async function validateCityField() {
+  if (!editedAddress.value.cityName || !editedAddress.value.countryId) {
+    const message = editedAddress.value.cityName ? t('register.country_required') : t('register.city_required');
+    addressValidation.value.city = { isValid: false, message, loading: false };
+    return;
+  }
+
+  addressValidation.value.city.loading = true;
+  
+  try {
+    const { validateCity } = await import('@/api/service/locationService');
+    const result = await validateCity(editedAddress.value.cityName, editedAddress.value.countryId);
+    
+    await handleCityValidationResult(result);
+  } catch (error) {
+    console.error('Error validating city:', error);
+    addressValidation.value.city = {
+      isValid: false,
+      message: t('register.city_validation_error'),
+      loading: false
+    };
+  }
+}
+
+async function handleCityValidationResult(result) {
+  if (!result.success) {
+    addressValidation.value.city = {
+      isValid: false,
+      message: t('register.city_validation_error'),
+      loading: false
+    };
+    return;
+  }
+
+  const message = result.data.isValid 
+    ? t('register.city_valid_in_country') 
+    : (result.data.message || t('register.city_not_found_in_country'));
+
+  addressValidation.value.city = {
+    isValid: result.data.isValid,
+    message,
+    loading: false
+  };
+  
+  if (result.data.isValid) {
+    await performCrossValidations();
+  } else {
+    resetCrossValidations();
+  }
+}
+
+async function performCrossValidations() {
+  if (editedAddress.value.streetName) {
+    await validateStreetInCityField();
+  }
+  if (editedAddress.value.postalCode) {
+    await validatePostalCodeInCityField();
+  }
+}
+
+function resetCrossValidations() {
+  addressValidation.value.streetInCity = { isValid: null, message: '', loading: false };
+  addressValidation.value.postalCodeInCity = { isValid: null, message: '', loading: false };
+}
+
+async function validatePostalCodeField() {
+  if (!editedAddress.value.postalCode || !editedAddress.value.countryId) {
+    addressValidation.value.postalCode = { 
+      isValid: false, 
+      message: t('register.postal_code_required'), 
+      loading: false 
+    };
+    return;
+  }
+
+  addressValidation.value.postalCode.loading = true;
+
+  try {
+    const { validatePostalCode } = await import('@/api/service/locationService');
+    const result = await validatePostalCode(editedAddress.value.postalCode, editedAddress.value.countryId);
+    
+    if (result.success) {
+      const isFormatValid = result.data.isValid;
+      
+      addressValidation.value.postalCode = {
+        isValid: isFormatValid,
+        message: isFormatValid ? '' : result.data.message,
+        loading: false
+      };
+
+      if (isFormatValid && editedAddress.value.cityName && addressValidation.value.city.isValid === true) {
+        await validatePostalCodeInCityField();
+      } else {
+        addressValidation.value.postalCodeInCity = { isValid: null, message: '', loading: false };
+      }
+    } else {
+      addressValidation.value.postalCode = {
+        isValid: false,
+        message: t('register.postal_code_validation_error'),
+        loading: false
+      };
+    }
+  } catch (error) {
+    console.error('Error validating postal code:', error);
+    addressValidation.value.postalCode = {
+      isValid: false,
+      message: t('register.postal_code_validation_error'),
+      loading: false
+    };
+  }
+}
+
+async function validateStreetNameField() {
+  const { validateStreetName } = await import('@/api/service/locationService');
+  const result = validateStreetName(editedAddress.value.streetName);
+  
+  if (!result.isValid) {
+    addressValidation.value.streetName = {
+      isValid: false,
+      message: result.message
+    };
+    addressValidation.value.streetInCity = { isValid: null, message: '', loading: false };
+    return;
+  }
+  
+  addressValidation.value.streetName = {
+    isValid: true,
+    message: ''
+  };
+  
+  if (editedAddress.value.cityName && editedAddress.value.countryId && addressValidation.value.city.isValid === true) {
+    await validateStreetInCityField();
+  } else {
+    addressValidation.value.streetInCity = { isValid: null, message: '', loading: false };
+  }
+}
+
+async function validateStreetInCityField() {
+  if (!editedAddress.value.streetName || !editedAddress.value.cityName || !editedAddress.value.countryId) {
+    addressValidation.value.streetInCity = { isValid: null, message: '', loading: false };
+    return;
+  }
+
+  addressValidation.value.streetInCity.loading = true;
+
+  try {
+    const { validateStreetInCity } = await import('@/api/service/locationService');
+    const result = await validateStreetInCity(
+      editedAddress.value.streetName,
+      editedAddress.value.cityName,
+      editedAddress.value.countryId
+    );
+    
+    if (result.success) {
+      addressValidation.value.streetInCity = {
+        isValid: result.data.isValid,
+        message: result.data.message,
+        loading: false,
+        suggestions: result.data.suggestions || []
+      };
+    } else {
+      addressValidation.value.streetInCity = {
+        isValid: false,
+        message: t('register.street_validation_error'),
+        loading: false
+      };
+    }
+  } catch (error) {
+    console.error('Error validating street in city:', error);
+    addressValidation.value.streetInCity = {
+      isValid: false,
+      message: t('register.street_validation_error'),
+      loading: false
+    };
+  }
+}
+
+async function validatePostalCodeInCityField() {
+  if (!editedAddress.value.postalCode || !editedAddress.value.cityName || !editedAddress.value.countryId) {
+    addressValidation.value.postalCodeInCity = { isValid: null, message: '', loading: false };
+    return;
+  }
+
+  addressValidation.value.postalCodeInCity.loading = true;
+
+  try {
+    const { validatePostalCodeInCity } = await import('@/api/service/locationService');
+    const result = await validatePostalCodeInCity(
+      editedAddress.value.postalCode,
+      editedAddress.value.cityName,
+      editedAddress.value.countryId
+    );
+    
+    if (result.success) {
+      addressValidation.value.postalCodeInCity = {
+        isValid: result.data.isValid,
+        message: result.data.message,
+        loading: false,
+        suggestions: result.data.suggestions || []
+      };
+    } else {
+      addressValidation.value.postalCodeInCity = {
+        isValid: false,
+        message: t('register.postal_code_city_validation_error'),
+        loading: false
+      };
+    }
+  } catch (error) {
+    console.error('Error validating postal code in city:', error);
+    addressValidation.value.postalCodeInCity = {
+      isValid: false,
+      message: t('register.postal_code_city_validation_error'),
+      loading: false
+    };
+  }
+}
+
+// Debounced validation handlers
+const onCityChange = async () => {
+  addressValidation.value.city = { isValid: null, message: '', loading: false };
+  addressValidation.value.streetInCity = { isValid: null, message: '', loading: false };
+  addressValidation.value.postalCodeInCity = { isValid: null, message: '', loading: false };
+  
+  clearTimeout(cityValidationTimeout);
+  cityValidationTimeout = setTimeout(async () => {
+    if (editedAddress.value.cityName && editedAddress.value.countryId) {
+      await validateCityField();
+    }
+  }, 500);
+};
+
+const onStreetNameChange = async () => {
+  addressValidation.value.streetName = { isValid: null, message: '' };
+  addressValidation.value.streetInCity = { isValid: null, message: '', loading: false };
+  
+  clearTimeout(streetValidationTimeout);
+  streetValidationTimeout = setTimeout(async () => {
+    if (editedAddress.value.streetName) {
+      await validateStreetNameField();
+    }
+  }, 500);
+};
+
+const onPostalCodeChange = async () => {
+  addressValidation.value.postalCode = { isValid: null, message: '', loading: false };
+  addressValidation.value.postalCodeInCity = { isValid: null, message: '', loading: false };
+  
+  clearTimeout(postalCodeValidationTimeout);
+  postalCodeValidationTimeout = setTimeout(async () => {
+    if (editedAddress.value.postalCode && editedAddress.value.countryId) {
+      await validatePostalCodeField();
+    }
+  }, 500);
+};
+
+const onCountryChange = () => {
+  addressValidation.value.city = { isValid: null, message: '', loading: false };
+  addressValidation.value.postalCode = { isValid: null, message: '', loading: false };
+  addressValidation.value.streetInCity = { isValid: null, message: '', loading: false };
+  addressValidation.value.postalCodeInCity = { isValid: null, message: '', loading: false };
+  
+  if (editedAddress.value.cityName) {
+    editedAddress.value.cityName = '';
+  }
+  if (editedAddress.value.postalCode) {
+    editedAddress.value.postalCode = '';
+  }
+};
+
+// Username editing functions
 function startEditUsername() {
   editUsernameMode.value = true;
   editedUsername.value = props.userProfile?.username || '';
@@ -451,14 +1092,12 @@ function cancelEditUsername() {
 async function saveUsername() {
   if (saving.value) return;
   
-  // Validate username
   if (!editedUsername.value.trim()) {
     emit('show-message', { text: 'Le nom d\'utilisateur ne peut pas être vide', type: 'error' });
     return;
   }
   
   if (editedUsername.value === props.userProfile?.username) {
-    // No change, just exit edit mode
     editUsernameMode.value = false;
     return;
   }
@@ -472,7 +1111,7 @@ async function saveUsername() {
     
     if (response.data) {
       emit('show-message', { text: 'Nom d\'utilisateur mis à jour avec succès', type: 'success' });
-      emit('profile-updated'); // Tell parent to reload profile
+      emit('profile-updated');
       editUsernameMode.value = false;
     }
   } catch (error) {
@@ -488,10 +1127,224 @@ async function saveUsername() {
     }
     
     emit('show-message', { text: errorMessage, type: 'error' });
-    // Reset to original value on error
     editedUsername.value = props.userProfile?.username || '';
   } finally {
     saving.value = false;
+  }
+}
+
+// Professional info editing functions
+async function startEditProfessional() {
+  editProfessionalMode.value = true;
+  editedProfessional.value = {
+    affiliation: props.userProfile?.affiliation || '',
+    department: props.userProfile?.department || '',
+  };
+  professionalValidation.value = {
+    affiliation: { isValid: null, message: '' },
+    department: { isValid: null, message: '' },
+  };
+}
+
+function cancelEditProfessional() {
+  editProfessionalMode.value = false;
+  editedProfessional.value = {
+    affiliation: props.userProfile?.affiliation || '',
+    department: props.userProfile?.department || '',
+  };
+  professionalValidation.value = {
+    affiliation: { isValid: null, message: '' },
+    department: { isValid: null, message: '' },
+  };
+}
+
+async function saveProfessional() {
+  if (savingProfessional.value) return;
+  
+  // Validate fields
+  validateProfessionalField('affiliation');
+  validateProfessionalField('department');
+  
+  const hasErrors = professionalValidation.value.affiliation.isValid === false || 
+                   professionalValidation.value.department.isValid === false;
+                   
+  if (hasErrors) {
+    emit('show-message', { text: 'Veuillez corriger les erreurs avant de sauvegarder', type: 'error' });
+    return;
+  }
+  
+  // Check if values have actually changed
+  const profileData = {};
+  let hasChanges = false;
+  
+  if (editedProfessional.value.affiliation !== props.userProfile?.affiliation) {
+    profileData.affiliation = editedProfessional.value.affiliation;
+    hasChanges = true;
+  }
+  
+  if (editedProfessional.value.department !== props.userProfile?.department) {
+    profileData.department = editedProfessional.value.department;
+    hasChanges = true;
+  }
+  
+  if (!hasChanges) {
+    emit('show-message', { text: 'Aucune modification détectée', type: 'info' });
+    editProfessionalMode.value = false;
+    return;
+  }
+  
+  try {
+    savingProfessional.value = true;
+    
+    const response = await updateUserProfile(profileData);
+    
+    if (response.data) {
+      emit('show-message', { text: 'Informations professionnelles mises à jour avec succès', type: 'success' });
+      emit('profile-updated');
+      editProfessionalMode.value = false;
+    }
+  } catch (error) {
+    console.error('Error updating professional info:', error);
+    let errorMessage = 'Erreur lors de la mise à jour des informations professionnelles';
+    
+    if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail;
+    } else if (error.response?.status === 400) {
+      errorMessage = 'Données invalides. Veuillez vérifier les informations saisies.';
+    }
+    
+    emit('show-message', { text: errorMessage, type: 'error' });
+  } finally {
+    savingProfessional.value = false;
+  }
+}
+
+// Address editing functions
+async function startEditAddress() {
+  editAddressMode.value = true;
+  editedAddress.value = {
+    streetName: props.userProfile?.address?.street_name || '',
+    streetNumber: props.userProfile?.address?.street_number || '',
+    addressLine2: props.userProfile?.address?.address_line_2 || '',
+    cityName: props.userProfile?.address?.city?.name || '',
+    postalCode: props.userProfile?.address?.postal_code || '',
+    countryId: props.userProfile?.address?.city?.country || '',
+  };
+  
+  // Reset validations
+  addressValidation.value = {
+    city: { isValid: null, message: '', loading: false },
+    postalCode: { isValid: null, message: '', loading: false },
+    streetName: { isValid: null, message: '' },
+    streetInCity: { isValid: null, message: '', loading: false },
+    postalCodeInCity: { isValid: null, message: '', loading: false },
+  };
+  
+  // Load countries if not already loaded
+  if (countries.value.length === 0) {
+    await loadCountries();
+  }
+}
+
+function cancelEditAddress() {
+  editAddressMode.value = false;
+  editedAddress.value = {
+    streetName: props.userProfile?.address?.street_name || '',
+    streetNumber: props.userProfile?.address?.street_number || '',
+    addressLine2: props.userProfile?.address?.address_line_2 || '',
+    cityName: props.userProfile?.address?.city?.name || '',
+    postalCode: props.userProfile?.address?.postal_code || '',
+    countryId: props.userProfile?.address?.city?.country || '',
+  };
+  
+  addressValidation.value = {
+    city: { isValid: null, message: '', loading: false },
+    postalCode: { isValid: null, message: '', loading: false },
+    streetName: { isValid: null, message: '' },
+    streetInCity: { isValid: null, message: '', loading: false },
+    postalCodeInCity: { isValid: null, message: '', loading: false },
+  };
+}
+
+async function saveAddress() {
+  if (savingAddress.value) return;
+  
+  // Validate required fields
+  if (!editedAddress.value.streetName) {
+    emit('show-message', { text: 'Le nom de rue est requis', type: 'error' });
+    return;
+  }
+  
+  if (!editedAddress.value.cityName) {
+    emit('show-message', { text: 'Le nom de ville est requis', type: 'error' });
+    return;
+  }
+  
+  if (!editedAddress.value.postalCode) {
+    emit('show-message', { text: 'Le code postal est requis', type: 'error' });
+    return;
+  }
+  
+  if (!editedAddress.value.countryId) {
+    emit('show-message', { text: 'Le pays est requis', type: 'error' });
+    return;
+  }
+  
+  // Check validation states
+  if (addressValidation.value.city.isValid === false || 
+      addressValidation.value.postalCode.isValid === false ||
+      addressValidation.value.streetName.isValid === false) {
+    emit('show-message', { text: 'Veuillez corriger les erreurs de validation avant de sauvegarder', type: 'error' });
+    return;
+  }
+  
+  // Check cross-validations
+  if (addressValidation.value.streetInCity.isValid === false ||
+      addressValidation.value.postalCodeInCity.isValid === false) {
+    emit('show-message', { text: 'L\'adresse ne semble pas correspondre. Veuillez vérifier les informations.', type: 'warning' });
+    // Allow saving but with warning - user choice
+  }
+  
+  try {
+    savingAddress.value = true;
+    
+    const selectedCountry = countries.value.find(
+      country => country.country_id === editedAddress.value.countryId
+    );
+    
+    // Format address data according to backend schema
+    const addressData = {
+      street_name: editedAddress.value.streetName,
+      street_number: editedAddress.value.streetNumber || null,
+      city_name: editedAddress.value.cityName,
+      country_code: editedAddress.value.countryId,
+      country_name: selectedCountry?.country_name || '',
+      postal_code: editedAddress.value.postalCode,
+      address_line_2: editedAddress.value.addressLine2 || null,
+    };
+    
+    const response = await updateUserAddress(addressData);
+    
+    if (response.data) {
+      emit('show-message', { text: 'Adresse mise à jour avec succès', type: 'success' });
+      emit('profile-updated');
+      editAddressMode.value = false;
+    }
+  } catch (error) {
+    console.error('Error updating address:', error);
+    let errorMessage = 'Erreur lors de la mise à jour de l\'adresse';
+    
+    if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail;
+    } else if (error.response?.status === 400) {
+      errorMessage = 'Données d\'adresse invalides. Veuillez vérifier les informations saisies.';
+    } else if (error.response?.status === 500) {
+      errorMessage = 'Erreur serveur lors de la mise à jour de l\'adresse. Veuillez réessayer.';
+    }
+    
+    emit('show-message', { text: errorMessage, type: 'error' });
+  } finally {
+    savingAddress.value = false;
   }
 }
 
@@ -506,13 +1359,11 @@ function formatDate(dateString) {
 }
 
 function editProfessionalInfo() {
-  // Implémentation future pour l'édition des informations professionnelles
-  emit('show-message', { text: 'Édition des informations professionnelles bientôt disponible', type: 'info' });
+  startEditProfessional();
 }
 
 function editAddress() {
-  // Implémentation future pour l'édition de l'adresse
-  emit('show-message', { text: 'Édition de l\'adresse bientôt disponible', type: 'info' });
+  startEditAddress();
 }
 </script>
 <style scoped>
@@ -1132,6 +1983,10 @@ function editAddress() {
   .modern-input {
     border: 2px solid #000;
   }
+  
+  .edit-form-container {
+    border: 2px solid #000;
+  }
 }
 
 /* Reduced motion for users who prefer it */
@@ -1150,6 +2005,126 @@ function editAddress() {
   .modern-save-btn:hover,
   .modern-cancel-btn:hover {
     transform: none;
+  }
+}
+
+/* Edit Form Styles */
+.edit-form-container {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 2rem;
+  border: 2px solid #e2e8f0;
+}
+
+.edit-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.edit-field-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 0.25rem;
+}
+
+.validation-message {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.5rem;
+  border-radius: 6px;
+  margin-top: 0.25rem;
+}
+
+.validation-message.success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #34d399;
+}
+
+.validation-message.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+.validation-message.warning {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.validation-message.info {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #3b82f6;
+}
+
+.modern-input.loading {
+  background-image: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.modern-input.error {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.modern-input.valid {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Select styling */
+select.modern-input {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+  padding-right: 3rem;
+  appearance: none;
+}
+
+/* Responsive design for edit forms */
+@media (max-width: 768px) {
+  .edit-form-container {
+    padding: 1.5rem;
+  }
+  
+  .edit-field-group {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .edit-actions {
+    flex-direction: column;
+  }
+  
+  .modern-save-btn, .modern-cancel-btn {
+    width: 100%;
   }
 }
 </style>

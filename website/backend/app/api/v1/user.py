@@ -16,8 +16,9 @@ from app.schema.responses.user import (
     CityResponse,
     ProfileUpdateResponse,
 )
-from app.schema.requests.user import ProfileUpdateRequest
+from app.schema.requests.user import ProfileUpdateRequest, AddressRequest
 from app.service.user import UserService
+from app.service.address import AddressService
 from app.utils.database import DatabaseUtils
 
 router = APIRouter()
@@ -129,6 +130,77 @@ async def update_current_user_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating profile: {e!s}"
+        ) from e
+
+
+@router.put("/me/address", response_model=AddressResponse)
+async def update_current_user_address(
+    address_data: AddressRequest,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> AddressResponse:
+    """Update the current user's address."""
+    try:
+        # Get user with current address
+        user_with_address = await DatabaseUtils.get_by_id(
+            db,
+            User,
+            "user_id",
+            user.user_id,
+            options=[
+                selectinload(User.address)
+                .selectinload(Address.city)
+                .selectinload(City.country),
+            ],
+        )
+        
+        if user_with_address and user_with_address.address:
+            # Update existing address
+            updated_address = await AddressService.update_address(
+                db, user_with_address.address, address_data
+            )
+        else:
+            # Create new address
+            updated_address = await AddressService.create_address(db, address_data)
+            # Update user with new address
+            user_with_address.address_id = updated_address.address_id
+            await db.flush()
+            await db.commit()
+
+        # Reload the address with city and country relationships
+        updated_address_with_relations = await DatabaseUtils.get_by_id(
+            db,
+            Address,
+            "address_id",
+            updated_address.address_id,
+            options=[
+                selectinload(Address.city).selectinload(City.country),
+            ],
+        )
+        
+        # Return the updated address with city and country info
+        city_obj = updated_address_with_relations.city
+        
+        return AddressResponse(
+            address_id=updated_address_with_relations.address_id,
+            street_number=updated_address_with_relations.street_number,
+            street_name=updated_address_with_relations.street_name,
+            city_id=updated_address_with_relations.city_id,
+            city=CityResponse(
+                city_id=city_obj.city_id,
+                name=city_obj.city_name,
+                country=city_obj.country.country_name,
+            ),
+            postal_code=updated_address_with_relations.postal_code,
+            address_line_2=updated_address_with_relations.address_line_2,
+            created_at=updated_address_with_relations.created_at,
+            updated_at=updated_address_with_relations.updated_at,
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating address: {e!s}"
         ) from e
 
 

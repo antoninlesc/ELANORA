@@ -56,3 +56,7 @@ export async function checkEmailAvailability(email) {
 export async function updateUserProfile(profileData) {
   return await axiosInstance.put('/user/me/profile', profileData);
 }
+
+export async function updateUserAddress(addressData) {
+  return await axiosInstance.put('/user/me/address', addressData);
+}
