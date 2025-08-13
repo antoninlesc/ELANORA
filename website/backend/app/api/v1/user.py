@@ -58,7 +58,7 @@ async def get_current_user_profile(
             selectinload(User.address)
             .selectinload(Address.city)
             .selectinload(City.country)
-        ]
+        ],
     )
 
     address_data = None
@@ -114,7 +114,7 @@ async def update_current_user_profile(
     """Update the current user's profile."""
     try:
         result = await UserService.update_user_profile(db, user, profile_data)
-        
+
         if result["success"]:
             return ProfileUpdateResponse(
                 message=result["message"],
@@ -123,13 +123,12 @@ async def update_current_user_profile(
             )
         else:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["message"]
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
             )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating profile: {e!s}"
+            detail=f"Error updating profile: {e!s}",
         ) from e
 
 
@@ -153,7 +152,7 @@ async def update_current_user_address(
                 .selectinload(City.country),
             ],
         )
-        
+
         if user_with_address and user_with_address.address:
             # Update existing address
             updated_address = await AddressService.update_address(
@@ -177,10 +176,10 @@ async def update_current_user_address(
                 selectinload(Address.city).selectinload(City.country),
             ],
         )
-        
+
         # Return the updated address with city and country info
         city_obj = updated_address_with_relations.city
-        
+
         return AddressResponse(
             address_id=updated_address_with_relations.address_id,
             street_number=updated_address_with_relations.street_number,
@@ -196,11 +195,11 @@ async def update_current_user_address(
             created_at=updated_address_with_relations.created_at,
             updated_at=updated_address_with_relations.updated_at,
         )
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating address: {e!s}"
+            detail=f"Error updating address: {e!s}",
         ) from e
 
 

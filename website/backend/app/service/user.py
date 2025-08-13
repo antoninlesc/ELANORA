@@ -343,7 +343,9 @@ class UserService:
                     db, profile_data.username, user.user_id
                 )
                 if not username_available:
-                    logger.warning(f"Username {profile_data.username} already taken during profile update")
+                    logger.warning(
+                        f"Username {profile_data.username} already taken during profile update"
+                    )
                     return {
                         "success": False,
                         "message": "Username already taken",
@@ -427,11 +429,11 @@ class UserService:
         existing_user = await DatabaseUtils.get_one_by_filter(
             db, User, {"username": username}
         )
-        
+
         # If no user exists with this username, it's available
         if not existing_user:
             return True
-            
+
         # If the user with this username is the current user, it's available
         return existing_user.user_id == exclude_user_id
 
