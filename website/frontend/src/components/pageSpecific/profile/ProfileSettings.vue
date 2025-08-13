@@ -50,38 +50,27 @@ import { useI18n } from 'vue-i18n';
 import { useLanguageStore } from '@/stores/language.js';
 import { useEventMessageStore } from '@/stores/eventMessage.js';
 
-const { t, availableLocales } = useI18n();
+const { t, availableLocales, messages } = useI18n();
 const languageStore = useLanguageStore();
 const eventMessageStore = useEventMessageStore();
 
 const currentLanguage = computed(() => languageStore.language);
 
-// Configuration des langues avec leurs métadonnées
-const languageConfig = {
-  en: { 
-    name: 'English', 
-    nativeName: 'English',
-    flag: '🇺🇸',
-    region: 'United States'
-  },
-  fr: { 
-    name: 'Français', 
-    nativeName: 'Français',
-    flag: '🇫🇷',
-    region: 'France'
-  }
-};
-
-// Génération dynamique des langues disponibles basée sur les locales disponibles
+// Dynamic generation of available languages based on available locales
 const availableLanguages = computed(() => {
-  return availableLocales.filter(locale => languageConfig[locale]).map(locale => ({
-    code: locale,
-    ...languageConfig[locale]
-  }));
+  return availableLocales.map(locale => {
+    const langInfo = messages.value[locale]?.language || {};
+    return {
+      code: locale,
+      name: langInfo.name || locale,
+      nativeName: langInfo.nativeName || locale,
+      flag: langInfo.flag || '🏳️'
+    };
+  });
 });
 
 const currentLanguageInfo = computed(() => {
-  return availableLanguages.value.find(lang => lang.code === currentLanguage.value) || availableLanguages.value[0];
+  return availableLanguages.value.find(lang => lang.code === currentLanguage.value) || (availableLanguages.value.length > 0 ? availableLanguages.value[0] : {});
 });
 
 function changeLanguage(langCode) {

@@ -1,4 +1,9 @@
 {
+  "language": {
+    "name": "English",
+    "nativeName": "English",
+    "flag": "🇺🇸"
+  },
   "common": {
     "confirm": "Confirm",
     "cancel": "Cancel",
