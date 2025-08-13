@@ -668,7 +668,13 @@
     "settings": {
       "title": "Settings",
       "description": "Manage your preferences and account settings",
-      "coming_soon": "Settings management will be available soon."
+      "coming_soon": "Coming soon",
+      "language": {
+        "title": "Language & Localization",
+        "description": "Choose your preferred language for the interface",
+        "label": "Interface Language",
+        "changed": "Language changed to {language}"
+      }
     },
     "security": {
       "title": "Security",

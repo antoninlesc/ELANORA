@@ -656,7 +656,13 @@
     "settings": {
       "title": "Paramètres",
       "description": "Gérez vos préférences et paramètres de compte",
-      "coming_soon": "La gestion des paramètres sera bientôt disponible."
+      "coming_soon": "Bientôt disponible",
+      "language": {
+        "title": "Langue et localisation",
+        "description": "Choisissez votre langue préférée pour l'interface",
+        "label": "Langue de l'interface",
+        "changed": "Langue changée vers {language}"
+      }
     },
     "security": {
       "title": "Sécurité",

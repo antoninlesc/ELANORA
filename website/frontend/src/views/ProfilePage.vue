@@ -22,11 +22,6 @@
             <span class="profile-menu-label">{{ item.label }}</span>
           </button>
         </nav>
-        <div class="profile-sidebar-footer">
-          <button @click="toggleLanguage" class="language-toggle">
-            {{ language === 'en' ? 'Passer en français' : 'Switch to English' }}
-          </button>
-        </div>
       </aside>
 
       <!-- Main content area -->
@@ -54,13 +49,11 @@
             @show-message="handleMessage"
           />
 
-          <!-- Settings Section (placeholder) -->
-          <div v-else-if="currentSection === 'settings'" class="profile-section">
-            <div class="profile-placeholder">
-              <h3>{{ t('profile.settings.title') }}</h3>
-              <p>{{ t('profile.settings.coming_soon') }}</p>
-            </div>
-          </div>
+          <!-- Settings Section -->
+          <ProfileSettings
+            v-else-if="currentSection === 'settings'"
+            @show-message="handleMessage"
+          />
 
           <!-- Security Section (placeholder) -->
           <div v-else-if="currentSection === 'security'" class="profile-section">
@@ -86,15 +79,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useLanguageStore } from '@/stores/language.js';
 import { useEventMessageStore } from '@/stores/eventMessage.js';
 import { fetchUserProfile } from '@/api/service/userService.js';
 import ProfileOverview from '@/components/pageSpecific/profile/ProfileOverview.vue';
+import ProfileSettings from '@/components/pageSpecific/profile/ProfileSettings.vue';
 
 const { t } = useI18n();
-const languageStore = useLanguageStore();
 const eventMessageStore = useEventMessageStore();
-const language = computed(() => languageStore.language);
 
 // State
 const currentSection = ref('overview');
@@ -139,10 +130,6 @@ const currentMenuItem = computed(() =>
 );
 
 // Methods
-function toggleLanguage() {
-  languageStore.setLanguage(language.value === 'en' ? 'fr' : 'en');
-}
-
 function handleMessage(message) {
   eventMessageStore.addMessage(message.text, message.type);
 }
@@ -281,31 +268,6 @@ onMounted(() => {
 
 .profile-menu-label {
   font-weight: 500;
-}
-
-
-.profile-sidebar-footer {
-  padding: 1.2rem 1.5rem 1.5rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
-}
-
-.language-toggle {
-  width: 100%;
-  padding: 0.85rem;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-}
-.language-toggle:hover {
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
 }
 
 /* Main Content Styles */
@@ -447,10 +409,6 @@ onMounted(() => {
     border-right: none;
     border-bottom: 3px solid #6366f1;
     background: linear-gradient(180deg, #f1f5f9 80%, #f8fafc 100%);
-  }
-  .profile-sidebar-footer {
-    padding: 1rem;
-    border-top: none;
   }
   .profile-content-header {
     padding: 1.2rem 1rem 1rem 1rem;

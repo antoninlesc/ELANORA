@@ -1,5 +1,5 @@
 <template>
-  <div class="profile-overview">
+  
     <!-- Loading State -->
     <div v-if="loading" class="profile-loading">
       <div class="loading-spinner"></div>
@@ -589,7 +589,7 @@
       <h3>{{ t('profile.overview.empty_title') }}</h3>
       <p>{{ t('profile.overview.empty_message') }}</p>
     </div>
-  </div>
+ 
 </template>
 
 <script setup>
