@@ -51,10 +51,20 @@ const { t } = useI18n();
 </script>
 
 <style scoped>
+.navbar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  width: 100%;
+  min-width: 0;
+}
+
 .elanora-header-left {
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  min-width: 0;
 }
 
 .elanora-header-logo {
@@ -91,9 +101,12 @@ const { t } = useI18n();
   align-items: center;
   gap: 1rem;
   margin-left: auto;
+  min-width: 0;
+  max-width: 40vw;
+  flex-shrink: 1;
 }
 
-.elanora-header-insdtance-logo-container {
+.elanora-header-instance-logo-container {
   height: 5rem;
   width: 5rem;
   display: flex;

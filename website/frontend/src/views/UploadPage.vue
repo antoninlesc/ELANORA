@@ -2,20 +2,20 @@
   <div class="upload-page">
     <div class="upload-container">
       <h1 class="upload-title">Upload ELAN Files</h1>
-      
+
       <!-- Project Selection -->
       <div class="project-selection">
         <label for="projectSelect" class="project-label">Select Project:</label>
-        <select 
-          id="projectSelect" 
-          v-model="selectedProject" 
+        <select
+          id="projectSelect"
+          v-model="selectedProject"
           class="project-select"
           :disabled="loading"
         >
           <option value="">Choose a project...</option>
-          <option 
-            v-for="project in projects" 
-            :key="project.project_id || project" 
+          <option
+            v-for="project in projects"
+            :key="project.project_id || project"
             :value="project.project_name || project"
           >
             {{ project.project_name || project }}
@@ -24,10 +24,10 @@
       </div>
 
       <!-- Upload Zone -->
-      <div 
+      <div
         v-if="selectedProject"
         class="upload-zone"
-        :class="{ 'dragover': isDragOver, 'uploading': uploading }"
+        :class="{ dragover: isDragOver, uploading: uploading }"
         @drop="handleDrop"
         @dragover.prevent="isDragOver = true"
         @dragleave="isDragOver = false"
@@ -41,13 +41,13 @@
           style="display: none"
           @change="handleFileSelect"
         />
-        
+
         <div v-if="!uploading" class="upload-content">
           <div class="upload-icon">📁</div>
           <h3>Drop ELAN files here or click to browse</h3>
           <p>Only .eaf files are accepted (max 50MB per file)</p>
         </div>
-        
+
         <div v-else class="upload-progress">
           <div class="spinner"></div>
           <p>Uploading {{ selectedFiles.length }} file(s)...</p>
@@ -58,22 +58,26 @@
       <div v-if="selectedFiles.length > 0 && !uploading" class="files-preview">
         <h3>Selected Files ({{ selectedFiles.length }})</h3>
         <div class="files-list">
-          <div v-for="(file, index) in selectedFiles" :key="index" class="file-item">
+          <div
+            v-for="(file, index) in selectedFiles"
+            :key="index"
+            class="file-item"
+          >
             <span class="file-name">{{ file.name }}</span>
             <span class="file-size">{{ formatFileSize(file.size) }}</span>
-            <button @click="removeFile(index)" class="remove-btn">×</button>
+            <button class="remove-btn" @click="removeFile(index)">×</button>
           </div>
         </div>
-        
+
         <div class="upload-actions">
-          <button 
-            @click="uploadFiles" 
+          <button
             class="upload-btn"
             :disabled="uploading || selectedFiles.length === 0"
+            @click="uploadFiles"
           >
             Upload Files
           </button>
-          <button @click="clearFiles" class="clear-btn">Clear All</button>
+          <button class="clear-btn" @click="clearFiles">Clear All</button>
         </div>
       </div>
 
@@ -81,17 +85,19 @@
       <div v-if="uploadResults.length > 0" class="upload-results">
         <h3>Upload Results</h3>
         <div class="results-list">
-          <div 
-            v-for="result in uploadResults" 
+          <div
+            v-for="result in uploadResults"
             :key="result.filename"
             class="result-item"
-            :class="{ 'success': result.success, 'error': !result.success }"
+            :class="{ success: result.success, error: !result.success }"
           >
             <span class="result-filename">{{ result.filename }}</span>
             <span class="result-status">
               {{ result.success ? '✓ Success' : '✗ Failed' }}
             </span>
-            <span v-if="result.error" class="result-error">{{ result.error }}</span>
+            <span v-if="result.error" class="result-error">{{
+              result.error
+            }}</span>
           </div>
         </div>
       </div>
@@ -154,20 +160,24 @@ function handleDrop(event) {
 }
 
 function addFiles(files) {
-  const eafFiles = files.filter(file => file.name.toLowerCase().endsWith('.eaf'));
-  
+  const eafFiles = files.filter((file) =>
+    file.name.toLowerCase().endsWith('.eaf')
+  );
+
   if (eafFiles.length !== files.length) {
     error.value = 'Only .eaf files are allowed';
-    setTimeout(() => error.value = '', 3000);
+    setTimeout(() => (error.value = ''), 3000);
   }
-  
+
   // Check file sizes
-  const oversizedFiles = eafFiles.filter(file => file.size > 50 * 1024 * 1024);
+  const oversizedFiles = eafFiles.filter(
+    (file) => file.size > 50 * 1024 * 1024
+  );
   if (oversizedFiles.length > 0) {
-    error.value = `Some files are too large (max 50MB): ${oversizedFiles.map(f => f.name).join(', ')}`;
+    error.value = `Some files are too large (max 50MB): ${oversizedFiles.map((f) => f.name).join(', ')}`;
     return;
   }
-  
+
   selectedFiles.value = [...selectedFiles.value, ...eafFiles];
   error.value = '';
 }
@@ -189,26 +199,25 @@ async function uploadFiles() {
     error.value = 'Please select a project and files';
     return;
   }
-  
+
   uploading.value = true;
   uploadResults.value = [];
   error.value = '';
-  
+
   try {
     const response = await gitService.uploadElanFiles(
-      selectedProject.value, 
-      selectedFiles.value, 
+      selectedProject.value,
+      selectedFiles.value,
       'user'
     );
-    
+
     uploadResults.value = response.files || [];
-    
+
     // Clear selected files on successful upload
     selectedFiles.value = [];
     if (fileInput.value) {
       fileInput.value.value = '';
     }
-    
   } catch (e) {
     error.value = e?.response?.data?.detail || 'Upload failed';
     console.error('Upload error:', e);

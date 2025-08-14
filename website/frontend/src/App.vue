@@ -13,7 +13,7 @@ import { useLanguageStore } from '@stores/language';
 import { useUserStore } from '@/stores/user';
 import { useProjectStore } from '@/stores/project';
 import { useAppInfoStore } from '@/stores/appInfo';
-import gitService from '@/api/service/gitService'; 
+import gitService from '@/api/service/gitService';
 import instanceService from '@/api/service/instanceService';
 
 import EventMessageContainer from '@components/eventComponent/eventMessageContainer.vue';
@@ -58,7 +58,9 @@ onMounted(async () => {
       const res = await gitService.listUserProjects();
       if (res && res.projects) {
         projectStore.setProjects(res.projects);
-        if (!projectStore.currentProject && res.projects.length > 0) {
+        if (res.projects.length === 0) {
+          projectStore.clearCurrentProject();
+        } else if (!projectStore.currentProject) {
           projectStore.setCurrentProject(res.projects[0]);
         }
       }

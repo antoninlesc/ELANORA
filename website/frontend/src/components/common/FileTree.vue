@@ -18,7 +18,7 @@
           "
         />
         <font-awesome-icon v-else icon="file" style="color: #1976d2" />
-        <span>{{ tree.name }}</span>
+        <span :title="tree.name" class="filetree-name">{{ tree.name }}</span>
       </div>
       <div
         v-else
@@ -84,5 +84,14 @@ function isEafFile(name) {
   cursor: pointer;
   user-select: none;
   padding: 2px 0;
+}
+
+.filetree-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
 }
 </style>

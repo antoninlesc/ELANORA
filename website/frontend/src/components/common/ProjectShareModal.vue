@@ -3,13 +3,13 @@
     <div class="modal-content share-modal" @click.stop>
       <div class="modal-header">
         <h2>{{ t('project.share.title', { projectName }) }}</h2>
-        <button @click="closeModal" class="close-btn">×</button>
+        <button class="close-btn" @click="closeModal">×</button>
       </div>
-      
+
       <div class="share-options">
         <!-- Send by Email Form -->
         <div class="tab-content">
-          <form @submit.prevent="sendProjectInvitation" class="invitation-form">
+          <form class="invitation-form" @submit.prevent="sendProjectInvitation">
             <div class="share-form-group">
               <label for="share-email" class="form-label">
                 {{ t('project.share.email_label') }}
@@ -24,7 +24,9 @@
                 :placeholder="t('project.share.email_placeholder')"
                 required
               />
-              <div v-if="emailError" class="share-error-message">{{ emailError }}</div>
+              <div v-if="emailError" class="share-error-message">
+                {{ emailError }}
+              </div>
             </div>
 
             <div class="share-form-group">
@@ -44,15 +46,19 @@
               <label for="share-language" class="form-label">
                 {{ t('project.share.language_label') }}
               </label>
-              <select id="share-language" v-model="form.language" class="share-form-select">
+              <select
+                id="share-language"
+                v-model="form.language"
+                class="share-form-select"
+              >
                 <option value="en">English</option>
                 <option value="fr">Français</option>
               </select>
             </div>
 
-            <button 
-              type="submit" 
-              class="btn-primary send-btn" 
+            <button
+              type="submit"
+              class="btn-primary send-btn"
               :disabled="sending || !form.email"
             >
               <span v-if="sending">{{ t('project.share.sending') }}</span>
@@ -85,12 +91,12 @@ import '@/assets/css/ProjectShareModal.css';
 const props = defineProps({
   show: {
     type: Boolean,
-    default: false
+    default: false,
   },
   projectName: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
 });
 
 const emit = defineEmits(['close', 'success']);
@@ -102,7 +108,7 @@ const eventMessageStore = useEventMessageStore();
 const form = ref({
   email: '',
   message: '',
-  language: 'fr'
+  language: 'fr',
 });
 
 // States
@@ -116,7 +122,7 @@ const closeModal = () => {
   form.value = {
     email: '',
     message: '',
-    language: 'fr'
+    language: 'fr',
   };
   emailError.value = '';
   emit('close');
@@ -124,14 +130,14 @@ const closeModal = () => {
 
 const sendProjectInvitation = async () => {
   emailError.value = '';
-  
+
   if (!form.value.email) {
     emailError.value = t('project.share.email_required');
     return;
   }
 
   sending.value = true;
-  
+
   try {
     const invitationData = {
       receiver_email: form.value.email,
@@ -139,22 +145,31 @@ const sendProjectInvitation = async () => {
       message: form.value.message,
       language: form.value.language,
       expires_in_days: 7,
-      project_permission: 'read'
+      project_permission: 'read',
     };
 
     const response = await sendInvitationAPI(invitationData);
-    
+
     if (response.data.success) {
-      eventMessageStore.addMessage('project.share.invitation_sent_success', 'success');
+      eventMessageStore.addMessage(
+        'project.share.invitation_sent_success',
+        'success'
+      );
       form.value.email = '';
       form.value.message = '';
       emit('success');
     } else {
-      eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
+      eventMessageStore.addMessage(
+        'project.share.invitation_send_error',
+        'error'
+      );
     }
   } catch (error) {
     console.error('Error sending invitation:', error);
-    eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
+    eventMessageStore.addMessage(
+      'project.share.invitation_send_error',
+      'error'
+    );
   } finally {
     sending.value = false;
   }

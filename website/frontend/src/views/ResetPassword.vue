@@ -2,47 +2,57 @@
   <div class="reset-password-wrapper">
     <div class="reset-password-card">
       <h1 class="reset-password-title">{{ t('resetPassword.title') }}</h1>
-      <form @submit.prevent="handleSubmit" class="reset-password-form">
+      <form class="reset-password-form" @submit.prevent="handleSubmit">
         <div class="form-group">
-          <label for="code" class="form-label">{{ t('resetPassword.code_label') }}</label>
-          <input 
-            id="code" 
+          <label for="code" class="form-label">{{
+            t('resetPassword.code_label')
+          }}</label>
+          <input
+            id="code"
             v-model="form.code"
-            type="text" 
-            class="form-input" 
-            :placeholder="t('resetPassword.code_placeholder')" 
-            required 
+            type="text"
+            class="form-input"
+            :placeholder="t('resetPassword.code_placeholder')"
+            required
             maxlength="6"
             inputmode="numeric"
             pattern="\d{6}"
-            @input="form.code = form.code.replace(/[^\d]/g, '').slice(0,6)"
+            @input="form.code = form.code.replace(/[^\d]/g, '').slice(0, 6)"
           />
         </div>
         <div class="form-group">
-          <label for="new-password" class="form-label">{{ t('resetPassword.new_password_label') }}</label>
-          <input 
-            id="new-password" 
+          <label for="new-password" class="form-label">{{
+            t('resetPassword.new_password_label')
+          }}</label>
+          <input
+            id="new-password"
             v-model="form.newPassword"
-            type="password" 
-            class="form-input" 
-            :placeholder="t('resetPassword.new_password_placeholder')" 
-            required 
+            type="password"
+            class="form-input"
+            :placeholder="t('resetPassword.new_password_placeholder')"
+            required
             autocomplete="new-password"
           />
         </div>
         <div class="form-group">
-          <label for="confirm-password" class="form-label">{{ t('resetPassword.confirm_password_label') }}</label>
-          <input 
-            id="confirm-password" 
+          <label for="confirm-password" class="form-label">{{
+            t('resetPassword.confirm_password_label')
+          }}</label>
+          <input
+            id="confirm-password"
             v-model="form.confirmPassword"
-            type="password" 
-            class="form-input" 
-            :placeholder="t('resetPassword.confirm_password_placeholder')" 
-            required 
+            type="password"
+            class="form-input"
+            :placeholder="t('resetPassword.confirm_password_placeholder')"
+            required
             autocomplete="new-password"
           />
         </div>
-        <button type="submit" class="btn-primary reset-password-btn" :disabled="loading">
+        <button
+          type="submit"
+          class="btn-primary reset-password-btn"
+          :disabled="loading"
+        >
           <span v-if="loading">{{ t('resetPassword.submitting') }}</span>
           <span v-else>{{ t('resetPassword.submit') }}</span>
         </button>
@@ -67,7 +77,7 @@ const eventMessageStore = useEventMessageStore();
 const form = ref({
   code: '',
   newPassword: '',
-  confirmPassword: ''
+  confirmPassword: '',
 });
 
 const loading = ref(false);
@@ -90,13 +100,19 @@ const handleSubmit = async () => {
   }
   // Validate passwords match
   if (form.value.newPassword !== form.value.confirmPassword) {
-    eventMessageStore.addMessage(t('resetPassword.passwords_no_match'), 'error');
+    eventMessageStore.addMessage(
+      t('resetPassword.passwords_no_match'),
+      'error'
+    );
     return;
   }
 
   // Validate password strength
   if (form.value.newPassword.length < 8) {
-    eventMessageStore.addMessage(t('resetPassword.password_too_short'), 'error');
+    eventMessageStore.addMessage(
+      t('resetPassword.password_too_short'),
+      'error'
+    );
     return;
   }
 
@@ -116,4 +132,3 @@ const handleSubmit = async () => {
   }
 };
 </script>
-

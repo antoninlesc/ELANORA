@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from app.core.centralized_logging import get_logger
+from app.utils.project_backup import create_hidden_folder_in_root, update_backup
 
 logger = get_logger()
 
@@ -330,6 +331,7 @@ class GitMerger:
                 cwd=self.project_path,
                 check=True,
             )
+            update_backup(self.project_path.name, self.project_path.parent)
             logger.info(
                 f"Successfully auto-merged {len(new_files)} new files from branch '{branch_name}'"
             )
@@ -501,6 +503,7 @@ class FileUploadProcessor:
 
         try:
             runner.run(["commit", "-m", full_message], check=True)
+            update_backup(self.project_path.name, self.project_path.parent)
             logger.info(f"Successfully committed {changed_count} changed files")
         except subprocess.CalledProcessError as e:
             if "nothing to commit" in e.stderr:
@@ -519,7 +522,7 @@ class GitCommandRunner:
 
     def run(self, args: list[str], check: bool = False) -> subprocess.CompletedProcess:
         return subprocess.run(
-            ["git"] + args,
+            ["git", *args],
             cwd=self.project_path,
             capture_output=True,
             text=True,
@@ -561,28 +564,48 @@ class GitCommandRunner:
         self.run(["config", "user.name", instance_name], check=True)
         self.run(["config", "user.email", email], check=True)
         logger.info(f"Configured Git user: {instance_name} <{email}>")
+        update_backup(self.project_path.name, self.project_path.parent)
 
     def get_branches(self) -> list[str]:
         result = self.run(["branch", "-a"], check=True)
         return result.stdout.strip().split("\n")
+
+    def reset_hard(self, ref: str = "HEAD"):
+        self.run(["reset", "--hard", ref], check=True)
+
+    def clean(self, force: bool = True, directories: bool = True):
+        args = ["clean"]
+        if force:
+            args.append("-f")
+        if directories:
+            args.append("-d")
+        self.run(args, check=True)
 
     def checkout(self, branch: str):
         self.run(["checkout", branch], check=True)
 
     def add_all(self):
         self.run(["add", "."], check=True)
+        update_backup(self.project_path.name, self.project_path.parent)
 
     def commit(self, message: str):
         self.run(["commit", "-m", message], check=True)
+        update_backup(self.project_path.name, self.project_path.parent)
+
+    def push(self, branch: str = "master"):
+        self.run(["push", "origin", branch], check=True)
+        update_backup(self.project_path.name, self.project_path.parent)
 
     def get_commit_hash(self) -> str:
         return self.run(["rev-parse", "HEAD"]).stdout.strip()
 
     def init_repo(self):
         self.run(["init"], check=True)
+        update_backup(self.project_path.name, self.project_path.parent)
 
     def add_file(self, filepath: str):
         self.run(["add", filepath], check=True)
+        update_backup(self.project_path.name, self.project_path.parent)
 
     def merge(self, branch_name: str, message: str, no_ff: bool = True):
         args = ["merge", branch_name]
@@ -590,6 +613,7 @@ class GitCommandRunner:
             args.append("--no-ff")
         args += ["-m", message]
         self.run(args, check=True)
+        update_backup(self.project_path.name, self.project_path.parent)
 
     def diff_stat(self, branch_name: str) -> str:
         return self.run(["diff", f"master...{branch_name}", "--stat"]).stdout
@@ -603,6 +627,7 @@ class GitCommandRunner:
     def delete_branch(self, branch_name: str):
         self.delete_branch_localy(branch_name)
         self.delete_branch_on_remote(branch_name)
+        update_backup(self.project_path.name, self.project_path.parent)
 
     def resolve_conflicts(
         self, branch_name: str, resolution_strategy: str
@@ -623,17 +648,22 @@ class GitCommandRunner:
             check=True,
         )
         self.run(["branch", "-d", branch_name], check=False)
+        update_backup(self.project_path.name, self.project_path.parent)
         return {
             "branch_name": branch_name,
             "resolution_strategy": resolution_strategy,
             "status": "resolved",
         }
 
-    def cleanup_on_error(self):
+    def cleanup_on_error(self, branch_name: str | None = None):
+        """Cleanup on error: optionally delete a branch, then checkout master."""
         try:
+            if branch_name:
+                self.run(["branch", "-D", branch_name], check=False)
             self.run(["checkout", "master"], check=False)
+            update_backup(self.project_path.name, self.project_path.parent)
         except Exception:
-            pass
+            logger.exception("Exception occurred during cleanup_on_error")
 
     def detect_merge_conflicts(self) -> list[dict[str, str]]:
         result = self.run(["diff", "--name-only", "--diff-filter=U"])
@@ -675,8 +705,10 @@ def delete_project_folder(project_path: Path) -> None:
             func(path)
             logger.info(f"Retried and deleted after chmod: {path}")
             return
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.exception(
+                f"Exception occurred while retrying delete for {path}: {exc}"
+            )
         logger.error(
             f"Failed to delete file or folder during rmtree: {path} | Function: {func.__name__} | Error: {exc}\nTraceback: {''.join(traceback.format_exception(*exc_info)) if isinstance(exc_info, tuple) else str(exc_info)}"
         )
@@ -684,6 +716,11 @@ def delete_project_folder(project_path: Path) -> None:
     try:
         shutil.rmtree(project_path, onexc=on_rm_exc)
         logger.info(f"Successfully deleted project folder: {project_path}")
+        backup_path = create_hidden_folder_in_root() / project_path.name
+        if backup_path.exists():
+            shutil.rmtree(backup_path)
+            logger.info(f"Deleted backup for project: {project_path.name}")
+
     except Exception as fs_exc:
         logger.error(
             f"Failed to delete project folder: {project_path} | Error: {fs_exc}"

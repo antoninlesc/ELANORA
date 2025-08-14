@@ -8,11 +8,16 @@ export default {
     return axiosInstance.get(`/file-type/project/${projectId}`);
   },
   async deleteProjectFileType(projectId, fileTypeId) {
-    return axiosInstance.delete(`/file-type/project/${projectId}/file_type/${fileTypeId}`);
+    return axiosInstance.delete(
+      `/file-type/project/${projectId}/file_type/${fileTypeId}`
+    );
   },
   async importPreview(sourceProjectId, targetProjectId) {
     return axiosInstance.get(`/file-type/import_preview/`, {
-      params: { source_project_id: sourceProjectId, target_project_id: targetProjectId }
+      params: {
+        source_project_id: sourceProjectId,
+        target_project_id: targetProjectId,
+      },
     });
   },
   async importSelected(sourceProjectId, targetProjectId, fileTypeNames) {
@@ -22,6 +27,9 @@ export default {
     );
   },
   async updateProjectFileType(projectId, fileTypeId, payload) {
-    return axiosInstance.put(`/file-type/project/${projectId}/file_type/${fileTypeId}`, payload);
+    return axiosInstance.put(
+      `/file-type/project/${projectId}/file_type/${fileTypeId}`,
+      payload
+    );
   },
 };

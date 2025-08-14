@@ -1,23 +1,23 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.centralized_logging import get_logger
 from app.crud.annotation import delete_unused_annotation_values
 from app.crud.association import delete_project_associations
 from app.crud.comment import delete_project_comments
 from app.crud.conflict import delete_project_conflicts
 from app.crud.elan_file import delete_elan_file_full, get_orphan_elan_files_by_project
 from app.crud.elan_file_media import delete_orphaned_media
+from app.crud.file_type import delete_orphaned_file_types
 from app.crud.invitation import delete_project_invitations
 from app.crud.tier import delete_tiers_for_elan_file
-from app.crud.file_type import delete_orphaned_file_types
 from app.model.association import UserToProject
 from app.model.enums import ProjectPermission
 from app.model.project import Project
 from app.model.tier_group import TierGroup
 from app.model.tier_section import TierSection
-from app.utils.database import DatabaseUtils
 from app.service.project_naming_standard import ProjectNamingStandardService
-
-from app.core.centralized_logging import get_logger
+from app.utils.database import DatabaseUtils
 
 logger = get_logger()
 

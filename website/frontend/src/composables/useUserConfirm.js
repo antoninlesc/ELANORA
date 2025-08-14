@@ -20,7 +20,7 @@ export function useUserConfirm() {
         },
         'onUpdate:modelValue': (v) => {
           if (!v) cleanup();
-        }
+        },
       });
 
       function cleanup() {

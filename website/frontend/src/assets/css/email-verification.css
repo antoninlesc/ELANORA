@@ -32,7 +32,7 @@
   width: 4rem;
   height: 4rem;
   color: var(--primary-color);
-  background: rgba(37, 99, 235, 0.1);
+  background: rgb(37 99 235 / 10%);
   padding: 1rem;
   border-radius: 50%;
   backdrop-filter: blur(10px);
@@ -54,11 +54,11 @@
 }
 
 .email-display {
-  background: rgba(37, 99, 235, 0.1);
+  background: rgb(37 99 235 / 10%);
   border-radius: 2rem;
   padding: 0.75rem 1.5rem;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(37, 99, 235, 0.2);
+  border: 1px solid rgb(37 99 235 / 20%);
   display: inline-block;
 }
 
@@ -90,7 +90,6 @@
   color: var(--text-main);
   font-size: 1rem;
 }
-
 
 .code-input-container {
   position: relative;
@@ -198,17 +197,17 @@
   margin-bottom: 1.5rem;
 }
 
-.verify-button:hover:not(:disabled) {
-  background: var(--primary-color-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--btn-shadow-hover);
-}
-
 .verify-button:disabled {
   background: #9ca3af;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.verify-button:hover:not(:disabled) {
+  background: var(--primary-color-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--btn-shadow-hover);
 }
 
 /* Resend section */
@@ -236,16 +235,16 @@
   transition: all 0.2s ease;
 }
 
-.resend-button:hover:not(:disabled) {
-  background: var(--primary-color);
-  color: white;
-  transform: translateY(-1px);
-}
-
 .resend-button:disabled {
   border-color: #9ca3af;
   color: #9ca3af;
   cursor: not-allowed;
+}
+
+.resend-button:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-1px);
 }
 
 /* Help card */
@@ -266,7 +265,7 @@
 .help-list {
   list-style: none;
   padding: 0;
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 1.5rem;
 }
 
 .help-list li {
@@ -307,7 +306,6 @@
   .help-card {
     padding: 1.5rem;
   }
-
 
   .code-input {
     font-size: 1.5rem;

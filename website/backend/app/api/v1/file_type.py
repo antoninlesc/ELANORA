@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependency.database import get_db_dep
 from app.schema.requests.file_type import (
     FileTypeCreateRequest,
-    FileTypeUpdateRequest,
     FileTypeImportSelectedRequest,
+    FileTypeUpdateRequest,
 )
 from app.schema.responses.file_type import FileTypeResponse
 from app.service.file_type import FileTypeService
@@ -66,9 +66,7 @@ async def remove_file_type_from_project(
 async def preview_importable_file_types(
     source_project_id: int, target_project_id: int, db: AsyncSession = get_db_dep
 ):
-    """
-    Returns file types from source_project_id, and marks which already exist in target_project_id.
-    """
+    """Returns file types from source_project_id, and marks which already exist in target_project_id."""
     source_types = await FileTypeService.get_file_types_for_project(
         db, source_project_id
     )

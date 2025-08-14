@@ -1,4 +1,5 @@
-# Import API routers
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,11 +13,10 @@ from app.api.v1.git import router as git_router
 from app.api.v1.instance import router as instance_router
 from app.api.v1.invitation import router as invitation_router
 from app.api.v1.location import router as location_router
+from app.api.v1.project_associations import router as project_associations_router
 from app.api.v1.project_naming_standard import router as project_naming_standard_router
 from app.api.v1.tier import router as tier_router
 from app.api.v1.user import router as user_router
-from app.api.v1.instance import router as instance_router
-from app.api.v1.project_associations import router as project_associations_router
 from app.core.centralized_logging import get_logger
 from app.core.config import BACKEND_HOST, ENVIRONMENT, FRONTEND_HOST
 from app.core.exception_handler import (
@@ -27,9 +27,23 @@ from app.core.exception_handler import (
 from app.core.limiter import limiter
 from app.middleware.csrf import CSRFMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.utils.project_backup import create_hidden_folder_in_root
 
 # Get logger (this will automatically call setup_application_logging)
 logger = get_logger()
+
+API_V1_PREFIX = "/api/v1"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    backup_root = create_hidden_folder_in_root()
+    logger.info(f"Backup folder created at: {backup_root}")
+
+    yield
+    # Shutdown logic
+
 
 app = FastAPI(
     title="ELANORA - ELAN Collaboration Platform",
@@ -39,6 +53,7 @@ app = FastAPI(
     docs_url="/docs" if ENVIRONMENT != "server" else None,
     redoc_url="/redoc" if ENVIRONMENT != "server" else None,
     openapi_url="/openapi.json" if ENVIRONMENT != "server" else None,
+    lifespan=lifespan,
 )
 
 app.state.limiter = limiter

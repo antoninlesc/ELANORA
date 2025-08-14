@@ -2,9 +2,11 @@
   <div class="forgot-password-wrapper">
     <div class="forgot-password-card">
       <h1 class="forgot-password-title">{{ t('forgotPassword.title') }}</h1>
-      <form @submit.prevent="handleSubmit" class="forgot-password-form">
+      <form class="forgot-password-form" @submit.prevent="handleSubmit">
         <div class="form-group">
-          <label for="email" class="form-label">{{ t('forgotPassword.email_label') }}</label>
+          <label for="email" class="form-label">{{
+            t('forgotPassword.email_label')
+          }}</label>
           <input
             id="email"
             v-model="email"
@@ -15,7 +17,11 @@
             autocomplete="email"
           />
         </div>
-        <button type="submit" class="btn-primary forgot-password-btn" :disabled="loading">
+        <button
+          type="submit"
+          class="btn-primary forgot-password-btn"
+          :disabled="loading"
+        >
           <span v-if="loading">{{ t('forgotPassword.sending') }}</span>
           <span v-else>{{ t('forgotPassword.send_code') }}</span>
         </button>
@@ -28,14 +34,11 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-// À adapter selon ton store ou API
-import { useUserStore } from '@/stores/user';
 import { forgotPassword } from '@/api/service/authService';
 import { useEventMessageStore } from '@stores/eventMessage';
 
-const { t, locale} = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
-const userStore = useUserStore();
 const eventMessageStore = useEventMessageStore();
 
 const email = ref('');

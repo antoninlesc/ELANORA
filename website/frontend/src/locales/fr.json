@@ -1,4 +1,4 @@
-{ 
+{
   "common": {
     "confirm": "Confirmer",
     "cancel": "Annuler",
@@ -360,16 +360,71 @@
   },
 
   "projectsPage": {
-    "title": "Projets",
-    "subtitle": "Gérez vos projets et corpus linguistiques",
-    "createProject": "Créer un Nouveau Projet",
-    "noProjects": "Aucun projet disponible, créez votre premier projet !",
+    "title": "Projets de {instanceName}",
+    "projectListTitle": "Projets",
+    "noProjects": "Aucun projet en cours pour cette instance.\nPour commencer, veuillez créer un project en cliquant sur le bouton \"Créer un nouveau projet\".",
+    "noDescription": "Pas de description",
+    "filesInProject": "Fichiers dans {projectName}",
+    "synchronizing": "Synchronisation...",
+    "synchronize": "Synchroniser",
+    "loadingFiles": "Chargement des fichiers...",
+    "noFilesFound": "Aucun fichier trouvé.",
+    "deleteTitle": "Supprimer le projet",
+    "deleteMessage": "Êtes-vous sûr de vouloir supprimer le projet \"{projectName}\" ? Cette action est irréversible.",
+    "deleteConfirm": "Supprimer",
+    "deleteCancel": "Annuler",
+    "createProject": "Créer un nouveau projet",
     "project": {
       "buttons": {
         "settings": "Paramètres du projet",
         "share": "Partager le projet",
         "delete": "Supprimer le projet",
-        "Rename": "Renommer le projet"
+        "rename": "Renommer le projet"
+      }
+    },
+    "syncDialog": {
+      "title": "Synchroniser le projet",
+      "checkingStatus": "Vérification du statut...",
+      "missingFolder": "Le dossier du projet est manquant. Vous pouvez restaurer depuis une sauvegarde ou supprimer le projet.",
+      "missingGit": "Le dossier .git du projet est manquant. Vous pouvez restaurer depuis une sauvegarde ou supprimer le projet.",
+      "missingElanFiles": "Le dossier elan_files du projet est manquant. Vous pouvez restaurer depuis une sauvegarde ou supprimer le projet.",
+      "illFormed": "Le dossier du projet semble mal formé. Que souhaitez-vous faire ?",
+      "detectedChanges": "Modifications détectées",
+      "affectedFile": "Fichier concerné",
+      "status": "Statut",
+      "inspect": "Inspecter",
+      "added": "Ajouté",
+      "modified": "Modifié",
+      "deleted": "Supprimé",
+      "restoreFromBackup": "Restaurer depuis une sauvegarde",
+      "deleteProject": "Supprimer le projet",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.",
+      "deleteFailed": "Échec de la suppression du projet.",
+      "discardLocalChanges": "Ignorer les modifications locales et resynchroniser",
+      "discardConfirm": "Êtes-vous sûr de vouloir ignorer toutes les modifications locales ? Cette action est irréversible.",
+      "discardFailed": "Échec de l'annulation des modifications locales.",
+      "syncToMaster": "Utiliser l'état actuel et mettre à jour la base de données",
+      "syncFailed": "Échec de la synchronisation du projet.",
+      "checkFailed": "Échec de la vérification du statut de synchronisation.",
+      "restoreFailed": "Échec de la restauration depuis la sauvegarde."
+    },
+    "createDialog": {
+      "title": "Créer un nouveau projet",
+      "projectNamePlaceholder": "Nom du projet",
+      "projectDescriptionPlaceholder": "Description (optionnelle)",
+      "dropFolder": "Déposez un dossier ici ou cliquez pour parcourir vos dossiers.",
+      "onlyEafFiles": "Seuls les fichiers .eaf seront inclus.",
+      "folderPreview": "Aperçu du dossier",
+      "create": "Créer",
+      "creating": "Création...",
+      "errors": {
+        "nameRequired": "Le nom du projet est requis.",
+        "nameTooLong": "Le nom du projet doit comporter au maximum 100 caractères.",
+        "nameExists": "Un projet avec ce nom existe déjà.",
+        "descTooLong": "La description doit comporter au maximum 5000 caractères.",
+        "fixAbove": "Veuillez corriger les erreurs ci-dessus.",
+        "folderDropNotSupported": "Votre navigateur ne supporte pas le glisser-déposer de dossier. Utilisez le bouton \"Parcourir\".",
+        "createFailed": "Échec de la création du projet."
       }
     }
   },
@@ -394,7 +449,7 @@
   "configureFileTypes": {
     "title": "Gérer les types de fichiers pour votre projet",
     "loading": "Chargement des types de fichiers...",
-    "empty": "Aucun type de fichier trouvé. Créez votre premier type de fichier !",
+    "empty": "Aucun type de fichier trouvé. Créez votre premier type de fichier pour commencer !",
     "createFileType": "Ajouter",
     "edit": "Modifier",
     "delete": "Supprimer",

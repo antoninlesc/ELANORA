@@ -1,8 +1,9 @@
-from sqlalchemy.orm import selectinload
-from app.model.standard_component import StandardComponent
-from app.model.component_template import ComponentTemplate
-from app.utils.database import DatabaseUtils
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.model.component_template import ComponentTemplate
+from app.model.standard_component import StandardComponent
+from app.utils.database import DatabaseUtils
 
 
 async def link_standard_to_component(

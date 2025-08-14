@@ -10,7 +10,9 @@ import axiosInstance from '@/api/apiClient';
  */
 export const getProjectUsers = async (projectName) => {
   try {
-    const response = await axiosInstance.get(`/project-associations/projects/${projectName}/users`);
+    const response = await axiosInstance.get(
+      `/project-associations/projects/${projectName}/users`
+    );
     return response;
   } catch (error) {
     console.error('Error fetching project users:', error);
@@ -26,7 +28,10 @@ export const getProjectUsers = async (projectName) => {
  */
 export const addUserToProject = async (projectName, userData) => {
   try {
-    const response = await axiosInstance.post(`/project-associations/projects/${projectName}/users`, userData);
+    const response = await axiosInstance.post(
+      `/project-associations/projects/${projectName}/users`,
+      userData
+    );
     return response;
   } catch (error) {
     console.error('Error adding user to project:', error);
@@ -41,9 +46,16 @@ export const addUserToProject = async (projectName, userData) => {
  * @param {Object} permissionData - Object with permission field
  * @returns {Promise} API response
  */
-export const updateUserPermission = async (projectName, userId, permissionData) => {
+export const updateUserPermission = async (
+  projectName,
+  userId,
+  permissionData
+) => {
   try {
-    const response = await axiosInstance.put(`/project-associations/projects/${projectName}/users/${userId}`, permissionData);
+    const response = await axiosInstance.put(
+      `/project-associations/projects/${projectName}/users/${userId}`,
+      permissionData
+    );
     return response;
   } catch (error) {
     console.error('Error updating user permission:', error);
@@ -59,7 +71,9 @@ export const updateUserPermission = async (projectName, userId, permissionData) 
  */
 export const removeUserFromProject = async (projectName, userId) => {
   try {
-    const response = await axiosInstance.delete(`/project-associations/projects/${projectName}/users/${userId}`);
+    const response = await axiosInstance.delete(
+      `/project-associations/projects/${projectName}/users/${userId}`
+    );
     return response;
   } catch (error) {
     console.error('Error removing user from project:', error);

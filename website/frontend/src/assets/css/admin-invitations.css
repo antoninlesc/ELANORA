@@ -1,5 +1,4 @@
-@import './style.css';
-
+@import url('./style.css');
 
 .admin-invitation-page {
   min-height: 100vh;
@@ -83,27 +82,31 @@
   color: var(--text-main);
 }
 
-.invitation-form .form-input:focus,
-.form-textarea:focus,
-.form-select:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.invitation-form .form-input.error {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-}
-
 .form-textarea {
   resize: vertical;
   min-height: 80px;
 }
 
+.invitation-form .form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
+}
+
+.invitation-form .form-input.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgb(239 68 68 / 10%);
+}
+
 /* Surcharge pour le bouton primaire de cette page */
 .invitation-form .btn-primary {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-color-dark) 100%
+  );
   color: white;
   border: none;
   padding: 0.875rem 2rem;
@@ -115,16 +118,16 @@
   width: auto; /* Override du width: 100% de style.css */
 }
 
-.invitation-form .btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
-}
-
 .invitation-form .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.invitation-form .btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(37 99 235 / 40%);
 }
 
 .send-btn {
@@ -212,7 +215,7 @@
   font-size: 0.875rem;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .admin-container {
     padding: 1rem;
   }

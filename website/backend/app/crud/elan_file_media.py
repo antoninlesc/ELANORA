@@ -53,6 +53,7 @@ async def get_all_media(db: AsyncSession) -> list[ElanFileMedia]:
 
 async def delete_orphaned_media(db: AsyncSession) -> int:
     """Delete all media files that are not referenced in ELAN_FILE_TO_MEDIA.
+
     Returns the number of deleted rows.
     """
     return await DatabaseUtils.delete_fully_orphaned(

@@ -19,10 +19,13 @@
   border-radius: 14px;
   box-shadow: 0 4px 24px #0001;
   overflow: hidden;
+
   /* Hide background and padding by default */
   background: transparent;
   padding-bottom: 0;
-  transition: background 0.2s, padding-bottom 0.2s;
+  transition:
+    background 0.2s,
+    padding-bottom 0.2s;
 }
 
 .settings-section.open {
@@ -79,7 +82,7 @@
 }
 
 .inner-section {
-  margin: 0 0 8px 0;
+  margin: 0 0 8px;
 }
 
 .settings-section-header.inner-header {
@@ -87,7 +90,7 @@
   font-weight: 600;
   background: #e9eef5;
   border-radius: 10px;
-  margin: 8px 16px 0 16px;
+  margin: 8px 16px 0;
   padding: 16px 24px;
   cursor: pointer;
   display: flex;
@@ -107,7 +110,7 @@
   background: #fff;
   animation: fade-in 0.2s;
   border-radius: 0 0 10px 10px;
-  margin: 0 16px 8px 16px;
+  margin: 0 16px 8px;
   box-shadow: 0 2px 8px #0001;
 }
 
@@ -142,14 +145,18 @@
 
 .main-section-height-enter-active,
 .main-section-height-leave-active {
-  transition: height 0.35s cubic-bezier(.4,0,.2,1), opacity 0.35s cubic-bezier(.4,0,.2,1);
+  transition:
+    height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
+
 .main-section-height-enter-from,
 .main-section-height-leave-to {
   height: 0;
   opacity: 0;
 }
+
 .main-section-height-enter-to,
 .main-section-height-leave-from {
   height: auto;

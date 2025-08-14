@@ -19,7 +19,9 @@
           </svg>
         </div>
         <h1 class="verification-title">{{ $t('emailVerification.title') }}</h1>
-        <p class="verification-subtitle">{{ $t('emailVerification.subtitle') }}</p>
+        <p class="verification-subtitle">
+          {{ $t('emailVerification.subtitle') }}
+        </p>
         <div class="email-display">
           <span class="email-text">{{ userEmail }}</span>
         </div>
@@ -27,7 +29,7 @@
 
       <!-- Verification Form Card -->
       <div class="verification-card">
-        <form @submit.prevent="handleVerification" class="verification-form">
+        <form class="verification-form" @submit.prevent="handleVerification">
           <div class="form-group">
             <label for="verificationCode" class="form-label">
               {{ $t('emailVerification.codeLabel') }}
@@ -38,7 +40,7 @@
                 v-model="verificationCode"
                 type="text"
                 class="code-input"
-                :class="{ 'error': validationMessage, 'loading': isLoading }"
+                :class="{ error: validationMessage, loading: isLoading }"
                 :placeholder="$t('emailVerification.codePlaceholder')"
                 maxlength="6"
                 autocomplete="off"
@@ -49,22 +51,26 @@
                 <div class="spinner"></div>
               </div>
             </div>
-            
+
             <!-- Validation Messages -->
             <div v-if="validationMessage" class="validation-message error">
               <svg class="message-icon" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" 
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" 
-                      clip-rule="evenodd" />
+                <path
+                  fill-rule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clip-rule="evenodd"
+                />
               </svg>
               {{ validationMessage }}
             </div>
 
             <div v-if="successMessage" class="validation-message success">
               <svg class="message-icon" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" 
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" 
-                      clip-rule="evenodd" />
+                <path
+                  fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clip-rule="evenodd"
+                />
               </svg>
               {{ successMessage }}
             </div>
@@ -74,7 +80,9 @@
           <button
             type="submit"
             class="btn-primary verify-button"
-            :disabled="!verificationCode || verificationCode.length !== 6 || isLoading"
+            :disabled="
+              !verificationCode || verificationCode.length !== 6 || isLoading
+            "
           >
             <span v-if="!isLoading">{{
               $t('emailVerification.verifyButton')
@@ -85,7 +93,9 @@
 
         <!-- Resend Section -->
         <div class="resend-section">
-          <p class="resend-text">{{ $t('emailVerification.noCodeReceived') }}</p>
+          <p class="resend-text">
+            {{ $t('emailVerification.noCodeReceived') }}
+          </p>
           <button
             type="button"
             class="resend-button"
@@ -99,7 +109,11 @@
               {{ $t('emailVerification.resending') }}
             </span>
             <span v-else>
-              {{ $t('emailVerification.resendCooldown', { seconds: resendCooldown }) }}
+              {{
+                $t('emailVerification.resendCooldown', {
+                  seconds: resendCooldown,
+                })
+              }}
             </span>
           </button>
         </div>
@@ -159,7 +173,7 @@ export default {
         '';
 
       if (!userEmail.value) {
-        router.push({ name: 'LoginPage' })
+        router.push({ name: 'LoginPage' });
       }
 
       // Start initial cooldown if this is a fresh verification request
@@ -224,8 +238,8 @@ export default {
 
           // Redirect to login after a short delay
           setTimeout(() => {
-            router.push({ name: 'LoginPage', query: { verified: 'true' } })
-          }, 2000)
+            router.push({ name: 'LoginPage', query: { verified: 'true' } });
+          }, 2000);
         } else {
           validationMessage.value =
             response.data.message || t('emailVerification.errors.invalidCode');

@@ -14,16 +14,15 @@ from app.crud.invitation import (
     get_pending_invitations_by_email,
     update_invitation_status,
 )
-from app.crud.user import get_user_by_id, get_user_by_username_or_email
 from app.crud.project import (
-    get_project_by_id,
     add_user_to_project,
+    get_project_by_id,
     get_project_by_name,
     user_in_project,
 )
+from app.crud.user import get_user_by_id, get_user_by_username_or_email
+from app.model.enums import InvitationStatus
 from app.model.invitation import Invitation
-from app.model.enums import InvitationStatus, ProjectPermission
-from app.service.email import EmailService
 from app.schema.requests.invitation import InvitationSendRequest
 from app.schema.responses.invitation import (
     InvitationListResponse,
@@ -31,6 +30,7 @@ from app.schema.responses.invitation import (
     InvitationSendResponse,
     InvitationValidationResponse,
 )
+from app.service.email import EmailService
 
 # Get logger for this module
 logger = get_logger()

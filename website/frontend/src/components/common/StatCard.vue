@@ -1,10 +1,12 @@
 <template>
   <div class="stat-card" :class="cardClass">
-    <div class="stat-icon" v-if="icon">{{ icon }}</div>
+    <div v-if="icon" class="stat-icon">{{ icon }}</div>
     <div class="stat-content">
       <h3 class="stat-number">{{ value }}</h3>
       <p class="stat-label">{{ label }}</p>
-      <span class="stat-trend" :class="trendClass" v-if="trend">{{ trend }}</span>
+      <span v-if="trend" class="stat-trend" :class="trendClass">{{
+        trend
+      }}</span>
     </div>
   </div>
 </template>
@@ -13,28 +15,41 @@
 import { computed } from 'vue';
 
 const props = defineProps({
-  icon: String,
-  value: [String, Number],
-  label: String,
-  trend: String,
+  icon: {
+    type: String,
+    default: '',
+  },
+  value: {
+    type: [String, Number],
+    default: '',
+  },
+  label: {
+    type: String,
+    default: '',
+  },
+  trend: {
+    type: String,
+    default: '',
+  },
   trendType: {
     type: String,
     default: 'neutral',
-    validator: (value) => ['positive', 'negative', 'neutral'].includes(value)
+    validator: (value) => ['positive', 'negative', 'neutral'].includes(value),
   },
   variant: {
     type: String,
     default: 'default',
-    validator: (value) => ['default', 'primary', 'warning', 'success'].includes(value)
-  }
+    validator: (value) =>
+      ['default', 'primary', 'warning', 'success'].includes(value),
+  },
 });
 
 const cardClass = computed(() => ({
-  [`stat-card--${props.variant}`]: props.variant !== 'default'
+  [`stat-card--${props.variant}`]: props.variant !== 'default',
 }));
 
 const trendClass = computed(() => ({
-  [`trend--${props.trendType}`]: true
+  [`trend--${props.trendType}`]: true,
 }));
 </script>
 
@@ -43,9 +58,11 @@ const trendClass = computed(() => ({
   background: white;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
   border-left: 4px solid #1a73e8;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -53,18 +70,18 @@ const trendClass = computed(() => ({
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
 }
 
-.stat-card--primary {
+.stat-card-primary {
   border-left-color: #1a73e8;
 }
 
-.stat-card--warning {
+.stat-card-warning {
   border-left-color: #f9ab00;
 }
 
-.stat-card--success {
+.stat-card-success {
   border-left-color: #137333;
 }
 
@@ -80,13 +97,13 @@ const trendClass = computed(() => ({
 .stat-number {
   font-size: 2rem;
   color: #1a73e8;
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.25rem;
   font-weight: 700;
 }
 
 .stat-label {
   color: #5f6368;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.5rem;
   font-weight: 500;
 }
 
@@ -97,17 +114,17 @@ const trendClass = computed(() => ({
   font-weight: 500;
 }
 
-.trend--positive {
+.trend-positive {
   background-color: #e6f4ea;
   color: #137333;
 }
 
-.trend--negative {
+.trend-negative {
   background-color: #fce8e6;
   color: #d93025;
 }
 
-.trend--neutral {
+.trend-neutral {
   background-color: #f0f4f8;
   color: #5f6368;
 }

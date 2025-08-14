@@ -163,3 +163,14 @@ class XmlAttributeExtractor:
         }
         logger.debug(f"Extracted ref annotation: {attrs}")
         return attrs
+
+
+def list_untracked_contents(folder_path: Path, parent_path: Path) -> list:
+    items = []
+    for path in folder_path.rglob("*"):
+        rel_path = str(path.relative_to(parent_path))
+        if path.is_dir():
+            items.append({"filename": rel_path + "/", "status": "untracked"})
+        else:
+            items.append({"filename": rel_path, "status": "untracked"})
+    return items
