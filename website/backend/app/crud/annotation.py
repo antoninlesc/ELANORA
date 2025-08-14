@@ -2,11 +2,10 @@
 
 from decimal import Decimal
 
-from sqlalchemy import and_, delete, insert, select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.centralized_logging import get_logger
 from app.core.centralized_logging import get_logger
 from app.model.annotation import Annotation
 from app.model.annotation_value import AnnotationValue
@@ -146,3 +145,16 @@ async def bulk_create_annotations(
             )
     if all_annotations:
         await DatabaseUtils.bulk_insert(db, Annotation, all_annotations)
+
+
+async def delete_annotations_by_file(db: AsyncSession, elan_id: int) -> int:
+    """Delete all annotations for a given ELAN file."""
+    try:
+        count = await DatabaseUtils.bulk_delete(
+            db, Annotation, Annotation.elan_id == elan_id
+        )
+        await delete_unused_annotation_values(db)
+        await db.flush()
+        return count
+    except Exception as e:
+        logger.exception("Failed to delete annotations by file", exc_info=e)

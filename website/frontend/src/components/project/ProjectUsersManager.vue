@@ -31,19 +31,17 @@
       <div v-if="users.length === 0" class="empty-state">
         <p>{{ $t('project.users.no_users') }}</p>
       </div>
-      
+
       <div v-else class="users-table">
         <div class="table-header">
           <div class="column user-info">{{ $t('project.users.user') }}</div>
-          <div class="column permission">{{ $t('project.users.permission') }}</div>
+          <div class="column permission">
+            {{ $t('project.users.permission') }}
+          </div>
           <div class="column actions">{{ $t('common.actions') }}</div>
         </div>
-        
-        <div
-          v-for="user in users"
-          :key="user.user_id"
-          class="user-row"
-        >
+
+        <div v-for="user in users" :key="user.user_id" class="user-row">
           <div class="column user-info">
             <div class="user-avatar">
               {{ user.username.charAt(0).toUpperCase() }}
@@ -53,7 +51,7 @@
               <div class="email">{{ user.email }}</div>
             </div>
           </div>
-          
+
           <div class="column permission">
             <select
               v-if="canEditUser(user)"
@@ -63,8 +61,12 @@
               @change="updateUserPermissionHandler(user)"
             >
               <option value="read">{{ $t('project.permissions.read') }}</option>
-              <option value="write">{{ $t('project.permissions.write') }}</option>
-              <option value="admin">{{ $t('project.permissions.admin') }}</option>
+              <option value="write">
+                {{ $t('project.permissions.write') }}
+              </option>
+              <option value="admin">
+                {{ $t('project.permissions.admin') }}
+              </option>
               <option v-if="user.permission === 'owner'" value="owner">
                 {{ $t('project.permissions.owner') }}
               </option>
@@ -73,7 +75,7 @@
               {{ $t(`project.permissions.${user.permission}`) }}
             </span>
           </div>
-          
+
           <div class="column actions">
             <button
               v-if="canRemoveUser(user)"
@@ -91,16 +93,22 @@
     </div>
 
     <!-- Add User Modal -->
-    <div v-if="showAddUserModal" class="modal-overlay" @click="closeAddUserModal">
+    <div
+      v-if="showAddUserModal"
+      class="modal-overlay"
+      @click="closeAddUserModal"
+    >
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h4>{{ $t('project.users.add_user_modal.title') }}</h4>
           <button class="modal-close" @click="closeAddUserModal">×</button>
         </div>
-        
-        <form @submit.prevent="addUser" class="add-user-form">
+
+        <form class="add-user-form" @submit.prevent="addUser">
           <div class="form-group">
-            <label for="userId">{{ $t('project.users.add_user_modal.user_id') }}</label>
+            <label for="userId">{{
+              $t('project.users.add_user_modal.user_id')
+            }}</label>
             <input
               id="userId"
               v-model="newUser.user_id"
@@ -110,18 +118,33 @@
               min="1"
             />
           </div>
-          
+
           <div class="form-group">
-            <label for="permission">{{ $t('project.users.add_user_modal.permission') }}</label>
-            <select id="permission" v-model="newUser.permission" class="form-select" required>
+            <label for="permission">{{
+              $t('project.users.add_user_modal.permission')
+            }}</label>
+            <select
+              id="permission"
+              v-model="newUser.permission"
+              class="form-select"
+              required
+            >
               <option value="read">{{ $t('project.permissions.read') }}</option>
-              <option value="write">{{ $t('project.permissions.write') }}</option>
-              <option value="admin">{{ $t('project.permissions.admin') }}</option>
+              <option value="write">
+                {{ $t('project.permissions.write') }}
+              </option>
+              <option value="admin">
+                {{ $t('project.permissions.admin') }}
+              </option>
             </select>
           </div>
-          
+
           <div class="form-actions">
-            <button type="button" class="btn-secondary" @click="closeAddUserModal">
+            <button
+              type="button"
+              class="btn-secondary"
+              @click="closeAddUserModal"
+            >
               {{ $t('common.cancel') }}
             </button>
             <button type="submit" class="btn-primary" :disabled="addingUser">
@@ -138,16 +161,26 @@
         <div class="modal-header">
           <h4>{{ $t('project.users.remove_modal.title') }}</h4>
         </div>
-        
+
         <div class="modal-body">
-          <p>{{ $t('project.users.remove_modal.message', { username: userToRemove?.username }) }}</p>
+          <p>
+            {{
+              $t('project.users.remove_modal.message', {
+                username: userToRemove?.username,
+              })
+            }}
+          </p>
         </div>
-        
+
         <div class="modal-actions">
           <button class="btn-secondary" @click="closeRemoveModal">
             {{ $t('common.cancel') }}
           </button>
-          <button class="btn-danger" :disabled="removingUser" @click="removeUser">
+          <button
+            class="btn-danger"
+            :disabled="removingUser"
+            @click="removeUser"
+          >
             {{ removingUser ? $t('common.removing') : $t('common.remove') }}
           </button>
         </div>
@@ -164,18 +197,18 @@ import {
   getProjectUsers,
   addUserToProject,
   updateUserPermission,
-  removeUserFromProject
+  removeUserFromProject,
 } from '@/api/service/projectAssociationService';
 
 const props = defineProps({
   projectName: {
     type: String,
-    required: true
+    required: true,
   },
   currentUserRole: {
     type: String,
-    default: 'read'
-  }
+    default: 'read',
+  },
 });
 
 const { t } = useI18n();
@@ -199,7 +232,7 @@ const removingUser = ref(false);
 // Form data
 const newUser = reactive({
   user_id: '',
-  permission: 'read'
+  permission: 'read',
 });
 
 // Computed properties
@@ -211,7 +244,7 @@ const canAddUsers = computed(() => {
 const loadUsers = async () => {
   loading.value = true;
   error.value = '';
-  
+
   try {
     const response = await getProjectUsers(props.projectName);
     if (response.data) {
@@ -228,10 +261,10 @@ const loadUsers = async () => {
 const canEditUser = (user) => {
   // Only admin and owner can edit permissions
   if (!['admin', 'owner'].includes(props.currentUserRole)) return false;
-  
+
   // Owner cannot be edited
   if (user.permission === 'owner') return false;
-  
+
   // Admin cannot edit other admins (only owner can)
   return !(user.permission === 'admin' && props.currentUserRole !== 'owner');
 };
@@ -239,34 +272,40 @@ const canEditUser = (user) => {
 const canRemoveUser = (user) => {
   // Only admin and owner can remove users
   if (!['admin', 'owner'].includes(props.currentUserRole)) return false;
-  
+
   // Owner cannot be removed
   if (user.permission === 'owner') return false;
-  
+
   // Admins can remove read/write users, but only owner can remove admins
   if (user.permission === 'admin') {
     return props.currentUserRole === 'owner';
   }
-  
+
   return true;
 };
 
 const updateUserPermissionHandler = async (user) => {
   updatingUsers.value.add(user.user_id);
-  
+
   try {
     const response = await updateUserPermission(
       props.projectName,
       user.user_id,
       { permission: user.permission }
     );
-    
+
     if (response.data) {
-      eventMessageStore.addMessage('project.users.permission_updated', 'success');
+      eventMessageStore.addMessage(
+        'project.users.permission_updated',
+        'success'
+      );
     }
   } catch (err) {
     console.error('Error updating user permission:', err);
-    eventMessageStore.addMessage('project.users.permission_update_error', 'error');
+    eventMessageStore.addMessage(
+      'project.users.permission_update_error',
+      'error'
+    );
     // Reload users to reset the select value
     await loadUsers();
   } finally {
@@ -282,13 +321,13 @@ const closeAddUserModal = () => {
 
 const addUser = async () => {
   addingUser.value = true;
-  
+
   try {
     const response = await addUserToProject(props.projectName, {
       user_id: parseInt(newUser.user_id),
-      permission: newUser.permission
+      permission: newUser.permission,
     });
-    
+
     if (response.data) {
       eventMessageStore.addMessage('project.users.user_added', 'success');
       closeAddUserModal();
@@ -317,15 +356,15 @@ const closeRemoveModal = () => {
 
 const removeUser = async () => {
   if (!userToRemove.value) return;
-  
+
   removingUser.value = true;
-  
+
   try {
     const response = await removeUserFromProject(
       props.projectName,
       userToRemove.value.user_id
     );
-    
+
     if (response.data) {
       eventMessageStore.addMessage('project.users.user_removed', 'success');
       closeRemoveModal();
@@ -347,7 +386,7 @@ onMounted(() => {
 // Expose methods for parent components if needed
 defineExpose({
   loadUsers,
-  users
+  users,
 });
 </script>
 
@@ -356,7 +395,7 @@ defineExpose({
   background: white;
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
 }
 
 .header {
@@ -379,7 +418,8 @@ defineExpose({
   gap: 8px;
 }
 
-.loading-container, .error-container {
+.loading-container,
+.error-container {
   text-align: center;
   padding: 40px 20px;
 }
@@ -395,8 +435,13 @@ defineExpose({
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {
@@ -534,11 +579,8 @@ defineExpose({
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgb(0 0 0 / 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -605,20 +647,23 @@ defineExpose({
   font-size: 0.875rem;
 }
 
-.form-input, .form-select {
+.form-input,
+.form-select {
   padding: 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 1rem;
 }
 
-.form-input:focus, .form-select:focus {
+.form-input:focus,
+.form-select:focus {
   outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 10%);
 }
 
-.form-actions, .modal-actions {
+.form-actions,
+.modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -636,7 +681,9 @@ defineExpose({
 }
 
 /* Button Styles */
-.btn-primary, .btn-secondary, .btn-danger {
+.btn-primary,
+.btn-secondary,
+.btn-danger {
   padding: 10px 20px;
   border: none;
   border-radius: 6px;
@@ -655,18 +702,10 @@ defineExpose({
   color: white;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: #2563eb;
-}
-
 .btn-secondary {
   background: #f3f4f6;
   color: #374151;
   border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
 }
 
 .btn-danger {
@@ -674,15 +713,23 @@ defineExpose({
   color: white;
 }
 
-.btn-danger:hover:not(:disabled) {
-  background: #b91c1c;
-}
-
 .btn-primary:disabled,
 .btn-secondary:disabled,
 .btn-danger:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
 }
 
 /* Icon placeholder - you can replace with your actual icon library */

@@ -1,4 +1,4 @@
-@import './style.css';
+@import url('./style.css');
 
 .login-container-wrapper {
   min-height: 100vh;
@@ -96,7 +96,14 @@
   border: 2px solid #d1d5db;
   border-radius: 0.5rem;
   font-size: 1rem;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+
+.checkbox-label input {
+  margin-right: 0.5rem;
+  width: auto;
 }
 
 .form-group input:focus {
@@ -125,16 +132,12 @@
   font-size: 0.875rem;
 }
 
-.checkbox-label input {
-  margin-right: 0.5rem;
-  width: auto;
-}
-
 .forgot-link {
   color: var(--primary-color);
   text-decoration: none;
   font-size: 0.875rem;
 }
+
 .forgot-link:hover {
   text-decoration: underline;
 }
@@ -156,15 +159,15 @@
   color: #fff;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-color-dark);
-  transform: translateY(-2px);
-}
-
 .btn-primary:disabled {
   background: #9ca3af;
   cursor: not-allowed;
   transform: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-color-dark);
+  transform: translateY(-2px);
 }
 
 .btn-secondary {
@@ -218,6 +221,7 @@
   color: var(--primary-color);
   text-decoration: none;
 }
+
 .login-footer a:hover {
   text-decoration: underline;
 }
@@ -246,7 +250,7 @@
 }
 
 .lab-info {
-  background: rgba(255,255,255,0.1);
+  background: rgb(255 255 255 / 10%);
   padding: 1.25rem;
   border-radius: 0.5rem;
   margin-bottom: 2rem;
@@ -284,7 +288,7 @@
 
 .stat {
   text-align: center;
-  background: rgba(255,255,255,0.1);
+  background: rgb(255 255 255 / 10%);
   padding: 1.25rem;
   border-radius: 0.5rem;
   backdrop-filter: blur(4px);
@@ -301,22 +305,22 @@
   opacity: 0.5;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .login-container {
     flex-direction: column;
     margin-left: 0.75rem;
     margin-right: 0.75rem;
   }
+
   .login-card,
   .login-info {
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
+    padding: 2rem 1.25rem;
   }
+
   .login-logo {
     font-size: 1.5rem;
   }
+
   .instance-stats {
     grid-template-columns: 1fr;
   }

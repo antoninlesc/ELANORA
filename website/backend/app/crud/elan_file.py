@@ -3,12 +3,15 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.crud.annotation import (
+    delete_unused_annotation_values,
+)
 from app.crud.association import add_elan_file_to_media, add_elan_file_to_project
 from app.crud.elan_file_media import (
     create_or_get_media_in_db,
     delete_orphaned_media,
 )
-from app.model.association import ElanFileToProject, ElanFileToTier
+from app.model.association import ElanFileToMedia, ElanFileToProject, ElanFileToTier
 from app.model.elan_file import ElanFile
 from app.model.tier_group import TierGroup
 from app.utils.database import DatabaseUtils
@@ -49,6 +52,9 @@ async def delete_elan_file_associations(db: AsyncSession, elan_id: int):
         )
         await DatabaseUtils.bulk_delete(
             db, ElanFileToProject, ElanFileToProject.elan_id == elan_id
+        )
+        await DatabaseUtils.bulk_delete(
+            db, ElanFileToMedia, ElanFileToMedia.elan_id == elan_id
         )
         logger.info(f"Deleted ELAN file associations for elan_id={elan_id}")
     except Exception as e:
@@ -178,6 +184,7 @@ async def get_projects_for_elan_file(db: AsyncSession, elan_id: int) -> list[int
 
 async def delete_elan_file_full(db: AsyncSession, elan_id: int) -> bool:
     """Delete an ELAN file and all related associations, then clean up orphaned media.
+
     Returns True if the file was deleted, False otherwise.
     """
     logger.info(f"Full deletion for ELAN file ID: {elan_id}")
@@ -196,6 +203,7 @@ async def delete_elan_file_full(db: AsyncSession, elan_id: int) -> bool:
         if not remaining_projects:
             logger.info(f"Deleting ELAN file row for elan_id={elan_id}")
             await db.delete(elan_file_obj)
+            await db.flush()
             logger.info(f"Deleted ELAN file elan_id={elan_id}")
         else:
             logger.info(
@@ -205,9 +213,11 @@ async def delete_elan_file_full(db: AsyncSession, elan_id: int) -> bool:
 
         # Clean up orphaned media
         deleted_count = await delete_orphaned_media(db)
+        # Clean up unused annotation values
+        await delete_unused_annotation_values(db)
         logger.info(f"Deleted {deleted_count} orphaned media files.")
-
         return True
+
     except Exception as e:
         logger.error(f"Failed to fully delete ELAN file elan_id={elan_id}: {e}")
         return False
@@ -217,6 +227,7 @@ async def store_elan_file_data_in_db(
     db: AsyncSession, file_info: dict, user_id: int, project_id: int
 ) -> int:
     """Store parsed ELAN file data in the database and sync associations.
+
     Returns the elan_id.
     """
     # Check if file already exists

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 
 export const useProjectStore = defineStore('project', {
   state: () => ({
-    currentProject: null, // { project_id: <int>, project_name: <string> }
+    currentProject: null, // { project_id: <int>, project_name: <string>, project_description: <string> }
     projects: [],
     isLoading: false,
   }),
@@ -10,6 +10,8 @@ export const useProjectStore = defineStore('project', {
   getters: {
     projectId: (state) => state.currentProject?.project_id ?? null,
     projectName: (state) => state.currentProject?.project_name ?? '',
+    projectDescription: (state) =>
+      state.currentProject?.project_description ?? '',
     projectList: (state) => state.projects ?? [],
   },
 
@@ -47,15 +49,6 @@ export const useProjectStore = defineStore('project', {
     clearCurrentProject() {
       this.currentProject = null;
       localStorage.removeItem('currentProject');
-    },
-    renameCurrentProject(newName) {
-      if (this.currentProject && typeof this.currentProject === 'object') {
-        this.currentProject.project_name = newName;
-        localStorage.setItem(
-          'currentProject',
-          JSON.stringify(this.currentProject)
-        );
-      }
     },
   },
 });

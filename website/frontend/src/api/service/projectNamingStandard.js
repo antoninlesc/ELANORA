@@ -19,10 +19,14 @@ export default {
     );
   },
   async getProjectNamingStandardsFull(projectId) {
-    return axiosInstance.get(`/project-naming-standard/project/${projectId}/full`);
+    return axiosInstance.get(
+      `/project-naming-standard/project/${projectId}/full`
+    );
   },
   async getProjectsWithStandards() {
-    return axiosInstance.get('/project-naming-standard/projects-with-standards');
+    return axiosInstance.get(
+      '/project-naming-standard/projects-with-standards'
+    );
   },
   async importSelectedStandards(payload) {
     return axiosInstance.post('/project-naming-standard/import', payload);

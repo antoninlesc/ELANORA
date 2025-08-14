@@ -39,12 +39,14 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { acceptInvitation, rejectInvitation } from '@/api/service/invitationService';
+import {
+  acceptInvitation,
+  rejectInvitation,
+} from '@/api/service/invitationService';
 
 const route = useRoute();
-const router = useRouter();
 const { t } = useI18n();
 
 const loading = ref(true);
@@ -54,7 +56,7 @@ const errorMessage = ref('');
 const action = ref('');
 
 const successTitle = computed(() => {
-  return action.value === 'accept' 
+  return action.value === 'accept'
     ? t('invitation.accept_success_title')
     : t('invitation.reject_success_title');
 });
@@ -89,7 +91,10 @@ const processInvitation = async () => {
   } catch (err) {
     console.error('Error processing invitation:', err);
     error.value = true;
-    errorMessage.value = err.response?.data?.detail || err.message || t('invitation.general_error');
+    errorMessage.value =
+      err.response?.data?.detail ||
+      err.message ||
+      t('invitation.general_error');
   } finally {
     loading.value = false;
   }
@@ -119,7 +124,7 @@ onMounted(() => {
   background: white;
   border-radius: 1rem;
   padding: 3rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 10%);
   text-align: center;
 }
 
@@ -162,8 +167,13 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 h1 {

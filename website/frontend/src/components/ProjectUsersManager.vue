@@ -14,17 +14,17 @@
     <!-- Error state -->
     <div v-if="error" class="error-message">
       <p>{{ error }}</p>
-      <button @click="fetchUsers" class="retry-button">Réessayer</button>
+      <button class="retry-button" @click="fetchUsers">Réessayer</button>
     </div>
 
     <!-- Users list -->
     <div v-if="!loading && !error" class="users-section">
       <div class="users-header">
         <h4>Utilisateurs ({{ users.length }})</h4>
-        <button 
-          @click="showAddUserModal = true" 
+        <button
           class="add-user-button"
           :disabled="!canManageUsers"
+          @click="showAddUserModal = true"
         >
           + Ajouter un utilisateur
         </button>
@@ -35,23 +35,19 @@
       </div>
 
       <div v-else class="users-list">
-        <div 
-          v-for="user in users" 
-          :key="user.user_id" 
-          class="user-card"
-        >
+        <div v-for="user in users" :key="user.user_id" class="user-card">
           <div class="user-info">
             <div class="user-details">
               <h5>{{ user.username }}</h5>
               <p class="user-email">{{ user.email }}</p>
             </div>
             <div class="user-permission">
-              <select 
-                v-model="user.permission" 
-                @change="updatePermission(user)"
+              <select
+                v-model="user.permission"
                 :disabled="!canManageUsers || updating === user.user_id"
                 class="permission-select"
                 :class="`permission-${user.permission}`"
+                @change="updatePermission(user)"
               >
                 <option value="read">Lecture</option>
                 <option value="write">Écriture</option>
@@ -61,11 +57,11 @@
             </div>
           </div>
           <div class="user-actions">
-            <button 
-              @click="confirmRemoveUser(user)"
+            <button
               :disabled="!canManageUsers || updating === user.user_id"
               class="remove-button"
               title="Retirer du projet"
+              @click="confirmRemoveUser(user)"
             >
               ✗
             </button>
@@ -78,26 +74,34 @@
     </div>
 
     <!-- Add User Modal -->
-    <div v-if="showAddUserModal" class="modal-overlay" @click="closeAddUserModal">
+    <div
+      v-if="showAddUserModal"
+      class="modal-overlay"
+      @click="closeAddUserModal"
+    >
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h4>Ajouter un utilisateur</h4>
-          <button @click="closeAddUserModal" class="close-button">✗</button>
+          <button class="close-button" @click="closeAddUserModal">✗</button>
         </div>
         <div class="modal-body">
           <div class="form-group">
             <label for="user-id">ID Utilisateur:</label>
-            <input 
+            <input
               id="user-id"
-              v-model="newUser.user_id" 
-              type="number" 
+              v-model="newUser.user_id"
+              type="number"
               placeholder="Entrez l'ID de l'utilisateur"
               class="form-input"
             />
           </div>
           <div class="form-group">
             <label for="permission">Permission:</label>
-            <select id="permission" v-model="newUser.permission" class="form-select">
+            <select
+              id="permission"
+              v-model="newUser.permission"
+              class="form-select"
+            >
               <option value="read">Lecture</option>
               <option value="write">Écriture</option>
               <option value="admin">Admin</option>
@@ -109,11 +113,13 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button @click="closeAddUserModal" class="cancel-button">Annuler</button>
-          <button 
-            @click="addUser" 
+          <button class="cancel-button" @click="closeAddUserModal">
+            Annuler
+          </button>
+          <button
             :disabled="adding || !newUser.user_id"
             class="confirm-button"
+            @click="addUser"
           >
             <span v-if="adding">Ajout...</span>
             <span v-else>Ajouter</span>
@@ -127,18 +133,23 @@
       <div class="modal" @click.stop>
         <div class="modal-header">
           <h4>Confirmer la suppression</h4>
-          <button @click="closeRemoveModal" class="close-button">✗</button>
+          <button class="close-button" @click="closeRemoveModal">✗</button>
         </div>
         <div class="modal-body">
-          <p>Êtes-vous sûr de vouloir retirer <strong>{{ userToRemove?.username }}</strong> du projet ?</p>
+          <p>
+            Êtes-vous sûr de vouloir retirer
+            <strong>{{ userToRemove?.username }}</strong> du projet ?
+          </p>
           <p class="warning">Cette action ne peut pas être annulée.</p>
         </div>
         <div class="modal-footer">
-          <button @click="closeRemoveModal" class="cancel-button">Annuler</button>
-          <button 
-            @click="removeUser" 
+          <button class="cancel-button" @click="closeRemoveModal">
+            Annuler
+          </button>
+          <button
             :disabled="removing"
             class="danger-button"
+            @click="removeUser"
           >
             <span v-if="removing">Suppression...</span>
             <span v-else>Supprimer</span>
@@ -150,149 +161,168 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
-import { getProjectUsers, addUserToProject, updateUserPermission, removeUserFromProject } from '@/api/service/projectAssociationService'
+import { ref, onMounted, computed, watch } from 'vue';
+import {
+  getProjectUsers,
+  addUserToProject,
+  updateUserPermission,
+  removeUserFromProject,
+} from '@/api/service/projectAssociationService';
 
 // Props
 const props = defineProps({
   projectId: {
     type: [Number, String],
-    required: true
+    required: true,
   },
   projectName: {
     type: String,
-    default: ''
+    default: '',
   },
   canManageUsers: {
     type: Boolean,
-    default: true
-  }
-})
+    default: true,
+  },
+});
 
 // Reactive data
-const users = ref([])
-const loading = ref(false)
-const error = ref('')
-const updating = ref(null)
-const adding = ref(false)
-const removing = ref(false)
+const users = ref([]);
+const loading = ref(false);
+const error = ref('');
+const updating = ref(null);
+const adding = ref(false);
+const removing = ref(false);
 
 // Modal states
-const showAddUserModal = ref(false)
-const showRemoveModal = ref(false)
-const userToRemove = ref(null)
+const showAddUserModal = ref(false);
+const showRemoveModal = ref(false);
+const userToRemove = ref(null);
 
 // Form data
 const newUser = ref({
   user_id: null,
-  permission: 'read'
-})
-const addUserError = ref('')
+  permission: 'read',
+});
+const addUserError = ref('');
 
 // Computed
 const projectNameToUse = computed(() => {
-  return props.projectName || `project-${props.projectId}`
-})
+  return props.projectName || `project-${props.projectId}`;
+});
 
 // Methods
 async function fetchUsers() {
-  if (!props.projectId) return
+  if (!props.projectId) return;
 
-  loading.value = true
-  error.value = ''
-  
+  loading.value = true;
+  error.value = '';
+
   try {
-    const response = await getProjectUsers(projectNameToUse.value)
-    users.value = response.data.users || []
+    const response = await getProjectUsers(projectNameToUse.value);
+    users.value = response.data.users || [];
   } catch (err) {
-    console.error('Error fetching project users:', err)
-    error.value = err.response?.data?.detail || 'Erreur lors du chargement des utilisateurs'
+    console.error('Error fetching project users:', err);
+    error.value =
+      err.response?.data?.detail ||
+      'Erreur lors du chargement des utilisateurs';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function updatePermission(user) {
-  updating.value = user.user_id
-  
+  updating.value = user.user_id;
+
   try {
     await updateUserPermission(projectNameToUse.value, user.user_id, {
-      permission: user.permission
-    })
+      permission: user.permission,
+    });
     // Optionally show success message
   } catch (err) {
-    console.error('Error updating permission:', err)
+    console.error('Error updating permission:', err);
     // Revert the change
-    await fetchUsers()
-    error.value = err.response?.data?.detail || 'Erreur lors de la mise à jour des permissions'
+    await fetchUsers();
+    error.value =
+      err.response?.data?.detail ||
+      'Erreur lors de la mise à jour des permissions';
   } finally {
-    updating.value = null
+    updating.value = null;
   }
 }
 
 function confirmRemoveUser(user) {
-  userToRemove.value = user
-  showRemoveModal.value = true
+  userToRemove.value = user;
+  showRemoveModal.value = true;
 }
 
 async function removeUser() {
-  if (!userToRemove.value) return
+  if (!userToRemove.value) return;
 
-  removing.value = true
-  
+  removing.value = true;
+
   try {
-    await removeUserFromProject(projectNameToUse.value, userToRemove.value.user_id)
-    await fetchUsers() // Refresh the list
-    closeRemoveModal()
+    await removeUserFromProject(
+      projectNameToUse.value,
+      userToRemove.value.user_id
+    );
+    await fetchUsers(); // Refresh the list
+    closeRemoveModal();
   } catch (err) {
-    console.error('Error removing user:', err)
-    error.value = err.response?.data?.detail || 'Erreur lors de la suppression de l\'utilisateur'
+    console.error('Error removing user:', err);
+    error.value =
+      err.response?.data?.detail ||
+      "Erreur lors de la suppression de l'utilisateur";
   } finally {
-    removing.value = false
+    removing.value = false;
   }
 }
 
 async function addUser() {
-  if (!newUser.value.user_id) return
+  if (!newUser.value.user_id) return;
 
-  adding.value = true
-  addUserError.value = ''
-  
+  adding.value = true;
+  addUserError.value = '';
+
   try {
     await addUserToProject(projectNameToUse.value, {
       user_id: parseInt(newUser.value.user_id),
-      permission: newUser.value.permission
-    })
-    await fetchUsers() // Refresh the list
-    closeAddUserModal()
+      permission: newUser.value.permission,
+    });
+    await fetchUsers(); // Refresh the list
+    closeAddUserModal();
   } catch (err) {
-    console.error('Error adding user:', err)
-    addUserError.value = err.response?.data?.detail || 'Erreur lors de l\'ajout de l\'utilisateur'
+    console.error('Error adding user:', err);
+    addUserError.value =
+      err.response?.data?.detail || "Erreur lors de l'ajout de l'utilisateur";
   } finally {
-    adding.value = false
+    adding.value = false;
   }
 }
 
 function closeAddUserModal() {
-  showAddUserModal.value = false
-  newUser.value = { user_id: null, permission: 'read' }
-  addUserError.value = ''
+  showAddUserModal.value = false;
+  newUser.value = { user_id: null, permission: 'read' };
+  addUserError.value = '';
 }
 
 function closeRemoveModal() {
-  showRemoveModal.value = false
-  userToRemove.value = null
+  showRemoveModal.value = false;
+  userToRemove.value = null;
 }
 
 // Watch for projectId changes
-watch(() => props.projectId, () => {
-  fetchUsers()
-}, { immediate: false })
+watch(
+  () => props.projectId,
+  () => {
+    fetchUsers();
+  },
+  { immediate: false }
+);
 
 // Lifecycle
 onMounted(() => {
-  fetchUsers()
-})
+  fetchUsers();
+});
 </script>
 
 <style scoped>
@@ -307,7 +337,7 @@ onMounted(() => {
 }
 
 .header h3 {
-  margin: 0 0 8px 0;
+  margin: 0 0 8px;
   color: #2d3748;
   font-size: 1.5rem;
 }
@@ -336,8 +366,13 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {
@@ -393,23 +428,19 @@ onMounted(() => {
   font-size: 0.875rem;
 }
 
-.add-user-button:hover:not(:disabled) {
-  background-color: #2f855a;
-}
-
 .add-user-button:disabled {
   background-color: #a0aec0;
   cursor: not-allowed;
+}
+
+.add-user-button:hover:not(:disabled) {
+  background-color: #2f855a;
 }
 
 .no-users {
   padding: 40px 20px;
   text-align: center;
   color: #718096;
-}
-
-.user-card:not(:last-child) {
-  border-bottom: 1px solid #e2e8f0;
 }
 
 .user-card {
@@ -419,6 +450,10 @@ onMounted(() => {
   align-items: center;
   padding: 16px 20px;
   transition: background-color 0.2s;
+}
+
+.user-card:not(:last-child) {
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .user-card:hover {
@@ -433,7 +468,7 @@ onMounted(() => {
 }
 
 .user-details h5 {
-  margin: 0 0 4px 0;
+  margin: 0 0 4px;
   color: #2d3748;
   font-weight: 600;
 }
@@ -459,10 +494,21 @@ onMounted(() => {
   opacity: 0.7;
 }
 
-.permission-read { color: #3182ce; }
-.permission-write { color: #38a169; }
-.permission-admin { color: #d69e2e; }
-.permission-owner { color: #9f7aea; }
+.permission-read {
+  color: #3182ce;
+}
+
+.permission-write {
+  color: #38a169;
+}
+
+.permission-admin {
+  color: #d69e2e;
+}
+
+.permission-owner {
+  color: #9f7aea;
+}
 
 .user-actions {
   display: flex;
@@ -483,22 +529,19 @@ onMounted(() => {
   font-size: 0.875rem;
 }
 
-.remove-button:hover:not(:disabled) {
-  background-color: #c53030;
-}
-
 .remove-button:disabled {
   background-color: #a0aec0;
   cursor: not-allowed;
 }
 
+.remove-button:hover:not(:disabled) {
+  background-color: #c53030;
+}
+
 .updating-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.8);
+  inset: 0;
+  background-color: rgb(255 255 255 / 80%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -516,11 +559,8 @@ onMounted(() => {
 /* Modal styles */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background-color: rgb(0 0 0 / 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -590,7 +630,7 @@ onMounted(() => {
 .form-select:focus {
   outline: none;
   border-color: #3182ce;
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+  box-shadow: 0 0 0 3px rgb(49 130 206 / 10%);
 }
 
 .modal-footer {
@@ -623,13 +663,13 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.confirm-button:hover:not(:disabled) {
-  background-color: #2f855a;
-}
-
 .confirm-button:disabled {
   background-color: #a0aec0;
   cursor: not-allowed;
+}
+
+.confirm-button:hover:not(:disabled) {
+  background-color: #2f855a;
 }
 
 .danger-button {
@@ -641,13 +681,13 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.danger-button:hover:not(:disabled) {
-  background-color: #c53030;
-}
-
 .danger-button:disabled {
   background-color: #a0aec0;
   cursor: not-allowed;
+}
+
+.danger-button:hover:not(:disabled) {
+  background-color: #c53030;
 }
 
 .warning {

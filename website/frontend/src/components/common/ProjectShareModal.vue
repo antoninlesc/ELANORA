@@ -3,9 +3,9 @@
     <div class="modal-content share-modal" @click.stop>
       <div class="modal-header">
         <h2>{{ t('project.share.title', { projectName }) }}</h2>
-        <button @click="closeModal" class="close-btn">×</button>
+        <button class="close-btn" @click="closeModal">×</button>
       </div>
-      
+
       <div class="share-options">
         <!-- Tab Selector -->
         <div class="tab-selector">
@@ -42,7 +42,9 @@
                 :placeholder="t('project.share.email_placeholder')"
                 required
               />
-              <div v-if="emailError" class="share-error-message">{{ emailError }}</div>
+              <div v-if="emailError" class="share-error-message">
+                {{ emailError }}
+              </div>
             </div>
 
             <div class="share-form-group">
@@ -62,7 +64,11 @@
               <label for="share-language" class="form-label">
                 {{ t('project.share.language_label') }}
               </label>
-              <select id="share-language" v-model="form.language" class="share-form-select">
+              <select
+                id="share-language"
+                v-model="form.language"
+                class="share-form-select"
+              >
                 <option value="en">English</option>
                 <option value="fr">Français</option>
               </select>
@@ -190,12 +196,12 @@ import '@/assets/css/ProjectShareModal.css';
 const props = defineProps({
   show: {
     type: Boolean,
-    default: false
+    default: false,
   },
   projectName: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
 });
 
 const emit = defineEmits(['close', 'success']);
@@ -275,7 +281,7 @@ onMounted(() => {
 });
 
 // Helper function to handle invitation errors
-const handleInvitationError = (error, userEmail = null) => {
+const handleInvitationError = (error) => {
   console.error('Error sending invitation:', error);
   
   // Check if it's a server response with a specific message
@@ -335,14 +341,14 @@ const closeModal = () => {
 
 const sendProjectInvitation = async () => {
   emailError.value = '';
-  
+
   if (!form.value.email) {
     emailError.value = t('project.share.email_required');
     return;
   }
 
   sending.value = true;
-  
+
   try {
     const invitationData = {
       receiver_email: form.value.email,
@@ -354,9 +360,12 @@ const sendProjectInvitation = async () => {
     };
 
     const response = await sendInvitationAPI(invitationData);
-    
+
     if (response.data.success) {
-      eventMessageStore.addMessage('project.share.invitation_sent_success', 'success');
+      eventMessageStore.addMessage(
+        'project.share.invitation_sent_success',
+        'success'
+      );
       form.value.email = '';
       form.value.message = '';
       emit('success');
@@ -373,7 +382,10 @@ const sendProjectInvitation = async () => {
         eventMessageStore.addMessage(response.data.message, 'error');
       }
     } else {
-      eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
+      eventMessageStore.addMessage(
+        'project.share.invitation_send_error',
+        'error'
+      );
     }
   } catch (error) {
     handleInvitationError(error, form.value.email);

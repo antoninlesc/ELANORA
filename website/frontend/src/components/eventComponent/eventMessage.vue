@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
   border-radius: 0.5rem;
   box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
   gap: 1rem;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .event-message-icon {
@@ -198,7 +198,6 @@ onBeforeUnmount(() => {
 .event-message-text {
   font-size: 1rem;
   text-align: left;
-  word-break: break-word;
   white-space: pre-line;
   overflow-wrap: break-word;
   min-width: 0;

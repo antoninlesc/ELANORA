@@ -3,34 +3,37 @@
     <div class="container">
       <div class="page-header">
         <h1>Test - Gestion des utilisateurs de projet</h1>
-        <p>Cette page permet de tester le composant de gestion des utilisateurs d'un projet.</p>
+        <p>
+          Cette page permet de tester le composant de gestion des utilisateurs
+          d'un projet.
+        </p>
       </div>
 
       <div class="test-controls">
         <div class="form-group">
           <label for="project-name">Nom du projet :</label>
-          <input 
+          <input
             id="project-name"
-            v-model="testProjectName" 
-            type="text" 
+            v-model="testProjectName"
+            type="text"
             placeholder="Entrez le nom du projet"
             class="form-input"
           />
         </div>
         <div class="form-group">
           <label for="project-id">ID du projet :</label>
-          <input 
+          <input
             id="project-id"
-            v-model="testProjectId" 
-            type="number" 
+            v-model="testProjectId"
+            type="number"
             placeholder="Entrez l'ID du projet"
             class="form-input"
           />
         </div>
         <div class="form-group">
           <label>
-            <input 
-              v-model="canManageUsers" 
+            <input
+              v-model="canManageUsers"
               type="checkbox"
               class="form-checkbox"
             />
@@ -38,7 +41,7 @@
           </label>
         </div>
         <div class="actions">
-          <button @click="refreshComponent" class="refresh-button">
+          <button class="refresh-button" @click="refreshComponent">
             🔄 Actualiser le composant
           </button>
         </div>
@@ -49,21 +52,34 @@
         <h3>Instructions de test :</h3>
         <ol>
           <li>Entrez le nom et l'ID d'un projet existant</li>
-          <li>Le composant affichera automatiquement les utilisateurs associés au projet</li>
-          <li>Vous pouvez modifier les permissions en utilisant le menu déroulant</li>
+          <li>
+            Le composant affichera automatiquement les utilisateurs associés au
+            projet
+          </li>
+          <li>
+            Vous pouvez modifier les permissions en utilisant le menu déroulant
+          </li>
           <li>Utilisez le bouton "+" pour ajouter un nouvel utilisateur</li>
           <li>Utilisez le bouton "✗" pour retirer un utilisateur du projet</li>
-          <li>Décochez "Autoriser la gestion des utilisateurs" pour voir le mode lecture seule</li>
+          <li>
+            Décochez "Autoriser la gestion des utilisateurs" pour voir le mode
+            lecture seule
+          </li>
         </ol>
       </div>
 
       <!-- Component Test Area -->
       <div class="component-test-area">
         <div v-if="!testProjectName || !testProjectId" class="placeholder">
-          <h3>Veuillez saisir un nom et un ID de projet pour tester le composant</h3>
-          <p>Le composant apparaîtra ici une fois que vous aurez fourni les informations nécessaires.</p>
+          <h3>
+            Veuillez saisir un nom et un ID de projet pour tester le composant
+          </h3>
+          <p>
+            Le composant apparaîtra ici une fois que vous aurez fourni les
+            informations nécessaires.
+          </p>
         </div>
-        
+
         <ProjectUsersManager
           v-else
           :key="componentKey"
@@ -77,9 +93,17 @@
       <div class="debug-info">
         <h3>Informations de débogage :</h3>
         <div class="debug-content">
-          <p><strong>Nom du projet :</strong> {{ testProjectName || 'Non défini' }}</p>
-          <p><strong>ID du projet :</strong> {{ testProjectId || 'Non défini' }}</p>
-          <p><strong>Gestion autorisée :</strong> {{ canManageUsers ? 'Oui' : 'Non' }}</p>
+          <p>
+            <strong>Nom du projet :</strong>
+            {{ testProjectName || 'Non défini' }}
+          </p>
+          <p>
+            <strong>ID du projet :</strong> {{ testProjectId || 'Non défini' }}
+          </p>
+          <p>
+            <strong>Gestion autorisée :</strong>
+            {{ canManageUsers ? 'Oui' : 'Non' }}
+          </p>
           <p><strong>Clé du composant :</strong> {{ componentKey }}</p>
         </div>
       </div>
@@ -88,10 +112,34 @@
       <div class="api-info">
         <h3>Points d'accès API utilisés :</h3>
         <ul>
-          <li><code>GET /api/v1/project-associations/projects/{project_name}/users</code> - Lister les utilisateurs</li>
-          <li><code>POST /api/v1/project-associations/projects/{project_name}/users</code> - Ajouter un utilisateur</li>
-          <li><code>PUT /api/v1/project-associations/projects/{project_name}/users/{user_id}</code> - Modifier les permissions</li>
-          <li><code>DELETE /api/v1/project-associations/projects/{project_name}/users/{user_id}</code> - Retirer un utilisateur</li>
+          <li>
+            <code
+              >GET
+              /api/v1/project-associations/projects/{project_name}/users</code
+            >
+            - Lister les utilisateurs
+          </li>
+          <li>
+            <code
+              >POST
+              /api/v1/project-associations/projects/{project_name}/users</code
+            >
+            - Ajouter un utilisateur
+          </li>
+          <li>
+            <code
+              >PUT
+              /api/v1/project-associations/projects/{project_name}/users/{user_id}</code
+            >
+            - Modifier les permissions
+          </li>
+          <li>
+            <code
+              >DELETE
+              /api/v1/project-associations/projects/{project_name}/users/{user_id}</code
+            >
+            - Retirer un utilisateur
+          </li>
         </ul>
       </div>
     </div>
@@ -99,18 +147,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import ProjectUsersManager from '@/components/ProjectUsersManager.vue'
+import { ref } from 'vue';
+import ProjectUsersManager from '@/components/ProjectUsersManager.vue';
 
 // Test data
-const testProjectName = ref('')
-const testProjectId = ref(null)
-const canManageUsers = ref(true)
-const componentKey = ref(0)
+const testProjectName = ref('');
+const testProjectId = ref(null);
+const canManageUsers = ref(true);
+const componentKey = ref(0);
 
 // Methods
 function refreshComponent() {
-  componentKey.value += 1
+  componentKey.value += 1;
 }
 </script>
 
@@ -133,11 +181,11 @@ function refreshComponent() {
   padding: 24px;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
 }
 
 .page-header h1 {
-  margin: 0 0 8px 0;
+  margin: 0 0 8px;
   color: #2d3748;
   font-size: 2rem;
 }
@@ -152,7 +200,7 @@ function refreshComponent() {
   background: white;
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
   margin-bottom: 24px;
 }
 
@@ -179,7 +227,7 @@ function refreshComponent() {
 .form-input:focus {
   outline: none;
   border-color: #3182ce;
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+  box-shadow: 0 0 0 3px rgb(49 130 206 / 10%);
 }
 
 .form-checkbox {
@@ -208,12 +256,12 @@ function refreshComponent() {
   background: white;
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
   margin-bottom: 24px;
 }
 
 .instructions h3 {
-  margin: 0 0 16px 0;
+  margin: 0 0 16px;
   color: #2d3748;
 }
 
@@ -231,7 +279,7 @@ function refreshComponent() {
   background: white;
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
   margin-bottom: 24px;
   min-height: 400px;
 }
@@ -243,7 +291,7 @@ function refreshComponent() {
 }
 
 .placeholder h3 {
-  margin: 0 0 12px 0;
+  margin: 0 0 12px;
   font-size: 1.25rem;
 }
 
@@ -255,17 +303,17 @@ function refreshComponent() {
   background: white;
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
   margin-bottom: 24px;
 }
 
 .debug-info h3 {
-  margin: 0 0 16px 0;
+  margin: 0 0 16px;
   color: #2d3748;
 }
 
 .debug-content p {
-  margin: 0 0 8px 0;
+  margin: 0 0 8px;
   color: #4a5568;
 }
 
@@ -273,11 +321,11 @@ function refreshComponent() {
   background: white;
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
 }
 
 .api-info h3 {
-  margin: 0 0 16px 0;
+  margin: 0 0 16px;
   color: #2d3748;
 }
 
@@ -295,7 +343,7 @@ function refreshComponent() {
   background-color: #edf2f7;
   padding: 2px 6px;
   border-radius: 3px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
   font-size: 0.875rem;
 }
 </style>

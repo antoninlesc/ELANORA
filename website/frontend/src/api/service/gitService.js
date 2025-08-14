@@ -28,14 +28,6 @@ const gitService = {
     return data;
   },
 
-  // Get project status
-  async getProjectStatus(projectName) {
-    const { data } = await axiosInstance.get(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/status`
-    );
-    return data;
-  },
-
   // Commit changes to a project
   async commitChanges(projectName, commitMessage, userName) {
     const payload = {
@@ -118,10 +110,18 @@ const gitService = {
     return data;
   },
 
-  // Synchronize a project
+  // Synchronize the project (apply changes to DB)
   async synchronizeProject(projectName) {
     const { data } = await axiosInstance.post(
       `/git/projects/${encodeURIComponent(projectName)}/synchronize`
+    );
+    return data;
+  },
+
+  // Check if the project is in sync (preview changes)
+  async checkSyncStatus(projectName) {
+    const { data } = await axiosInstance.get(
+      `/git/projects/${encodeURIComponent(projectName)}/synchronize/check`
     );
     return data;
   },
@@ -134,11 +134,38 @@ const gitService = {
     return data;
   },
 
-  // Rename a project
-  async renameProject(oldProjectName, newProjectName) {
+  // Edit a project
+  async editProject(oldProjectName, newProjectName, newProjectDescription) {
     const { data } = await axiosInstance.post(
-      `/git/projects/${encodeURIComponent(oldProjectName)}/rename`,
-      { new_project_name: newProjectName }
+      `/git/projects/${encodeURIComponent(oldProjectName)}/edit`,
+      {
+        new_project_name: newProjectName,
+        new_project_description: newProjectDescription,
+      }
+    );
+    return data;
+  },
+
+  // Discard all local changes and reset to remote master
+  async discardLocalChanges(projectName) {
+    const { data } = await axiosInstance.post(
+      `/git/projects/${encodeURIComponent(projectName)}/discard-local-changes`
+    );
+    return data;
+  },
+
+  // Restore the project from backup
+  async restoreFromBackup(projectName) {
+    const { data } = await axiosInstance.post(
+      `/git/projects/${encodeURIComponent(projectName)}/restore-from-backup`
+    );
+    return data;
+  },
+
+  // Decline the backup for a project
+  async declineBackup(projectName) {
+    const { data } = await axiosInstance.post(
+      `/git/projects/${encodeURIComponent(projectName)}/decline-backup`
     );
     return data;
   },

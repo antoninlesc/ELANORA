@@ -4,7 +4,9 @@
       <h1 class="project-standards-title">
         <span class="project-standards-title-text">
           {{ titleParts.before }}
-          <span class="project-standards-title-project-name">{{ projectName }}</span>
+          <span class="project-standards-title-project-name">{{
+            projectName
+          }}</span>
           {{ titleParts.after }}
         </span>
       </h1>
@@ -33,16 +35,16 @@
                 @click="toggleSection(section.key)"
               >
                 <span>{{ t(section.titleKey) }}</span>
-                <span :class="{ open: openSections.includes(section.key) }">&#9660;</span>
+                <span :class="{ open: openSections.includes(section.key) }"
+                  >&#9660;</span
+                >
               </div>
               <transition name="accordion">
                 <div
                   v-show="openSections.includes(section.key)"
                   class="settings-section-body"
                 >
-                  <component
-                    :is="section.component"
-                  />
+                  <component :is="section.component" />
                 </div>
               </transition>
             </div>
@@ -111,7 +113,8 @@ const sectionGroups = [
       },
       {
         key: 'naming',
-        titleKey: 'projectSettings.sectionNames.sections.subsections.namingStandards',
+        titleKey:
+          'projectSettings.sectionNames.sections.subsections.namingStandards',
         component: ConfigureNamingStandards,
       },
     ],
@@ -127,7 +130,8 @@ const sectionGroups = [
       },
       {
         key: 'invitations',
-        titleKey: 'projectSettings.sectionNames.sections.subsections.invitations',
+        titleKey:
+          'projectSettings.sectionNames.sections.subsections.invitations',
         component: ConfigurePendingInvitations,
       },
     ],

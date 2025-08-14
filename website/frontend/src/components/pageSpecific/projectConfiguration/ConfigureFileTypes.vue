@@ -1,7 +1,11 @@
 <template>
   <div class="configure-filetypes-page">
-    <h2 class="configure-filetypes-title">{{ t('configureFileTypes.title') }}</h2>
-    <div v-if="isLoading" class="configure-filetypes-loading">{{ t('configureFileTypes.loading') }}</div>
+    <h2 class="configure-filetypes-title">
+      {{ t('configureFileTypes.title') }}
+    </h2>
+    <div v-if="isLoading" class="configure-filetypes-loading">
+      {{ t('configureFileTypes.loading') }}
+    </div>
     <div v-else>
       <div v-if="fileTypes.length === 0" class="configure-filetypes-empty">
         <em>{{ t('configureFileTypes.empty') }}</em>
@@ -84,14 +88,28 @@
       </table>
       <div class="configure-filetypes-add-form">
         <div class="add-form-col">
-          <input v-model="newFileType.name" :placeholder="t('configureFileTypes.name')" />
-          <span v-if="addNameError" class="configure-file-types-input-error">{{ addNameError }}</span>
+          <input
+            v-model="newFileType.name"
+            :placeholder="t('configureFileTypes.name')"
+          />
+          <span v-if="addNameError" class="configure-file-types-input-error">{{
+            addNameError
+          }}</span>
         </div>
         <div class="add-form-col">
-          <input v-model="newFileType.extension" :placeholder="t('configureFileTypes.extension')" />
-          <span v-if="addExtensionError" class="configure-file-types-input-error">{{ addExtensionError }}</span>
+          <input
+            v-model="newFileType.extension"
+            :placeholder="t('configureFileTypes.extension')"
+          />
+          <span
+            v-if="addExtensionError"
+            class="configure-file-types-input-error"
+            >{{ addExtensionError }}</span
+          >
         </div>
-        <button @click="addFileType">{{ t('configureFileTypes.createFileType') }}</button>
+        <button @click="addFileType">
+          {{ t('configureFileTypes.createFileType') }}
+        </button>
       </div>
     </div>
   </div>
@@ -143,7 +161,9 @@ function startEdit(ft) {
   editId.value = ft.id;
   editFileType.value = { name: ft.name, extension: ft.extension };
   nextTick(() => {
-    const input = document.querySelector('.configure-file-types-edit-highlight');
+    const input = document.querySelector(
+      '.configure-file-types-edit-highlight'
+    );
     if (input) input.focus();
   });
 }
@@ -166,37 +186,67 @@ function isValidName(name) {
 async function saveEdit(id) {
   editFileType.value.name = editFileType.value.name.trim();
   editFileType.value.extension = editFileType.value.extension.trim();
-  if (editFileType.value.extension && !editFileType.value.extension.startsWith('.')) {
+  if (
+    editFileType.value.extension &&
+    !editFileType.value.extension.startsWith('.')
+  ) {
     editFileType.value.extension = '.' + editFileType.value.extension;
   }
   if (!isValidName(editFileType.value.name)) {
-    eventMessageStore.addMessage('configureFileTypes.invalidName', 'error', 5000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.invalidName',
+      'error',
+      5000
+    );
     return;
   }
   if (!isValidExtension(editFileType.value.extension)) {
-    eventMessageStore.addMessage('configureFileTypes.invalidExtension', 'error', 5000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.invalidExtension',
+      'error',
+      5000
+    );
     return;
   }
   try {
-    await fileTypeStore.updateFileType(id, { ...editFileType.value }, projectId.value);
-    eventMessageStore.addMessage('configureFileTypes.eventMessages.updateSuccess', 'success', 4000);
+    await fileTypeStore.updateFileType(
+      id,
+      { ...editFileType.value },
+      projectId.value
+    );
+    eventMessageStore.addMessage(
+      'configureFileTypes.eventMessages.updateSuccess',
+      'success',
+      4000
+    );
   } catch {
-    eventMessageStore.addMessage('configureFileTypes.eventMessages.updateFailed', 'error', 7000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.eventMessages.updateFailed',
+      'error',
+      7000
+    );
   }
   cancelEdit();
 }
 
 async function deleteFileType(id) {
   const ok = await userConfirm({
-    message: t('configureFileTypes.delete') + '?\n' + t('configureFileTypes.deleteMessage'),
+    message:
+      t('configureFileTypes.delete') +
+      '?\n' +
+      t('configureFileTypes.deleteMessage'),
     title: t('configureFileTypes.deleteTitle'),
     confirmText: t('common.confirm'),
-    cancelText: t('common.cancel')
+    cancelText: t('common.cancel'),
   });
   if (!ok) return;
   try {
     await fileTypeStore.deleteFileType(id, projectId.value);
-    eventMessageStore.addMessage('configureFileTypes.eventMessages.deleteSuccess', 'success', 4000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.eventMessages.deleteSuccess',
+      'success',
+      4000
+    );
   } catch (e) {
     const detail = e?.response?.data?.detail;
     if (detail && detail.error === 'file_type_in_use') {
@@ -220,7 +270,10 @@ async function addFileType() {
   addExtensionError.value = '';
   newFileType.value.name = newFileType.value.name.trim();
   newFileType.value.extension = newFileType.value.extension.trim();
-  if (newFileType.value.extension && !newFileType.value.extension.startsWith('.')) {
+  if (
+    newFileType.value.extension &&
+    !newFileType.value.extension.startsWith('.')
+  ) {
     newFileType.value.extension = '.' + newFileType.value.extension;
   }
   let valid = true;
@@ -234,7 +287,8 @@ async function addFileType() {
   }
   if (!valid) return;
   const duplicate = fileTypes.value.some(
-    ft => ft.name.trim().toLowerCase() === newFileType.value.name.toLowerCase()
+    (ft) =>
+      ft.name.trim().toLowerCase() === newFileType.value.name.toLowerCase()
   );
   if (duplicate) {
     eventMessageStore.addMessage(
@@ -249,10 +303,18 @@ async function addFileType() {
       { ...newFileType.value, project_id: projectId.value },
       projectId.value
     );
-    eventMessageStore.addMessage('configureFileTypes.eventMessages.addSuccess', 'success', 4000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.eventMessages.addSuccess',
+      'success',
+      4000
+    );
     newFileType.value = { name: '', extension: '' };
   } catch {
-    eventMessageStore.addMessage('configureFileTypes.eventMessages.addFailed', 'error', 7000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.eventMessages.addFailed',
+      'error',
+      7000
+    );
   }
 }
 </script>
@@ -416,7 +478,7 @@ async function addFileType() {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  word-break: break-word;
+  overflow-wrap: break-word;
   white-space: normal;
 }
 </style>

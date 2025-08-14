@@ -1,10 +1,11 @@
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.model.standard_component import StandardComponent
-from app.model.component_template import ComponentTemplate
-from app.model.component_accepted_value import ComponentAcceptedValue
-from app.utils.database import DatabaseUtils
+
 from app.core.centralized_logging import get_logger
+from app.model.component_accepted_value import ComponentAcceptedValue
+from app.model.component_template import ComponentTemplate
+from app.model.standard_component import StandardComponent
+from app.utils.database import DatabaseUtils
 
 logger = get_logger(__name__)
 

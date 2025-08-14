@@ -4,7 +4,7 @@
   padding: 24px;
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 16px rgb(0 0 0 / 8%);
 }
 
 .upload-container {
@@ -95,8 +95,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .files-preview {
@@ -132,7 +137,7 @@
 }
 
 .remove-btn {
-  background: #ff4444;
+  background: #f44;
   color: white;
   border: none;
   border-radius: 50%;
@@ -150,7 +155,8 @@
   justify-content: center;
 }
 
-.upload-btn, .clear-btn {
+.upload-btn,
+.clear-btn {
   padding: 12px 24px;
   border: none;
   border-radius: 8px;
@@ -164,13 +170,13 @@
   color: white;
 }
 
-.upload-btn:hover:not(:disabled) {
-  background: #1565c0;
-}
-
 .upload-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #1565c0;
 }
 
 .clear-btn {

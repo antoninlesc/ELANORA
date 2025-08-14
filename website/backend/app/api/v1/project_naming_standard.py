@@ -1,6 +1,5 @@
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
 
 from app.dependency.database import get_db_dep
 from app.schema.requests.project_naming_standard import (
@@ -8,9 +7,9 @@ from app.schema.requests.project_naming_standard import (
     ImportSelectedStandardsRequest,
 )
 from app.schema.responses.project_naming_standard import (
+    ImportSelectedStandardsResponse,
     NamingStandardResponse,
     ProjectWithStandardsResponse,
-    ImportSelectedStandardsResponse,
 )
 from app.service.project_naming_standard import ProjectNamingStandardService
 

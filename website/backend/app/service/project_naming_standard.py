@@ -2,23 +2,22 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.centralized_logging import get_logger
 from app.crud import (
-    project_naming_standard,
-    component_template,
     accepted_value,
     component_accepted_value,
-    standard_component,
+    component_template,
     file_type,
+    project_naming_standard,
+    standard_component,
 )
-from app.model.project_file_type import ProjectFileType
-from app.core.centralized_logging import get_logger
-from app.crud.project_naming_standard import get_standard_with_components_full
 from app.crud.association import get_project_file_type_by_project_and_file_type
-
+from app.crud.project_naming_standard import get_standard_with_components_full
+from app.model.project_file_type import ProjectFileType
 from app.schema.responses.project_naming_standard import (
+    ImportSelectedStandardsResponse,
     NamingStandardResponse,
     ProjectWithStandardsResponse,
-    ImportSelectedStandardsResponse,
 )
 
 logger = get_logger(__name__)

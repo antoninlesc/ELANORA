@@ -57,6 +57,6 @@
   min-height: 1rem;
 }
 
-.tier-group-draggable[aria-grabbed="true"] * {
+.tier-group-draggable[aria-grabbed='true'] * {
   pointer-events: none !important;
 }

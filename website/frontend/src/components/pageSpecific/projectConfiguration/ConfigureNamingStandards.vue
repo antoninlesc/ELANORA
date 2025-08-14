@@ -1,6 +1,8 @@
 <template>
   <div class="configure-naming-page">
-    <h2 class="configure-naming-title">{{ t('configureNamingStandards.title') }}</h2>
+    <h2 class="configure-naming-title">
+      {{ t('configureNamingStandards.title') }}
+    </h2>
     <div v-if="loading">{{ t('configureNamingStandards.loading') }}</div>
     <div v-else>
       <div v-if="standards.length === 0">
@@ -42,7 +44,9 @@
                 v-if="std.description"
                 class="configure-naming-accordion-desc-box"
               >
-                <span class="configure-naming-desc-label">{{ t('configureNamingStandards.description') }}</span>
+                <span class="configure-naming-desc-label">{{
+                  t('configureNamingStandards.description')
+                }}</span>
                 <span class="configure-naming-desc-content">{{
                   std.description
                 }}</span>
@@ -54,12 +58,16 @@
                 <code>{{ buildExampleFilename(std) }}</code>
               </div>
               <div class="configure-naming-accordion-pattern">
-                <div class="configure-naming-pattern-label">{{ t('configureNamingStandards.pattern') }}</div>
+                <div class="configure-naming-pattern-label">
+                  {{ t('configureNamingStandards.pattern') }}
+                </div>
                 <div class="configure-naming-pattern-value">
                   {{ std.pattern }}
                 </div>
                 <div class="configure-naming-pattern-breakdown">
-                  <div class="breakdown-title">{{ t('configureNamingStandards.components') }}</div>
+                  <div class="breakdown-title">
+                    {{ t('configureNamingStandards.components') }}
+                  </div>
                   <div class="breakdown-groups">
                     <template
                       v-for="comp in getPatternOrderedComponents(std)"
@@ -79,14 +87,22 @@
                 </div>
               </div>
               <div class="configure-naming-accordion-components">
-                <div class="configure-naming-components-title">{{ t('configureNamingStandards.componentsTable') }}</div>
+                <div class="configure-naming-components-title">
+                  {{ t('configureNamingStandards.componentsTable') }}
+                </div>
                 <table class="configure-naming-components-table">
                   <thead>
                     <tr>
                       <th>{{ t('configureNamingStandards.componentName') }}</th>
-                      <th>{{ t('configureNamingStandards.componentRegex') }}</th>
+                      <th>
+                        {{ t('configureNamingStandards.componentRegex') }}
+                      </th>
                       <th>{{ t('configureNamingStandards.exampleFile') }}</th>
-                      <th>{{ t('configureNamingStandards.componentAcceptedValues') }}</th>
+                      <th>
+                        {{
+                          t('configureNamingStandards.componentAcceptedValues')
+                        }}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -105,12 +121,17 @@
                       </td>
                       <td>
                         <span
-                          v-if="component.accepted_values && component.accepted_values.length"
+                          v-if="
+                            component.accepted_values &&
+                            component.accepted_values.length
+                          "
                         >
                           {{
                             component.accepted_values
-                              .map(val =>
-                                typeof val === 'object' && val !== null && 'value' in val
+                              .map((val) =>
+                                typeof val === 'object' &&
+                                val !== null &&
+                                'value' in val
                                   ? val.value
                                   : val
                               )
@@ -138,14 +159,20 @@
         + {{ t('configureNamingStandards.add') }}
       </button>
       <button class="configure-naming-add-btn" @click="startImportFlow">
-        {{ t('configureNamingStandards.import') || 'Import from another project' }}
+        {{
+          t('configureNamingStandards.import') || 'Import from another project'
+        }}
       </button>
       <div v-if="showAddStandard" class="configure-naming-add-form">
-        <div class="configure-naming-add-title">{{ t('configureNamingStandards.add') }}</div>
+        <div class="configure-naming-add-title">
+          {{ t('configureNamingStandards.add') }}
+        </div>
         <form class="configure-naming-add-fields" @submit.prevent="addStandard">
           <!-- Name -->
           <div class="configure-naming-form-row">
-            <label for="standard-name">{{ t('configureNamingStandards.name') }}</label>
+            <label for="standard-name">{{
+              t('configureNamingStandards.name')
+            }}</label>
             <input
               id="standard-name"
               v-model="newStandard.name"
@@ -155,7 +182,9 @@
           </div>
           <!-- Description -->
           <div class="configure-naming-form-row">
-            <label for="standard-desc">{{ t('configureNamingStandards.description') }}</label>
+            <label for="standard-desc">{{
+              t('configureNamingStandards.description')
+            }}</label>
             <input
               id="standard-desc"
               v-model="newStandard.description"
@@ -164,14 +193,18 @@
           </div>
           <!-- File type -->
           <div class="configure-naming-form-row">
-            <label for="standard-filetype">{{ t('configureNamingStandards.fileType') }}</label>
+            <label for="standard-filetype">{{
+              t('configureNamingStandards.fileType')
+            }}</label>
             <select
               id="standard-filetype"
               v-model="newStandard.project_file_type_id"
               required
               @change="onFileTypeChange"
             >
-              <option disabled value="">{{ t('configureNamingStandards.fileType') }}</option>
+              <option disabled value="">
+                {{ t('configureNamingStandards.fileType') }}
+              </option>
               <option v-for="ft in fileTypes" :key="ft.id" :value="ft.id">
                 {{ ft.name }} ({{ ft.extension }}){{
                   ft.description ? ' — ' + ft.description : ''
@@ -181,7 +214,9 @@
           </div>
           <!-- Pattern: prefix + comma pattern -->
           <div class="configure-naming-form-row">
-            <label for="pattern-comma-input">{{ t('configureNamingStandards.pattern') }}</label>
+            <label for="pattern-comma-input">{{
+              t('configureNamingStandards.pattern')
+            }}</label>
             <div class="configure-naming-pattern-row">
               <input
                 class="configure-naming-prefix-box"
@@ -207,10 +242,15 @@
           <div class="configure-naming-pattern-info-section">
             <div class="configure-naming-example-desc">
               <span>
-                {{ t('configureNamingStandards.exampleCommaPatternDesc', { example: 'CLSFBI1912A_S040_B' }) }}
+                {{
+                  t('configureNamingStandards.exampleCommaPatternDesc', {
+                    example: 'CLSFBI1912A_S040_B',
+                  })
+                }}
               </span>
               <span class="configure-naming-accepted-separators">
-                <b>{{ t('configureNamingStandards.acceptedSeparators') }}</b>: {{ knownSeparators.map(s => `"${s}"`).join(', ') }}
+                <b>{{ t('configureNamingStandards.acceptedSeparators') }}</b
+                >: {{ knownSeparators.map((s) => `"${s}"`).join(', ') }}
               </span>
             </div>
             <div class="configure-naming-example-desc">
@@ -219,7 +259,9 @@
           </div>
           <!-- Example and extraction -->
           <div class="configure-naming-form-row">
-            <label for="example-file-input">{{ t('configureNamingStandards.exampleFile') }}</label>
+            <label for="example-file-input">{{
+              t('configureNamingStandards.exampleFile')
+            }}</label>
             <div class="configure-naming-example-block">
               <input
                 id="example-file-input"
@@ -238,7 +280,11 @@
           </div>
           <!-- Components (optional, can be hidden or shown as needed) -->
           <div class="configure-naming-components-section">
-            <label class="configure-naming-components-label" for="components-table">{{ t('configureNamingStandards.componentsTable') }}</label>
+            <label
+              class="configure-naming-components-label"
+              for="components-table"
+              >{{ t('configureNamingStandards.componentsTable') }}</label
+            >
             <table
               id="components-table"
               class="configure-naming-components-table configure-naming-components-edit-table"
@@ -247,8 +293,12 @@
                 <tr>
                   <th>{{ t('configureNamingStandards.componentName') }}</th>
                   <th>{{ t('configureNamingStandards.componentRegex') }}</th>
-                  <th>{{ t('configureNamingStandards.componentDescription') }}</th>
-                  <th>{{ t('configureNamingStandards.componentAcceptedValues') }}</th>
+                  <th>
+                    {{ t('configureNamingStandards.componentDescription') }}
+                  </th>
+                  <th>
+                    {{ t('configureNamingStandards.componentAcceptedValues') }}
+                  </th>
                   <th>{{ t('configureNamingStandards.componentOrder') }}</th>
                 </tr>
               </thead>
@@ -264,7 +314,9 @@
                       placeholder="Component name"
                       readonly
                       class="configure-naming-components-table-prefix-disabled"
-                      :tabindex="idx === 0 && comp.name.startsWith('prefix_') ? -1 : 0"
+                      :tabindex="
+                        idx === 0 && comp.name.startsWith('prefix_') ? -1 : 0
+                      "
                     />
                   </td>
                   <td>
@@ -272,8 +324,13 @@
                       v-model="comp.regex"
                       placeholder="Regex"
                       :readonly="idx === 0 && comp.name.startsWith('prefix_')"
-                      :class="{ 'configure-naming-components-table-prefix-disabled': idx === 0 && comp.name.startsWith('prefix_') }"
-                      :tabindex="idx === 0 && comp.name.startsWith('prefix_') ? -1 : 0"
+                      :class="{
+                        'configure-naming-components-table-prefix-disabled':
+                          idx === 0 && comp.name.startsWith('prefix_'),
+                      }"
+                      :tabindex="
+                        idx === 0 && comp.name.startsWith('prefix_') ? -1 : 0
+                      "
                     />
                   </td>
                   <td>
@@ -304,7 +361,11 @@
               style="margin-top: 4px"
             >
               <span>
-                <b>{{ t('configureNamingStandards.noteAcceptedValues', { value: detectedUnusualAcceptedValue }) }}</b>
+                <b>{{
+                  t('configureNamingStandards.noteAcceptedValues', {
+                    value: detectedUnusualAcceptedValue,
+                  })
+                }}</b>
               </span>
             </div>
             <div
@@ -347,20 +408,33 @@
     <!-- Import Modal -->
     <div v-if="showImportModal" class="import-modal-overlay">
       <div class="import-modal">
-        <button class="import-modal-close" @click="showImportModal = false">×</button>
+        <button class="import-modal-close" @click="showImportModal = false">
+          ×
+        </button>
         <div v-if="importStep === 1">
-          <h3 style="margin-bottom: 1.5em;">{{ t('configureNamingStandards.importModal.selectProject') }}</h3>
+          <h3 style="margin-bottom: 1.5em">
+            {{ t('configureNamingStandards.importModal.selectProject') }}
+          </h3>
           <div class="import-project-select-row">
-            <select v-model="selectedImportProject" class="import-project-select">
-              <option disabled value="">{{ t('configureNamingStandards.importModal.chooseProject') }}</option>
-              <option v-for="proj in importProjects" :key="proj.id" :value="proj.id">
+            <select
+              v-model="selectedImportProject"
+              class="import-project-select"
+            >
+              <option disabled value="">
+                {{ t('configureNamingStandards.importModal.chooseProject') }}
+              </option>
+              <option
+                v-for="proj in importProjects"
+                :key="proj.id"
+                :value="proj.id"
+              >
                 {{ proj.name }}
               </option>
             </select>
             <button
               class="configure-naming-btn primary"
               :disabled="!selectedImportProject"
-              style="margin-left: 1em;"
+              style="margin-left: 1em"
               @click="goToImportStep2"
             >
               {{ t('configureNamingStandards.importModal.next') }}
@@ -368,67 +442,105 @@
           </div>
         </div>
         <div v-else-if="importStep === 2">
-          <h3 style="margin-bottom: 1em;">{{ t('configureNamingStandards.importModal.selectStandards') }}</h3>
+          <h3 style="margin-bottom: 1em">
+            {{ t('configureNamingStandards.importModal.selectStandards') }}
+          </h3>
           <div v-if="importStandards.length === 0">
             <em>{{ t('configureNamingStandards.importModal.noStandards') }}</em>
           </div>
           <div v-else>
             <template
-              v-if="importStandards.filter(
-                s => !existingStandardKeys.has(`${s.name}::${s.project_file_type_id}`)
-              ).length === 0">
-              <em>{{ t('configureNamingStandards.importModal.allFiltered') }}</em>
-            </template>
-            <div
-              v-else
-              class="import-standards-list"
+              v-if="
+                importStandards.filter(
+                  (s) =>
+                    !existingStandardKeys.has(
+                      `${s.name}::${s.project_file_type_id}`
+                    )
+                ).length === 0
+              "
             >
+              <em>{{
+                t('configureNamingStandards.importModal.allFiltered')
+              }}</em>
+            </template>
+            <div v-else class="import-standards-list">
               <div
                 v-for="std in importStandards.filter(
-                  s => !existingStandardKeys.has(`${s.name}::${s.project_file_type_id}`)
+                  (s) =>
+                    !existingStandardKeys.has(
+                      `${s.name}::${s.project_file_type_id}`
+                    )
                 )"
                 :key="std.id"
                 class="import-standard-preview"
               >
-                <div class="import-standard-header-col" @click="toggleStandardFold(std.id)">
+                <div
+                  class="import-standard-header-col"
+                  @click="toggleStandardFold(std.id)"
+                >
                   <div class="import-standard-header-row">
                     <input
                       v-model="selectedStandardIds"
                       type="checkbox"
                       :value="std.id"
-                      :disabled="!targetFileTypeKeys.has(`${std.file_type_id}:${std.file_type_name}`)"
+                      :disabled="
+                        !targetFileTypeKeys.has(
+                          `${std.file_type_id}:${std.file_type_name}`
+                        )
+                      "
                       @click.stop
                     />
-                    <span style="font-weight: bold; margin-left: 0.5em;">
+                    <span style="font-weight: bold; margin-left: 0.5em">
                       {{ std.name }}
                       <span
-                        v-if="getSourceFileTypeDisplay(std.project_file_type_id)"
-                        style="font-weight: normal; color: #2563eb;"
+                        v-if="
+                          getSourceFileTypeDisplay(std.project_file_type_id)
+                        "
+                        style="font-weight: normal; color: #2563eb"
                       >
-                        : {{ getSourceFileTypeDisplay(std.project_file_type_id) }}
+                        :
+                        {{ getSourceFileTypeDisplay(std.project_file_type_id) }}
                       </span>
                     </span>
-                    <span class="import-standard-chevron" style="margin-left: auto;">
+                    <span
+                      class="import-standard-chevron"
+                      style="margin-left: auto"
+                    >
                       <span v-if="isStandardFolded(std.id)">&#9654;</span>
                       <span v-else>&#9660;</span>
                     </span>
                   </div>
-                  <template v-if="!targetFileTypeKeys.has(`${std.file_type_id}:${std.file_type_name}`)">
+                  <template
+                    v-if="
+                      !targetFileTypeKeys.has(
+                        `${std.file_type_id}:${std.file_type_name}`
+                      )
+                    "
+                  >
                     <hr class="import-standard-header-separator" />
-                    <div
-                      class="import-standard-warning-row"
-                      @click.stop
-                    >
-                      <span style="color: #e74c3c;">
-                        {{ t('configureNamingStandards.importModal.fileTypeNotAvailable') }}
+                    <div class="import-standard-warning-row" @click.stop>
+                      <span style="color: #e74c3c">
+                        {{
+                          t(
+                            'configureNamingStandards.importModal.fileTypeNotAvailable'
+                          )
+                        }}
                       </span>
                       <button
                         class="configure-naming-btn add import-filetype-btn"
-                        style="margin-left: 1em; font-size: 0.9em; padding: 3px 10px;"
+                        style="
+                          margin-left: 1em;
+                          font-size: 0.9em;
+                          padding: 3px 10px;
+                        "
                         tabindex="0"
                         @click.stop.prevent="importMissingFileType(std)"
                       >
-                        {{ t('configureNamingStandards.importModal.importFileType') }}
+                        {{
+                          t(
+                            'configureNamingStandards.importModal.importFileType'
+                          )
+                        }}
                       </button>
                     </div>
                   </template>
@@ -436,45 +548,84 @@
                 <transition name="fade">
                   <div
                     v-show="!isStandardFolded(std.id)"
-                    :class="{ 'import-standard-greyed': !targetFileTypeKeys.has(`${std.file_type_id}:${std.file_type_name}`) }"
+                    :class="{
+                      'import-standard-greyed': !targetFileTypeKeys.has(
+                        `${std.file_type_id}:${std.file_type_name}`
+                      ),
+                    }"
                     class="import-standard-details"
                   >
-                    <div><b>{{ t('configureNamingStandards.importModal.pattern') }}</b> 
+                    <div>
+                      <b>{{
+                        t('configureNamingStandards.importModal.pattern')
+                      }}</b>
                       <div>
                         {{ std.pattern }}
                       </div>
                     </div>
-                    <div><b>{{ t('configureNamingStandards.importModal.description') }}</b> 
+                    <div>
+                      <b>{{
+                        t('configureNamingStandards.importModal.description')
+                      }}</b>
                       <div>
                         {{ std.description }}
                       </div>
                     </div>
                     <div>
-                      <b>{{ t('configureNamingStandards.importModal.exampleFile') }}</b>
+                      <b>{{
+                        t('configureNamingStandards.importModal.exampleFile')
+                      }}</b>
                       <div>
                         {{ buildExampleFilename(std) }}
                       </div>
                     </div>
                     <div>
-                      <b>{{ t('configureNamingStandards.importModal.components') }}</b>
-                      <table class="configure-naming-components-table" style="margin-top: 0.5em;">
+                      <b>{{
+                        t('configureNamingStandards.importModal.components')
+                      }}</b>
+                      <table
+                        class="configure-naming-components-table"
+                        style="margin-top: 0.5em"
+                      >
                         <thead>
                           <tr>
-                            <th>{{ t('configureNamingStandards.componentName') }}</th>
-                            <th>{{ t('configureNamingStandards.componentRegex') }}</th>
-                            <th>{{ t('configureNamingStandards.componentAcceptedValues') }}</th>
+                            <th>
+                              {{ t('configureNamingStandards.componentName') }}
+                            </th>
+                            <th>
+                              {{ t('configureNamingStandards.componentRegex') }}
+                            </th>
+                            <th>
+                              {{
+                                t(
+                                  'configureNamingStandards.componentAcceptedValues'
+                                )
+                              }}
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
-                          <tr v-for="comp in getPatternOrderedComponents(std)" :key="comp.id || comp.name">
+                          <tr
+                            v-for="comp in getPatternOrderedComponents(std)"
+                            :key="comp.id || comp.name"
+                          >
                             <td>{{ comp.name }}</td>
                             <td>{{ comp.regex }}</td>
                             <td>
-                              <span v-if="comp.accepted_values && comp.accepted_values.length">
+                              <span
+                                v-if="
+                                  comp.accepted_values &&
+                                  comp.accepted_values.length
+                                "
+                              >
                                 {{ comp.accepted_values.join(', ') }}
                               </span>
                               <span v-else>
-                                ({{ t('configureNamingStandards.componentAcceptedValues') }})
+                                ({{
+                                  t(
+                                    'configureNamingStandards.componentAcceptedValues'
+                                  )
+                                }})
                               </span>
                             </td>
                           </tr>
@@ -537,7 +688,12 @@ const userPromptType = ref('text');
 
 let userPromptResolve = null;
 
-function showUserPrompt(message, defaultValue = '', validator = null, type = 'text') {
+function showUserPrompt(
+  message,
+  defaultValue = '',
+  validator = null,
+  type = 'text'
+) {
   userPromptMessage.value = message;
   userPromptDefault.value = defaultValue;
   userPromptValidator.value = validator;
@@ -569,7 +725,10 @@ function onAcceptedValuesInput(comp) {
         isDigitRegex = true;
       }
     }
-    let inputParts = comp.accepted_values_str.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    let inputParts = comp.accepted_values_str
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     if (isDigitRegex) {
       let normalizedParts = [];
@@ -577,7 +736,10 @@ function onAcceptedValuesInput(comp) {
         if (/^\d+-\d+$/.test(part)) {
           let [start, end] = part.split('-').map(Number);
           if (isNaN(start) || isNaN(end) || start > end) {
-            regexExtractionError.value = t('configureNamingStandards.invalidRange', { value: part, name: comp.name });
+            regexExtractionError.value = t(
+              'configureNamingStandards.invalidRange',
+              { value: part, name: comp.name }
+            );
             return;
           }
           // Pad both start and end
@@ -618,7 +780,10 @@ function onAcceptedValuesInput(comp) {
     if (length !== null) {
       for (const val of values) {
         if (val.length !== length) {
-          regexExtractionError.value = t('configureNamingStandards.acceptedValuesLength', { name: comp.name, length });
+          regexExtractionError.value = t(
+            'configureNamingStandards.acceptedValuesLength',
+            { name: comp.name, length }
+          );
           return;
         }
       }
@@ -671,9 +836,14 @@ const errorMessageRef = ref(null);
 async function fetchStandardsAndComponentNames() {
   loading.value = true;
   try {
-    const { data } = await projectNamingStandardApi.getProjectNamingStandardsFull(projectId.value);
+    const { data } =
+      await projectNamingStandardApi.getProjectNamingStandardsFull(
+        projectId.value
+      );
     standards.value = Array.isArray(data.standards) ? data.standards : [];
-    allComponentNames.value = Array.isArray(data.component_names) ? data.component_names : [];
+    allComponentNames.value = Array.isArray(data.component_names)
+      ? data.component_names
+      : [];
     // Ensure accepted_values_str for editing
     for (const std of standards.value) {
       if (std.components) {
@@ -737,7 +907,7 @@ function onCommaPatternInput() {
     } else {
       pattern += `{${part}}`;
       // Try to find previous component with same name
-      const prev = prevComponents.find(c => c.name === part);
+      const prev = prevComponents.find((c) => c.name === part);
       newComponents.push(
         prev
           ? { ...prev, order }
@@ -764,17 +934,23 @@ async function extractRegexFromExample() {
 
   // Check if file type is selected
   if (!newStandard.value.project_file_type_id) {
-    regexExtractionError.value = t('configureNamingStandards.selectFileTypeFirst');
+    regexExtractionError.value = t(
+      'configureNamingStandards.selectFileTypeFirst'
+    );
     return;
   }
   // Check if comma pattern is entered
   if (!commaPattern.value) {
-    regexExtractionError.value = t('configureNamingStandards.commaPatternRequired');
+    regexExtractionError.value = t(
+      'configureNamingStandards.commaPatternRequired'
+    );
     return;
   }
   // Check if example filename is entered
   if (!example) {
-    regexExtractionError.value = t('configureNamingStandards.exampleFileRequired');
+    regexExtractionError.value = t(
+      'configureNamingStandards.exampleFileRequired'
+    );
     return;
   }
   // Check if pattern is built
@@ -791,15 +967,16 @@ async function extractRegexFromExample() {
   const patternBlocks = splitPatternBlocks(pattern, sep);
   const exampleBlocks = example.split(sep);
 
-    console.log('Pattern:', pattern);
+  console.log('Pattern:', pattern);
   console.log('Example:', example);
   console.log('Separator:', sep);
   console.log('Pattern blocks:', patternBlocks);
   console.log('Example blocks:', exampleBlocks);
 
-
   if (patternBlocks.length !== exampleBlocks.length) {
-    regexExtractionError.value = t('configureNamingStandards.patternExampleBlockCount');
+    regexExtractionError.value = t(
+      'configureNamingStandards.patternExampleBlockCount'
+    );
     return;
   }
 
@@ -998,22 +1175,26 @@ async function extractRegexFromExample() {
         const length = val.length;
         // Accept single value
         if (/^\d+$/.test(input)) {
-          if (input.length > length) return `Value must be at most ${length} digits.`;
+          if (input.length > length)
+            return `Value must be at most ${length} digits.`;
           return false;
         }
         // Accept comma/semicolon separated list
         if (/^(\d+)\s*([,;]\s*\d+)*$/.test(input)) {
-          const parts = input.split(/[,;]/).map(s => s.trim());
+          const parts = input.split(/[,;]/).map((s) => s.trim());
           for (const part of parts) {
-            if (part.length > length) return `Each value must be at most ${length} digits.`;
+            if (part.length > length)
+              return `Each value must be at most ${length} digits.`;
           }
           return false;
         }
         // Accept range
         if (/^\d+-\d+$/.test(input)) {
-          const [start, end] = input.split('-').map(s => s.trim());
-          if (start.length > length || end.length > length) return `Range values must be at most ${length} digits.`;
-          if (parseInt(start) > parseInt(end)) return 'Range start must be less than or equal to end.';
+          const [start, end] = input.split('-').map((s) => s.trim());
+          if (start.length > length || end.length > length)
+            return `Range values must be at most ${length} digits.`;
+          if (parseInt(start) > parseInt(end))
+            return 'Range start must be less than or equal to end.';
           return false;
         }
         return `Enter a single value, a comma/semicolon separated list, or a range (e.g. ${val}, 1-99, 1,2,3).`;
@@ -1033,13 +1214,19 @@ async function extractRegexFromExample() {
 
       // Normalize and pad all values to required length
       const length = val.length;
-      let inputParts = userInput.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+      let inputParts = userInput
+        .split(/[,;]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
       let normalizedParts = [];
       for (let part of inputParts) {
         if (/^\d+-\d+$/.test(part)) {
           let [start, end] = part.split('-').map(Number);
           if (isNaN(start) || isNaN(end) || start > end) {
-            regexExtractionError.value = t('configureNamingStandards.invalidRange', { value: part, name: comp.name });
+            regexExtractionError.value = t(
+              'configureNamingStandards.invalidRange',
+              { value: part, name: comp.name }
+            );
             return;
           }
           // Pad both start and end
@@ -1106,7 +1293,7 @@ async function addStandard() {
       eventMessageStore.addMessage(
         'configureNamingStandards.eventMessages.addFailed',
         'error',
-        7000,
+        7000
       );
     }
   }
@@ -1122,9 +1309,17 @@ async function deleteStandard(id) {
   try {
     await projectNamingStandardApi.deleteStandard(id);
     await fetchStandardsAndComponentNames();
-    eventMessageStore.addMessage('configureNamingStandards.eventMessages.deleteSuccess', 'success', 4000);
+    eventMessageStore.addMessage(
+      'configureNamingStandards.eventMessages.deleteSuccess',
+      'success',
+      4000
+    );
   } catch {
-    eventMessageStore.addMessage('configureNamingStandards.eventMessages.deleteFailed', 'error', 7000);
+    eventMessageStore.addMessage(
+      'configureNamingStandards.eventMessages.deleteFailed',
+      'error',
+      7000
+    );
   }
 }
 
@@ -1147,7 +1342,9 @@ async function importMissingFileType(std) {
   } catch (err) {
     if (err?.response?.status === 409) {
       eventMessageStore.addMessage(
-        t('configureNamingStandards.eventMessages.importFailedDuplicateFileType'),
+        t(
+          'configureNamingStandards.eventMessages.importFailedDuplicateFileType'
+        ),
         'error',
         7000
       );
@@ -1184,7 +1381,10 @@ watch(
           /\{prefix_[^}]+\}/,
           `{prefix_${fileType}}`
         );
-        if (Array.isArray(newStandard.value.components) && newStandard.value.components.length > 0) {
+        if (
+          Array.isArray(newStandard.value.components) &&
+          newStandard.value.components.length > 0
+        ) {
           newStandard.value.components[0].name = `prefix_${fileType}`;
         }
       }
@@ -1209,7 +1409,10 @@ watch(
 watch(regexExtractionError, async (val) => {
   if (val) {
     await nextTick();
-    errorMessageRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    errorMessageRef.value?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
   }
 });
 
@@ -1225,10 +1428,10 @@ function toggleAccordion(id) {
 function getPatternOrderedComponents(std) {
   if (!std?.pattern || !Array.isArray(std.components)) return [];
   // Extract component names in order from the pattern
-  const names = Array.from(std.pattern.matchAll(/\{(\w+)\}/g)).map(m => m[1]);
+  const names = Array.from(std.pattern.matchAll(/\{(\w+)\}/g)).map((m) => m[1]);
   // Map names to actual component objects
   return names
-    .map(name => std.components.find(c => c.name === name))
+    .map((name) => std.components.find((c) => c.name === name))
     .filter(Boolean);
 }
 
@@ -1265,9 +1468,11 @@ function buildExampleFilename(std) {
     );
   }
   // Add extension if available
-  const ft = fileTypes.value.find(f => f.id === std.project_file_type_id);
+  const ft = fileTypes.value.find((f) => f.id === std.project_file_type_id);
   if (ft && ft.extension) {
-    const ext = ft.extension.startsWith('.') ? ft.extension : '.' + ft.extension;
+    const ext = ft.extension.startsWith('.')
+      ? ft.extension
+      : '.' + ft.extension;
     filename += ext;
   }
   return filename;
@@ -1278,18 +1483,25 @@ function pickRandomAcceptedValue(comp) {
     // fallback: use a generic value
     if (/\\d\{(\d+)\}/.test(comp.regex)) {
       const len = parseInt(comp.regex.match(/\\d\{(\d+)\}/)[1]);
-      return String(Math.floor(Math.random() * Math.pow(10, len))).padStart(len, '0');
+      return String(Math.floor(Math.random() * Math.pow(10, len))).padStart(
+        len,
+        '0'
+      );
     }
     if (/\[A-Z\]\{(\d+)\}/.test(comp.regex)) {
       const len = parseInt(comp.regex.match(/\[A-Z\]\{(\d+)\}/)[1]);
       let str = '';
-      for (let i = 0; i < len; i++) str += String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      for (let i = 0; i < len; i++)
+        str += String.fromCharCode(65 + Math.floor(Math.random() * 26));
       return str;
     }
     return comp.name.toUpperCase();
   }
   // Pick a random accepted value
-  const val = comp.accepted_values[Math.floor(Math.random() * comp.accepted_values.length)];
+  const val =
+    comp.accepted_values[
+      Math.floor(Math.random() * comp.accepted_values.length)
+    ];
   // If it's a range like "001-150", pick a random in range and pad
   if (/^\d+-\d+$/.test(val)) {
     const [start, end] = val.split('-').map(Number);
@@ -1319,7 +1531,10 @@ function onFileTypeChange() {
       `{prefix_${fileType}}`
     );
   }
-  if (Array.isArray(newStandard.value.components) && newStandard.value.components.length > 0) {
+  if (
+    Array.isArray(newStandard.value.components) &&
+    newStandard.value.components.length > 0
+  ) {
     newStandard.value.components[0].name = `prefix_${fileType}`;
   }
 }
@@ -1355,7 +1570,9 @@ const detectedUnusualAcceptedValue = computed(() => {
   return '';
 });
 
-const shouldShowAcceptedValuesWarning = computed(() => !!detectedUnusualAcceptedValue.value);
+const shouldShowAcceptedValuesWarning = computed(
+  () => !!detectedUnusualAcceptedValue.value
+);
 
 function getAcceptedValuesPlaceholder(comp) {
   if (!comp.regex) {
@@ -1411,8 +1628,8 @@ const importStandards = ref([]);
 const selectedStandardIds = ref([]);
 const foldedStandardIds = ref(new Set());
 
-const targetFileTypeKeys = computed(() =>
-  new Set(fileTypes.value.map(ft => `${ft.file_type_id}:${ft.name}`))
+const targetFileTypeKeys = computed(
+  () => new Set(fileTypes.value.map((ft) => `${ft.file_type_id}:${ft.name}`))
 );
 
 function toggleStandardFold(standardId) {
@@ -1430,17 +1647,21 @@ function isStandardFolded(standardId) {
 // Fetch projects with standards (excluding current)
 async function fetchProjectsWithStandards() {
   const { data } = await projectNamingStandardApi.getProjectsWithStandards();
-  importProjects.value = data.filter(p => p.id !== projectId.value);
+  importProjects.value = data.filter((p) => p.id !== projectId.value);
 }
 
 // Fetch standards for selected project (and source file types)
 async function fetchStandardsForImportProject() {
-  const { data } = await projectNamingStandardApi.getProjectNamingStandardsFull(selectedImportProject.value);
+  const { data } = await projectNamingStandardApi.getProjectNamingStandardsFull(
+    selectedImportProject.value
+  );
   importStandards.value = data.standards || [];
   selectedStandardIds.value = [];
-  foldedStandardIds.value = new Set(importStandards.value.map(std => std.id));
+  foldedStandardIds.value = new Set(importStandards.value.map((std) => std.id));
   // Fetch file types for the source project
-  const fileTypeResp = await fileTypeService.getProjectFileTypes(selectedImportProject.value);
+  const fileTypeResp = await fileTypeService.getProjectFileTypes(
+    selectedImportProject.value
+  );
   sourceFileTypes.value = fileTypeResp.data || [];
 }
 
@@ -1449,12 +1670,12 @@ const sourceFileTypes = ref([]);
 
 // Helper to get source file type name and extension by id
 function getSourceFileTypeDisplay(fileTypeId) {
-  const ft = sourceFileTypes.value.find(f => f.id === fileTypeId);
+  const ft = sourceFileTypes.value.find((f) => f.id === fileTypeId);
   if (!ft) return '';
   return `${ft.name} (${ft.extension})`;
 }
 function getSourceFileTypeNameById(fileTypeId) {
-  const ft = sourceFileTypes.value.find(f => f.id === fileTypeId);
+  const ft = sourceFileTypes.value.find((f) => f.id === fileTypeId);
   return ft ? ft.name : '';
 }
 
@@ -1473,12 +1694,17 @@ async function importSelectedStandards() {
       standard_ids: selectedStandardIds.value,
     });
     showImportModal.value = false;
-    eventMessageStore.addMessage('configureNamingStandards.eventMessages.importSuccessStandard', 'success');
+    eventMessageStore.addMessage(
+      'configureNamingStandards.eventMessages.importSuccessStandard',
+      'success'
+    );
     await fetchStandardsAndComponentNames();
   } catch (err) {
     if (err?.response?.status === 409) {
       eventMessageStore.addMessage(
-        t('configureNamingStandards.eventMessages.importFailedDuplicateStandard'),
+        t(
+          'configureNamingStandards.eventMessages.importFailedDuplicateStandard'
+        ),
         'error',
         7000
       );
@@ -1501,12 +1727,11 @@ function goToImportStep2() {
 }
 
 // Add this computed to get existing (name, file_type) pairs in the current project
-const existingStandardKeys = computed(() =>
-  new Set(
-    standards.value.map(
-      std => `${std.name}::${std.project_file_type_id}`
+const existingStandardKeys = computed(
+  () =>
+    new Set(
+      standards.value.map((std) => `${std.name}::${std.project_file_type_id}`)
     )
-  )
 );
 
 function splitTypeGroups(str) {
@@ -1661,7 +1886,7 @@ function splitPatternBlocks(pattern, sep) {
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
-  word-break: break-word;
+  overflow-wrap: break-word;
   white-space: pre-line;
   font-family: monospace;
 }
@@ -1729,7 +1954,6 @@ function splitPatternBlocks(pattern, sep) {
   border: 1px solid #e0e0e0;
   padding: 6px 10px;
   text-align: left;
-  word-break: break-word;
   overflow-wrap: break-word;
   max-width: 180px; /* Adjust as needed for your layout */
   white-space: pre-line; /* Allows wrapping and preserves line breaks */
@@ -1799,7 +2023,7 @@ function splitPatternBlocks(pattern, sep) {
 }
 
 .configure-naming-add-form {
-  word-break: break-word;
+  overflow-wrap: break-word;
   margin-top: 32px;
   background: #fff;
   border-radius: 12px;
@@ -1978,11 +2202,8 @@ function splitPatternBlocks(pattern, sep) {
 
 .import-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  inset: 0;
+  background: rgb(0 0 0 / 70%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1997,7 +2218,7 @@ function splitPatternBlocks(pattern, sep) {
   height: 80vh;
   max-width: 98vw;
   max-height: 90vh;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 24px rgb(0 0 0 / 18%);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -2009,7 +2230,7 @@ function splitPatternBlocks(pattern, sep) {
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 18px 36px 18px 36px;
+  padding: 18px 36px;
   background: #fff;
   border-top: 1.5px solid #e0e0e0;
   display: flex;
@@ -2084,7 +2305,7 @@ function splitPatternBlocks(pattern, sep) {
 .import-standard-header-separator {
   border: none;
   border-top: 1.5px solid #e0e0e0;
-  margin: 4px 0 4px 0;
+  margin: 4px 0;
   width: 100%;
 }
 
@@ -2126,10 +2347,13 @@ function splitPatternBlocks(pattern, sep) {
   user-select: none;
 }
 
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.2s;
 }
-.fade-enter-from, .fade-leave-to {
+
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 </style>

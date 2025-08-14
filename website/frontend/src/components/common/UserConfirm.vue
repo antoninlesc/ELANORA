@@ -1,18 +1,17 @@
 <template>
   <div v-if="visible" class="user-confirm-backdrop">
-    <div
-      class="user-confirm-modal"
-      aria-modal="true"
-      role="dialog"
-      @keydown.esc="cancel"
-    >
+    <dialog class="user-confirm-modal" open @keydown.esc="cancel">
       <div v-if="title" class="user-confirm-title">{{ title }}</div>
       <div class="user-confirm-message">{{ message }}</div>
       <div class="user-confirm-actions">
-        <button class="user-confirm-btn confirm" @click="confirm">{{ confirmText }}</button>
-        <button class="user-confirm-btn cancel" @click="cancel">{{ cancelText }}</button>
+        <button class="user-confirm-btn confirm" @click="confirm">
+          {{ confirmText }}
+        </button>
+        <button class="user-confirm-btn cancel" @click="cancel">
+          {{ cancelText }}
+        </button>
       </div>
-    </div>
+    </dialog>
   </div>
 </template>
 
@@ -30,7 +29,10 @@ const emit = defineEmits(['update:modelValue', 'confirm', 'cancel']);
 
 const visible = ref(props.modelValue);
 
-watch(() => props.modelValue, v => visible.value = v);
+watch(
+  () => props.modelValue,
+  (v) => (visible.value = v)
+);
 
 function confirm() {
   emit('confirm');
@@ -64,6 +66,7 @@ defineExpose({ confirm, cancel });
   align-items: center;
   justify-content: center;
 }
+
 .user-confirm-modal {
   background: #fff;
   border-radius: 10px;
@@ -74,23 +77,29 @@ defineExpose({ confirm, cancel });
   flex-direction: column;
   align-items: stretch;
   outline: none;
+  margin: 0 auto;
+  position: static;
 }
+
 .user-confirm-title {
   font-size: 1.15rem;
   font-weight: 600;
   margin-bottom: 10px;
   color: #222;
 }
+
 .user-confirm-message {
   font-size: 1.08rem;
   margin-bottom: 18px;
   color: #222;
 }
+
 .user-confirm-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
 }
+
 .user-confirm-btn {
   background: #2563eb;
   color: #fff;
@@ -101,10 +110,12 @@ defineExpose({ confirm, cancel });
   cursor: pointer;
   transition: background 0.18s;
 }
+
 .user-confirm-btn.cancel {
   background: #d32f2f;
   color: #fff;
 }
+
 .user-confirm-btn:hover {
   filter: brightness(1.08);
 }

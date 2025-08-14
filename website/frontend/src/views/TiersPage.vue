@@ -45,7 +45,9 @@
             </button>
           </h2>
           <draggable
-            :list="tierGroups.filter((g) => g.section_id === section.section_id)"
+            :list="
+              tierGroups.filter((g) => g.section_id === section.section_id)
+            "
             group="tier-groups"
             :move="onMove"
             item-key="tier_group_id"
