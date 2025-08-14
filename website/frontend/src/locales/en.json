@@ -684,7 +684,31 @@
     "security": {
       "title": "Security",
       "description": "Manage your password and security preferences",
-      "coming_soon": "Security settings will be available soon."
+      "coming_soon": "Security settings will be available soon.",
+      "change_password": {
+        "title": "Change Password",
+        "description": "Update your password by entering your current password and a new one.",
+        "current_password": "Current Password",
+        "current_password_placeholder": "Enter your current password",
+        "new_password": "New Password",
+        "new_password_placeholder": "Enter your new password",
+        "confirm_password": "Confirm New Password",
+        "confirm_password_placeholder": "Confirm your new password",
+        "requirements": {
+          "title": "Password must contain:",
+          "length": "At least 8 characters",
+          "uppercase": "At least one uppercase letter",
+          "lowercase": "At least one lowercase letter",
+          "number": "At least one number",
+          "special": "At least one special character"
+        },
+        "passwords_no_match": "Passwords do not match",
+        "form_invalid": "Please fix form errors",
+        "updating": "Updating...",
+        "update": "Update Password",
+        "success": "Password changed successfully",
+        "error": "Error changing password"
+      }
     },
     "notifications": {
       "title": "Notifications",

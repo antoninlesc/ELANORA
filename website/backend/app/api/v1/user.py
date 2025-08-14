@@ -16,7 +16,11 @@ from app.schema.responses.user import (
     CityResponse,
     ProfileUpdateResponse,
 )
-from app.schema.requests.user import ProfileUpdateRequest, AddressRequest
+from app.schema.requests.user import (
+    ProfileUpdateRequest,
+    AddressRequest,
+    ChangePasswordRequest,
+)
 from app.service.user import UserService
 from app.service.address import AddressService
 from app.utils.database import DatabaseUtils
@@ -228,3 +232,35 @@ async def get_active_users(
             for u in users
         ]
     )
+
+
+@router.put("/me/password")
+async def change_user_password(
+    request: ChangePasswordRequest,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> dict[str, str]:
+    """Change the current user's password."""
+    try:
+        # Use UserService to change password with verification
+        result = await UserService.change_password(
+            db=db,
+            user=user,
+            current_password=request.current_password,
+            new_password=request.new_password,
+        )
+
+        if result["success"]:
+            return {"message": "Password changed successfully"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error changing password: {e!s}",
+        ) from e

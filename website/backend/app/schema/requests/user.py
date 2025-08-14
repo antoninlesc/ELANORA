@@ -110,3 +110,10 @@ class VerifyEmailRequest(CustomBaseModel):
 
     email: EmailStr
     code: str
+
+
+class ChangePasswordRequest(CustomBaseModel):
+    """Schema for changing user password."""
+
+    current_password: str
+    new_password: str

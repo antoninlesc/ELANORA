@@ -672,7 +672,31 @@
     "security": {
       "title": "Sécurité",
       "description": "Gérez votre mot de passe et préférences de sécurité",
-      "coming_soon": "Les paramètres de sécurité seront bientôt disponibles."
+      "coming_soon": "Les paramètres de sécurité seront bientôt disponibles.",
+      "change_password": {
+        "title": "Changer le mot de passe",
+        "description": "Modifiez votre mot de passe en saisissant votre mot de passe actuel et le nouveau.",
+        "current_password": "Mot de passe actuel",
+        "current_password_placeholder": "Saisissez votre mot de passe actuel",
+        "new_password": "Nouveau mot de passe",
+        "new_password_placeholder": "Saisissez votre nouveau mot de passe",
+        "confirm_password": "Confirmer le nouveau mot de passe",
+        "confirm_password_placeholder": "Confirmez votre nouveau mot de passe",
+        "requirements": {
+          "title": "Le mot de passe doit contenir :",
+          "length": "Au moins 8 caractères",
+          "uppercase": "Au moins une lettre majuscule",
+          "lowercase": "Au moins une lettre minuscule",
+          "number": "Au moins un chiffre",
+          "special": "Au moins un caractère spécial"
+        },
+        "passwords_no_match": "Les mots de passe ne correspondent pas",
+        "form_invalid": "Veuillez corriger les erreurs du formulaire",
+        "updating": "Mise à jour...",
+        "update": "Mettre à jour le mot de passe",
+        "success": "Mot de passe modifié avec succès",
+        "error": "Erreur lors de la modification du mot de passe"
+      }
     },
     "notifications": {
       "title": "Notifications",

@@ -533,11 +533,46 @@ class UserService:
             user.updated_at = datetime.now(UTC)
             await db.commit()
 
-            logger.info(f"Password reset successfully for: {email}")
-            return {"success": True, "message": "Password reset successfully"}
+        logger.info(f"Password reset successfully for: {email}")
+        return {"success": True, "message": "Password reset successfully"}
 
-        logger.error(f"Password reset failed during update for: {email}")
-        return {"success": False, "message": "Failed to reset password"}
+    @classmethod
+    async def change_password(
+        cls, db: AsyncSession, user: User, current_password: str, new_password: str
+    ) -> dict[str, Any]:
+        """Change user password with current password verification.
+
+        Args:
+            db (AsyncSession): Database session.
+            user (User): Current user.
+            current_password (str): Current password.
+            new_password (str): New password.
+
+        Returns:
+            Dict[str, Any]: Change result.
+
+        """
+        logger.info(f"Password change attempt for user: {user.username}")
+
+        # Verify current password
+        if not cls.verify_password(current_password, user.hashed_password):
+            logger.warning(
+                f"Password change failed - incorrect current password: {user.username}"
+            )
+            return {"success": False, "message": "Current password is incorrect"}
+
+        # Update password
+        success = await cls.update_password(db, user, new_password)
+
+        if success:
+            user.updated_at = datetime.now(UTC)
+            await db.commit()
+
+            logger.info(f"Password changed successfully for: {user.username}")
+            return {"success": True, "message": "Password changed successfully"}
+
+        logger.error(f"Password change failed during update for: {user.username}")
+        return {"success": False, "message": "Failed to change password"}
 
     @classmethod
     async def get_user_by_email(cls, db: AsyncSession, email: str) -> User | None:

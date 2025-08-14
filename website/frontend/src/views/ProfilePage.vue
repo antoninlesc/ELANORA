@@ -56,12 +56,10 @@
           />
 
           <!-- Security Section (placeholder) -->
-          <div v-else-if="currentSection === 'security'" class="profile-section">
-            <div class="profile-placeholder">
-              <h3>{{ t('profile.security.title') }}</h3>
-              <p>{{ t('profile.security.coming_soon') }}</p>
-            </div>
-          </div>
+          <ProfileSecurity
+            v-else-if="currentSection === 'security'"
+            @show-message="handleMessage"
+          />
 
           <!-- Notifications Section (placeholder) -->
           <div v-else-if="currentSection === 'notifications'" class="profile-section">
@@ -83,6 +81,7 @@ import { useEventMessageStore } from '@/stores/eventMessage.js';
 import { fetchUserProfile } from '@/api/service/userService.js';
 import ProfileOverview from '@/components/pageSpecific/profile/ProfileOverview.vue';
 import ProfileSettings from '@/components/pageSpecific/profile/ProfileSettings.vue';
+import ProfileSecurity from '@/components/pageSpecific/profile/ProfileSecurity.vue';
 
 const { t } = useI18n();
 const eventMessageStore = useEventMessageStore();

@@ -60,3 +60,12 @@ export async function updateUserProfile(profileData) {
 export async function updateUserAddress(addressData) {
   return await axiosInstance.put('/user/me/address', addressData);
 }
+
+/**
+ * Change user password.
+ * @param {Object} passwordData - Password data with current_password and new_password
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function changePassword(passwordData) {
+  return await axiosInstance.put('/user/me/password', passwordData);
+}
