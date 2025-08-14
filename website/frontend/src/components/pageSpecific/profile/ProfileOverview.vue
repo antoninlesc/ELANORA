@@ -14,7 +14,7 @@
     </div>
 
     <!-- Profile Content -->
-    <div v-else-if="userProfile" class="profile-content-grid">
+    <div v-else-if="userProfile" class="profile-content">
       <!-- Personal Information Card -->
       <div class="profile-card personal-info-card">
         <div class="profile-card-header">
@@ -1434,35 +1434,45 @@ function editAddress() {
 }
 
 /* Content Grid */
-.profile-content-grid {
+.profile-content {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 2rem;
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
+  background: #f8fafc;
+  min-height: calc(100vh - 4rem);
 }
 
 /* Profile Cards */
 .profile-card {
   background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
   position: relative;
+  height: fit-content;
 }
 
 .profile-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
-/* Card Types with Subtle Headers */
+/* Card Types with Colored Borders */
+.personal-info-card {
+  border-left: 4px solid #1a73e8;
+}
+
 .personal-info-card .profile-card-header {
-  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
   color: white;
+}
+
+.professional-info-card {
+  border-left: 4px solid #6366f1;
 }
 
 .professional-info-card .profile-card-header {
@@ -1470,13 +1480,21 @@ function editAddress() {
   color: white;
 }
 
+.address-info-card {
+  border-left: 4px solid #0ea5e9;
+}
+
 .address-info-card .profile-card-header {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white;
 }
 
+.account-info-card {
+  border-left: 4px solid #137333;
+}
+
 .account-info-card .profile-card-header {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #137333 0%, #0f5928 100%);
   color: white;
 }
 
@@ -1484,8 +1502,8 @@ function editAddress() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 2rem 2rem 1.5rem;
-  border-bottom: none;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   position: relative;
 }
 
@@ -1555,21 +1573,32 @@ function editAddress() {
 .profile-field-group {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .profile-field {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  transition: all 0.2s ease;
+}
+
+.profile-field:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
 }
 
 .profile-field-label {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  margin-bottom: 0.25rem;
 }
 
 .profile-field-value {
@@ -1581,24 +1610,14 @@ function editAddress() {
 .field-content {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
-}
-
-.field-content:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  gap: 0.75rem;
 }
 
 .field-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
-  border-radius: 10px;
+  width: 2rem;
+  height: 2rem;
+  background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1606,14 +1625,14 @@ function editAddress() {
 }
 
 .field-icon svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1rem;
+  height: 1rem;
   color: white;
 }
 
 .field-text {
   flex: 1;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
   color: #1f2937;
 }
@@ -2108,8 +2127,34 @@ select.modern-input {
   appearance: none;
 }
 
-/* Responsive design for edit forms */
+/* Responsive design */
 @media (max-width: 768px) {
+  .profile-content {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+  
+  .profile-card-header {
+    padding: 1rem 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .card-title-section {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .profile-card-content {
+    padding: 1.5rem;
+  }
+  
+  .profile-field {
+    padding: 0.75rem;
+  }
+  
   .edit-form-container {
     padding: 1.5rem;
   }
@@ -2125,6 +2170,29 @@ select.modern-input {
   
   .modern-save-btn, .modern-cancel-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-content {
+    padding: 0.75rem;
+    gap: 1rem;
+  }
+  
+  .profile-card {
+    border-radius: 8px;
+  }
+  
+  .profile-card-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .profile-card-content {
+    padding: 1rem;
+  }
+  
+  .profile-field-group {
+    gap: 1rem;
   }
 }
 </style>
