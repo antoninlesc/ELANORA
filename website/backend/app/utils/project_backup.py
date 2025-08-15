@@ -66,16 +66,18 @@ def update_backup(project_name: str, projects_root: Path | None):
     else:
         logger.warning(f"No .git folder found in {project_path}")
 
-    # Backup elan_files folder
+    # Backup elan_files folder (only flat .eaf files)
     elan_src = project_path / "elan_files"
     elan_dst = project_backup_path / "elan_files"
     if elan_src.exists() and elan_src.is_dir():
         if elan_dst.exists():
             shutil.rmtree(elan_dst)
             logger.info(f"Removed existing backup elan_files at {elan_dst}")
-        shutil.copytree(elan_src, elan_dst)
-        make_writable(elan_dst)
-        logger.info(f"Copied elan_files from {elan_src} to {elan_dst}")
+        elan_dst.mkdir(parents=True, exist_ok=True)
+        for file in elan_src.glob("*.eaf"):
+            shutil.copy2(file, elan_dst / file.name)
+            os.chmod(elan_dst / file.name, 0o600)
+            logger.info(f"Copied {file.name} to backup elan_files")
     else:
         logger.warning(f"No elan_files folder found in {project_path}")
 
@@ -143,16 +145,18 @@ def restore_project_backup(project_name: str, projects_root: Path | None):
     else:
         logger.warning(f"No .git backup found for project '{project_name}'")
 
-    # Restore elan_files folder
+    # Restore elan_files folder (only flat .eaf files)
     elan_src = project_backup_path / "elan_files"
     elan_dst = project_path / "elan_files"
     if elan_src.exists() and elan_src.is_dir():
         if elan_dst.exists():
             shutil.rmtree(elan_dst)
             logger.info(f"Removed existing elan_files at {elan_dst}")
-        shutil.copytree(elan_src, elan_dst)
-        make_writable(elan_dst)
-        logger.info(f"Restored elan_files from backup for project '{project_name}'")
+        elan_dst.mkdir(parents=True, exist_ok=True)
+        for file in elan_src.glob("*.eaf"):
+            shutil.copy2(file, elan_dst / file.name)
+            os.chmod(elan_dst / file.name, 0o600)
+            logger.info(f"Restored {file.name} from backup to elan_files")
     else:
         logger.warning(f"No elan_files backup found for project '{project_name}'")
 
