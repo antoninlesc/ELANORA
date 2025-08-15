@@ -13,6 +13,20 @@
   --input-radius: 0.75rem;
   --btn-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
   --btn-shadow-hover: 0 4px 16px rgba(37, 99, 235, 0.12);
+  
+  /* Profile-specific variables */
+  --profile-card-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --profile-card-shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.12);
+  --profile-field-bg: #f9fafb;
+  --profile-field-border: #e5e7eb;
+  --success-color: #16a34a;
+  --success-bg: #f0fdf4;
+  --error-color: #dc2626;
+  --error-bg: #fef2f2;
+  --warning-color: #f59e0b;
+  --warning-bg: #fef3c7;
+  --info-color: #3b82f6;
+  --info-bg: #dbeafe;
 }
 
 body {
