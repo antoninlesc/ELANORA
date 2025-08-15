@@ -176,7 +176,7 @@
             {{ t('projectsPage.loadingFiles') }}
           </div>
           <div v-else>
-            <FileTree v-if="projectFiles" :tree="projectFiles" :level="0" />
+            <FileTree v-if="projectFiles" :files="projectFiles.files"/>
             <div v-else class="project-page-loading">
               {{ t('projectsPage.noFilesFound') }}
             </div>
@@ -232,6 +232,7 @@ import ProjectEditDialog from '@/components/pageSpecific/projectsPage/ProjectEdi
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUserConfirm } from '@/composables/useUserConfirm';
+import { useHead } from '@unhead/vue';
 
 const projectStore = useProjectStore();
 const userStore = useUserStore();
@@ -240,6 +241,16 @@ const router = useRouter();
 const projects = ref([]);
 const loading = ref(true);
 const { t } = useI18n();
+
+useHead({
+  title: computed(() => t('projectsPage.pageTitle')),
+  meta: [
+    {
+      name: 'description',
+      content: computed(() => t('projectsPage.pageDescription')),
+    },
+  ],
+});
 
 const instanceName = computed(
   () => appInfoStore.instance?.instance_name || 'ELANORA'
@@ -277,7 +288,7 @@ const totalPages = computed(() =>
 
 const paginatedProjects = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
-  return (projectStore.projects || []).slice(start, start + pageSize);
+  return projectStore.projects.slice(start, start + pageSize);
 });
 
 function goToPage(page) {
@@ -335,7 +346,7 @@ async function fetchProjectFiles() {
   filesLoading.value = true;
   try {
     const res = await gitService.listProjectFiles(currentProjectName.value);
-    projectFiles.value = res.tree || null;
+    projectFiles.value = res;
   } finally {
     filesLoading.value = false;
   }

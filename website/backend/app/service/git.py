@@ -324,7 +324,7 @@ class GitService:
         create_gitignore(project_path)
         create_readme(project_path, project_name)
 
-        # Save only .eaf files, preserving folder structure
+        # Save only .eaf files, directly in elan_files directory
         for file in files:
             if not file.filename or not file.filename.lower().endswith(".eaf"):
                 continue
@@ -660,9 +660,9 @@ class GitService:
             raise RuntimeError(f"Failed to checkout branch: {e}") from e
 
     async def list_project_files(self, project_name: str) -> dict[str, Any]:
-        """Return a tree of .eaf files and folders containing .eaf files for the given project.
+        """Return a flat list of .eaf files in the elan_files folder for the given project.
 
-        always from the master branch. Restore the previous branch after listing.
+        Always from the master branch. Restore the previous branch after listing.
         """
         project_path = self.base_path / project_name
         elan_files_dir = project_path / "elan_files"
@@ -688,23 +688,12 @@ class GitService:
         # Checkout master branch before listing files
         runner.checkout("master")
 
-        def build_tree(path: Path) -> dict | None:
-            if path.is_file():
-                if path.suffix.lower() == ".eaf":
-                    return {"name": path.name, "type": "file"}
-                return None
-            children = []
-            for child in sorted(
-                path.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower())
-            ):
-                subtree = build_tree(child)
-                if subtree:
-                    children.append(subtree)
-            if children:
-                return {"name": path.name, "type": "folder", "children": children}
-            return None
-
-        tree = build_tree(elan_files_dir)
+        # Only list .eaf files directly in elan_files (no recursion, no folders)
+        eaf_files = [
+            {"name": file.name, "type": "file"}
+            for file in elan_files_dir.glob("*.eaf")
+            if file.is_file()
+        ]
 
         # Restore previous branch if needed
         if current_branch and current_branch != "master":
@@ -715,7 +704,7 @@ class GitService:
                     f"Failed to restore previous branch '{current_branch}' after listing files."
                 )
 
-        return {"tree": tree}
+        return {"files": eaf_files}
 
     async def synchronize_project(
         self, project_name: str, db: AsyncSession, user_id: int
@@ -743,7 +732,6 @@ class GitService:
         modified_files = []
         untracked_files = []
         deleted_files = []
-        delete_any = False
 
         for entry in self._parse_git_status(status_output):
             code = entry["status"]
@@ -939,36 +927,33 @@ class GitService:
             code = entry["status"]
             filename = entry["filename"]
             status = status_map.get(code, code)
-            full_path = project_path / filename
+
+            # Remove quotes if present
+            clean_filename = filename.strip('"').strip("'")
 
             if code == "??":
-                if full_path.is_dir():
-                    # Recursively add all files in this untracked folder
-                    for item in list_untracked_contents(full_path, project_path):
-                        # Only add files, not folders
-                        if not item["filename"].endswith("/"):
-                            files_status.append(
-                                FileStatus(
-                                    filename=item["filename"],
-                                    status="untracked",
-                                    description=f"File {item['filename']} is untracked",
-                                )
-                            )
-                elif full_path.is_file():
+                # Only add .eaf files directly in elan_files (no subfolders)
+                file_path = Path(clean_filename)
+                if (
+                    file_path.parent == Path("elan_files")
+                    and file_path.suffix.lower() == ".eaf"
+                ):
                     files_status.append(
                         FileStatus(
-                            filename=filename,
+                            filename=file_path.as_posix(),
                             status="untracked",
-                            description=f"File {filename} is untracked",
+                            description=f"File {file_path.as_posix()} is untracked",
                         )
                     )
-            elif not filename.endswith("/"):
-                # For tracked changes, only add files, not folders
+            elif (
+                Path(clean_filename).parent == Path("elan_files")
+                and Path(clean_filename).suffix.lower() == ".eaf"
+            ):
                 files_status.append(
                     FileStatus(
-                        filename=filename,
+                        filename=Path(clean_filename).as_posix(),
                         status=status,
-                        description=f"File {filename} is {status}",
+                        description=f"File {Path(clean_filename).as_posix()} is {status}",
                     )
                 )
 

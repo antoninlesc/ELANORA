@@ -61,7 +61,7 @@
           </div>
           <div v-else class="files-preview">
             <h4>{{ t('projectsPage.folderPreview') }}</h4>
-            <FileTree :tree="fileTree" :level="0" />
+            <FileTree :files="flatFiles"/>
           </div>
         </div>
         <div class="project-create-error" style="min-height: 20px">
@@ -252,6 +252,13 @@ async function handleDrop(event) {
   }
 }
 
+const flatFiles = computed(() =>
+  selectedFiles.value
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(f => ({ name: f.name, type: 'file' }))
+);
+
 async function handleCreate() {
   validateName();
   validateDescription();
@@ -306,7 +313,7 @@ async function handleCreate() {
   background: #fff;
   border-radius: 16px;
   padding: 32px 24px;
-  min-width: 340px;
+  min-width: 600px;
   max-width: 95vw;
   box-shadow: 0 2px 16px rgb(0 0 0 / 8%);
 }

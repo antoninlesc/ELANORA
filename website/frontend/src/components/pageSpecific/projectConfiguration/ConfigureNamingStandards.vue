@@ -719,7 +719,8 @@ function onAcceptedValuesInput(comp) {
     let length = null;
     let isDigitRegex = false;
     if (comp.regex) {
-      const match = comp.regex.match(/\\d\{(\d+)\}/);
+      // Use Unicode digit class
+      const match = comp.regex.match(/\\p\{N\}\{(\d+)\}/u);
       if (match) {
         length = parseInt(match[1]);
         isDigitRegex = true;
@@ -742,10 +743,8 @@ function onAcceptedValuesInput(comp) {
             );
             return;
           }
-          // Pad both start and end
           let startStr = start.toString().padStart(length, '0');
           let endStr = end.toString().padStart(length, '0');
-          // Check if padded values fit the regex length
           if (startStr.length > length || endStr.length > length) {
             regexExtractionError.value = `Values in range "${part}" exceed ${length} digits for "${comp.name}".`;
             return;
@@ -764,19 +763,16 @@ function onAcceptedValuesInput(comp) {
         }
       }
       comp.accepted_values = normalizedParts;
-      // Update the input field to show the normalized version:
       comp.accepted_values_str = normalizedParts.join(', ');
       return;
     }
 
-    // For non-digit regexes, expand and validate as before
     let values = [];
     for (let part of inputParts) {
       values.push(part);
     }
     values = [...new Set(values)];
 
-    // Validate length for letter regexes
     if (length !== null) {
       for (const val of values) {
         if (val.length !== length) {
@@ -789,12 +785,11 @@ function onAcceptedValuesInput(comp) {
       }
     }
 
-    // Validate each value against the regex
     if (comp.regex) {
       let regexStr = comp.regex;
       let re;
       try {
-        re = new RegExp('^' + regexStr + '$');
+        re = new RegExp('^' + regexStr + '$', 'u');
       } catch {
         regexExtractionError.value = `Invalid regex for "${comp.name}".`;
         return;
@@ -861,7 +856,7 @@ async function fetchStandardsAndComponentNames() {
 
 function extractComponentsFromPattern(pattern) {
   // Match all {component_name} in the pattern
-  const matches = pattern.matchAll(/\{(\w+)\}/g);
+  const matches = pattern.matchAll(/\{([^}]+)\}/g);
   const components = [];
   let order = 1;
   for (const match of matches) {
@@ -962,16 +957,10 @@ async function extractRegexFromExample() {
   // Split pattern and example into blocks using known separators
   const separators = ['_', '-', '.', ' '];
   let sep = separators.find((s) => pattern.includes(s));
-  if (!sep) sep = '_'; // fallback
+  if (!sep) sep = '_';
 
   const patternBlocks = splitPatternBlocks(pattern, sep);
   const exampleBlocks = example.split(sep);
-
-  console.log('Pattern:', pattern);
-  console.log('Example:', example);
-  console.log('Separator:', sep);
-  console.log('Pattern blocks:', patternBlocks);
-  console.log('Example blocks:', exampleBlocks);
 
   if (patternBlocks.length !== exampleBlocks.length) {
     regexExtractionError.value = t(
@@ -985,10 +974,9 @@ async function extractRegexFromExample() {
   for (let blockIdx = 0; blockIdx < patternBlocks.length; blockIdx++) {
     const patBlock = patternBlocks[blockIdx];
     const exBlock = exampleBlocks[blockIdx];
-
     // Extract component names in this block
     const blockCompNames = [];
-    const matches = patBlock.matchAll(/\{(\w+)\}/g);
+    const matches = patBlock.matchAll(/\{([^}]+)\}/g);
     for (const m of matches) blockCompNames.push(m[1]);
     if (blockCompNames.length === 0) continue;
 
@@ -1005,17 +993,19 @@ async function extractRegexFromExample() {
       if (blockCompNames.length > 1) {
         await processBlockIterative(
           blockCompNames.slice(1),
-          exBlock.slice(prefix.length)
+          exBlock.slice(prefix.length),
+          comps
         );
       }
       continue;
     }
 
-    await processBlockIterative(blockCompNames, exBlock);
+    await processBlockIterative(blockCompNames, exBlock, comps);
   }
 
-  // Iterative version of processBlockComponents
-  async function processBlockIterative(compNames, str) {
+  newStandard.value.components = comps;
+
+  async function processBlockIterative(compNames, str, comps) {
     if (!compNames.length || !str) return;
     let typeGroups = splitTypeGroups(str);
     let compIdx = 0;
@@ -1055,11 +1045,26 @@ async function extractRegexFromExample() {
         );
 
         // Update the type group with the remaining part
-        typeGroups[groupIdx] = typeGroups[groupIdx].slice(len);
-        if (!typeGroups[groupIdx]) {
+        const leftover = typeGroups[groupIdx].slice(len);
+        if (leftover) {
+          // Now, assign leftover to the next component(s) in order
+          compIdx++;
+          // If only one component left, assign all leftover to it
+          if (compNames.length - compIdx === 1) {
+            await assignRegexAndAcceptable(
+              comps.find((c) => c.name === compNames[compIdx]),
+              leftover
+            );
+            compIdx++;
+            groupIdx++;
+            continue;
+          }
+          // Otherwise, replace current type group with leftover and continue
+          typeGroups[groupIdx] = leftover;
+        } else {
           groupIdx++;
+          compIdx++;
         }
-        compIdx++;
         continue;
       }
 
@@ -1067,6 +1072,10 @@ async function extractRegexFromExample() {
       if (compNames.length - compIdx === typeGroups.length - groupIdx) {
         for (; compIdx < compNames.length; compIdx++, groupIdx++) {
           const comp = comps.find((c) => c.name === compNames[compIdx]);
+          if (!comp) {
+            regexExtractionError.value = `Component "${compNames[compIdx]}" not found.`;
+            return;
+          }
           await assignRegexAndAcceptable(comp, typeGroups[groupIdx]);
         }
         return;
@@ -1080,36 +1089,28 @@ async function extractRegexFromExample() {
     }
   }
 
-  newStandard.value.components = comps;
-
   async function assignRegexAndAcceptable(comp, val) {
-    if (!comp) return;
-
+    // Unicode-aware collapseRegex
     function collapseRegex(str) {
       let out = '';
       let i = 0;
       while (i < str.length) {
         let c = str[i];
         let charClass = '';
-        if (/[A-Z]/.test(c)) charClass = '[A-Z]';
-        else if (/[a-z]/.test(c)) charClass = '[a-z]';
-        else if (/\d/.test(c)) charClass = '\\d';
+        if (/\p{L}/u.test(c)) charClass = '\\p{L}';
+        else if (/\p{N}/u.test(c)) charClass = '\\p{N}';
         else charClass = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         let run = 1;
         while (
           i + run < str.length &&
-          ((/[A-Z]/.test(c) && /[A-Z]/.test(str[i + run])) ||
-            (/[a-z]/.test(c) && /[a-z]/.test(str[i + run])) ||
-            (/\d/.test(c) && /\d/.test(str[i + run])) ||
+          ((/\p{L}/u.test(c) && /\p{L}/u.test(str[i + run])) ||
+            (/\p{N}/u.test(c) && /\p{N}/u.test(str[i + run])) ||
             c === str[i + run])
         ) {
           run++;
         }
         if (
-          (charClass === '[A-Z]' ||
-            charClass === '[a-z]' ||
-            charClass === '[a-zA-Z]' ||
-            charClass === '\\d') &&
+          (charClass === '\\p{L}' || charClass === '\\p{N}') &&
           run >= 1
         ) {
           out += `${charClass}{${run}}`;
@@ -1122,22 +1123,17 @@ async function extractRegexFromExample() {
     }
 
     // Assign type
-    if (/^[A-Z]+$/.test(val)) comp.type = 'L';
-    else if (/^[a-z]+$/.test(val)) comp.type = 'l';
-    else if (/^[A-Za-z]+$/.test(val)) comp.type = 'm';
-    else if (/^\d+$/.test(val)) comp.type = 'D';
+    if (/^\p{L}+$/u.test(val)) comp.type = 'L';
+    else if (/^\p{N}+$/u.test(val)) comp.type = 'D';
     else comp.type = 'O';
 
     // Prefix: accept only the full string, regex matches length and case
     if (comp.name.startsWith('prefix_')) {
-      // Detect case for regex
       let regex = '';
-      if (/^[A-Z]+$/.test(val)) {
-        regex = `[A-Z]{${val.length}}`;
-      } else if (/^[a-z]+$/.test(val)) {
-        regex = `[a-z]{${val.length}}`;
-      } else if (/^[A-Za-z]+$/.test(val)) {
-        regex = `[a-zA-Z]{${val.length}}`;
+      if (/^\p{L}+$/u.test(val)) {
+        regex = `\\p{L}{${val.length}}`;
+      } else if (/^\p{N}+$/u.test(val)) {
+        regex = `\\p{N}{${val.length}}`;
       } else {
         regex = collapseRegex(val);
       }
@@ -1147,102 +1143,20 @@ async function extractRegexFromExample() {
       return;
     }
 
-    // Letters (case sensitive, length 1 or more)
-    if (comp.type === 'L' || comp.type === 'l' || comp.type === 'm') {
-      let regex = '';
-      if (/^[A-Z]+$/.test(val)) {
-        regex = `[A-Z]{${val.length}}`;
-      } else if (/^[a-z]+$/.test(val)) {
-        regex = `[a-z]{${val.length}}`;
-      } else if (/^[A-Za-z]+$/.test(val)) {
-        regex = `[a-zA-Z]{${val.length}}`;
-      } else {
-        regex = collapseRegex(val);
-      }
+    // Letters (Unicode)
+    if (comp.type === 'L') {
+      let regex = `\\p{L}{${val.length}}`;
       comp.regex = regex;
       comp.accepted_values = [val];
       comp.accepted_values_str = val;
       return;
     }
 
-    // Digits
+    // Digits (Unicode)
     if (comp.type === 'D') {
-      comp.regex = `\\d{${val.length}}`;
-
-      // Prompt user for range or list, default to extracted value
-      const validator = (input) => {
-        if (!input) return 'Please enter a value, range, or list.';
-        const length = val.length;
-        // Accept single value
-        if (/^\d+$/.test(input)) {
-          if (input.length > length)
-            return `Value must be at most ${length} digits.`;
-          return false;
-        }
-        // Accept comma/semicolon separated list
-        if (/^(\d+)\s*([,;]\s*\d+)*$/.test(input)) {
-          const parts = input.split(/[,;]/).map((s) => s.trim());
-          for (const part of parts) {
-            if (part.length > length)
-              return `Each value must be at most ${length} digits.`;
-          }
-          return false;
-        }
-        // Accept range
-        if (/^\d+-\d+$/.test(input)) {
-          const [start, end] = input.split('-').map((s) => s.trim());
-          if (start.length > length || end.length > length)
-            return `Range values must be at most ${length} digits.`;
-          if (parseInt(start) > parseInt(end))
-            return 'Range start must be less than or equal to end.';
-          return false;
-        }
-        return `Enter a single value, a comma/semicolon separated list, or a range (e.g. ${val}, 1-99, 1,2,3).`;
-      };
-
-      const userInput = await showUserPrompt(
-        `Extracted value "${val}" for "${comp.name}".\nYou can use this value, or enter a range or list (e.g. 1-99, 1,2,3):`,
-        val,
-        validator,
-        'text'
-      );
-      if (userInput === null) {
-        comp.accepted_values = [val];
-        comp.accepted_values_str = val;
-        return;
-      }
-
-      // Normalize and pad all values to required length
-      const length = val.length;
-      let inputParts = userInput
-        .split(/[,;]/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-      let normalizedParts = [];
-      for (let part of inputParts) {
-        if (/^\d+-\d+$/.test(part)) {
-          let [start, end] = part.split('-').map(Number);
-          if (isNaN(start) || isNaN(end) || start > end) {
-            regexExtractionError.value = t(
-              'configureNamingStandards.invalidRange',
-              { value: part, name: comp.name }
-            );
-            return;
-          }
-          // Pad both start and end
-          let startStr = start.toString().padStart(length, '0');
-          let endStr = end.toString().padStart(length, '0');
-          normalizedParts.push(`${startStr}-${endStr}`);
-        } else if (/^\d+$/.test(part)) {
-          let numStr = Number(part).toString().padStart(length, '0');
-          normalizedParts.push(numStr);
-        } else {
-          regexExtractionError.value = `Invalid value "${part}" for "${comp.name}".`;
-          return;
-        }
-      }
-      comp.accepted_values = normalizedParts;
-      comp.accepted_values_str = normalizedParts.join(', ');
+      comp.regex = `\\p{N}{${val.length}}`;
+      comp.accepted_values = [val];
+      comp.accepted_values_str = val;
       return;
     }
 
@@ -1428,7 +1342,7 @@ function toggleAccordion(id) {
 function getPatternOrderedComponents(std) {
   if (!std?.pattern || !Array.isArray(std.components)) return [];
   // Extract component names in order from the pattern
-  const names = Array.from(std.pattern.matchAll(/\{(\w+)\}/g)).map((m) => m[1]);
+  const names = Array.from(std.pattern.matchAll(/\{([^}]+)\}/g)).map((m) => m[1]);
   // Map names to actual component objects
   return names
     .map((name) => std.components.find((c) => c.name === name))
@@ -1481,16 +1395,21 @@ function buildExampleFilename(std) {
 function pickRandomAcceptedValue(comp) {
   if (!comp.accepted_values || !comp.accepted_values.length) {
     // fallback: use a generic value
-    if (/\\d\{(\d+)\}/.test(comp.regex)) {
-      const len = parseInt(comp.regex.match(/\\d\{(\d+)\}/)[1]);
+    // Use Unicode digit class
+    const digitMatch = comp.regex.match(/\\p\{N\}\{(\d+)\}/u);
+    if (digitMatch) {
+      const len = parseInt(digitMatch[1]);
       return String(Math.floor(Math.random() * Math.pow(10, len))).padStart(
         len,
         '0'
       );
     }
-    if (/\[A-Z\]\{(\d+)\}/.test(comp.regex)) {
-      const len = parseInt(comp.regex.match(/\[A-Z\]\{(\d+)\}/)[1]);
+    // Use Unicode letter class
+    const letterMatch = comp.regex.match(/\\p\{L\}\{(\d+)\}/u);
+    if (letterMatch) {
+      const len = parseInt(letterMatch[1]);
       let str = '';
+      // Use basic Latin letters for example, but could be any Unicode letter
       for (let i = 0; i < len; i++)
         str += String.fromCharCode(65 + Math.floor(Math.random() * 26));
       return str;
@@ -1579,36 +1498,18 @@ function getAcceptedValuesPlaceholder(comp) {
     return 'Accepted Values';
   }
 
-  // [A-Z]{n}
-  const upperMatch = comp.regex.match(/\[A-Z\]\{(\d+)\}/);
-  if (upperMatch) {
-    const len = parseInt(upperMatch[1]);
-    if (len === 1) return 'e.g. A, B, C';
-    if (len === 2) return 'e.g. AB, AC, BA';
-    if (len === 3) return 'e.g. ABC, BAC, CAB';
-    // For longer, show a generic example
-    return `e.g. ${'ABCDEFGH'.slice(0, len)}, ${'HGFEDCBA'.slice(0, len)}`;
+  // Unicode-aware letter class
+  const letterMatch = comp.regex.match(/\\p\{L\}\{(\d+)\}/u);
+  if (letterMatch) {
+    const len = parseInt(letterMatch[1]);
+    if (len === 1) return 'e.g. A, É, Z';
+    if (len === 2) return 'e.g. AB, ÉZ, ZA';
+    if (len === 3) return 'e.g. ABC, ÉZA, CAB';
+    return `e.g. ${'ABCDEFGH'.slice(0, len)}, ${'ÉÉÉ'.repeat(len).slice(0, len)}`;
   }
 
-  // [a-z]{n}
-  const lowerMatch = comp.regex.match(/\[a-z\]\{(\d+)\}/);
-  if (lowerMatch) {
-    const len = parseInt(lowerMatch[1]);
-    if (len === 1) return 'e.g. a, b, c';
-    if (len === 2) return 'e.g. ab, bc, ca';
-    if (len === 3) return 'e.g. abc, bac, cab';
-    return `e.g. ${'abcdefgh'.slice(0, len)}, ${'hgfedcba'.slice(0, len)}`;
-  }
-
-  // [a-zA-Z]{n}
-  const mixedMatch = comp.regex.match(/\[a-zA-Z\]\{(\d+)\}/);
-  if (mixedMatch) {
-    const len = parseInt(mixedMatch[1]);
-    return `e.g. ${'AbCdEfGhIj'.slice(0, len)}, ${'jIgHeFdCbA'.slice(0, len)}`;
-  }
-
-  // Digits
-  const digitMatch = comp.regex.match(/\\d\{(\d+)\}/);
+  // Unicode-aware digit class
+  const digitMatch = comp.regex.match(/\\p\{N\}\{(\d+)\}/u);
   if (digitMatch) {
     const len = parseInt(digitMatch[1]);
     if (len === 1) return 'e.g. 1, 2, 3';

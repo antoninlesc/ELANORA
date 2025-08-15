@@ -19,6 +19,7 @@
     "title": "ELANORA"
   },
   "homePage": {
+    "pageTitle": "Welcome",
     "welcomeMessage": "Welcome to ELANORA!",
     "description": "A collaborative platform for managing and annotating linguistic corpora.",
     "instructions": "To get started, create or join a project and explore your data.",
@@ -404,6 +405,7 @@
   },
 
   "projectsPage": {
+    "pageTitle": "Projects",
     "title": "{instanceName}'s projects",
     "projectListTitle": "Projects",
     "noProjects": "No current projects for this instance.\nYou can start by clicking on the button \"Create a new project\" to create one.",
@@ -418,6 +420,7 @@
     "deleteConfirm": "Delete",
     "deleteCancel": "Cancel",
     "createProject": "Create a new project",
+    "folderPreview": "Folder Preview",
     "project": {
       "buttons": {
         "settings": "Project settings",
@@ -450,7 +453,14 @@
       "syncToMaster": "Use current state and update Database",
       "syncFailed": "Failed to synchronize project.",
       "checkFailed": "Failed to check sync status.",
-      "restoreFailed": "Failed to restore from backup."
+      "restoreFailed": "Failed to restore from backup.",
+      "eventMessages": {
+        "succesfullyRestored": "Project successfully restored from backup.",
+        "succesfullyDeleted": "Project successfully deleted.",
+        "succesfullyDiscarded": "Local changes successfully discarded.",
+        "succesfullySynced": "Project successfully synchronized and database updated.",
+        "alreadyUpToDate": "No changes detected. Project is already in sync."
+      }
     },
     "createDialog": {
       "title": "Create a new project",
@@ -665,5 +675,9 @@
     "enterSingleOrListOrRange": "Enter a single value, a comma/semicolon separated list, or a range (e.g. {example}).",
     "invalidLength": "Invalid length for \"{name}\".",
     "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle"
+  },
+
+  "tiersPage": {
+    "pageTitle": "Tiers"
   }
 }

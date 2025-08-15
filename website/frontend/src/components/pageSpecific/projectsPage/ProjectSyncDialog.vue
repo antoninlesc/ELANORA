@@ -235,7 +235,7 @@ async function checkSync() {
       (Array.isArray(status.files_status) && status.files_status.length === 0)
     ) {
       eventMessageStore.addMessage(
-        'event_messages.sync.already_up_to_date',
+        'projectsPage.syncDialog.eventMessages.alreadyUpToDate',
         'success'
       );
       closeDialog();
@@ -263,10 +263,18 @@ async function restoreFromBackup() {
     await gitService.restoreFromBackup(props.projectName);
     emit('sync-completed');
     closeDialog();
+    eventMessageStore.addMessage(
+      'projectsPage.syncDialog.eventMessages.succesfullyRestored',
+      'success'
+    );
   } catch (e) {
     syncState.value = 'error';
     syncError.value =
       e?.response?.data?.detail || t('projectsPage.syncDialog.restoreFailed');
+    eventMessageStore.addMessage(
+      'projectsPage.syncDialog.restoreFailed',
+      'error'
+    );
   } finally {
     actionLoading.value = false;
   }
@@ -285,10 +293,18 @@ async function deleteProject() {
     await gitService.declineBackup(props.projectName);
     emit('sync-completed');
     closeDialog();
+    eventMessageStore.addMessage(
+      'projectsPage.syncDialog.eventMessages.succesfullyDeleted',
+      'success'
+    );
   } catch (e) {
     syncState.value = 'error';
     syncError.value =
       e?.response?.data?.detail || t('projectsPage.syncDialog.deleteFailed');
+    eventMessageStore.addMessage(
+      'projectsPage.syncDialog.deleteFailed',
+      'error'
+    );
   } finally {
     actionLoading.value = false;
   }
@@ -307,10 +323,18 @@ async function discardLocalChanges() {
     await gitService.discardLocalChanges(props.projectName);
     emit('sync-completed');
     closeDialog();
+    eventMessageStore.addMessage(
+      'projectsPage.syncDialog.eventMessages.succesfullyDiscarded',
+      'success'
+    );
   } catch (e) {
     syncState.value = 'error';
     syncError.value =
       e?.response?.data?.detail || t('projectsPage.syncDialog.discardFailed');
+    eventMessageStore.addMessage(
+      'projectsPage.syncDialog.discardFailed',
+      'error'
+    );
   } finally {
     actionLoading.value = false;
   }
@@ -322,10 +346,18 @@ async function syncToMaster() {
     await gitService.synchronizeProject(props.projectName);
     emit('sync-completed');
     closeDialog();
+    eventMessageStore.addMessage(
+      'projectsPage.syncDialog.eventMessages.succesfullySynced',
+      'success'
+    );
   } catch (e) {
     syncState.value = 'error';
     syncError.value =
       e?.response?.data?.detail || t('projectsPage.syncDialog.syncFailed');
+    eventMessageStore.addMessage(
+      'projectsPage.syncDialog.syncFailed',
+      'error'
+    );
   } finally {
     actionLoading.value = false;
   }

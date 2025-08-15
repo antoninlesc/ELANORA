@@ -18,9 +18,9 @@ def create_gitignore(project_path: Path):
         "!*.md\n"
         "!.gitignore\n"
         "!elan_files/\n"
-        "!elan_files/**/*.eaf\n"
-        "elan_files/**\n"
-        "!elan_files/**/*.eaf\n"
+        "!elan_files/*.eaf\n"
+        "elan_files/*\n"
+        "!elan_files/*.eaf\n"
     )
     file_path = project_path / ".gitignore"
     with open(file_path, "w", encoding="utf-8") as f:

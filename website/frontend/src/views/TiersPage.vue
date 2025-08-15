@@ -73,7 +73,7 @@
         <div style="margin-top: 2rem">
           <h2>Unsectioned</h2>
           <draggable
-            :list="testList"
+            :list="unsectionedTierGroups"
             group="tier-groups"
             :move="onMove"
             item-key="tier_group_id"
@@ -112,6 +112,8 @@
 import '@/assets/css/tiers.css';
 import { ref, onMounted, computed } from 'vue';
 import { useProjectStore } from '@/stores/project';
+import { useHead } from '@unhead/vue';
+import { useI18n } from 'vue-i18n';
 import {
   fetchSectionsAndGroups,
   createSection,
@@ -123,6 +125,15 @@ import TierTree from '@/components/common/TierTree.vue';
 import draggable from 'vuedraggable';
 
 const projectStore = useProjectStore();
+const { t } = useI18n();
+
+useHead({
+  title: t('tiersPage.pageTitle'),
+  meta: [
+    { name: 'description', content: t('tiersPage.pageDescription') },
+  ],
+});
+
 const currentProject = computed(() => projectStore.currentProject);
 
 const sections = ref([]);

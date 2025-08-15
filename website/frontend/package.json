@@ -30,6 +30,7 @@
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/vue-fontawesome": "^3.0.8",
+    "@unhead/vue": "^2.0.14",
     "axios": "^1.7.9",
     "pinia": "^3.0.1",
     "tailwindcss": "^4.1.11",

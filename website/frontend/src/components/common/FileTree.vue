@@ -1,63 +1,21 @@
 <template>
   <div>
-    <template v-if="tree">
-      <div
-        v-if="tree.type === 'file'"
-        :style="{ marginLeft: `${level * 18}px` }"
-        class="filetree-file"
-      >
-        <img
-          v-if="isEafFile(tree.name)"
-          src="/images/icons/ELAN.svg"
-          alt="ELAN file"
-          style="
-            width: 18px;
-            height: 18px;
-            margin-right: 4px;
-            vertical-align: middle;
-          "
-        />
-        <font-awesome-icon v-else icon="file" style="color: #1976d2" />
-        <span :title="tree.name" class="filetree-name">{{ tree.name }}</span>
-      </div>
-      <div
-        v-else
-        :style="{ marginLeft: `${level * 18}px` }"
-        class="filetree-folder"
-      >
-        <div class="filetree-folder-header" @click="toggle">
-          <font-awesome-icon
-            :icon="open ? 'folder-open' : 'folder'"
-            style="color: #388e3c"
-          />
-          <span style="font-weight: 600">{{ tree.name }}</span>
-        </div>
-        <div v-show="open">
-          <FileTree
-            v-for="child in tree.children"
-            :key="child.name + child.type"
-            :tree="child"
-            :level="level + 1"
-          />
-        </div>
-      </div>
-    </template>
+    <div v-for="file in files" :key="file.name" class="filetree-file">
+      <img
+        v-if="isEafFile(file.name)"
+        src="/images/icons/ELAN.svg"
+        alt="ELAN file"
+        style="width: 18px; height: 18px; margin-right: 4px; vertical-align: middle;"
+      />
+      <span :title="file.name" class="filetree-name">{{ file.name }}</span>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-
-const props = defineProps({
-  tree: { type: Object, required: true },
-  level: { type: Number, default: 0 },
+const { files } = defineProps({
+  files: { type: Array, required: true }
 });
-
-const open = ref(props.level === 0);
-
-function toggle() {
-  open.value = !open.value;
-}
 
 function isEafFile(name) {
   return name.toLowerCase().endsWith('.eaf');
@@ -72,20 +30,6 @@ function isEafFile(name) {
   cursor: default;
   padding: 2px 0;
 }
-
-.filetree-folder {
-  margin-bottom: 2px;
-}
-
-.filetree-folder-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  user-select: none;
-  padding: 2px 0;
-}
-
 .filetree-name {
   max-width: 100%;
   overflow: hidden;

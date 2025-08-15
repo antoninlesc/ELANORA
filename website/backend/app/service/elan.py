@@ -39,6 +39,7 @@ from app.crud.tier import (
     get_tiers_with_annotations,
     update_parent_tier,
 )
+from app.crud.tier_group import delete_tier_groups_for_project_and_elan
 from app.model.tier import Tier
 from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
 
@@ -133,9 +134,9 @@ class ElanService:
         return annotations
 
     def get_files_in_directory(self, directory_path: str) -> list[Path]:
-        """Get all ELAN files in a directory using utility."""
+        """Get all ELAN files in a flat directory using utility."""
         logger.info(f"Scanning directory for ELAN files: {directory_path}")
-        files = ElanFileProcessor.find_files_in_directory(directory_path)
+        files = ElanFileProcessor.find_files_in_directory(directory_path, "*.eaf")
         logger.info(f"Found {len(files)} ELAN files in directory")
         return files
 
@@ -327,7 +328,7 @@ class ElanService:
     async def process_directory(
         self, directory_path: str, user_id: int, project_name: str
     ) -> dict[str, int | None]:
-        """Process all ELAN files in a directory for the given project."""
+        """Process all ELAN files in a flat directory for the given project."""
         logger.info(f"Starting directory processing: {directory_path}")
         eaf_files = self.get_files_in_directory(directory_path)
 
@@ -534,6 +535,9 @@ class ElanService:
             # Remove the association
             await remove_elan_file_from_project(
                 self.db, elan_file_obj.elan_id, project.project_id
+            )
+            await delete_tier_groups_for_project_and_elan(
+                self.db, project.project_id, elan_file_obj.elan_id
             )
             logger.info(
                 f"[ELAN-DELETE] Removed ElanFileToProject association for ELAN file '{base_filename}' and project '{project_name}'."

@@ -69,9 +69,9 @@ class ElanFileProcessor:
 
     @staticmethod
     def find_files_in_directory(
-        directory_path: str, pattern: str = "**/*.eaf"
+        directory_path: str, pattern: str = "*.eaf"
     ) -> list[Path]:
-        """Find all ELAN files in directory."""
+        """Find all ELAN files in flat directory (no recursion)."""
         directory = Path(directory_path)
         logger.info(
             f"Searching for ELAN files in directory: {directory_path} with pattern: {pattern}"

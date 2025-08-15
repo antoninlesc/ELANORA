@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 
 export const useProjectStore = defineStore('project', {
   state: () => ({
-    currentProject: null, // { project_id: <int>, project_name: <string>, project_description: <string> }
+    currentProject: null,
     projects: [],
     isLoading: false,
   }),
@@ -16,11 +16,17 @@ export const useProjectStore = defineStore('project', {
   },
 
   actions: {
+    sortProjects() {
+      this.projects = this.projects.slice().sort((a, b) =>
+        a.project_name.localeCompare(b.project_name)
+      );
+    },
     initializeFromStorage() {
       this.isLoading = true;
       const savedProjects = localStorage.getItem('projects');
       if (savedProjects) {
         this.projects = JSON.parse(savedProjects);
+        this.sortProjects();
       }
       const savedCurrentProject = localStorage.getItem('currentProject');
       if (savedCurrentProject) {
@@ -34,9 +40,9 @@ export const useProjectStore = defineStore('project', {
       localStorage.setItem('currentProject', JSON.stringify(project));
     },
     setProjects(projects) {
-      this.projects = projects;
-      // Save to localStorage
-      localStorage.setItem('projects', JSON.stringify(projects));
+      this.projects = projects.slice();
+      this.sortProjects();
+      localStorage.setItem('projects', JSON.stringify(this.projects));
     },
     loadCurrentProject() {
       this.isLoading = true;

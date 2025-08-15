@@ -70,7 +70,7 @@ onMounted(() => {
   position: fixed;
   bottom: 1.5rem;
   left: 1.5rem;
-  z-index: 2001;
+  z-index: 10001;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;

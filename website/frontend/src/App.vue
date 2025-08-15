@@ -19,20 +19,11 @@ import instanceService from '@/api/service/instanceService';
 import EventMessageContainer from '@components/eventComponent/eventMessageContainer.vue';
 
 const languageStore = useLanguageStore();
-const { t, locale } = useI18n();
+const { locale } = useI18n();
 const userStore = useUserStore();
 const projectStore = useProjectStore();
 const appInfoStore = useAppInfoStore();
 const loading = ref(true);
-
-const updateDocumentMeta = () => {
-  document.title = t('app.title');
-  const metaDescription = document.querySelector('meta[name="description"]');
-  if (metaDescription) {
-    metaDescription.setAttribute('content', t('app.description'));
-  }
-  document.documentElement.lang = locale.value;
-};
 
 onMounted(async () => {
   languageStore.initializeFromStorage();
@@ -70,7 +61,6 @@ onMounted(async () => {
   }
 
   locale.value = languageStore.language;
-  updateDocumentMeta();
   loading.value = false;
 });
 
@@ -78,9 +68,6 @@ watch(
   () => languageStore.language,
   (newLang) => {
     locale.value = newLang;
-    updateDocumentMeta();
   }
 );
-
-watch(locale, updateDocumentMeta);
 </script>
