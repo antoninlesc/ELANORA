@@ -60,6 +60,7 @@ import ConfigureNamingStandards from '@components/pageSpecific/projectConfigurat
 import ConfigureFileTypes from '@components/pageSpecific/projectConfiguration/ConfigureFileTypes.vue';
 import ConfigureProjectMembers from '@components/pageSpecific/projectConfiguration/ConfigureProjectMembers.vue';
 import ConfigurePendingInvitations from '@components/pageSpecific/projectConfiguration/ConfigurePendingInvitations.vue';
+import ConfigureEffectiveStandards from '@components/pageSpecific/projectConfiguration/ConfigureEffectiveStandards.vue';
 
 import { ref, computed } from 'vue';
 import { useProjectStore } from '@stores/project.js';
@@ -116,6 +117,12 @@ const sectionGroups = [
         titleKey:
           'projectSettings.sectionNames.sections.subsections.namingStandards',
         component: ConfigureNamingStandards,
+      },
+      {
+        key: 'effectiveStandards',
+        titleKey:
+          'projectSettings.sectionNames.sections.subsections.effectiveStandards',
+        component: ConfigureEffectiveStandards,
       },
     ],
   },

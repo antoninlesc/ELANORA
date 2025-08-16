@@ -480,6 +480,7 @@
         "subsections": {
           "fileTypes": "Types de Fichiers",
           "namingStandards": "Normes de Nommage",
+          "effectiveStandards": "Normes Effectives",
           "members": "Membres et Accès",
           "invitations": "Invitations"
         }
@@ -565,6 +566,8 @@
 
   "configureFileTypes": {
     "title": "Gérer les types de fichiers pour votre projet",
+    "defaultFileTypes": "Types de fichiers par défaut",
+    "customFileTypes": "Types de fichiers personnalisés",
     "loading": "Chargement des types de fichiers...",
     "empty": "Aucun type de fichier trouvé. Créez votre premier type de fichier pour commencer !",
     "createFileType": "Ajouter",
@@ -636,6 +639,7 @@
       "addSuccess": "Norme de nommage ajoutée avec succès.",
       "addFailed": "Échec de l'ajout de la norme de nommage.",
       "addFailedDuplicate": "Une norme de nommage avec ce nom et ce type de fichier existe déjà dans ce projet.",
+      "addFailedEmptyRegex": "Standard ne peut pas être ajouté : veuillez entrer une expression régulière valide pour chaque composant.",
       "deleteSuccess": "Norme de nommage supprimée avec succès.",
       "deleteFailed": "Échec de la suppression de la norme de nommage.",
       "importSuccessstandard": "Normes de nommage importées avec succès.",
@@ -662,9 +666,21 @@
     "rangeStartEnd": "Le début de la plage doit être inférieur ou égal à la fin.",
     "enterSingleOrListOrRange": "Entrez une seule valeur, une liste séparée par des virgules/points-virgules, ou une plage (ex. : {example}).",
     "invalidLength": "Longueur invalide pour \"{name}\".",
-    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra"
+    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra",
+    "promptExtractedValue": "La valeur {value} a été extraite pour le composant \"{name}\". Si vous souhaitez utiliser uniquement la valeur extraite, laissez ce champ vide et cliquez sur \"OK\". Cependant, il est recommandé d'entrer une plage de valeurs valides (ex. : {example})."
   },
 
+  "configureEffectiveStandards": {
+    "title": "Configurer les normes effectives de nommage",
+    "fileType": "Type de fichier",
+    "effectiveStandard": "Norme effective",
+    "eventMessages": {
+      "loadFailed": "Échec du chargement des normes effectives.",
+      "updateSuccess": "Norme effective mise à jour avec succès.",
+      "updateFailed": "Échec de la mise à jour de la norme effective."
+    }
+  },
+  
   "tiersPage": {
     "pageTitle": "Tiers"
   }

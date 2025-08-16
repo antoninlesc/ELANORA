@@ -7,85 +7,107 @@
       {{ t('configureFileTypes.loading') }}
     </div>
     <div v-else>
-      <div v-if="fileTypes.length === 0" class="configure-filetypes-empty">
-        <em>{{ t('configureFileTypes.empty') }}</em>
+      <!-- Default File Types Table -->
+      <div v-if="defaultFileTypes.length">
+        <h3>{{ t('configureFileTypes.defaultFileTypes') }}</h3>
+        <table class="configure-filetypes-table">
+          <thead>
+            <tr>
+              <th>{{ t('configureFileTypes.name') }}</th>
+              <th>{{ t('configureFileTypes.extension') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="ft in defaultFileTypes" :key="ft.id">
+              <td>{{ ft.name }}</td>
+              <td>{{ ft.extension }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <table v-if="fileTypes.length" class="configure-filetypes-table">
-        <thead>
-          <tr>
-            <th>{{ t('configureFileTypes.name') }}</th>
-            <th>{{ t('configureFileTypes.extension') }}</th>
-            <th>{{ t('configureFileTypes.actions') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="ft in fileTypes" :key="ft.id">
-            <td>
-              <template v-if="editId === ft.id">
-                <input
-                  v-model="editFileType.name"
-                  class="configure-file-types-edit-highlight"
-                  autofocus
-                  @keydown.enter="saveEdit(ft.id)"
-                  @keydown.esc="cancelEdit"
-                />
-              </template>
-              <template v-else>
-                {{ ft.name }}
-              </template>
-            </td>
-            <td>
-              <template v-if="editId === ft.id">
-                <input
-                  v-model="editFileType.extension"
-                  class="configure-file-types-edit-highlight"
-                  @keydown.enter="saveEdit(ft.id)"
-                  @keydown.esc="cancelEdit"
-                />
-              </template>
-              <template v-else>
-                {{ ft.extension }}
-              </template>
-            </td>
-            <td>
-              <div class="configure-file-types-actions">
+
+      <!-- Custom File Types Table -->
+      <div v-if="customFileTypes.length">
+        <h3>{{ t('configureFileTypes.customFileTypes') }}</h3>
+        <table class="configure-filetypes-table">
+          <thead>
+            <tr>
+              <th>{{ t('configureFileTypes.name') }}</th>
+              <th>{{ t('configureFileTypes.extension') }}</th>
+              <th>{{ t('configureFileTypes.actions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="ft in customFileTypes" :key="ft.id">
+              <td>
                 <template v-if="editId === ft.id">
-                  <button
-                    class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    :title="t('configureFileTypes.edit')"
-                    @click="saveEdit(ft.id)"
-                  >
-                    <font-awesome-icon icon="fa-regular fa-pen-to-square" />
-                  </button>
-                  <button
-                    class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    :title="t('configureFileTypes.delete')"
-                    @click="cancelEdit"
-                  >
-                    <span style="font-size: 1.1em">✖</span>
-                  </button>
+                  <input
+                    v-model="editFileType.name"
+                    class="configure-file-types-edit-highlight"
+                    autofocus
+                    @keydown.enter="saveEdit(ft.id)"
+                    @keydown.esc="cancelEdit"
+                  />
                 </template>
                 <template v-else>
-                  <button
-                    class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    :title="t('configureFileTypes.edit')"
-                    @click="startEdit(ft)"
-                  >
-                    <font-awesome-icon icon="fa-regular fa-pen-to-square" />
-                  </button>
-                  <button
-                    class="configure-file-types-action-btn configure-file-types-delete-btn"
-                    :title="t('configureFileTypes.delete')"
-                    @click="deleteFileType(ft.id)"
-                  >
-                    <font-awesome-icon icon="trash" />
-                  </button>
+                  {{ ft.name }}
                 </template>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+              <td>
+                <template v-if="editId === ft.id">
+                  <input
+                    v-model="editFileType.extension"
+                    class="configure-file-types-edit-highlight"
+                    @keydown.enter="saveEdit(ft.id)"
+                    @keydown.esc="cancelEdit"
+                  />
+                </template>
+                <template v-else>
+                  {{ ft.extension }}
+                </template>
+              </td>
+              <td>
+                <div class="configure-file-types-actions">
+                  <template v-if="editId === ft.id">
+                    <button
+                      class="configure-file-types-action-btn configure-file-types-edit-btn"
+                      :title="t('configureFileTypes.edit')"
+                      @click="saveEdit(ft.id)"
+                    >
+                      <font-awesome-icon icon="fa-regular fa-pen-to-square" />
+                    </button>
+                    <button
+                      class="configure-file-types-action-btn configure-file-types-edit-btn"
+                      :title="t('configureFileTypes.delete')"
+                      @click="cancelEdit"
+                    >
+                      <span style="font-size: 1.1em">✖</span>
+                    </button>
+                  </template>
+                  <template v-else>
+                    <button
+                      class="configure-file-types-action-btn configure-file-types-edit-btn"
+                      :title="t('configureFileTypes.edit')"
+                      @click="startEdit(ft)"
+                    >
+                      <font-awesome-icon icon="fa-regular fa-pen-to-square" />
+                    </button>
+                    <button
+                      class="configure-file-types-action-btn configure-file-types-delete-btn"
+                      :title="t('configureFileTypes.delete')"
+                      @click="deleteFileType(ft.id)"
+                    >
+                      <font-awesome-icon icon="trash" />
+                    </button>
+                  </template>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add Custom File Type Form -->
       <div class="configure-filetypes-add-form">
         <div class="add-form-col">
           <input
@@ -135,7 +157,13 @@ const userConfirm = useUserConfirm();
 const projectId = computed(() => Number(route.params.projectId));
 
 const fileTypes = computed(() => fileTypeStore.fileTypes);
-const isLoading = computed(() => fileTypeStore.isLoading);
+
+const defaultFileTypes = computed(() =>
+  fileTypes.value.filter(ft => ft.is_required)
+);
+const customFileTypes = computed(() =>
+  fileTypes.value.filter(ft => !ft.is_required)
+);
 
 const newFileType = ref({ name: '', extension: '' });
 const editId = ref(null);
@@ -143,6 +171,8 @@ const editFileType = ref({ name: '', extension: '' });
 
 const addNameError = ref('');
 const addExtensionError = ref('');
+
+const isLoading = computed(() => fileTypeStore.isLoading);
 
 // Refetch file types when projectId changes
 watch(

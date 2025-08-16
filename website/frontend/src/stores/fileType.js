@@ -8,6 +8,12 @@ export const useFileTypeStore = defineStore('fileType', {
   }),
   actions: {
     async fetchFileTypes(projectId) {
+      if (this.isLoading) {
+        return;
+      }
+      if (this.fileTypes.length > 0) {
+        return;
+      }
       this.isLoading = true;
       try {
         if (!projectId) {
@@ -17,7 +23,7 @@ export const useFileTypeStore = defineStore('fileType', {
         const response = await fileTypeService.getProjectFileTypes(projectId);
         this.fileTypes = [...response.data];
       } catch (err) {
-        console.error('[fileTypeStore] fetchFileTypes error:', err);
+        console.error('Error fetching file types:', err);
       } finally {
         this.isLoading = false;
       }

@@ -8,7 +8,11 @@ class ComponentTemplate(Base):
     __tablename__ = "COMPONENT_TEMPLATE"
     __table_args__ = (
         UniqueConstraint(
-            "file_type_id", "name", "regex", "description", name="uq_component_template"
+            "file_type_id",
+            "name",
+            "regex",
+            "description",
+            name="uq_component_template",
         ),
     )
 
@@ -17,7 +21,7 @@ class ComponentTemplate(Base):
         Integer, ForeignKey("FILE_TYPE.id"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    regex: Mapped[str] = mapped_column(String(255), nullable=True)
+    regex: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=True)
 
     file_type = relationship("FileType")

@@ -65,9 +65,6 @@
                   {{ std.pattern }}
                 </div>
                 <div class="configure-naming-pattern-breakdown">
-                  <div class="breakdown-title">
-                    {{ t('configureNamingStandards.components') }}
-                  </div>
                   <div class="breakdown-groups">
                     <template
                       v-for="comp in getPatternOrderedComponents(std)"
@@ -657,20 +654,21 @@ import UserPrompt from '@components/common/UserPrompt.vue';
 import projectNamingStandardApi from '@/api/service/projectNamingStandard.js';
 import fileTypeService from '@/api/service/fileTypeService.js';
 import { ref, onMounted, watch, computed, nextTick } from 'vue';
+import { useNamingStandardStore } from '@stores/namingStandard';
 import { useFileTypeStore } from '@stores/fileType';
 import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import { useI18n } from 'vue-i18n';
 
+const namingStandardStore = useNamingStandardStore();
 const route = useRoute();
 const { t } = useI18n();
 const projectId = computed(() => Number(route.params.projectId));
 const userConfirm = useUserConfirm();
 
-const loading = ref(true);
-const standards = ref([]);
-const allComponentNames = ref([]);
+const loading = computed(() => namingStandardStore.isLoading);
+const standards = computed(() => namingStandardStore.standards);
 const showAddStandard = ref(false);
 const newStandard = ref({
   name: '',
@@ -713,63 +711,64 @@ function handleUserPromptCancel() {
   if (userPromptResolve) userPromptResolve(null);
 }
 
+function validateAcceptedValues(comp, input, length) {
+  let inputParts = (input ?? '')
+    .split(/[,;]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  let normalizedParts = [];
+  for (let part of inputParts) {
+    if (/^\d+-\d+$/.test(part)) {
+      let [start, end] = part.split('-').map(Number);
+      if (isNaN(start) || isNaN(end) || start > end) {
+        return { error: `Invalid range "${part}".` };
+      }
+      let startStr = start.toString().padStart(length, '0');
+      let endStr = end.toString().padStart(length, '0');
+      if (startStr.length > length || endStr.length > length) {
+        return { error: `Values in range "${part}" exceed ${length} digits.` };
+      }
+      normalizedParts.push(`${startStr}-${endStr}`);
+    } else if (/^\d+$/.test(part)) {
+      let numStr = Number(part).toString().padStart(length, '0');
+      if (numStr.length > length) {
+        return { error: `Value "${part}" exceeds ${length} digits.` };
+      }
+      normalizedParts.push(numStr);
+    } else {
+      return { error: `Invalid value "${part}".` };
+    }
+  }
+  return { values: normalizedParts, error: null };
+}
+
 function onAcceptedValuesInput(comp) {
   regexExtractionError.value = '';
   if (typeof comp.accepted_values_str === 'string') {
     let length = null;
     let isDigitRegex = false;
     if (comp.regex) {
-      // Use Unicode digit class
       const match = comp.regex.match(/\\p\{N\}\{(\d+)\}/u);
       if (match) {
         length = parseInt(match[1]);
         isDigitRegex = true;
       }
     }
-    let inputParts = comp.accepted_values_str
-      .split(/[,;]/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-
+    let input = comp.accepted_values_str;
     if (isDigitRegex) {
-      let normalizedParts = [];
-      for (let part of inputParts) {
-        if (/^\d+-\d+$/.test(part)) {
-          let [start, end] = part.split('-').map(Number);
-          if (isNaN(start) || isNaN(end) || start > end) {
-            regexExtractionError.value = t(
-              'configureNamingStandards.invalidRange',
-              { value: part, name: comp.name }
-            );
-            return;
-          }
-          let startStr = start.toString().padStart(length, '0');
-          let endStr = end.toString().padStart(length, '0');
-          if (startStr.length > length || endStr.length > length) {
-            regexExtractionError.value = `Values in range "${part}" exceed ${length} digits for "${comp.name}".`;
-            return;
-          }
-          normalizedParts.push(`${startStr}-${endStr}`);
-        } else if (/^\d+$/.test(part)) {
-          let numStr = Number(part).toString().padStart(length, '0');
-          if (numStr.length > length) {
-            regexExtractionError.value = `Value "${part}" exceeds ${length} digits for "${comp.name}".`;
-            return;
-          }
-          normalizedParts.push(numStr);
-        } else {
-          regexExtractionError.value = `Invalid value "${part}" for "${comp.name}".`;
-          return;
-        }
+      const { values, error } = validateAcceptedValues(comp, input, length);
+      if (error) {
+        regexExtractionError.value = error;
+        return;
       }
-      comp.accepted_values = normalizedParts;
-      comp.accepted_values_str = normalizedParts.join(', ');
+      comp.accepted_values = values;
+      comp.accepted_values_str = values.join(', ');
       return;
     }
 
     let values = [];
-    for (let part of inputParts) {
-      values.push(part);
+    for (let part of input.split(/[,;]/)) {
+      values.push(part.trim());
     }
     values = [...new Set(values)];
 
@@ -827,32 +826,6 @@ const commaPattern = ref('');
 const exampleCommaPattern = t('configureNamingStandards.exampleCommaPattern');
 const knownSeparators = ['_', '-', '.', ' '];
 const errorMessageRef = ref(null);
-
-async function fetchStandardsAndComponentNames() {
-  loading.value = true;
-  try {
-    const { data } =
-      await projectNamingStandardApi.getProjectNamingStandardsFull(
-        projectId.value
-      );
-    standards.value = Array.isArray(data.standards) ? data.standards : [];
-    allComponentNames.value = Array.isArray(data.component_names)
-      ? data.component_names
-      : [];
-    // Ensure accepted_values_str for editing
-    for (const std of standards.value) {
-      if (std.components) {
-        std.components = std.components.map((c) => ({
-          ...c,
-          accepted_values: c.accepted_values || [],
-          accepted_values_str: (c.accepted_values || []).join(', '),
-        }));
-      }
-    }
-  } finally {
-    loading.value = false;
-  }
-}
 
 function extractComponentsFromPattern(pattern) {
   // Match all {component_name} in the pattern
@@ -1155,8 +1128,29 @@ async function extractRegexFromExample() {
     // Digits (Unicode)
     if (comp.type === 'D') {
       comp.regex = `\\p{N}{${val.length}}`;
-      comp.accepted_values = [val];
-      comp.accepted_values_str = val;
+      let accepted = await showUserPrompt(
+        t('configureNamingStandards.promptExtractedValue', {
+          name: comp.name,
+          value: val,
+          length: val.length,
+          example: val.length === 3 ? '001-150' : '01-99'
+        }),
+        '',
+        (input) => {
+          if (!input) return false;
+          const { error } = validateAcceptedValues(comp, input, val.length);
+          return error || false;
+        },
+        'text'
+      );
+      if (accepted && accepted.trim()) {
+        const { values } = validateAcceptedValues(comp, accepted, val.length);
+        comp.accepted_values = values;
+        comp.accepted_values_str = values.join(', ');
+      } else {
+        comp.accepted_values = [val];
+        comp.accepted_values_str = val;
+      }
       return;
     }
 
@@ -1168,11 +1162,38 @@ async function extractRegexFromExample() {
 }
 
 async function addStandard() {
+  const exists = namingStandardStore.standards.some(
+    std =>
+      std.name.trim().toLowerCase() === newStandard.value.name.trim().toLowerCase() &&
+      std.project_file_type_id === newStandard.value.project_file_type_id
+  );
+  if (exists) {
+    eventMessageStore.addMessage(
+      t('configureNamingStandards.eventMessages.addFailedDuplicate'),
+      'error',
+      7000
+    );
+    return;
+  }
+
+  // Block if any regex is empty or only whitespace
+  const hasEmptyRegex = newStandard.value.components.some(
+    c => !c.regex || !c.regex.trim()
+  );
+  if (hasEmptyRegex) {
+    eventMessageStore.addMessage(
+      t('configureNamingStandards.eventMessages.addFailedEmptyRegex'),
+      'error',
+      7000
+    );
+    return;
+  }
+
   if (regexExtractionError.value) return;
   try {
-    await projectNamingStandardApi.createStandardWithComponents({
-      project_id: projectId.value,
+    const standardData = {
       name: newStandard.value.name.trim(),
+      project_id: projectId.value,
       project_file_type_id: newStandard.value.project_file_type_id,
       pattern: newStandard.value.pattern,
       description: newStandard.value.description.trim(),
@@ -1184,18 +1205,16 @@ async function addStandard() {
         accepted_values: c.accepted_values,
         project_file_type_id: newStandard.value.project_file_type_id,
       })),
-    });
-    showAddStandard.value = false;
-    newStandard.value = {
-      name: '',
-      project_file_type_id: '',
-      pattern: '',
-      description: '',
-      components: [],
     };
-    commaPattern.value = '';
-    exampleFilename.value = '';
-    await fetchStandardsAndComponentNames();
+    await namingStandardStore.addNamingStandard(standardData, projectId.value);
+    showAddStandard.value = false;
+    resetAddForm();
+    eventMessageStore.addMessage(
+      t('configureNamingStandards.eventMessages.addSuccess'),
+      'success',
+      4000
+    );
+    await namingStandardStore.fetchStandardsAndComponentNames(projectId.value);
   } catch (err) {
     if (err?.response?.status === 409) {
       eventMessageStore.addMessage(
@@ -1205,7 +1224,7 @@ async function addStandard() {
       );
     } else {
       eventMessageStore.addMessage(
-        'configureNamingStandards.eventMessages.addFailed',
+        t('configureNamingStandards.eventMessages.addFailed'),
         'error',
         7000
       );
@@ -1221,13 +1240,13 @@ async function deleteStandard(id) {
   });
   if (!confirmed) return;
   try {
-    await projectNamingStandardApi.deleteStandard(id);
-    await fetchStandardsAndComponentNames();
+    await namingStandardStore.deleteNamingStandard(id, projectId.value);
     eventMessageStore.addMessage(
       'configureNamingStandards.eventMessages.deleteSuccess',
       'success',
       4000
     );
+    await namingStandardStore.fetchStandardsAndComponentNames(projectId.value);
   } catch {
     eventMessageStore.addMessage(
       'configureNamingStandards.eventMessages.deleteFailed',
@@ -1277,7 +1296,7 @@ const fileTypeStore = useFileTypeStore();
 const eventMessageStore = useEventMessageStore();
 
 onMounted(async () => {
-  await fetchStandardsAndComponentNames();
+  await namingStandardStore.fetchStandardsAndComponentNames(projectId.value);
 });
 
 watch(
@@ -1599,7 +1618,7 @@ async function importSelectedStandards() {
       'configureNamingStandards.eventMessages.importSuccessStandard',
       'success'
     );
-    await fetchStandardsAndComponentNames();
+    await namingStandardStore.fetchStandardsAndComponentNames(projectId.value);
   } catch (err) {
     if (err?.response?.status === 409) {
       eventMessageStore.addMessage(

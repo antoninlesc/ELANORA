@@ -493,6 +493,7 @@
         "subsections": {
           "fileTypes": "File Types",
           "namingStandards": "Naming Standards",
+          "effectiveStandards": "Effective Standards",
           "members": "Members and Access",
           "invitations": "Invitations"
         }
@@ -578,6 +579,8 @@
 
   "configureFileTypes": {
     "title": "Manage file types for your project",
+    "defaultFileTypes": "Default File Types",
+    "customFileTypes": "Custom File Types",
     "loading": "Loading file types...",
     "empty": "No file types found. Create your first file type!",
     "createFileType": "Add",
@@ -648,6 +651,7 @@
       "addSuccess": "Naming standard added successfully.",
       "addFailed": "Failed to add naming standard.",
       "addFailedDuplicate": "A naming standard with this name and file type already exists in this project.",
+      "addFailedEmptyRegex": "Cannot add naming standard: regex for components cannot be empty.",
       "deleteSuccess": "Naming standard deleted successfully.",
       "deleteFailed": "Failed to delete naming standard.",
       "importSuccessStandard": "Naming standards imported successfully.",
@@ -674,7 +678,19 @@
     "rangeStartEnd": "Range start must be less than or equal to end.",
     "enterSingleOrListOrRange": "Enter a single value, a comma/semicolon separated list, or a range (e.g. {example}).",
     "invalidLength": "Invalid length for \"{name}\".",
-    "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle"
+    "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle",
+    "promptExtractedValue": "The value {value} has been extracted for the component \"{name}\". If you wish to use the extracted value only, leave this blank and click \"OK\". However, it is recommended entering a valid range (e.g. {example})."
+  },
+
+  "configureEffectiveStandards": {
+    "title": "Configure Effective Naming Standards",
+    "fileType": "File Type",
+    "effectiveStandard": "Effective Standard",
+    "eventMessages": {
+      "loadFailed": "Failed to load effective standards.",
+      "updateSuccess": "Effective standard updated successfully.",
+      "updateFailed": "Failed to update effective standard."
+    }
   },
 
   "tiersPage": {

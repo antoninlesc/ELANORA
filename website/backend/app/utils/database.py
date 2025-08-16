@@ -395,3 +395,9 @@ class DatabaseUtils:
         )
         result = await db.execute(stmt)
         return list(result.scalars().all())
+
+    @staticmethod
+    async def get_all_by_filter(db: AsyncSession, model, filters: dict):
+        stmt = select(model).filter_by(**filters)
+        result = await db.execute(stmt)
+        return result.scalars().all()
