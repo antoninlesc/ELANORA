@@ -28,7 +28,20 @@
             :placeholder="t('resetPassword.new_password_placeholder')" 
             required 
             autocomplete="new-password"
+            @input="validatePassword"
           />
+          <div v-if="passwordValidation.show" class="password-requirements">
+            <div class="requirements-title">{{ t('profile.security.change_password.requirements.title') }}</div>
+            <div 
+              v-for="requirement in passwordRequirements" 
+              :key="requirement.key"
+              class="requirement-item"
+              :class="{ valid: requirement.valid }"
+            >
+              <span class="requirement-icon">{{ requirement.valid ? '✓' : '✗' }}</span>
+              <span class="requirement-text">{{ requirement.text }}</span>
+            </div>
+          </div>
         </div>
         <div class="form-group">
           <label for="confirm-password" class="form-label">{{ t('resetPassword.confirm_password_label') }}</label>
@@ -41,8 +54,11 @@
             required 
             autocomplete="new-password"
           />
+          <div v-if="form.confirmPassword && !passwordsMatch" class="error-message">
+            {{ t('profile.security.change_password.passwords_no_match') }}
+          </div>
         </div>
-        <button type="submit" class="btn-primary reset-password-btn" :disabled="loading">
+        <button type="submit" class="btn-primary reset-password-btn" :disabled="!isFormValid || loading">
           <span v-if="loading">{{ t('resetPassword.submitting') }}</span>
           <span v-else>{{ t('resetPassword.submit') }}</span>
         </button>
@@ -52,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
@@ -72,6 +88,55 @@ const form = ref({
 
 const loading = ref(false);
 const email = ref('');
+const passwordValidation = ref({
+  show: false
+});
+
+// Password validation requirements
+const passwordRequirements = computed(() => [
+  {
+    key: 'length',
+    text: t('profile.security.change_password.requirements.length'),
+    valid: form.value.newPassword.length >= 8
+  },
+  {
+    key: 'uppercase',
+    text: t('profile.security.change_password.requirements.uppercase'),
+    valid: /[A-Z]/.test(form.value.newPassword)
+  },
+  {
+    key: 'lowercase',
+    text: t('profile.security.change_password.requirements.lowercase'),
+    valid: /[a-z]/.test(form.value.newPassword)
+  },
+  {
+    key: 'number',
+    text: t('profile.security.change_password.requirements.number'),
+    valid: /\d/.test(form.value.newPassword)
+  },
+  {
+    key: 'special',
+    text: t('profile.security.change_password.requirements.special'),
+    valid: /[!@#$%^&*(),.?":{}|<>]/.test(form.value.newPassword)
+  }
+]);
+
+const passwordsMatch = computed(() => {
+  return form.value.newPassword === form.value.confirmPassword;
+});
+
+const isPasswordValid = computed(() => {
+  return passwordRequirements.value.every(req => req.valid);
+});
+
+const isFormValid = computed(() => {
+  return form.value.code &&
+         /^\d{6}$/.test(form.value.code) &&
+         form.value.newPassword &&
+         form.value.confirmPassword &&
+         isPasswordValid.value &&
+         passwordsMatch.value;
+});
 
 onMounted(() => {
   // Get email from query parameters
@@ -82,21 +147,15 @@ onMounted(() => {
   }
 });
 
-const handleSubmit = async () => {
-  // Validate code is exactly 6 digits
-  if (!/^\d{6}$/.test(form.value.code)) {
-    eventMessageStore.addMessage(t('resetPassword.code_6_digits'), 'error');
-    return;
-  }
-  // Validate passwords match
-  if (form.value.newPassword !== form.value.confirmPassword) {
-    eventMessageStore.addMessage(t('resetPassword.passwords_no_match'), 'error');
-    return;
-  }
+// Methods
+function validatePassword() {
+  passwordValidation.value.show = form.value.newPassword.length > 0;
+}
 
-  // Validate password strength
-  if (form.value.newPassword.length < 8) {
-    eventMessageStore.addMessage(t('resetPassword.password_too_short'), 'error');
+const handleSubmit = async () => {
+  // Additional client-side validation before submit
+  if (!isFormValid.value) {
+    eventMessageStore.addMessage(t('profile.security.change_password.form_invalid'), 'error');
     return;
   }
 
@@ -115,5 +174,12 @@ const handleSubmit = async () => {
     loading.value = false;
   }
 };
+
+// Watch for password field changes
+watch(() => form.value.newPassword, (newVal) => {
+  if (!newVal) {
+    passwordValidation.value.show = false;
+  }
+});
 </script>
 
