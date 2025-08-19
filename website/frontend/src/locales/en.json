@@ -118,6 +118,7 @@
     "request_access": "Request access",
     "have_invitation": "Have an invitation?",
     "join_project": "Join a project",
+    "need_help": "Need help? Contact us",
     "welcome_to_elanora": "Welcome to ELANORA!",
     "features": {
       "collaborative_elan": "Collaborative ELAN annotation",
@@ -718,5 +719,28 @@
     "errors": {
       "load_failed": "Failed to load profile information. Please try again."
     }
+  },
+
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Have a question or need help? We're here to assist you.",
+    "email": "Email",
+    "email_placeholder": "Enter your email address",
+    "request_type": "Request Type",
+    "select_request_type": "Select a request type",
+    "bug_report": "Bug Report",
+    "feature_request": "Feature Request",
+    "technical_support": "Technical Support",
+    "account_issue": "Account Issue",
+    "general_inquiry": "General Inquiry",
+    "other": "Other",
+    "message": "Message",
+    "message_placeholder": "Describe your request or issue in detail...",
+    "send": "Send Message",
+    "sending": "Sending...",
+    "success_message": "Your message has been sent successfully! Our administrators will review it and get back to you soon.",
+    "error_message": "Failed to send your message. Please try again later.",
+    "response_note": "You will receive a response at the email address you provided.",
+    "back_to_site": "Back to Site"
   }
 }

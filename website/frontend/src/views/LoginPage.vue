@@ -96,6 +96,11 @@
               t('login.join_project')
             }}</router-link>
           </p>
+          <p class="contact-link">
+            <router-link to="/contact">{{
+              t('login.need_help')
+            }}</router-link>
+          </p>
         </div>
       </div>
 

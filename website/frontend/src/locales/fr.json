@@ -86,6 +86,7 @@
     "request_access": "Demander un accès",
     "have_invitation": "Vous avez une invitation ?",
     "join_project": "Rejoindre un projet",
+    "need_help": "Besoin d'aide ? Contactez-nous",
     "welcome_to_elanora": "Bienvenue sur ELANORA !",
     "features": {
       "collaborative_elan": "Annotation ELAN collaborative",
@@ -706,5 +707,28 @@
     "errors": {
       "load_failed": "Échec du chargement des informations de profil. Veuillez réessayer."
     }
+  },
+
+  "contact": {
+    "title": "Nous Contacter",
+    "subtitle": "Vous avez une question ou besoin d'aide ? Nous sommes là pour vous aider.",
+    "email": "Email",
+    "email_placeholder": "Entrez votre adresse email",
+    "request_type": "Type de Demande",
+    "select_request_type": "Sélectionnez un type de demande",
+    "bug_report": "Signalement de Bug",
+    "feature_request": "Demande de Fonctionnalité",
+    "technical_support": "Support Technique",
+    "account_issue": "Problème de Compte",
+    "general_inquiry": "Demande Générale",
+    "other": "Autre",
+    "message": "Message",
+    "message_placeholder": "Décrivez votre demande ou problème en détail...",
+    "send": "Envoyer le Message",
+    "sending": "Envoi en cours...",
+    "success_message": "Votre message a été envoyé avec succès ! Nos administrateurs l'examineront et vous répondront bientôt.",
+    "error_message": "Échec de l'envoi de votre message. Veuillez réessayer plus tard.",
+    "response_note": "Vous recevrez une réponse à l'adresse email que vous avez fournie.",
+    "back_to_site": "Retour au Site"
   }
 }

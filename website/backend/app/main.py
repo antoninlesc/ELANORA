@@ -7,6 +7,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.auth import router as auth_router
+from app.api.v1.contact import router as contact_router
 from app.api.v1.file_type import router as file_type_router
 from app.api.v1.git import router as git_router
 from app.api.v1.instance import router as instance_router
@@ -100,6 +101,7 @@ app.include_router(
 app.include_router(
     file_type_router, prefix=f"{API_V1_PREFIX}/file-type", tags=["FILE TYPE"]
 )
+app.include_router(contact_router, prefix=f"{API_V1_PREFIX}/contact", tags=["CONTACT"])
 
 
 # Root endpoint
