@@ -84,12 +84,6 @@
         </div>
 
         <div class="login-footer">
-          <p>
-            {{ t('login.no_account') }}
-            <a href="#" @click="requestAccess">{{
-              t('login.request_access')
-            }}</a>
-          </p>
           <p class="invitation-text">
             {{ t('login.have_invitation') }}
             <router-link to="/register">{{
@@ -215,25 +209,7 @@ const handleSSOLogin = async () => {
   }
 };
 
-const requestAccess = async () => {
-  if (!loginForm.value.login) {
-    eventMessageStore.addMessage(t('auth.enter_login_first'), 'warning');
-    document.getElementById('login').focus();
-    return;
-  }
-  try {
-    await userStore.requestAccess({
-      login: loginForm.value.login,
-    });
-    eventMessageStore.addMessage(
-      t('auth.access_request_sent', { login: loginForm.value.login }),
-      'success'
-    );
-  } catch (error) {
-    console.error('Access request error:', error);
-    eventMessageStore.addMessage(t('auth.access_request_error'), 'error');
-  }
-};
+// requestAccess removed: feature no longer available from login page
 </script>
 
 <style scoped src="@/assets/css/login.css"></style>
