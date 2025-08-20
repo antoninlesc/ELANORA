@@ -16,7 +16,8 @@
               type="email"
               required
               :placeholder="t('contact.email_placeholder')"
-              :disabled="isSubmitting"
+              :disabled="isSubmitting || isAuthenticated"
+              :readonly="isAuthenticated"
             />
           </div>
 
@@ -75,14 +76,16 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage.js';
+import { useUserStore } from '@stores/user.js';
 import { contactService } from '@api/service/contactService.js';
 import '@assets/css/contact-page.css';
 
 const { t } = useI18n();
 const eventMessageStore = useEventMessageStore();
+const userStore = useUserStore();
 
 const isSubmitting = ref(false);
 
@@ -90,6 +93,31 @@ const contactForm = reactive({
   email: '',
   request_type: '',
   message: '',
+});
+
+// Computed property to check if user is authenticated
+const isAuthenticated = computed(() => userStore.user && userStore.user.user_id);
+
+// Computed property to get user email
+const userEmail = computed(() => userStore.user?.email || '');
+
+// Initialize form with user email if authenticated
+onMounted(async () => {
+  // Ensure authentication is verified first
+  if (!userStore.authState.initialized) {
+    await userStore.verifyAuthentication();
+  }
+  
+  if (isAuthenticated.value && userEmail.value) {
+    contactForm.email = userEmail.value;
+  }
+});
+
+// Watch for authentication state changes
+watch([isAuthenticated, userEmail], ([isAuth, email]) => {
+  if (isAuth && email && !contactForm.email) {
+    contactForm.email = email;
+  }
 });
 
 const handleSubmit = async () => {
@@ -102,8 +130,10 @@ const handleSubmit = async () => {
 
     eventMessageStore.addMessage('contact.success_message', 'success');
     
-    // Reset form
-    contactForm.email = '';
+    // Reset form, but keep email if user is authenticated
+    if (!isAuthenticated.value) {
+      contactForm.email = '';
+    }
     contactForm.request_type = '';
     contactForm.message = '';
   } catch (error) {

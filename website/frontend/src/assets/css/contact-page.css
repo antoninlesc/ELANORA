@@ -94,6 +94,13 @@
   opacity: 0.7;
 }
 
+.form-group input:read-only {
+  background-color: var(--profile-field-bg);
+  color: var(--text-main);
+  cursor: not-allowed;
+  border-color: var(--profile-field-border);
+}
+
 .form-group textarea {
   resize: vertical;
   min-height: 120px;
