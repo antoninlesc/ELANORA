@@ -141,10 +141,44 @@ const handleSubmit = async () => {
     router.push({ name: 'ResetPassword', query: { email: email.value } });
   } catch (error) {
     console.error(error);
-    eventMessageStore.addMessage(
-      error?.response?.data?.detail || t('forgotPassword.error'),
-      'error'
-    );
+    
+    // Handle specific error types based on HTTP status codes
+    if (error?.response?.status === 429) {
+      // Rate limit exceeded - show specific message
+      eventMessageStore.addMessage(t('forgotPassword.rate_limit_error'), 'error');
+    } else if (error?.response?.status === 400) {
+      // Handle validation errors
+      const errorDetail = error.response?.data?.detail;
+      if (Array.isArray(errorDetail)) {
+        // Multiple validation errors
+        const emailError = errorDetail.find(err => err.loc && err.loc.includes('email'));
+        if (emailError) {
+          eventMessageStore.addMessage(t('forgotPassword.validation_error'), 'error');
+        } else {
+          eventMessageStore.addMessage(t('forgotPassword.error'), 'error');
+        }
+      } else if (typeof errorDetail === 'string') {
+        // Single error message from backend
+        eventMessageStore.addMessage(errorDetail, 'error');
+      } else {
+        eventMessageStore.addMessage(t('forgotPassword.validation_error'), 'error');
+      }
+    } else if (error?.response?.status === 500) {
+      // Server error
+      eventMessageStore.addMessage(t('forgotPassword.server_error'), 'error');
+    } else if (error?.response?.data?.detail) {
+      // Use backend error message if available
+      eventMessageStore.addMessage(error.response.data.detail, 'error');
+    } else if (!error?.response) {
+      // Network error
+      eventMessageStore.addMessage(t('forgotPassword.network_error'), 'error');
+    } else {
+      // Fallback to generic error
+      eventMessageStore.addMessage(t('forgotPassword.error'), 'error');
+    }
+    
+    // Generate new CAPTCHA on error for security
+    generateCaptcha();
   } finally {
     loading.value = false;
   }
