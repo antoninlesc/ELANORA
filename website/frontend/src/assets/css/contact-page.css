@@ -106,6 +106,129 @@
   min-height: 120px;
 }
 
+.message-counter {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.text-error {
+  color: var(--error-color);
+}
+
+.text-warning {
+  color: var(--warning-color);
+}
+
+.text-success {
+  color: var(--success-color);
+}
+
+/* Honeypot field - hidden from users but visible to bots */
+.honeypot-field {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* CAPTCHA styles */
+.captcha-group {
+  background: var(--secondary-bg);
+  border: 1px solid var(--profile-field-border);
+  border-radius: var(--input-radius);
+  padding: 1rem;
+}
+
+.captcha-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.captcha-question {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-main);
+  background: var(--card-bg);
+  padding: 0.75rem 1rem;
+  border-radius: var(--input-radius);
+  border: 1px solid var(--profile-field-border);
+  flex: 1;
+  text-align: center;
+  min-width: 120px;
+}
+
+.captcha-input {
+  flex: 1;
+  min-width: 80px;
+  padding: 0.75rem 1rem !important;
+  margin: 0 !important;
+  font-size: 1rem;
+  text-align: center;
+  border: 1px solid var(--profile-field-border) !important;
+  border-radius: var(--input-radius) !important;
+  background: var(--card-bg) !important;
+}
+
+.captcha-input:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: var(--btn-shadow-hover) !important;
+}
+
+/* captcha-refresh button styles (icon variant below) */
+
+/* Sober icon style for the refresh button */
+.captcha-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  width: 44px;
+  height: 40px;
+  background: var(--card-bg);
+  color: var(--text-main);
+  border: 1px solid var(--profile-field-border);
+  border-radius: calc(var(--input-radius) / 2);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  transition: background 180ms ease, color 180ms ease, transform 120ms ease, box-shadow 180ms ease;
+}
+.captcha-refresh:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
+}
+.captcha-refresh-icon {
+  color: inherit;
+  transition: transform 180ms ease;
+}
+.captcha-refresh:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: translateY(-3px);
+  box-shadow: var(--btn-shadow-hover);
+}
+.captcha-refresh:active:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Screen-reader only utility */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 .contact-btn {
   width: 100%;
   background-color: var(--primary-color);
