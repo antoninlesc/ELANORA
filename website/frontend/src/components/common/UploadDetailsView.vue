@@ -5,11 +5,11 @@
       <div class="details-grid">
         <div class="detail-item">
           <label>Branch:</label>
-          <span>{{ upload.branch_name }}</span>
+          <span class="branch-name" :title="upload.branch_name">{{ upload.branch_name }}</span>
         </div>
         <div class="detail-item">
           <label>Original Branch:</label>
-          <span>{{ upload.original_branch }}</span>
+          <span class="branch-name" :title="upload.original_branch">{{ upload.original_branch }}</span>
         </div>
         <div class="detail-item">
           <label>Upload Type:</label>
@@ -46,7 +46,7 @@
           </h4>
           <ul class="file-list">
             <li v-for="file in upload.files.new" :key="file" class="file-item new">
-              {{ file }}
+              <span class="file-name" :title="file">{{ file }}</span>
             </li>
           </ul>
         </div>
@@ -58,7 +58,7 @@
           </h4>
           <ul class="file-list">
             <li v-for="file in upload.files.modified" :key="file" class="file-item modified">
-              {{ file }}
+              <span class="file-name" :title="file">{{ file }}</span>
             </li>
           </ul>
         </div>
@@ -70,7 +70,7 @@
           </h4>
           <ul class="file-list">
             <li v-for="file in upload.files.deleted" :key="file" class="file-item deleted">
-              {{ file }}
+              <span class="file-name" :title="file">{{ file }}</span>
             </li>
           </ul>
         </div>
@@ -86,7 +86,7 @@
         <ul class="conflict-files">
           <li v-for="file in upload.conflicted_files" :key="file" class="conflict-file">
             <span class="conflict-icon">⚠️</span>
-            {{ file }}
+            <span class="file-name" :title="file">{{ file }}</span>
           </li>
         </ul>
       </div>
@@ -167,7 +167,7 @@ function formatDate(dateString) {
 
 .details-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 15px;
 }
 
@@ -175,16 +175,40 @@ function formatDate(dateString) {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 0; /* Allow flex items to shrink */
 }
 
 .detail-item label {
   font-weight: 600;
   color: #666;
   font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .detail-item span {
   color: #2c3e50;
+  min-width: 0; /* Allow text to wrap/truncate */
+}
+
+/* Branch name specific styling with truncation */
+.branch-name {
+  font-family: monospace;
+  font-size: 0.9rem;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  display: block;
+}
+
+/* Alternative: use ellipsis truncation for very long names */
+.branch-name-ellipsis {
+  font-family: monospace;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  display: block;
 }
 
 .status-badge {
@@ -232,6 +256,7 @@ function formatDate(dateString) {
 .file-icon {
   font-weight: bold;
   font-size: 1.2rem;
+  flex-shrink: 0;
 }
 
 .file-group-title.new {
@@ -258,6 +283,7 @@ function formatDate(dateString) {
   border-radius: 4px;
   font-family: monospace;
   font-size: 0.9rem;
+  min-width: 0;
 }
 
 .file-item.new {
@@ -273,6 +299,14 @@ function formatDate(dateString) {
 .file-item.deleted {
   background: #ffebee;
   border-left: 3px solid #d32f2f;
+}
+
+/* File name styling with proper wrapping */
+.file-name {
+  word-break: break-all;
+  overflow-wrap: break-word;
+  display: block;
+  max-width: 100%;
 }
 
 .conflicts-info {
@@ -296,7 +330,7 @@ function formatDate(dateString) {
 
 .conflict-file {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 8px;
   background: white;
@@ -304,10 +338,13 @@ function formatDate(dateString) {
   margin-bottom: 4px;
   font-family: monospace;
   font-size: 0.9rem;
+  min-width: 0;
 }
 
 .conflict-icon {
   font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 1px; /* Align with text baseline */
 }
 
 .tech-details {
@@ -322,5 +359,43 @@ function formatDate(dateString) {
   font-size: 0.8rem;
   color: #666;
   white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .detail-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .detail-item:last-child {
+    border-bottom: none;
+  }
+  
+  .branch-name {
+    font-size: 0.8rem;
+  }
+}
+
+/* Alternative styles if you prefer ellipsis truncation */
+/* Uncomment these and change .branch-name to .branch-name-ellipsis in template */
+/*
+@media (min-width: 769px) {
+  .branch-name-ellipsis {
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  .branch-name-ellipsis {
+    max-width: 200px;
+  }
+}
+*/
 </style>

@@ -142,7 +142,7 @@ async def commit_changes(
 @router.post("/projects/{project_name}/upload", response_model=BatchFileUploadResponse)
 async def upload_elan_files(
     project_name: str,
-    user_name: str = "user",
+    user_name: str = Form(...),
     files: list[UploadFile] = validate_elan_files_dep,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
@@ -152,7 +152,7 @@ async def upload_elan_files(
     Args:
         project_name: Name of the project to upload file to.
         file: ELAN file (.eaf) to upload. File is validated for format and size.
-        user_name: Name of the user uploading the file (defaults to "user").
+        user_name: Name of the user uploading the file.
 
     Returns:
         FileUploadResponse: Details of the uploaded file including filename and timestamp.

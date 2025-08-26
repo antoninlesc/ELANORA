@@ -50,7 +50,7 @@ const gitService = {
   },
 
   // Upload ELAN files to a project
-  async uploadElanFiles(projectName, files, userName = 'user') {
+  async uploadElanFiles(projectName, files, userName) {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('files', file);

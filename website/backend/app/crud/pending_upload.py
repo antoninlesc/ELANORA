@@ -3,10 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.centralized_logging import get_logger
 from sqlalchemy.future import select
 from sqlalchemy.sql import func
-from app.model.association import ConflictOfElanFile
 from app.model.pending_upload import PendingUpload
-from app.model.elan_file import ElanFile
-from app.model.association import ConflictOfElanFile, ElanFileToProject
 from app.model.enums import Type, Severity, Status
 from typing import List, Optional
 from app.utils.database import DatabaseUtils

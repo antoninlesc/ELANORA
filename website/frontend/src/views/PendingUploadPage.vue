@@ -137,17 +137,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Batch Actions -->
-        <div v-if="readyCount > 0" class="batch-actions">
-          <button 
-            @click="mergeAllReady"
-            class="batch-btn"
-            :disabled="batchMerging"
-          >
-            {{ batchMerging ? t('pendingUploads.actions.mergingAll') : t('pendingUploads.actions.mergeAllReady', { count: readyCount }) }}
-          </button>
-        </div>
       </div>
 
       <!-- Upload Details Modal -->

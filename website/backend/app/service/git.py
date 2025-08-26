@@ -237,7 +237,7 @@ class GitService:
         files: list[UploadFile],
         db: AsyncSession,
         user_id: int,
-        user_name: str = "user",
+        user_name: str,
     ) -> dict[str, Any]:
         """Add multiple ELAN files to the project with branch-based workflow."""
         project_path = self.base_path / project_name

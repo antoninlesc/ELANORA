@@ -182,7 +182,7 @@ class PendingUploadInfo(CustomBaseModel):
     description: str
     status: str
     uploaded_at: str | None = None
-    uploaded_by: int | None = None
+    uploaded_by: str | None = None
 
     # Real-time merge status (computed when requested)
     merge_status: str | None = None  # "ready_to_merge", "needs_resolution", "error"

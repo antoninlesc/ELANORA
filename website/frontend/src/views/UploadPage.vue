@@ -101,9 +101,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import gitService from '@/api/service/gitService';
 import "@/assets/css/upload-page.css";
+import { useUserStore } from '@/stores/user';
 
 const projects = ref([]);
 const selectedProject = ref('');
@@ -114,10 +115,15 @@ const isDragOver = ref(false);
 const uploadResults = ref([]);
 const error = ref('');
 const fileInput = ref(null);
+const userStore = useUserStore();
 
 onMounted(async () => {
   await fetchProjects();
 });
+
+const username = computed(
+  () => userStore.user?.username || userStore.user?.login || ''
+);
 
 async function fetchProjects() {
   try {
@@ -191,12 +197,12 @@ async function uploadFiles() {
   uploading.value = true;
   uploadResults.value = [];
   error.value = '';
-  
+  console.log("username :", username.value);
   try {
     const response = await gitService.uploadElanFiles(
-      selectedProject.value, 
-      selectedFiles.value, 
-      'user'
+      selectedProject.value,
+      selectedFiles.value,
+      username.value
     );
     
     uploadResults.value = response.files || [];
