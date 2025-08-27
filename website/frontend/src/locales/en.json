@@ -760,6 +760,15 @@
     "error_email_invalid": "The email address is not valid.",
     "error_request_type_invalid": "The selected request type is not valid.",
     "error_validation": "The form data is not valid. Please check your information.",
+    "error_rate_limit": "You have sent too many messages recently. Please wait a few minutes before trying again.",
+    "error_server": "Internal server error. Please try again later.",
+    "error_network": "Network connection error. Check your internet connection and try again.",
+    "error_timeout": "The request has timed out. Please try again.",
+    "error_forbidden": "Access forbidden. You do not have the necessary permissions.",
+    "error_not_found": "Service not found. Please contact the administrator.",
+    "error_conflict": "Conflict detected. The data may have been modified by another user.",
+    "error_payload_too_large": "The message is too large. Please reduce the size of your message.",
+    "error_unknown": "An unexpected error occurred. Please try again later.",
     "response_note": "You will receive a response at the email address you provided.",
     "back_to_site": "Back to Site"
   }

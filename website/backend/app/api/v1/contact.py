@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.post("/send")
-@limiter.limit("5/minute")  # Limit contact form submissions
+@limiter.limit("1/minute")  # Limit contact form submissions
 async def send_contact_message(
     request: Request,
     body: ContactRequest,

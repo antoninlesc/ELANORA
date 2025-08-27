@@ -748,6 +748,15 @@
     "error_email_invalid": "L'adresse email n'est pas valide.",
     "error_request_type_invalid": "Le type de demande sélectionné n'est pas valide.",
     "error_validation": "Les données du formulaire ne sont pas valides. Veuillez vérifier vos informations.",
+    "error_rate_limit": "Vous avez envoyé trop de messages récemment. Veuillez attendre quelques minutes avant de réessayer.",
+    "error_server": "Erreur serveur interne. Veuillez réessayer plus tard.",
+    "error_network": "Erreur de connexion réseau. Vérifiez votre connexion internet et réessayez.",
+    "error_timeout": "La requête a expiré. Veuillez réessayer.",
+    "error_forbidden": "Accès interdit. Vous n'avez pas les permissions nécessaires.",
+    "error_not_found": "Service non trouvé. Veuillez contacter l'administrateur.",
+    "error_conflict": "Conflit détecté. Les données ont peut-être été modifiées par un autre utilisateur.",
+    "error_payload_too_large": "Le message est trop volumineux. Veuillez réduire la taille de votre message.",
+    "error_unknown": "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
     "response_note": "Vous recevrez une réponse à l'adresse email que vous avez fournie.",
     "back_to_site": "Retour au Site"
   }

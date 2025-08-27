@@ -232,6 +232,90 @@ watch([isAuthenticated, userEmail], ([isAuth, email]) => {
   }
 });
 
+// Handle error responses with specific error messages
+const handleContactError = (error) => {
+  console.error('Contact form submission error:', error);
+  
+  // Handle different types of errors with specific messages
+  if (error.response?.status) {
+    const status = error.response.status;
+    
+    switch (status) {
+      case 400:
+        handleValidationError(error);
+        break;
+      case 401:
+      case 403:
+        eventMessageStore.addMessage('contact.error_forbidden', 'error');
+        break;
+      case 404:
+        eventMessageStore.addMessage('contact.error_not_found', 'error');
+        break;
+      case 409:
+        eventMessageStore.addMessage('contact.error_conflict', 'error');
+        break;
+      case 413:
+        eventMessageStore.addMessage('contact.error_payload_too_large', 'error');
+        break;
+      case 429:
+        // Rate limiting - too many requests
+        eventMessageStore.addMessage('contact.error_rate_limit', 'error');
+        break;
+      case 500:
+      case 502:
+      case 503:
+      case 504:
+        eventMessageStore.addMessage('contact.error_server', 'error');
+        break;
+      default:
+        eventMessageStore.addMessage('contact.error_unknown', 'error');
+    }
+  } else if (error.code === 'NETWORK_ERROR' || error.code === 'ERR_NETWORK') {
+    // Network connectivity issues
+    eventMessageStore.addMessage('contact.error_network', 'error');
+  } else if (error.code === 'TIMEOUT' || error.code === 'ECONNABORTED') {
+    // Request timeout
+    eventMessageStore.addMessage('contact.error_timeout', 'error');
+  } else {
+    // Generic error message for unknown errors
+    eventMessageStore.addMessage('contact.error_unknown', 'error');
+  }
+  
+  // Generate new CAPTCHA on error
+  generateCaptcha();
+  contactForm.captcha_answer = '';
+};
+
+// Handle backend validation errors (400 status)
+const handleValidationError = (error) => {
+  if (error.response?.data?.detail) {
+    const errors = error.response.data.detail;
+    
+    // Check for specific validation errors
+    const messageError = errors.find(err => err.loc && err.loc.includes('message'));
+    const emailError = errors.find(err => err.loc && err.loc.includes('email'));
+    const requestTypeError = errors.find(err => err.loc && err.loc.includes('request_type'));
+    
+    if (messageError) {
+      if (messageError.type === 'string_too_short') {
+        eventMessageStore.addMessage('contact.error_message_too_short', 'error');
+      } else if (messageError.type === 'string_too_long') {
+        eventMessageStore.addMessage('contact.error_message_too_long', 'error');
+      } else {
+        eventMessageStore.addMessage('contact.error_message_invalid', 'error');
+      }
+    } else if (emailError) {
+      eventMessageStore.addMessage('contact.error_email_invalid', 'error');
+    } else if (requestTypeError) {
+      eventMessageStore.addMessage('contact.error_request_type_invalid', 'error');
+    } else {
+      eventMessageStore.addMessage('contact.error_validation', 'error');
+    }
+  } else {
+    eventMessageStore.addMessage('contact.error_validation', 'error');
+  }
+};
+
 const handleSubmit = async () => {
   if (isSubmitting.value) return;
 
@@ -288,38 +372,7 @@ const handleSubmit = async () => {
     // Generate new CAPTCHA for next submission
     generateCaptcha();
   } catch (error) {
-    // Handle specific validation errors
-    if (error.response?.status === 400 && error.response?.data?.detail) {
-      const errors = error.response.data.detail;
-      
-      // Check for specific validation errors
-      const messageError = errors.find(err => err.loc && err.loc.includes('message'));
-      const emailError = errors.find(err => err.loc && err.loc.includes('email'));
-      const requestTypeError = errors.find(err => err.loc && err.loc.includes('request_type'));
-      
-      if (messageError) {
-        if (messageError.type === 'string_too_short') {
-          eventMessageStore.addMessage('contact.error_message_too_short', 'error');
-        } else if (messageError.type === 'string_too_long') {
-          eventMessageStore.addMessage('contact.error_message_too_long', 'error');
-        } else {
-          eventMessageStore.addMessage('contact.error_message_invalid', 'error');
-        }
-      } else if (emailError) {
-        eventMessageStore.addMessage('contact.error_email_invalid', 'error');
-      } else if (requestTypeError) {
-        eventMessageStore.addMessage('contact.error_request_type_invalid', 'error');
-      } else {
-        eventMessageStore.addMessage('contact.error_validation', 'error');
-      }
-    } else {
-      // Generic error message for other cases
-      eventMessageStore.addMessage('contact.error_message', 'error');
-    }
-    
-    // Generate new CAPTCHA on error
-    generateCaptcha();
-    contactForm.captcha_answer = '';
+    handleContactError(error);
   } finally {
     isSubmitting.value = false;
   }
