@@ -1,18 +1,25 @@
 {
+  "language": {
+    "name": "Français",
+    "nativeName": "Français",
+    "flag": "🇫🇷"
+  },
   "common": {
     "confirm": "Confirmer",
     "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
     "or": "ou",
     "loading": "Chargement...",
     "retry": "Réessayer",
-    "sending": "Envoi en cours",
+    "sending": "Envoi",
     "no": "Non",
     "yes_cancel": "Oui, annuler",
-    "canceling": "Annulation en cours",
+    "canceling": "Annulation",
     "add": "Ajouter",
-    "adding": "Ajout en cours",
+    "adding": "Ajout",
     "remove": "Supprimer",
-    "removing": "Suppression en cours"
+    "removing": "Suppression"
   },
   "app": {
     "title": "ELANora"
@@ -80,6 +87,7 @@
     "request_access": "Demander un accès",
     "have_invitation": "Vous avez une invitation ?",
     "join_project": "Rejoindre un projet",
+    "need_help": "Besoin d'aide ? Contactez-nous",
     "welcome_to_elanora": "Bienvenue sur ELANora !",
     "features": {
       "collaborative_elan": "Annotation ELAN collaborative",
@@ -149,6 +157,14 @@
     "title": "Mot de passe oublié",
     "email_label": "Entrez votre adresse e-mail",
     "email_placeholder": "Votre e-mail",
+    "captcha_label": "Vérification de sécurité",
+    "captcha_placeholder": "Entrez le résultat",
+    "captcha_refresh": "Générer un nouveau calcul",
+    "captcha_error": "Veuillez résoudre correctement le calcul de vérification.",
+    "rate_limit_error": "Trop de demandes de récupération de mot de passe. Veuillez attendre quelques minutes avant de réessayer. (Maximum 3 tentatives par minute)",
+    "validation_error": "Les données saisies ne sont pas valides. Veuillez vérifier votre email.",
+    "server_error": "Erreur serveur. Veuillez réessayer plus tard.",
+    "network_error": "Erreur de connexion. Vérifiez votre connexion internet et réessayez.",
     "send_code": "Envoyer le code de vérification",
     "error": "Une erreur s'est produite lors de l'envoi du code de vérification. Veuillez réessayer.",
     "code_sent": "Code de vérification envoyé.",
@@ -666,6 +682,152 @@
     "rangeStartEnd": "Le début de la plage doit être inférieur ou égal à la fin.",
     "enterSingleOrListOrRange": "Entrez une seule valeur, une liste séparée par des virgules/points-virgules, ou une plage (ex. : {example}).",
     "invalidLength": "Longueur invalide pour \"{name}\".",
+    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra"
+  },
+
+  "profile": {
+    "title": "Profil",
+    "menu": {
+      "overview": "Aperçu",
+      "settings": "Paramètres",
+      "security": "Sécurité",
+      "notifications": "Notifications"
+    },
+    "overview": {
+      "title": "Aperçu du profil",
+      "description": "Consultez et gérez vos informations personnelles",
+      "loading": "Chargement de votre profil...",
+      "error_title": "Impossible de charger le profil",
+      "empty_title": "Aucune donnée de profil",
+      "empty_message": "Vos informations de profil ne sont pas disponibles.",
+      "edit": "Modifier",
+      "personal_info": {
+        "title": "Informations personnelles",
+        "full_name": "Nom complet",
+        "username": "Nom d'utilisateur",
+        "email": "Adresse e-mail",
+        "phone": "Numéro de téléphone",
+        "verified": "Vérifié",
+        "unverified": "Non vérifié"
+      },
+      "professional_info": {
+        "title": "Informations professionnelles",
+        "affiliation": "Affiliation",
+        "department": "Département",
+        "role": "Rôle",
+        "roles": {
+          "admin": "Administrateur",
+          "public": "Utilisateur public"
+        }
+      },
+      "address_info": {
+        "title": "Informations d'adresse",
+        "street": "Rue",
+        "address_line_2": "Ligne d'adresse 2",
+        "city_postal": "Ville et code postal"
+      },
+      "account_info": {
+        "title": "Informations du compte",
+        "member_since": "Membre depuis",
+        "last_updated": "Dernière mise à jour",
+        "last_login": "Dernière connexion",
+        "account_status": "Statut du compte",
+        "active": "Actif",
+        "inactive": "Inactif"
+      }
+    },
+    "settings": {
+      "title": "Paramètres",
+      "description": "Gérez vos préférences et paramètres de compte",
+      "coming_soon": "Bientôt disponible",
+      "language": {
+        "title": "Langue et localisation",
+        "description": "Choisissez votre langue préférée pour l'interface",
+        "label": "Langue de l'interface",
+        "changed": "Langue changée vers {language}"
+      }
+    },
+    "security": {
+      "title": "Sécurité",
+      "description": "Gérez votre mot de passe et préférences de sécurité",
+      "coming_soon": "Les paramètres de sécurité seront bientôt disponibles.",
+      "change_password": {
+        "title": "Changer le mot de passe",
+        "description": "Modifiez votre mot de passe en saisissant votre mot de passe actuel et le nouveau.",
+        "current_password": "Mot de passe actuel",
+        "current_password_placeholder": "Saisissez votre mot de passe actuel",
+        "new_password": "Nouveau mot de passe",
+        "new_password_placeholder": "Saisissez votre nouveau mot de passe",
+        "confirm_password": "Confirmer le nouveau mot de passe",
+        "confirm_password_placeholder": "Confirmez votre nouveau mot de passe",
+        "requirements": {
+          "title": "Le mot de passe doit contenir :",
+          "length": "Au moins 8 caractères",
+          "uppercase": "Au moins une lettre majuscule",
+          "lowercase": "Au moins une lettre minuscule",
+          "number": "Au moins un chiffre",
+          "special": "Au moins un caractère spécial"
+        },
+        "passwords_no_match": "Les mots de passe ne correspondent pas",
+        "form_invalid": "Veuillez corriger les erreurs du formulaire",
+        "updating": "Mise à jour...",
+        "update": "Mettre à jour le mot de passe",
+        "success": "Mot de passe modifié avec succès",
+        "error": "Erreur lors de la modification du mot de passe"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Configurez vos préférences de notification",
+      "coming_soon": "Les paramètres de notification seront bientôt disponibles."
+    },
+    "errors": {
+      "load_failed": "Échec du chargement des informations de profil. Veuillez réessayer."
+    }
+  },
+
+  "contact": {
+    "title": "Nous Contacter",
+    "subtitle": "Vous avez une question ou besoin d'aide ? Nous sommes là pour vous aider.",
+    "email": "Email",
+    "email_placeholder": "Entrez votre adresse email",
+    "request_type": "Type de Demande",
+    "select_request_type": "Sélectionnez un type de demande",
+    "bug_report": "Signalement de Bug",
+    "feature_request": "Demande de Fonctionnalité",
+    "technical_support": "Support Technique",
+    "account_issue": "Problème de Compte",
+    "general_inquiry": "Demande Générale",
+    "other": "Autre",
+    "message": "Message",
+    "message_placeholder": "Décrivez votre demande ou problème en détail...",
+    "website_label": "Site Web",
+    "website_placeholder": "Laissez ce champ vide",
+    "captcha_label": "Vérification Anti-Spam",
+    "captcha_placeholder": "Votre réponse",
+    "captcha_refresh": "Nouveau calcul",
+    "captcha_error": "La réponse au calcul est incorrecte. Veuillez réessayer.",
+    "send": "Envoyer le Message",
+    "sending": "Envoi en cours...",
+    "success_message": "Votre message a été envoyé avec succès ! Nos administrateurs l'examineront et vous répondront bientôt.",
+    "error_message": "Échec de l'envoi de votre message. Veuillez réessayer plus tard.",
+    "error_message_too_short": "Votre message doit contenir au moins 10 caractères.",
+    "error_message_too_long": "Votre message ne peut pas dépasser 5000 caractères.",
+    "error_message_invalid": "Le format de votre message n'est pas valide.",
+    "error_email_invalid": "L'adresse email n'est pas valide.",
+    "error_request_type_invalid": "Le type de demande sélectionné n'est pas valide.",
+    "error_validation": "Les données du formulaire ne sont pas valides. Veuillez vérifier vos informations.",
+    "error_rate_limit": "Vous avez envoyé trop de messages récemment. Veuillez attendre quelques minutes avant de réessayer.",
+    "error_server": "Erreur serveur interne. Veuillez réessayer plus tard.",
+    "error_network": "Erreur de connexion réseau. Vérifiez votre connexion internet et réessayez.",
+    "error_timeout": "La requête a expiré. Veuillez réessayer.",
+    "error_forbidden": "Accès interdit. Vous n'avez pas les permissions nécessaires.",
+    "error_not_found": "Service non trouvé. Veuillez contacter l'administrateur.",
+    "error_conflict": "Conflit détecté. Les données ont peut-être été modifiées par un autre utilisateur.",
+    "error_payload_too_large": "Le message est trop volumineux. Veuillez réduire la taille de votre message.",
+    "error_unknown": "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
+    "response_note": "Vous recevrez une réponse à l'adresse email que vous avez fournie.",
+    "back_to_site": "Retour au Site",
     "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra",
     "promptExtractedValue": "La valeur {value} a été extraite pour le composant \"{name}\". Si vous souhaitez utiliser uniquement la valeur extraite, laissez ce champ vide et cliquez sur \"OK\". Cependant, il est recommandé d'entrer une plage de valeurs valides (ex. : {example})."
   },

@@ -1,35 +1,35 @@
 <template>
-  <div class="reset-password-wrapper">
-    <div class="reset-password-card">
-      <h1 class="reset-password-title">{{ t('resetPassword.title') }}</h1>
-      <form class="reset-password-form" @submit.prevent="handleSubmit">
+  <div class="profile-security">
+    <div class="security-section">
+      <h3 class="security-title">{{ t('profile.security.change_password.title') }}</h3>
+      <p class="security-description">{{ t('profile.security.change_password.description') }}</p>
+      
+      <form @submit.prevent="handlePasswordChange" class="password-form">
         <div class="form-group">
-          <label for="code" class="form-label">{{
-            t('resetPassword.code_label')
-          }}</label>
+          <label for="current-password" class="form-label">
+            {{ t('profile.security.change_password.current_password') }}
+          </label>
           <input
-            id="code"
-            v-model="form.code"
-            type="text"
+            id="current-password"
+            v-model="form.currentPassword"
+            type="password"
             class="form-input"
-            :placeholder="t('resetPassword.code_placeholder')"
+            :placeholder="t('profile.security.change_password.current_password_placeholder')"
             required
-            maxlength="6"
-            inputmode="numeric"
-            pattern="\d{6}"
-            @input="form.code = form.code.replace(/[^\d]/g, '').slice(0, 6)"
+            autocomplete="current-password"
           />
         </div>
+
         <div class="form-group">
-          <label for="new-password" class="form-label">{{
-            t('resetPassword.new_password_label')
-          }}</label>
+          <label for="new-password" class="form-label">
+            {{ t('profile.security.change_password.new_password') }}
+          </label>
           <input
             id="new-password"
             v-model="form.newPassword"
             type="password"
             class="form-input"
-            :placeholder="t('resetPassword.new_password_placeholder')"
+            :placeholder="t('profile.security.change_password.new_password_placeholder')"
             required
             autocomplete="new-password"
             @input="validatePassword"
@@ -47,16 +47,17 @@
             </div>
           </div>
         </div>
+
         <div class="form-group">
-          <label for="confirm-password" class="form-label">{{
-            t('resetPassword.confirm_password_label')
-          }}</label>
+          <label for="confirm-password" class="form-label">
+            {{ t('profile.security.change_password.confirm_password') }}
+          </label>
           <input
             id="confirm-password"
             v-model="form.confirmPassword"
             type="password"
             class="form-input"
-            :placeholder="t('resetPassword.confirm_password_placeholder')"
+            :placeholder="t('profile.security.change_password.confirm_password_placeholder')"
             required
             autocomplete="new-password"
           />
@@ -64,41 +65,43 @@
             {{ t('profile.security.change_password.passwords_no_match') }}
           </div>
         </div>
-        <button type="submit" class="btn-primary reset-password-btn" :disabled="!isFormValid || loading">
-          <span v-if="loading">{{ t('resetPassword.submitting') }}</span>
-          <span v-else>{{ t('resetPassword.submit') }}</span>
-        </button>
+
+        <div class="form-actions">
+          <button 
+            type="submit" 
+            class="btn-primary"
+            :disabled="!isFormValid || loading"
+          >
+            <span v-if="loading">{{ t('profile.security.change_password.updating') }}</span>
+            <span v-else>{{ t('profile.security.change_password.update') }}</span>
+          </button>
+        </div>
       </form>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useEventMessageStore } from '@stores/eventMessage';
-import { resetPassword } from '@/api/service/authService';
-import '@/assets/css/resetpassword.css';
+import { changePassword } from '@/api/service/userService.js';
 
 const { t } = useI18n();
-const router = useRouter();
-const route = useRoute();
-const eventMessageStore = useEventMessageStore();
+const emit = defineEmits(['show-message']);
 
+// State
 const form = ref({
-  code: '',
+  currentPassword: '',
   newPassword: '',
-  confirmPassword: '',
+  confirmPassword: ''
 });
 
 const loading = ref(false);
-const email = ref('');
 const passwordValidation = ref({
   show: false
 });
 
-// Password validation requirements
+// Password validation
 const passwordRequirements = computed(() => [
   {
     key: 'length',
@@ -136,21 +139,11 @@ const isPasswordValid = computed(() => {
 });
 
 const isFormValid = computed(() => {
-  return form.value.code &&
-         /^\d{6}$/.test(form.value.code) &&
+  return form.value.currentPassword &&
          form.value.newPassword &&
          form.value.confirmPassword &&
          isPasswordValid.value &&
          passwordsMatch.value;
-});
-
-onMounted(() => {
-  // Get email from query parameters
-  email.value = route.query.email || '';
-  if (!email.value) {
-    eventMessageStore.addMessage(t('resetPassword.email_required'), 'error');
-    router.push({ name: 'ForgotPassword' });
-  }
 });
 
 // Methods
@@ -158,33 +151,54 @@ function validatePassword() {
   passwordValidation.value.show = form.value.newPassword.length > 0;
 }
 
-const handleSubmit = async () => {
-  // Additional client-side validation before submit
+async function handlePasswordChange() {
   if (!isFormValid.value) {
-    eventMessageStore.addMessage(t('profile.security.change_password.form_invalid'), 'error');
+    emit('show-message', {
+      text: t('profile.security.change_password.form_invalid'),
+      type: 'error'
+    });
     return;
   }
 
   loading.value = true;
   try {
-    await resetPassword(email.value, form.value.code, form.value.newPassword);
-    eventMessageStore.addMessage(t('resetPassword.success'), 'success');
-    router.push({ name: 'LoginPage' });
+    await changePassword({
+      current_password: form.value.currentPassword,
+      new_password: form.value.newPassword
+    });
+
+    emit('show-message', {
+      text: t('profile.security.change_password.success'),
+      type: 'success'
+    });
+
+    // Reset form
+    form.value = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    };
+    passwordValidation.value.show = false;
+
   } catch (error) {
-    console.error('Reset password error:', error);
-    eventMessageStore.addMessage(
-      error?.response?.data?.detail || t('resetPassword.error'),
-      'error'
-    );
+    console.error('Password change error:', error);
+    emit('show-message', {
+      text: error?.response?.data?.detail || t('profile.security.change_password.error'),
+      type: 'error'
+    });
   } finally {
     loading.value = false;
   }
-};
+}
 
-// Watch for password field changes
+// Watch for password field focus loss
 watch(() => form.value.newPassword, (newVal) => {
   if (!newVal) {
     passwordValidation.value.show = false;
   }
 });
 </script>
+
+<style scoped>
+@import '../../../assets/css/profile-security.css';
+</style>

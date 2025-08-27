@@ -9,6 +9,7 @@ import RegisterPage from '@views/RegisterPage.vue';
 import ForgotPassword from '@views/ForgotPassword.vue';
 import ResetPassword from '@views/ResetPassword.vue';
 import EmailVerificationPage from '@views/EmailVerificationPage.vue';
+import ContactPage from '@views/ContactPage.vue';
 import HTTPStatusPage from '@views/HTTPStatusPage.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import UploadPage from '@views/UploadPage.vue';
@@ -47,6 +48,11 @@ const routes = [
     path: '/verify-email',
     name: 'EmailVerificationPage',
     component: EmailVerificationPage,
+  },
+  {
+    path: '/contact',
+    name: 'ContactPage',
+    component: ContactPage,
   },
   // Invitation response routes (public, for email links)
   {

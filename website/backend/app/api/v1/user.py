@@ -1,11 +1,29 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.crud.user import get_all_active_users
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
 from app.model.user import User
-from app.schema.responses.user import UserListResponse, UserResponse
+from app.model.address import Address
+from app.model.city import City
+from app.schema.responses.user import (
+    AddressResponse,
+    UserListResponse,
+    UserProfileResponse,
+    UserResponse,
+    CityResponse,
+    ProfileUpdateResponse,
+)
+from app.schema.requests.user import (
+    ProfileUpdateRequest,
+    AddressRequest,
+    ChangePasswordRequest,
+)
+from app.service.user import UserService
+from app.service.address import AddressService
+from app.utils.database import DatabaseUtils
 
 router = APIRouter()
 
@@ -26,6 +44,167 @@ async def get_current_user_data(
         is_verified_account=user.is_verified_account,
         created_at=user.created_at,
     )
+
+
+@router.get("/me/profile", response_model=UserProfileResponse)
+async def get_current_user_profile(
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> UserProfileResponse:
+    """Retrieve the current user's complete profile including address."""
+    # Fetch user with address, city, and country relationships preloaded
+    user_with_address = await DatabaseUtils.get_by_id(
+        db,
+        User,
+        "user_id",
+        user.user_id,
+        options=[
+            selectinload(User.address)
+            .selectinload(Address.city)
+            .selectinload(City.country)
+        ],
+    )
+
+    address_data = None
+    if user_with_address and user_with_address.address:
+        city_obj = user_with_address.address.city
+        city_response = None
+        if city_obj:
+            city_response = CityResponse(
+                city_id=city_obj.city_id,
+                name=city_obj.city_name,
+                country=city_obj.country.country_name if city_obj.country else None,
+            )
+        address_data = AddressResponse(
+            address_id=user_with_address.address.address_id,
+            street_number=user_with_address.address.street_number,
+            street_name=user_with_address.address.street_name,
+            city_id=user_with_address.address.city_id,
+            postal_code=user_with_address.address.postal_code,
+            address_line_2=user_with_address.address.address_line_2,
+            created_at=user_with_address.address.created_at,
+            updated_at=user_with_address.address.updated_at,
+            city=city_response,
+        )
+
+    # Use current user data or fetched user data
+    target_user = user_with_address or user
+
+    return UserProfileResponse(
+        user_id=target_user.user_id,
+        username=target_user.username,
+        email=target_user.email,
+        first_name=target_user.first_name,
+        last_name=target_user.last_name,
+        phone_number=target_user.phone_number,
+        affiliation=target_user.affiliation,
+        department=target_user.department,
+        role=target_user.role.value,
+        is_active=target_user.is_active,
+        is_verified_account=target_user.is_verified_account,
+        created_at=target_user.created_at,
+        updated_at=target_user.updated_at,
+        last_login=target_user.last_login,
+        address=address_data,
+    )
+
+
+@router.put("/me/profile", response_model=ProfileUpdateResponse)
+async def update_current_user_profile(
+    profile_data: ProfileUpdateRequest,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> ProfileUpdateResponse:
+    """Update the current user's profile."""
+    try:
+        result = await UserService.update_user_profile(db, user, profile_data)
+
+        if result["success"]:
+            return ProfileUpdateResponse(
+                message=result["message"],
+                updated_fields=result["updated_fields"],
+                address_updated=False,  # TODO: Handle address updates separately
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating profile: {e!s}",
+        ) from e
+
+
+@router.put("/me/address", response_model=AddressResponse)
+async def update_current_user_address(
+    address_data: AddressRequest,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> AddressResponse:
+    """Update the current user's address."""
+    try:
+        # Get user with current address
+        user_with_address = await DatabaseUtils.get_by_id(
+            db,
+            User,
+            "user_id",
+            user.user_id,
+            options=[
+                selectinload(User.address)
+                .selectinload(Address.city)
+                .selectinload(City.country),
+            ],
+        )
+
+        if user_with_address and user_with_address.address:
+            # Update existing address
+            updated_address = await AddressService.update_address(
+                db, user_with_address.address, address_data
+            )
+        else:
+            # Create new address
+            updated_address = await AddressService.create_address(db, address_data)
+            # Update user with new address
+            user_with_address.address_id = updated_address.address_id
+            await db.flush()
+            await db.commit()
+
+        # Reload the address with city and country relationships
+        updated_address_with_relations = await DatabaseUtils.get_by_id(
+            db,
+            Address,
+            "address_id",
+            updated_address.address_id,
+            options=[
+                selectinload(Address.city).selectinload(City.country),
+            ],
+        )
+
+        # Return the updated address with city and country info
+        city_obj = updated_address_with_relations.city
+
+        return AddressResponse(
+            address_id=updated_address_with_relations.address_id,
+            street_number=updated_address_with_relations.street_number,
+            street_name=updated_address_with_relations.street_name,
+            city_id=updated_address_with_relations.city_id,
+            city=CityResponse(
+                city_id=city_obj.city_id,
+                name=city_obj.city_name,
+                country=city_obj.country.country_name,
+            ),
+            postal_code=updated_address_with_relations.postal_code,
+            address_line_2=updated_address_with_relations.address_line_2,
+            created_at=updated_address_with_relations.created_at,
+            updated_at=updated_address_with_relations.updated_at,
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating address: {e!s}",
+        ) from e
 
 
 @router.get("/active", response_model=UserListResponse)
@@ -53,3 +232,35 @@ async def get_active_users(
             for u in users
         ]
     )
+
+
+@router.put("/me/password")
+async def change_user_password(
+    request: ChangePasswordRequest,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> dict[str, str]:
+    """Change the current user's password."""
+    try:
+        # Use UserService to change password with verification
+        result = await UserService.change_password(
+            db=db,
+            user=user,
+            current_password=request.current_password,
+            new_password=request.new_password,
+        )
+
+        if result["success"]:
+            return {"message": "Password changed successfully"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error changing password: {e!s}",
+        ) from e

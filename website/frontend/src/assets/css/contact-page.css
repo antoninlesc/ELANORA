@@ -1,0 +1,290 @@
+@import url('./style.css');
+
+.contact-container-wrapper {
+  min-height: 100vh;
+  background: var(--main-bg-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.contact-container {
+  width: 100%;
+  max-width: 32rem;
+}
+
+.contact-card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-main);
+  padding: 2rem;
+}
+
+.contact-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.contact-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.contact-subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.625;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--profile-field-border);
+  border-radius: var(--input-radius);
+  box-shadow: var(--btn-shadow);
+  font-size: 1rem;
+  background: var(--secondary-bg);
+  color: var(--text-main);
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: var(--card-bg);
+  box-shadow: var(--btn-shadow-hover);
+}
+
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled {
+  background-color: var(--profile-field-bg);
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.form-group input:read-only {
+  background-color: var(--profile-field-bg);
+  color: var(--text-main);
+  cursor: not-allowed;
+  border-color: var(--profile-field-border);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.message-counter {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.text-error {
+  color: var(--error-color);
+}
+
+.text-warning {
+  color: var(--warning-color);
+}
+
+.text-success {
+  color: var(--success-color);
+}
+
+/* Honeypot field - hidden from users but visible to bots */
+.honeypot-field {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* CAPTCHA styles */
+.captcha-group {
+  background: var(--secondary-bg);
+  border: 1px solid var(--profile-field-border);
+  border-radius: var(--input-radius);
+  padding: 1rem;
+}
+
+.captcha-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.captcha-question {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-main);
+  background: var(--card-bg);
+  padding: 0.75rem 1rem;
+  border-radius: var(--input-radius);
+  border: 1px solid var(--profile-field-border);
+  flex: 1;
+  text-align: center;
+  min-width: 120px;
+}
+
+.captcha-input {
+  flex: 1;
+  min-width: 80px;
+  padding: 0.75rem 1rem !important;
+  margin: 0 !important;
+  font-size: 1rem;
+  text-align: center;
+  border: 1px solid var(--profile-field-border) !important;
+  border-radius: var(--input-radius) !important;
+  background: var(--card-bg) !important;
+}
+
+.captcha-input:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: var(--btn-shadow-hover) !important;
+}
+
+/* captcha-refresh button styles (icon variant below) */
+
+/* Sober icon style for the refresh button */
+.captcha-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  width: 44px;
+  height: 40px;
+  background: var(--card-bg);
+  color: var(--text-main);
+  border: 1px solid var(--profile-field-border);
+  border-radius: calc(var(--input-radius) / 2);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  transition: background 180ms ease, color 180ms ease, transform 120ms ease, box-shadow 180ms ease;
+}
+.captcha-refresh:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
+}
+.captcha-refresh-icon {
+  color: inherit;
+  transition: transform 180ms ease;
+}
+.captcha-refresh:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: translateY(-3px);
+  box-shadow: var(--btn-shadow-hover);
+}
+.captcha-refresh:active:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Screen-reader only utility */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.contact-btn {
+  width: 100%;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: var(--input-radius);
+  border: none;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: var(--btn-shadow);
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.contact-btn:hover:not(:disabled) {
+  background-color: var(--primary-color-dark);
+  box-shadow: var(--btn-shadow-hover);
+}
+
+.contact-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.contact-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.contact-info {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: var(--info-bg);
+  border-radius: var(--input-radius);
+}
+
+.contact-note {
+  font-size: 0.875rem;
+  color: var(--info-color);
+  text-align: center;
+  margin: 0;
+}
+
+.back-to-site {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.back-link {
+  color: var(--primary-color);
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: var(--primary-color-dark);
+}

@@ -1,52 +1,160 @@
 <template>
   <div class="profile-page">
-    <h2>Profile</h2>
-    <button @click="toggleLanguage">
-      {{ language === 'en' ? 'Passer en français' : 'Switch to English' }}
-    </button>
+    <div class="profile-bg-gradient"></div>
+    <div class="profile-container">
+      <!-- Sidebar menu -->
+      <aside class="profile-sidebar">
+        <div class="profile-sidebar-header">
+          <div class="profile-avatar">
+            <span>{{ userProfile?.first_name?.[0] || '👤' }}</span>
+          </div>
+          <h2>{{ t('profile.title') }}</h2>
+        </div>
+        <nav class="profile-menu">
+          <button
+            v-for="item in menuItems"
+            :key="item.id"
+            class="profile-menu-item"
+            :class="{ active: currentSection === item.id }"
+            @click="currentSection = item.id"
+          >
+            <span class="profile-menu-icon">{{ item.icon }}</span>
+            <span class="profile-menu-label">{{ item.label }}</span>
+          </button>
+        </nav>
+      </aside>
+
+      <!-- Main content area -->
+      <main class="profile-content">
+        <div class="profile-content-header">
+          <div class="profile-header-flex">
+            
+            <div>
+              <h1>{{ currentMenuItem?.title }}</h1>
+              <p v-if="currentMenuItem?.description" class="profile-content-subtitle">
+                {{ currentMenuItem.description }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-main-card">
+          <!-- Profile Overview Section -->
+          <ProfileOverview
+            v-if="currentSection === 'overview'"
+            :user-profile="userProfile"
+            :loading="loading"
+            :error="error"
+            @profile-updated="loadUserProfile"
+            @show-message="handleMessage"
+          />
+
+          <!-- Settings Section -->
+          <ProfileSettings
+            v-else-if="currentSection === 'settings'"
+            @show-message="handleMessage"
+          />
+
+          <!-- Security Section (placeholder) -->
+          <ProfileSecurity
+            v-else-if="currentSection === 'security'"
+            @show-message="handleMessage"
+          />
+
+          <!-- Notifications Section (placeholder) -->
+          <div v-else-if="currentSection === 'notifications'" class="profile-section">
+            <div class="profile-placeholder">
+              <h3>{{ t('profile.notifications.title') }}</h3>
+              <p>{{ t('profile.notifications.coming_soon') }}</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useLanguageStore } from '@/stores/language.js';
+import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useEventMessageStore } from '@/stores/eventMessage.js';
+import { fetchUserProfile } from '@/api/service/userService.js';
+import ProfileOverview from '@/components/pageSpecific/profile/ProfileOverview.vue';
+import ProfileSettings from '@/components/pageSpecific/profile/ProfileSettings.vue';
+import ProfileSecurity from '@/components/pageSpecific/profile/ProfileSecurity.vue';
 
-const languageStore = useLanguageStore();
-const language = computed(() => languageStore.language);
+const { t } = useI18n();
+const eventMessageStore = useEventMessageStore();
 
-function toggleLanguage() {
-  languageStore.setLanguage(language.value === 'en' ? 'fr' : 'en');
+// State
+const currentSection = ref('overview');
+const userProfile = ref(null);
+const loading = ref(true);
+const error = ref('');
+
+// Menu configuration
+const menuItems = computed(() => [
+  {
+    id: 'overview',
+    label: t('profile.menu.overview'),
+    title: t('profile.overview.title'),
+    description: t('profile.overview.description'),
+    icon: '👤',
+  },
+  {
+    id: 'settings',
+    label: t('profile.menu.settings'),
+    title: t('profile.settings.title'),
+    description: t('profile.settings.description'),
+    icon: '⚙️',
+  },
+  {
+    id: 'security',
+    label: t('profile.menu.security'),
+    title: t('profile.security.title'),
+    description: t('profile.security.description'),
+    icon: '🔒',
+  },
+  {
+    id: 'notifications',
+    label: t('profile.menu.notifications'),
+    title: t('profile.notifications.title'),
+    description: t('profile.notifications.description'),
+    icon: '🔔',
+  },
+]);
+
+const currentMenuItem = computed(() => 
+  menuItems.value.find(item => item.id === currentSection.value)
+);
+
+// Methods
+function handleMessage(message) {
+  eventMessageStore.addMessage(message.text, message.type);
 }
+
+async function loadUserProfile() {
+  try {
+    loading.value = true;
+    error.value = '';
+    const response = await fetchUserProfile();
+    userProfile.value = response.data;
+  } catch (err) {
+    console.error('Error loading user profile:', err);
+    error.value = t('profile.errors.load_failed');
+  } finally {
+    loading.value = false;
+  }
+}
+
+
+// Lifecycle
+onMounted(() => {
+  loadUserProfile();
+});
 </script>
 
 <style scoped>
-.profile-page {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 2rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-}
-
-h2 {
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
-
-button {
-  display: block;
-  width: 100%;
-  padding: 0.75rem;
-  font-size: 1rem;
-  color: #fff;
-  background-color: #007bff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #0056b3;
-}
+@import '../assets/css/profile-page.css';
 </style>
+

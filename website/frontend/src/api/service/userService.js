@@ -9,6 +9,14 @@ export async function fetchUser() {
 }
 
 /**
+ * Fetch current user's complete profile including address.
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function fetchUserProfile() {
+  return await axiosInstance.get('/user/me/profile');
+}
+
+/**
  * Fetch all active users.
  * @returns {Promise<import('axios').AxiosResponse>}
  */
@@ -38,4 +46,26 @@ export async function checkEmailAvailability(email) {
     `/auth/check-email/${encodeURIComponent(email)}`
   );
   return response.data;
+}
+
+/**
+ * Update current user's profile.
+ * @param {Object} profileData - Profile data to update
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function updateUserProfile(profileData) {
+  return await axiosInstance.put('/user/me/profile', profileData);
+}
+
+export async function updateUserAddress(addressData) {
+  return await axiosInstance.put('/user/me/address', addressData);
+}
+
+/**
+ * Change user password.
+ * @param {Object} passwordData - Password data with current_password and new_password
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function changePassword(passwordData) {
+  return await axiosInstance.put('/user/me/password', passwordData);
 }

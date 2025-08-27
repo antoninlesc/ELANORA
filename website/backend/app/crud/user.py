@@ -58,7 +58,7 @@ async def update_user_password(
 ) -> bool:
     """Update user's password hash in database."""
     filters = {"user_id": user.user_id}
-    update_fields = {"password": new_password_hash}
+    update_fields = {"hashed_password": new_password_hash}
     try:
         await DatabaseUtils.update_by_filter(db, User, filters, update_fields)
         return True

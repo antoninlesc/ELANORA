@@ -156,6 +156,7 @@
 import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useProjectStore } from '@/stores/project';
+import { useUserStore } from '@/stores/user';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import {
@@ -168,13 +169,11 @@ import { fetchActiveUsers } from '@/api/service/userService';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
+const userStore = useUserStore();
 const eventMessageStore = useEventMessageStore();
 const userConfirm = useUserConfirm();
 
 const projectName = computed(() => projectStore.projectName);
-
-// Props - in a real implementation, you'd get the current user role from a store
-const currentUserRole = ref('admin'); // This should come from props or store
 
 // Reactive state
 const users = ref([]);
@@ -204,6 +203,16 @@ const filteredAvailableUsers = computed(() => {
 });
 
 // Computed properties
+const currentUserRole = computed(() => {
+  if (!userStore.user || !users.value.length) return null;
+  
+  const currentUser = users.value.find(user => user.user_id === userStore.user.user_id);
+  console.log('currentUser from project:', currentUser);
+  console.log('currentUserRole:', currentUser?.permission);
+  
+  return currentUser?.permission || null;
+});
+
 const canAddUsers = computed(() => {
   return ['admin', 'owner'].includes(currentUserRole.value);
 });
@@ -276,7 +285,7 @@ const canRemoveUser = (user) => {
 
 const getAvailablePermissions = (user) => {
   const allPermissions = ['read', 'write', 'admin'];
-  
+
   // Filter permissions based on current user role
   if (currentUserRole.value === 'owner') {
     return allPermissions;

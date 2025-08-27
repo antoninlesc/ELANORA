@@ -1,7 +1,14 @@
 {
+  "language": {
+    "name": "English",
+    "nativeName": "English",
+    "flag": "🇺🇸"
+  },
   "common": {
     "confirm": "Confirm",
     "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
     "or": "or",
     "loading": "Loading...",
     "retry": "Retry",
@@ -112,6 +119,7 @@
     "request_access": "Request access",
     "have_invitation": "Have an invitation?",
     "join_project": "Join a project",
+    "need_help": "Need help? Contact us",
     "welcome_to_elanora": "Welcome to ELANORA!",
     "features": {
       "collaborative_elan": "Collaborative ELAN annotation",
@@ -149,6 +157,14 @@
     "title": "Forgot Password",
     "email_label": "Enter your email address",
     "email_placeholder": "Your email",
+    "captcha_label": "Security verification",
+    "captcha_placeholder": "Enter the result",
+    "captcha_refresh": "Generate new calculation",
+    "captcha_error": "Please solve the verification calculation correctly.",
+    "rate_limit_error": "Too many password reset requests. Please wait a few minutes before trying again. (Maximum 3 attempts per minute)",
+    "validation_error": "The entered data is not valid. Please check your email.",
+    "server_error": "Server error. Please try again later.",
+    "network_error": "Connection error. Check your internet connection and try again.",
     "send_code": "Send verification code",
     "error": "An error occurred while sending the verification code. Please try again.",
     "code_sent": "Verification code sent.",
@@ -678,6 +694,152 @@
     "rangeStartEnd": "Range start must be less than or equal to end.",
     "enterSingleOrListOrRange": "Enter a single value, a comma/semicolon separated list, or a range (e.g. {example}).",
     "invalidLength": "Invalid length for \"{name}\".",
+    "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle"
+  },
+
+  "profile": {
+    "title": "Profile",
+    "menu": {
+      "overview": "Overview",
+      "settings": "Settings",
+      "security": "Security",
+      "notifications": "Notifications"
+    },
+    "overview": {
+      "title": "Profile Overview",
+      "description": "View and manage your personal information",
+      "loading": "Loading your profile...",
+      "error_title": "Unable to load profile",
+      "empty_title": "No profile data",
+      "empty_message": "Your profile information is not available.",
+      "edit": "Edit",
+      "personal_info": {
+        "title": "Personal Information",
+        "full_name": "Full Name",
+        "username": "Username",
+        "email": "Email Address",
+        "phone": "Phone Number",
+        "verified": "Verified",
+        "unverified": "Unverified"
+      },
+      "professional_info": {
+        "title": "Professional Information",
+        "affiliation": "Affiliation",
+        "department": "Department",
+        "role": "Role",
+        "roles": {
+          "admin": "Administrator",
+          "public": "Public User"
+        }
+      },
+      "address_info": {
+        "title": "Address Information",
+        "street": "Street",
+        "address_line_2": "Address Line 2",
+        "city_postal": "City & Postal Code"
+      },
+      "account_info": {
+        "title": "Account Information",
+        "member_since": "Member Since",
+        "last_updated": "Last Updated",
+        "last_login": "Last Login",
+        "account_status": "Account Status",
+        "active": "Active",
+        "inactive": "Inactive"
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your preferences and account settings",
+      "coming_soon": "Coming soon",
+      "language": {
+        "title": "Language & Localization",
+        "description": "Choose your preferred language for the interface",
+        "label": "Interface Language",
+        "changed": "Language changed to {language}"
+      }
+    },
+    "security": {
+      "title": "Security",
+      "description": "Manage your password and security preferences",
+      "coming_soon": "Security settings will be available soon.",
+      "change_password": {
+        "title": "Change Password",
+        "description": "Update your password by entering your current password and a new one.",
+        "current_password": "Current Password",
+        "current_password_placeholder": "Enter your current password",
+        "new_password": "New Password",
+        "new_password_placeholder": "Enter your new password",
+        "confirm_password": "Confirm New Password",
+        "confirm_password_placeholder": "Confirm your new password",
+        "requirements": {
+          "title": "Password must contain:",
+          "length": "At least 8 characters",
+          "uppercase": "At least one uppercase letter",
+          "lowercase": "At least one lowercase letter",
+          "number": "At least one number",
+          "special": "At least one special character"
+        },
+        "passwords_no_match": "Passwords do not match",
+        "form_invalid": "Please fix form errors",
+        "updating": "Updating...",
+        "update": "Update Password",
+        "success": "Password changed successfully",
+        "error": "Error changing password"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Configure your notification preferences",
+      "coming_soon": "Notification settings will be available soon."
+    },
+    "errors": {
+      "load_failed": "Failed to load profile information. Please try again."
+    }
+  },
+
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Have a question or need help? We're here to assist you.",
+    "email": "Email",
+    "email_placeholder": "Enter your email address",
+    "request_type": "Request Type",
+    "select_request_type": "Select a request type",
+    "bug_report": "Bug Report",
+    "feature_request": "Feature Request",
+    "technical_support": "Technical Support",
+    "account_issue": "Account Issue",
+    "general_inquiry": "General Inquiry",
+    "other": "Other",
+    "message": "Message",
+    "message_placeholder": "Describe your request or issue in detail...",
+    "website_label": "Website",
+    "website_placeholder": "Leave this field empty",
+    "captcha_label": "Anti-Spam Verification",
+    "captcha_placeholder": "Your answer",
+    "captcha_refresh": "New calculation",
+    "captcha_error": "The calculation answer is incorrect. Please try again.",
+    "send": "Send Message",
+    "sending": "Sending...",
+    "success_message": "Your message has been sent successfully! Our administrators will review it and get back to you soon.",
+    "error_message": "Failed to send your message. Please try again later.",
+    "error_message_too_short": "Your message must be at least 10 characters long.",
+    "error_message_too_long": "Your message cannot exceed 5000 characters.",
+    "error_message_invalid": "The format of your message is not valid.",
+    "error_email_invalid": "The email address is not valid.",
+    "error_request_type_invalid": "The selected request type is not valid.",
+    "error_validation": "The form data is not valid. Please check your information.",
+    "error_rate_limit": "You have sent too many messages recently. Please wait a few minutes before trying again.",
+    "error_server": "Internal server error. Please try again later.",
+    "error_network": "Network connection error. Check your internet connection and try again.",
+    "error_timeout": "The request has timed out. Please try again.",
+    "error_forbidden": "Access forbidden. You do not have the necessary permissions.",
+    "error_not_found": "Service not found. Please contact the administrator.",
+    "error_conflict": "Conflict detected. The data may have been modified by another user.",
+    "error_payload_too_large": "The message is too large. Please reduce the size of your message.",
+    "error_unknown": "An unexpected error occurred. Please try again later.",
+    "response_note": "You will receive a response at the email address you provided.",
+    "back_to_site": "Back to Site",
     "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle",
     "promptExtractedValue": "The value {value} has been extracted for the component \"{name}\". If you wish to use the extracted value only, leave this blank and click \"OK\". However, it is recommended entering a valid range (e.g. {example})."
   },

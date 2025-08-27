@@ -29,6 +29,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             # Health check endpoints
             "/api/v1/health",
             "/api/v1/support/",
+            # Contact form (public access)
+            "/api/v1/contact/",
         ]
 
     async def dispatch(
