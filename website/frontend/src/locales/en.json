@@ -839,7 +839,7 @@
     "error_payload_too_large": "The message is too large. Please reduce the size of your message.",
     "error_unknown": "An unexpected error occurred. Please try again later.",
     "response_note": "You will receive a response at the email address you provided.",
-    "back_to_site": "Back to Site"
+    "back_to_site": "Back to Site",
     "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle",
     "promptExtractedValue": "The value {value} has been extracted for the component \"{name}\". If you wish to use the extracted value only, leave this blank and click \"OK\". However, it is recommended entering a valid range (e.g. {example})."
   },
