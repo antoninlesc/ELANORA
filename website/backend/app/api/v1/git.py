@@ -20,6 +20,7 @@ from app.schema.responses.git import (
     ProjectEditResponse,
     ProjectListResponse,
     ProjectSyncCheckResponse,
+    PendingUploadsResponse,
 )
 from app.service.git import GitService
 
@@ -118,7 +119,7 @@ async def commit_changes(
 @router.post("/projects/{project_name}/upload", response_model=BatchFileUploadResponse)
 async def upload_elan_files(
     project_name: str,
-    user_name: str = "user",
+    user_name: str = Form(...),
     files: list[UploadFile] = validate_elan_files_dep,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
@@ -128,7 +129,7 @@ async def upload_elan_files(
     Args:
         project_name: Name of the project to upload file to.
         file: ELAN file (.eaf) to upload. File is validated for format and size.
-        user_name: Name of the user uploading the file (defaults to "user").
+        user_name: Name of the user uploading the file.
 
     Returns:
         FileUploadResponse: Details of the uploaded file including filename and timestamp.
@@ -157,26 +158,6 @@ async def get_project_branches(project_name: str):
     """Get all branches for a project."""
     try:
         result = git_service.get_branches(project_name)
-        return result
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post("/projects/{project_name}/resolve-conflicts")
-async def resolve_conflicts(
-    project_name: str,
-    branch_name: str,
-    resolution_strategy: str = "accept_incoming",
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Resolve conflicts and merge a branch."""
-    try:
-        result = await git_service.resolve_conflicts(
-            project_name, branch_name, resolution_strategy, db, user.user_id
-        )
         return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -366,5 +347,44 @@ async def decline_backup(
     """Decline restoration of the most recent backup for the project, delete it and erase all related data from the database."""
     try:
         await git_service.decline_project_backup(db, project_name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/projects/{project_name}/branches/{branch_name}/conflicts")
+async def get_branch_conflicts(
+    project_name: str,
+    branch_name: str,
+    force_refresh: bool = False,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Get conflicts for a specific branch."""
+    try:
+        result = await git_service.get_conflicts(
+            project_name, branch_name, db, force_refresh
+        )
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get(
+    "/projects/{project_name}/admin/pending-uploads",
+    response_model=PendingUploadsResponse,
+)
+async def get_pending_uploads(
+    project_name: str,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Get all uploads pending admin approval."""
+    try:
+        result = await git_service.get_pending_uploads_with_status(project_name, db)
+        return PendingUploadsResponse(**result)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

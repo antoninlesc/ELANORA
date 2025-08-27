@@ -42,7 +42,7 @@ const gitService = {
   },
 
   // Upload ELAN files to a project
-  async uploadElanFiles(projectName, files, userName = 'user') {
+  async uploadElanFiles(projectName, files, userName) {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('files', file);
@@ -70,19 +70,42 @@ const gitService = {
   },
 
   // Resolve conflicts and merge a branch
+  async getPendingUploadsWithStatus(projectName, forceRefresh = false) {
+    const params = new URLSearchParams();
+    if (forceRefresh) {
+      params.append('force_refresh', 'true');
+    }
+    
+    const { data } = await axiosInstance.get(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads`
+    );
+    return data;
+  },
+
+  // Resolve conflicts (all or specific file)
   async resolveConflicts(
     projectName,
     branchName,
-    resolutionStrategy = 'accept_incoming'
+    resolutionStrategy = 'accept_incoming',
+    filename = null
   ) {
     const params = new URLSearchParams({
-      branch_name: branchName,
       resolution_strategy: resolutionStrategy,
     });
+    
+    if (filename) {
+      params.append('filename', filename);
+    }
+    
     const { data } = await axiosInstance.post(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/resolve-conflicts?${params.toString()}`
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/resolve-conflicts?${params.toString()}`
     );
     return data;
+  },
+
+  // Force refresh conflicts from git
+  async refreshConflicts(projectName, branchName) {
+    return this.getConflicts(projectName, branchName, true);
   },
 
   // List files in a project (recursive structure)
@@ -166,6 +189,25 @@ const gitService = {
   async declineBackup(projectName) {
     const { data } = await axiosInstance.post(
       `/git/projects/${encodeURIComponent(projectName)}/decline-backup`
+    );
+    return data;
+  },
+    // Get detailed conflict information for a file
+  async getConflictDetails(projectName, branchName, filename) {
+    const { data } = await axiosInstance.get(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts/${encodeURIComponent(filename)}/details`
+    );
+    return data;
+  },
+
+  // Resolve conflict manually with custom content
+  async resolveConflictManually(projectName, branchName, filename, resolvedContent) {
+    const formData = new FormData();
+    formData.append('resolved_content', resolvedContent);
+    
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts/${encodeURIComponent(filename)}/resolve-manual`,
+      formData
     );
     return data;
   },

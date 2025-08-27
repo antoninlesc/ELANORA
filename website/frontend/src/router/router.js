@@ -12,7 +12,7 @@ import EmailVerificationPage from '@views/EmailVerificationPage.vue';
 import HTTPStatusPage from '@views/HTTPStatusPage.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import UploadPage from '@views/UploadPage.vue';
-import ConflictsPage from '@views/ConflictsPage.vue';
+import PendingUploadPage from '@views/PendingUploadPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import InvitationResponsePage from '@views/InvitationResponsePage.vue';
 import TiersPage from '@views/TiersPage.vue';
@@ -86,9 +86,9 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
-        path: 'conflicts',
-        name: 'Conflicts',
-        component: ConflictsPage,
+        path: 'contribution',
+        name: 'PendingUpload',
+        component: PendingUploadPage,
         meta: { requiresAuth: true },
       },
       {

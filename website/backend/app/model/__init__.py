@@ -29,7 +29,7 @@ from .association import (
 # Models with single dependencies
 from .city import City
 from .comment import Comment
-from .conflict import Conflict
+from .pending_upload import PendingUpload
 from .country import Country
 
 # Models with dependencies on user/project
@@ -37,9 +37,9 @@ from .elan_file import ElanFile
 from .elan_file_media import ElanFileMedia
 from .enums import (
     CommentTargetType,
-    ConflictSeverity,
-    ConflictStatus,
-    ConflictType,
+    Severity,
+    Status,
+    Type,
     InvitationStatus,
     ProjectPermission,
     UserRole,
@@ -71,11 +71,11 @@ __all__ = [
     "CommentElanFile",
     "CommentProject",
     "CommentTargetType",
-    "Conflict",
+    "PendingUpload",
     "ConflictOfElanFile",
-    "ConflictSeverity",
-    "ConflictStatus",
-    "ConflictType",
+    "Severity",
+    "Status",
+    "Type",
     "Country",
     "ElanFile",
     "ElanFileMedia",

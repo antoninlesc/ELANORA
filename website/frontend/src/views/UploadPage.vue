@@ -111,8 +111,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import gitService from '@/api/service/gitService';
+import "@/assets/css/upload-page.css";
+import { useUserStore } from '@/stores/user';
 
 const projects = ref([]);
 const selectedProject = ref('');
@@ -123,16 +125,21 @@ const isDragOver = ref(false);
 const uploadResults = ref([]);
 const error = ref('');
 const fileInput = ref(null);
+const userStore = useUserStore();
 
 onMounted(async () => {
   await fetchProjects();
 });
 
+const username = computed(
+  () => userStore.user?.username || userStore.user?.login || ''
+);
+
 async function fetchProjects() {
   try {
     loading.value = true;
-    const response = await gitService.listUserProjects();
-    projects.value = response.projects || [];
+    const response = await gitService.listProjects();
+    projects.value = response.projects;
   } catch (e) {
     error.value = 'Failed to load projects';
     console.error('Error fetching projects:', e);
@@ -160,15 +167,14 @@ function handleDrop(event) {
 }
 
 function addFiles(files) {
-  const eafFiles = files.filter((file) =>
-    file.name.toLowerCase().endsWith('.eaf')
-  );
+  const eafFiles = files.filter(file => file.name.toLowerCase().endsWith('.eaf'));
+  //TODO : use env variable
 
   if (eafFiles.length !== files.length) {
     error.value = 'Only .eaf files are allowed';
     setTimeout(() => (error.value = ''), 3000);
   }
-
+  //TODO : use env variable
   // Check file sizes
   const oversizedFiles = eafFiles.filter(
     (file) => file.size > 50 * 1024 * 1024
@@ -203,12 +209,12 @@ async function uploadFiles() {
   uploading.value = true;
   uploadResults.value = [];
   error.value = '';
-
+  console.log("username :", username.value);
   try {
     const response = await gitService.uploadElanFiles(
       selectedProject.value,
       selectedFiles.value,
-      'user'
+      username.value
     );
 
     uploadResults.value = response.files || [];
@@ -234,5 +240,3 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 </script>
-
-<style src="@/assets/css/upload-page.css"></style>

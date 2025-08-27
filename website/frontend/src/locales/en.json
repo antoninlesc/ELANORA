@@ -70,9 +70,9 @@
     "projects": "Projects",
     "dashboard": "Dashboard",
     "upload": "File Upload",
-    "conflicts": "Conflicts",
     "tiers": "Tiers",
     "export": "Export",
+    "contribution": "Contribution",
     "projectSection": {
       "selectProject": "Select a project",
       "noProjectAvailable": "No projects available",
@@ -695,5 +695,64 @@
 
   "tiersPage": {
     "pageTitle": "Tiers"
-  }
+  },
+  "pendingUploads": {
+    "title": "Manage Pending Uploads for",
+    "loading": "Loading pending uploads...",
+    "noProjectSelected": {
+      "title": "No Project Selected",
+      "message": "Please select a project to view pending uploads.",
+      "selectProject": "Select Project"
+    },
+    "noUploads": {
+      "title": "No Pending Uploads",
+      "message": "All uploads have been processed for this project."
+    },
+    "summary": {
+      "totalPending": "Total Pending",
+      "readyToMerge": "Ready to Merge",
+      "needResolution": "Need Resolution"
+    },
+    "uploadedBy": "by User {user}",
+    "fileTypes": {
+      "new": "new",
+      "modified": "modified",
+      "deleted": "deleted"
+    },
+    "conflictedFiles": "Conflicted Files",
+    "actions": {
+      "viewDetails": "View Details",
+      "mergeNow": "Merge Now",
+      "merging": "Merging...",
+      "resolveConflicts": "Resolve Conflicts",
+      "testMerge": "Test Merge",
+      "testing": "Testing...",
+      "mergeAllReady": "Merge All Ready ({count})",
+      "mergingAll": "Merging All..."
+    },
+    "modal": {
+      "uploadDetails": "Upload Details",
+      "resolveConflicts": "Resolve Upload Conflicts"
+    },
+    "status": {
+      "readyToMerge": "Ready to Merge",
+      "needsResolution": "Needs Resolution",
+      "error": "Error",
+      "pendingReview": "Pending Review"
+    },
+    "uploadTypes": {
+      "newFiles": "New Files",
+      "withModifications": "With Modifications",
+      "withDeletions": "With Deletions"
+    },
+    "errors": {
+      "loadFailed": "Failed to load pending uploads",
+      "testMergeFailed": "Failed to test merge",
+      "notReadyToMerge": "Upload is not ready to merge. Please test merge first.",
+      "mergeFailed": "Failed to merge upload",
+      "noReadyUploads": "No uploads are ready to merge",
+      "batchMergeFailed": "Failed to merge uploads"
+    },
+    "unknown": "Unknown"
+  }  
 }

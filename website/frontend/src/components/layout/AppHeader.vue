@@ -17,8 +17,8 @@
           <a href="/upload" class="elanora-header-menu-link">
             {{ t('appHeader.upload') }}
           </a>
-          <a href="/conflicts" class="elanora-header-menu-link">
-            {{ t('appHeader.conflicts') }}
+          <a href="/contribution" class="elanora-header-menu-link">
+            {{ t('navigation.contribution') }}
           </a>
           <router-link
             :to="{ name: 'TiersPage' }"

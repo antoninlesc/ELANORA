@@ -114,7 +114,6 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
         await delete_project_associations(db, project.project_id)
         await delete_orphaned_file_types(db)
         await delete_project_invitations(db, project.project_id)
-        await delete_project_conflicts(db, project.project_id)
         await delete_project_comments(db, project.project_id)
         await db.flush()
         # Clean up unused annotation values

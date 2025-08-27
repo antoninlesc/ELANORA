@@ -21,7 +21,7 @@ from .enums import UserRole
 if TYPE_CHECKING:
     from .address import Address
     from .comment import Comment
-    from .conflict import Conflict
+    from .pending_upload import PendingUpload
     from .elan_file import ElanFile
     from .invitation import Invitation
 
@@ -82,8 +82,10 @@ class User(Base):
         "Invitation", foreign_keys="Invitation.receiver", back_populates="receiver_user"
     )
     comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="user")
-    resolved_conflicts: Mapped[list["Conflict"]] = relationship(
-        "Conflict", foreign_keys="Conflict.resolved_by", back_populates="resolver"
+    resolved_uploads: Mapped[list["PendingUpload"]] = relationship(
+        "PendingUpload",
+        foreign_keys="PendingUpload.resolved_by",
+        back_populates="resolver",
     )
 
     def __repr__(self) -> str:
