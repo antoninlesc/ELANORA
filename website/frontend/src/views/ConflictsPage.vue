@@ -2,35 +2,35 @@
   <div class="conflicts-page">
     <div class="conflicts-container">
       <h1 class="conflicts-title">Manage Conflicts</h1>
-      
+
       <!-- Project Selection -->
       <div class="project-selection">
         <label for="projectSelect" class="project-label">Select Project:</label>
-        <select 
-          id="projectSelect" 
-          v-model="selectedProject" 
+        <select
+          id="projectSelect"
+          v-model="selectedProject"
           class="project-select"
           :disabled="loading"
           @change="fetchBranches"
         >
           <option value="">Choose a project...</option>
-                        <option value="">Select Project</option>
-              <option 
-                v-for="project in projects" 
-                :key="project.project_id || project" 
-                :value="project.project_name || project"
-              >
-                {{ project.project_name || project }}
-              </option>
+          <option value="">Select Project</option>
+          <option
+            v-for="project in projects"
+            :key="project.project_id || project"
+            :value="project.project_name || project"
+          >
+            {{ project.project_name || project }}
+          </option>
         </select>
       </div>
 
       <!-- Branch Selection -->
       <div v-if="selectedProject" class="branch-selection">
         <label for="branchSelect" class="branch-label">Select Branch:</label>
-        <select 
-          id="branchSelect" 
-          v-model="selectedBranch" 
+        <select
+          id="branchSelect"
+          v-model="selectedBranch"
           class="branch-select"
           :disabled="branchesLoading"
           @change="fetchConflicts"
@@ -47,26 +47,24 @@
         <div class="conflicts-header">
           <h2>Conflicts in "{{ selectedBranch.name }}"</h2>
           <div class="conflicts-actions">
-            <button 
-              @click="refreshConflicts" 
+            <button
               class="refresh-btn"
               :disabled="conflictsLoading"
+              @click="refreshConflicts"
             >
               🔄 Refresh
             </button>
-            <button 
+            <button
               v-if="conflicts.length > 0"
-              @click="showBatchResolution = true" 
               class="batch-btn"
+              @click="showBatchResolution = true"
             >
               Resolve All
             </button>
           </div>
         </div>
 
-        <div v-if="conflictsLoading" class="loading">
-          Loading conflicts...
-        </div>
+        <div v-if="conflictsLoading" class="loading">Loading conflicts...</div>
 
         <div v-else-if="conflicts.length === 0" class="no-conflicts">
           <div class="no-conflicts-icon">✅</div>
@@ -75,32 +73,28 @@
         </div>
 
         <div v-else class="conflicts-list">
-          <div 
-            v-for="conflict in conflicts" 
+          <div
+            v-for="conflict in conflicts"
             :key="conflict.filename"
             class="conflict-item"
           >
             <div class="conflict-header">
               <div class="conflict-info">
                 <h3 class="conflict-filename">{{ conflict.filename }}</h3>
-                <span class="conflict-type">{{ formatConflictType(conflict.type) }}</span>
+                <span class="conflict-type">{{
+                  formatConflictType(conflict.type)
+                }}</span>
               </div>
               <div class="conflict-actions">
-                <button 
-                  @click="viewConflictDetails(conflict)"
-                  class="view-btn"
-                >
+                <button class="view-btn" @click="viewConflictDetails(conflict)">
                   View Details
                 </button>
-                <button 
-                  @click="resolveConflict(conflict)"
-                  class="resolve-btn"
-                >
+                <button class="resolve-btn" @click="resolveConflict(conflict)">
                   Resolve
                 </button>
               </div>
             </div>
-            
+
             <div v-if="conflict.details" class="conflict-details">
               <p>{{ conflict.details }}</p>
             </div>
@@ -109,46 +103,50 @@
       </div>
 
       <!-- Conflict Resolution Modal -->
-      <div v-if="showResolutionModal" class="modal-overlay" @click="closeResolutionModal">
+      <div
+        v-if="showResolutionModal"
+        class="modal-overlay"
+        @click="closeResolutionModal"
+      >
         <div class="modal-content" @click.stop>
           <div class="modal-header">
             <h2>Resolve Conflict: {{ currentConflict?.filename }}</h2>
-            <button @click="closeResolutionModal" class="close-btn">×</button>
+            <button class="close-btn" @click="closeResolutionModal">×</button>
           </div>
-          
+
           <div class="resolution-options">
             <h3>Choose Resolution Strategy:</h3>
             <div class="strategy-options">
               <label class="strategy-option">
-                <input 
-                  type="radio" 
-                  v-model="resolutionStrategy" 
+                <input
+                  v-model="resolutionStrategy"
+                  type="radio"
                   value="accept_incoming"
-                >
+                />
                 <div class="strategy-content">
                   <strong>Accept Incoming Changes</strong>
                   <p>Keep the changes from the branch being merged</p>
                 </div>
               </label>
-              
+
               <label class="strategy-option">
-                <input 
-                  type="radio" 
-                  v-model="resolutionStrategy" 
+                <input
+                  v-model="resolutionStrategy"
+                  type="radio"
                   value="accept_current"
-                >
+                />
                 <div class="strategy-content">
                   <strong>Accept Current Changes</strong>
                   <p>Keep the current version (discard incoming changes)</p>
                 </div>
               </label>
-              
+
               <label class="strategy-option">
-                <input 
-                  type="radio" 
-                  v-model="resolutionStrategy" 
+                <input
+                  v-model="resolutionStrategy"
+                  type="radio"
                   value="manual"
-                >
+                />
                 <div class="strategy-content">
                   <strong>Manual Resolution</strong>
                   <p>Manually merge the changes (advanced)</p>
@@ -156,16 +154,16 @@
               </label>
             </div>
           </div>
-          
+
           <div class="modal-actions">
-            <button 
-              @click="applyResolution"
+            <button
               class="apply-btn"
               :disabled="!resolutionStrategy || resolving"
+              @click="applyResolution"
             >
               {{ resolving ? 'Resolving...' : 'Apply Resolution' }}
             </button>
-            <button @click="closeResolutionModal" class="cancel-btn">
+            <button class="cancel-btn" @click="closeResolutionModal">
               Cancel
             </button>
           </div>
@@ -173,50 +171,61 @@
       </div>
 
       <!-- Batch Resolution Modal -->
-      <div v-if="showBatchResolution" class="modal-overlay" @click="showBatchResolution = false">
+      <div
+        v-if="showBatchResolution"
+        class="modal-overlay"
+        @click="showBatchResolution = false"
+      >
         <div class="modal-content" @click.stop>
           <div class="modal-header">
             <h2>Batch Conflict Resolution</h2>
-            <button @click="showBatchResolution = false" class="close-btn">×</button>
+            <button class="close-btn" @click="showBatchResolution = false">
+              ×
+            </button>
           </div>
-          
+
           <div class="batch-content">
-            <p>Resolve all {{ conflicts.length }} conflicts using the same strategy:</p>
-            
+            <p>
+              Resolve all {{ conflicts.length }} conflicts using the same
+              strategy:
+            </p>
+
             <div class="strategy-options">
               <label class="strategy-option">
-                <input 
-                  type="radio" 
-                  v-model="batchResolutionStrategy" 
+                <input
+                  v-model="batchResolutionStrategy"
+                  type="radio"
                   value="accept_incoming"
-                >
+                />
                 <div class="strategy-content">
                   <strong>Accept All Incoming Changes</strong>
                 </div>
               </label>
-              
+
               <label class="strategy-option">
-                <input 
-                  type="radio" 
-                  v-model="batchResolutionStrategy" 
+                <input
+                  v-model="batchResolutionStrategy"
+                  type="radio"
                   value="accept_current"
-                >
+                />
                 <div class="strategy-content">
                   <strong>Accept All Current Changes</strong>
                 </div>
               </label>
             </div>
           </div>
-          
+
           <div class="modal-actions">
-            <button 
-              @click="applyBatchResolution"
+            <button
               class="apply-btn"
               :disabled="!batchResolutionStrategy || batchResolving"
+              @click="applyBatchResolution"
             >
-              {{ batchResolving ? 'Resolving All...' : 'Resolve All Conflicts' }}
+              {{
+                batchResolving ? 'Resolving All...' : 'Resolve All Conflicts'
+              }}
             </button>
-            <button @click="showBatchResolution = false" class="cancel-btn">
+            <button class="cancel-btn" @click="showBatchResolution = false">
               Cancel
             </button>
           </div>
@@ -275,13 +284,13 @@ async function fetchProjects() {
 
 async function fetchBranches() {
   if (!selectedProject.value) return;
-  
+
   try {
     branchesLoading.value = true;
     branches.value = [];
     selectedBranch.value = '';
     conflicts.value = [];
-    
+
     const response = await gitService.getBranches(selectedProject.value);
     branches.value = response.branches || [];
   } catch (e) {
@@ -294,13 +303,15 @@ async function fetchBranches() {
 
 async function fetchConflicts() {
   if (!selectedProject.value || !selectedBranch.value) return;
-  
+
   try {
     conflictsLoading.value = true;
     // This would need to be implemented in your git service
     // For now, we'll simulate some conflicts
-    const response = await gitService.getConflicts?.(selectedProject.value, selectedBranch.value) || 
-                     { conflicts: [] };
+    const response = (await gitService.getConflicts?.(
+      selectedProject.value,
+      selectedBranch.value
+    )) || { conflicts: [] };
     conflicts.value = response.conflicts || [];
   } catch (e) {
     error.value = 'Failed to load conflicts';
@@ -310,13 +321,13 @@ async function fetchConflicts() {
       {
         filename: 'example1.eaf',
         type: 'content_conflict',
-        details: 'Conflicting annotations in tier T1'
+        details: 'Conflicting annotations in tier T1',
       },
       {
         filename: 'example2.eaf',
         type: 'merge_conflict',
-        details: 'Different time slot values'
-      }
+        details: 'Different time slot values',
+      },
     ];
   } finally {
     conflictsLoading.value = false;
@@ -329,7 +340,9 @@ function refreshConflicts() {
 
 function viewConflictDetails(conflict) {
   // This would open a detailed view of the conflict
-  alert(`Viewing details for ${conflict.filename}:\n\n${conflict.details}\n\nIn a real implementation, this would show a side-by-side comparison of the conflicting content.`);
+  alert(
+    `Viewing details for ${conflict.filename}:\n\n${conflict.details}\n\nIn a real implementation, this would show a side-by-side comparison of the conflicting content.`
+  );
 }
 
 function resolveConflict(conflict) {
@@ -346,22 +359,24 @@ function closeResolutionModal() {
 
 async function applyResolution() {
   if (!currentConflict.value || !resolutionStrategy.value) return;
-  
+
   try {
     resolving.value = true;
-    
+
     await gitService.resolveConflicts(
       selectedProject.value,
       selectedBranch.value,
       resolutionStrategy.value
     );
-    
+
     // Remove resolved conflict from list
-    const index = conflicts.value.findIndex(c => c.filename === currentConflict.value.filename);
+    const index = conflicts.value.findIndex(
+      (c) => c.filename === currentConflict.value.filename
+    );
     if (index !== -1) {
       conflicts.value.splice(index, 1);
     }
-    
+
     closeResolutionModal();
   } catch (e) {
     error.value = e?.response?.data?.detail || 'Failed to resolve conflict';
@@ -373,16 +388,16 @@ async function applyResolution() {
 
 async function applyBatchResolution() {
   if (!batchResolutionStrategy.value) return;
-  
+
   try {
     batchResolving.value = true;
-    
+
     await gitService.resolveConflicts(
       selectedProject.value,
       selectedBranch.value,
       batchResolutionStrategy.value
     );
-    
+
     // Clear all conflicts
     conflicts.value = [];
     showBatchResolution.value = false;
@@ -397,10 +412,10 @@ async function applyBatchResolution() {
 
 function formatConflictType(type) {
   const types = {
-    'content_conflict': 'Content Conflict',
-    'merge_conflict': 'Merge Conflict',
-    'annotation_conflict': 'Annotation Conflict',
-    'tier_conflict': 'Tier Conflict'
+    content_conflict: 'Content Conflict',
+    merge_conflict: 'Merge Conflict',
+    annotation_conflict: 'Annotation Conflict',
+    tier_conflict: 'Tier Conflict',
   };
   return types[type] || 'Unknown Conflict';
 }

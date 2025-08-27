@@ -9,8 +9,17 @@ import {
   faCircleUser,
   faDiagramProject,
   faGears,
+  faAnglesLeft,
+  faAnglesRight,
+  faRetweet,
+  faPlus,
+  faChevronUp,
 } from '@fortawesome/free-solid-svg-icons';
-import { faPenToSquare } from '@fortawesome/free-regular-svg-icons';
+import {
+  faPenToSquare,
+  faShareFromSquare,
+  faCommentDots,
+} from '@fortawesome/free-regular-svg-icons';
 
 library.add(
   faTrash,
@@ -21,7 +30,14 @@ library.add(
   faPenToSquare,
   faCircleUser,
   faDiagramProject,
-  faGears
+  faGears,
+  faShareFromSquare,
+  faAnglesLeft,
+  faAnglesRight,
+  faRetweet,
+  faPlus,
+  faChevronUp,
+  faCommentDots
 );
 
 export default FontAwesomeIcon;

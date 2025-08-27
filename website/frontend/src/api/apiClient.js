@@ -69,7 +69,7 @@ axiosInstance.interceptors.response.use(
     // Handle CSRF token expiration (403)
     if (
       error.response?.status === 403 &&
-      error.response?.data?.detail === "CSRF token missing or invalid." &&
+      error.response?.data?.detail === 'CSRF token missing or invalid.' &&
       !originalRequest._csrfRetry
     ) {
       originalRequest._csrfRetry = true;
@@ -122,9 +122,7 @@ axiosInstance.interceptors.response.use(
         failedRefreshAttempts++;
         if (failedRefreshAttempts >= MAX_REFRESH_ATTEMPTS) {
           localStorage.setItem('redirectTo', window.location.pathname);
-          if (
-            !'/'.includes(window.location.pathname)
-          ) {
+          if (!'/'.includes(window.location.pathname)) {
             window.location.href = '/';
           }
         }

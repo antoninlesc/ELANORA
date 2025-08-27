@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 
 export const useProjectStore = defineStore('project', {
   state: () => ({
-    currentProject: null, // { project_id: <int>, project_name: <string> }
+    currentProject: null,
     projects: [],
     isLoading: false,
   }),
@@ -10,15 +10,23 @@ export const useProjectStore = defineStore('project', {
   getters: {
     projectId: (state) => state.currentProject?.project_id ?? null,
     projectName: (state) => state.currentProject?.project_name ?? '',
+    projectDescription: (state) =>
+      state.currentProject?.project_description ?? '',
     projectList: (state) => state.projects ?? [],
   },
 
   actions: {
+    sortProjects() {
+      this.projects = this.projects.slice().sort((a, b) =>
+        a.project_name.localeCompare(b.project_name)
+      );
+    },
     initializeFromStorage() {
       this.isLoading = true;
       const savedProjects = localStorage.getItem('projects');
       if (savedProjects) {
         this.projects = JSON.parse(savedProjects);
+        this.sortProjects();
       }
       const savedCurrentProject = localStorage.getItem('currentProject');
       if (savedCurrentProject) {
@@ -32,9 +40,9 @@ export const useProjectStore = defineStore('project', {
       localStorage.setItem('currentProject', JSON.stringify(project));
     },
     setProjects(projects) {
-      this.projects = projects;
-      // Save to localStorage
-      localStorage.setItem('projects', JSON.stringify(projects));
+      this.projects = projects.slice();
+      this.sortProjects();
+      localStorage.setItem('projects', JSON.stringify(this.projects));
     },
     loadCurrentProject() {
       this.isLoading = true;
@@ -47,15 +55,6 @@ export const useProjectStore = defineStore('project', {
     clearCurrentProject() {
       this.currentProject = null;
       localStorage.removeItem('currentProject');
-    },
-    renameCurrentProject(newName) {
-      if (this.currentProject && typeof this.currentProject === 'object') {
-        this.currentProject.project_name = newName;
-        localStorage.setItem(
-          'currentProject',
-          JSON.stringify(this.currentProject)
-        );
-      }
     },
   },
 });

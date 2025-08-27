@@ -2,23 +2,22 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.centralized_logging import get_logger
 from app.crud import (
-    project_naming_standard,
-    component_template,
     accepted_value,
     component_accepted_value,
-    standard_component,
+    component_template,
     file_type,
+    project_naming_standard,
+    standard_component,
 )
-from app.model.project_file_type import ProjectFileType
-from app.core.centralized_logging import get_logger
-from app.crud.project_naming_standard import get_standard_with_components_full
 from app.crud.association import get_project_file_type_by_project_and_file_type
-
+from app.crud.project_naming_standard import get_standard_with_components_full
+from app.model.project_file_type import ProjectFileType
 from app.schema.responses.project_naming_standard import (
+    ImportSelectedStandardsResponse,
     NamingStandardResponse,
     ProjectWithStandardsResponse,
-    ImportSelectedStandardsResponse,
 )
 
 logger = get_logger(__name__)
@@ -67,6 +66,14 @@ class ProjectNamingStandardService:
         components: list[dict],
     ):
         try:
+            # Block if any regex is empty or only whitespace
+            for comp in components:
+                regex = comp.get("regex", "")
+                if not regex or not str(regex).strip():
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Regex must not be empty for any component."
+                    )
             standard = await project_naming_standard.create_standard(
                 db, project_id, name, project_file_type_id, pattern, description
             )

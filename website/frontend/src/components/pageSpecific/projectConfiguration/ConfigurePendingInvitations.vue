@@ -70,8 +70,8 @@
               v-if="canCancelInvitation(invitation)"
               class="btn-resend"
               :disabled="processingInvitations.has(invitation.invitation_id)"
-              @click="resendInvitation(invitation)"
               :title="t('projectSettings.invitations.resend')"
+              @click="resendInvitation(invitation)"
             >
               🔄
             </button>
@@ -79,8 +79,8 @@
               v-if="canCancelInvitation(invitation)"
               class="btn-cancel"
               :disabled="processingInvitations.has(invitation.invitation_id)"
-              @click="confirmCancelInvitation(invitation)"
               :title="t('projectSettings.invitations.cancel')"
+              @click="confirmCancelInvitation(invitation)"
             >
               ×
             </button>
@@ -101,9 +101,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { useProjectStore } from '@/stores/project';
 import { useUserConfirm } from '@/composables/useUserConfirm';
@@ -115,12 +114,10 @@ import {
 import ProjectShareModal from '@/components/common/ProjectShareModal.vue';
 
 const { t } = useI18n();
-const route = useRoute();
 const eventMessageStore = useEventMessageStore();
 const projectStore = useProjectStore();
 const userConfirm = useUserConfirm();
 
-const projectId = computed(() => Number(route.params.projectId));
 const projectName = computed(() => projectStore.projectName);
 
 const currentUserRole = ref('admin');
@@ -242,27 +239,6 @@ watch(
   },
   { immediate: true }
 );
-
-// Lifecycle
-onMounted(async () => {
-  // Ensure project is loaded before loading invitations
-  if (!projectStore.currentProject && !projectStore.isLoading) {
-    projectStore.initializeFromStorage();
-  }
-  
-  // Wait a bit for project to be loaded if needed
-  if (!projectName.value && projectStore.isLoading) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  
-  loadInvitations();
-});
-
-// Expose methods for parent components if needed
-defineExpose({
-  loadInvitations,
-  invitations
-});
 </script>
 
 <style scoped>

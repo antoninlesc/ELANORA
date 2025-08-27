@@ -13,26 +13,17 @@ import { useLanguageStore } from '@stores/language';
 import { useUserStore } from '@/stores/user';
 import { useProjectStore } from '@/stores/project';
 import { useAppInfoStore } from '@/stores/appInfo';
-import gitService from '@/api/service/gitService'; 
+import gitService from '@/api/service/gitService';
 import instanceService from '@/api/service/instanceService';
 
 import EventMessageContainer from '@components/eventComponent/eventMessageContainer.vue';
 
 const languageStore = useLanguageStore();
-const { t, locale } = useI18n();
+const { locale } = useI18n();
 const userStore = useUserStore();
 const projectStore = useProjectStore();
 const appInfoStore = useAppInfoStore();
 const loading = ref(true);
-
-const updateDocumentMeta = () => {
-  document.title = t('app.title');
-  const metaDescription = document.querySelector('meta[name="description"]');
-  if (metaDescription) {
-    metaDescription.setAttribute('content', t('app.description'));
-  }
-  document.documentElement.lang = locale.value;
-};
 
 onMounted(async () => {
   languageStore.initializeFromStorage();
@@ -58,7 +49,9 @@ onMounted(async () => {
       const res = await gitService.listUserProjects();
       if (res && res.projects) {
         projectStore.setProjects(res.projects);
-        if (!projectStore.currentProject && res.projects.length > 0) {
+        if (res.projects.length === 0) {
+          projectStore.clearCurrentProject();
+        } else if (!projectStore.currentProject) {
           projectStore.setCurrentProject(res.projects[0]);
         }
       }
@@ -68,7 +61,6 @@ onMounted(async () => {
   }
 
   locale.value = languageStore.language;
-  updateDocumentMeta();
   loading.value = false;
 });
 
@@ -76,9 +68,6 @@ watch(
   () => languageStore.language,
   (newLang) => {
     locale.value = newLang;
-    updateDocumentMeta();
   }
 );
-
-watch(locale, updateDocumentMeta);
 </script>

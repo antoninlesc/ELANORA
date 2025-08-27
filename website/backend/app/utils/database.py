@@ -1,6 +1,7 @@
 """Database utility functions for common operations."""
 
-from typing import Any, Sequence, TypeVar
+from collections.abc import Sequence
+from typing import Any, TypeVar
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -329,6 +330,7 @@ class DatabaseUtils:
         assoc_ref_field: str,
     ) -> int:
         """Delete all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
+
         Logs what is deleted.
         """
         orphans = await DatabaseUtils.get_fully_orphaned(
@@ -351,8 +353,7 @@ class DatabaseUtils:
         in_filter: tuple = None,
         order_by=None,
     ) -> Sequence[Any]:
-        """
-        Utility to get distinct values for a column, with optional filters and IN clause.
+        """Utility to get distinct values for a column, with optional filters and IN clause.
         - model: SQLAlchemy model class
         - column: model.column to select
         - filters: dict of {column_name: value}
@@ -382,11 +383,10 @@ class DatabaseUtils:
         related_field: str,
         model_field: str,
     ) -> list[ModelType]:
-        """
-        Returns all instances of `model` where at least one `related_model` exists
+        """Returns all instances of `model` where at least one `related_model` exists
         such that related_model.<related_field> == model.<model_field>
         """
-        from sqlalchemy import select, exists
+        from sqlalchemy import exists, select
 
         stmt = select(model).where(
             exists().where(
@@ -395,3 +395,9 @@ class DatabaseUtils:
         )
         result = await db.execute(stmt)
         return list(result.scalars().all())
+
+    @staticmethod
+    async def get_all_by_filter(db: AsyncSession, model, filters: dict):
+        stmt = select(model).filter_by(**filters)
+        result = await db.execute(stmt)
+        return result.scalars().all()

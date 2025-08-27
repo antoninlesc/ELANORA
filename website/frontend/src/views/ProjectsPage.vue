@@ -1,189 +1,203 @@
 <template>
   <div>
     <div class="project-page-root">
-      <h1 class="project-page-title">Projects</h1>
+      <h1 class="project-page-title">
+        {{ t('projectsPage.title', { instanceName: instanceName }) }}
+      </h1>
 
-      <!-- Create Project Section -->
-      <form class="project-page-create-form" @submit.prevent="createProject">
-        <div class="project-page-create-fields">
-          <input
-            v-model="newProjectName"
-            class="project-page-create-input"
-            type="text"
-            placeholder="Project name"
-            required
-          />
-          <input
-            v-model="newProjectDescription"
-            class="project-page-create-input"
-            type="text"
-            placeholder="Description"
-            required
-          />
-          <button class="project-page-create-btn" :disabled="creating">
-            {{ creating ? 'Creating...' : 'Create Project' }}
-          </button>
-          <button
-            class="project-page-create-btn"
-            type="button"
-            style="margin-left: 8px"
-            @click="showInitDialog = true"
-          >
-            Init from Folder
-          </button>
-        </div>
-        <div v-if="createError" class="project-page-create-error">
-          {{ createError }}
-        </div>
-      </form>
-
-      <div v-if="loading" class="project-page-loading">Loading projects...</div>
-      <div v-else class="project-page-list">
-        <!-- Replace your project list loop with this -->
-        <div
-          v-for="project in projectStore.projects"
-          :key="project.project_id"
-          :class="[
-            'project-page-project-box',
-            { 'project-page-active': project.project_id === currentProjectId },
-          ]"
-          @click="selectProject(project)"
-        >
-          <span class="project-page-project-name">{{
-            project.project_name
+      <!-- Section 1: Project List as Card Grid -->
+      <div class="project-page-section project-page-section-card">
+        <div class="project-list-header">
+          <span class="project-list-title">{{
+            t('projectsPage.projectListTitle')
           }}</span>
-          <div class="project-page-actions">
-            <button
-              class="project-page-action-btn project-page-edit-btn"
-              title="Rename Project"
-              @click.stop="openRenameDialog(project)"
-            >
-              <font-awesome-icon icon="fa-regular fa-pen-to-square" />
-            </button>
-            <button
-              v-if="isAdmin"
-              class="project-page-share-btn"
-              title="Share Project"
-              @click.stop="openShareModal(project)"
-            >
-              <font-awesome-icon icon="share" />
-            </button>
-            <button
-              class="project-page-action-btn project-page-config-btn"
-              :title="t('projectsPage.project.buttons.settings')"
-              @click.stop="goToStandardsPage(project)"
-            >
-              <font-awesome-icon icon="fa-solid fa-gears" />
-            </button>
-            <button
-              class="project-page-action-btn project-page-delete-btn"
-              title="Delete Project"
-              @click.stop="deleteProject(project.project_name)"
-            >
-              <font-awesome-icon icon="trash" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Initialize Project from Folder Section -->
-      <div class="project-page-init-section">
-        <!-- Modal for initializing from folder -->
-        <div v-if="showInitDialog" class="project-page-modal-overlay">
-          <div class="project-page-modal-content">
-            <h2 class="project-page-modal-title">Init Project from Folder</h2>
-            <form @submit.prevent="initFromFolder">
-              <input
-                v-model="initProjectName"
-                class="project-page-create-input"
-                type="text"
-                placeholder="Project name"
-                required
-              />
-              <input
-                v-model="initProjectDescription"
-                class="project-page-create-input"
-                type="text"
-                placeholder="Description"
-                required
-                style="margin-top: 8px"
-              />
-              <UploadFolder v-model="selectedFiles" />
-              <div style="margin-top: 16px; display: flex; gap: 12px">
-                <button class="project-page-create-btn" :disabled="initing">
-                  {{ initing ? 'Initializing...' : 'Init' }}
-                </button>
-                <button
-                  class="project-page-create-btn"
-                  type="button"
-                  style="background: #bdbdbd"
-                  @click="showInitDialog = false"
-                >
-                  Cancel
-                </button>
-              </div>
-              <div v-if="initError" class="project-page-create-error">
-                {{ initError }}
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <!-- Rename Project Section -->
-      <div v-if="renameDialogVisible" class="project-page-modal-overlay">
-        <div class="project-page-modal-content">
-          <h2 class="project-page-modal-title">Rename Project</h2>
-          <form @submit.prevent="renameProject">
-            <input
-              v-model="renameInput"
-              class="project-page-create-input"
-              type="text"
-              placeholder="New project name"
-              required
-            />
-            <div style="margin-top: 16px; display: flex; gap: 12px">
-              <button class="project-page-create-btn" :disabled="renaming">
-                {{ renaming ? 'Renaming...' : 'Rename' }}
-              </button>
-              <button
-                class="project-page-create-btn"
-                type="button"
-                style="background: #bdbdbd"
-                @click="closeRenameDialog"
-              >
-                Cancel
-              </button>
-            </div>
-            <div v-if="renameError" class="project-page-create-error">
-              {{ renameError }}
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- Project Files Section -->
-      <!-- Project Files Tree -->
-      <div v-if="currentProjectName" class="project-page-files-tree-section">
-        <div class="project-page-files-tree-title">
-          Files in "{{ currentProjectName }}"
           <button
             class="project-page-create-btn"
-            style="float: right; margin-left: 16px"
-            :disabled="syncing"
-            @click="synchronizeProject"
+            @click="showCreateDialog = true"
           >
-            {{ syncing ? 'Synchronizing...' : 'Synchronize' }}
+            <font-awesome-icon icon="fa-solid fa-plus" />
+            {{ t('projectsPage.createProject') }}
           </button>
         </div>
-        <div v-if="filesLoading" class="project-page-loading">
-          Loading files...
-        </div>
-        <div v-else>
-          <FileTree v-if="projectFiles" :tree="projectFiles" :level="0" />
-          <div v-else class="project-page-loading">No files found.</div>
+        <template v-if="(projectStore.projects?.length || 0) === 0">
+          <div class="project-page-no-projects">
+            {{ t('projectsPage.noProjects') }}
+          </div>
+        </template>
+        <template v-else>
+          <div class="project-page-card-grid">
+            <div
+              v-for="project in paginatedProjects"
+              :key="project.project_id"
+              :class="[
+                'project-card',
+                {
+                  'project-card-active':
+                    project.project_id === currentProjectId,
+                },
+              ]"
+              @click="selectProject(project)"
+            >
+              <!-- Row 1: Name + Actions -->
+              <div class="project-card-row project-card-row-header">
+                <div class="project-card-title-container">
+                  <span
+                    class="project-card-title"
+                    :title="project.project_name"
+                  >
+                    <font-awesome-icon
+                      icon="fa-diagram-project"
+                      class="project-card-title-icon"
+                    />
+                    {{ project.project_name }}
+                  </span>
+                </div>
+                <div class="project-card-actions">
+                  <button
+                    class="project-card-action-btn edit"
+                    :title="t('projectsPage.project.buttons.rename')"
+                    @click.stop="openEditDialog(project)"
+                  >
+                    <font-awesome-icon icon="fa-regular fa-pen-to-square" />
+                  </button>
+                  <button
+                    v-if="isAdmin"
+                    class="project-card-action-btn share"
+                    :title="t('projectsPage.project.buttons.share')"
+                    @click.stop="openShareModal(project)"
+                  >
+                    <font-awesome-icon icon="fa-regular fa-share-from-square" />
+                  </button>
+                  <button
+                    class="project-card-action-btn config"
+                    :title="t('projectsPage.project.buttons.settings')"
+                    @click.stop="goToStandardsPage(project)"
+                  >
+                    <font-awesome-icon icon="fa-solid fa-gears" />
+                  </button>
+                  <button
+                    class="project-card-action-btn project-card-delete-btn"
+                    :title="t('projectsPage.project.buttons.delete')"
+                    @click.stop="deleteProject(project.project_name)"
+                  >
+                    <font-awesome-icon icon="trash" />
+                  </button>
+                </div>
+              </div>
+              <!-- Row 2: Description -->
+              <div class="project-card-row project-card-row-desc">
+                <div class="project-card-desc-icon-section">
+                  <font-awesome-icon
+                    icon="fa-regular fa-comment-dots"
+                    class="project-card-desc-icon-white"
+                  />
+                </div>
+                <div
+                  class="project-card-desc-container project-card-desc-container-contrast"
+                >
+                  <div class="project-card-desc-scroll">
+                    <span class="project-card-desc-text">
+                      {{
+                        project.project_description ||
+                        t('projectsPage.noDescription')
+                      }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Pagination Controls -->
+          <div v-if="totalPages > 1" class="project-page-pagination">
+            <button
+              :disabled="currentPage === 1"
+              class="pagination-arrow-btn"
+              @click="prevPage"
+            >
+              <font-awesome-icon icon="fa-solid fa-angles-left" />
+            </button>
+            <input
+              v-model.number="currentPage"
+              type="number"
+              min="1"
+              :max="totalPages"
+              class="project-page-pagination-input"
+              @change="goToPage(currentPage)"
+            />
+            <span>/ {{ totalPages }}</span>
+            <button
+              class="pagination-arrow-btn"
+              :disabled="currentPage === totalPages"
+              @click="nextPage"
+            >
+              <font-awesome-icon icon="fa-solid fa-angles-right" />
+            </button>
+          </div>
+        </template>
+      </div>
+
+      <!-- Section Divider: only show if there are projects and a project is selected -->
+      <div
+        v-if="(projectStore.projects?.length || 0) > 0 && currentProjectName"
+        class="project-page-section-divider"
+      ></div>
+
+      <!-- Section 2: Project Details (only if selected) -->
+      <div
+        v-if="currentProjectName"
+        class="project-page-section project-page-section-card"
+      >
+        <div class="project-page-files-tree-section">
+          <div class="project-page-files-tree-title-row">
+            <div class="project-page-files-tree-title">
+              {{
+                t('projectsPage.filesInProject', {
+                  projectName: currentProjectName,
+                })
+              }}
+            </div>
+            <button
+              class="project-page-create-btn"
+              :disabled="syncing"
+              @click="openSyncDialog"
+            >
+              <font-awesome-icon
+                icon="fa-solid fa-retweet"
+                class="project-page-sync-icon"
+              />
+              {{
+                syncing
+                  ? t('projectsPage.synchronizing')
+                  : t('projectsPage.synchronize')
+              }}
+            </button>
+          </div>
+          <div v-if="filesLoading" class="project-page-loading">
+            {{ t('projectsPage.loadingFiles') }}
+          </div>
+          <div v-else>
+            <FileTree v-if="projectFiles" :files="projectFiles.files"/>
+            <div v-else class="project-page-loading">
+              {{ t('projectsPage.noFilesFound') }}
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- Project Create Modal -->
+      <ProjectCreateDialog
+        v-if="showCreateDialog"
+        @close="showCreateDialog = false"
+        @created="onProjectCreated"
+      />
+
+      <!-- Edit Project Section -->
+      <ProjectEditDialog
+        v-if="editDialogVisible"
+        :project="editingProject"
+        @close="closeEditDialog"
+        @edited="onProjectEdited"
+      />
 
       <!-- Project Share Modal -->
       <ProjectShareModal
@@ -191,6 +205,14 @@
         :project-name="shareProjectName"
         @close="closeShareModal"
         @success="onShareSuccess"
+      />
+
+      <!-- Sync Dialog -->
+      <ProjectSyncDialog
+        v-model:visible="syncDialogVisible"
+        :project-name="currentProjectName"
+        :is-admin="isAdmin"
+        @sync-completed="handleSyncCompleted"
       />
     </div>
   </div>
@@ -200,35 +222,44 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useProjectStore } from '@stores/project';
 import { useUserStore } from '@stores/user';
+import { useAppInfoStore } from '@stores/appInfo';
 import gitService from '@api/service/gitService';
 import FileTree from '@components/common/FileTree.vue';
-import UploadFolder from '@components/common/UploadFolder.vue';
+import ProjectCreateDialog from '@/components/pageSpecific/projectsPage/ProjectCreateDialog.vue';
 import ProjectShareModal from '@components/common/ProjectShareModal.vue';
+import ProjectSyncDialog from '@/components/pageSpecific/projectsPage/ProjectSyncDialog.vue';
+import ProjectEditDialog from '@/components/pageSpecific/projectsPage/ProjectEditDialog.vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { useUserConfirm } from '@/composables/useUserConfirm';
+import { useHead } from '@unhead/vue';
 
 const projectStore = useProjectStore();
 const userStore = useUserStore();
+const appInfoStore = useAppInfoStore();
 const router = useRouter();
 const projects = ref([]);
 const loading = ref(true);
 const { t } = useI18n();
 
-const newProjectName = ref('');
-const newProjectDescription = ref('');
-const creating = ref(false);
-const createError = ref('');
+useHead({
+  title: computed(() => t('projectsPage.pageTitle')),
+  meta: [
+    {
+      name: 'description',
+      content: computed(() => t('projectsPage.pageDescription')),
+    },
+  ],
+});
 
-const showInitDialog = ref(false);
-const initProjectName = ref('');
-const initProjectDescription = ref('');
-const initing = ref(false);
-const initError = ref('');
+const instanceName = computed(
+  () => appInfoStore.instance?.instance_name || 'ELANORA'
+);
+
+const showCreateDialog = ref(false);
 
 const projectFiles = ref(null);
 const filesLoading = ref(false);
-
-const selectedFiles = ref([]);
 
 const currentProjectId = computed(
   () => projectStore.currentProject?.project_id
@@ -238,12 +269,7 @@ const currentProjectName = computed(
 );
 
 const syncing = ref(false);
-
-const renameDialogVisible = ref(false);
-const renameInput = ref('');
-const renaming = ref(false);
-const renameError = ref('');
-const renamingProject = ref(null);
+const syncDialogVisible = ref(false);
 
 // Share modal state
 const showShareModal = ref(false);
@@ -252,43 +278,64 @@ const shareProjectName = ref('');
 // Check if user is admin
 const isAdmin = computed(() => userStore.user?.role === 'admin');
 
+// Pagination state
+const pageSize = 6;
+const currentPage = ref(1);
+
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil((projectStore.projects?.length || 0) / pageSize))
+);
+
+const paginatedProjects = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  return projectStore.projects.slice(start, start + pageSize);
+});
+
+function goToPage(page) {
+  let num = Number(page);
+  if (isNaN(num) || num < 1) num = 1;
+  if (num > totalPages.value) num = totalPages.value;
+  currentPage.value = num;
+}
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+}
+
+function prevPage() {
+  if (currentPage.value > 1) currentPage.value--;
+}
+
+// Reset to page 1 if projects change and current page is out of bounds
+watch(
+  () => projectStore.projects?.length,
+  () => {
+    if (currentPage.value > totalPages.value) currentPage.value = 1;
+  }
+);
+
+watch(currentPage, (val) => {
+  if (val < 1) currentPage.value = 1;
+  if (val > totalPages.value) currentPage.value = totalPages.value;
+});
+
 async function fetchProjects() {
   loading.value = true;
   try {
     const res = await gitService.listUserProjects();
     projects.value = res.projects;
     projectStore.setProjects(res.projects);
+    if (res.projects.length === 0) {
+      projectStore.clearCurrentProject();
+      projectFiles.value = null;
+    }
   } finally {
     loading.value = false;
   }
 }
 
 function selectProject(project) {
-  // Pass the complete project object to the store
   projectStore.setCurrentProject(project);
-}
-
-async function createProject() {
-  createError.value = '';
-  if (!newProjectName.value.trim() || !newProjectDescription.value.trim()) {
-    createError.value = 'Please enter a name and description.';
-    return;
-  }
-  creating.value = true;
-  try {
-    await gitService.createProject({
-      project_name: newProjectName.value.trim(),
-      description: newProjectDescription.value.trim(),
-    });
-    newProjectName.value = '';
-    newProjectDescription.value = '';
-    await fetchProjects();
-  } catch (e) {
-    createError.value =
-      e?.response?.data?.detail || 'Failed to create project.';
-  } finally {
-    creating.value = false;
-  }
 }
 
 async function fetchProjectFiles() {
@@ -299,63 +346,35 @@ async function fetchProjectFiles() {
   filesLoading.value = true;
   try {
     const res = await gitService.listProjectFiles(currentProjectName.value);
-    projectFiles.value = res.tree || null;
+    projectFiles.value = res;
   } finally {
     filesLoading.value = false;
   }
 }
 
-async function initFromFolder() {
-  initError.value = '';
-  if (!initProjectName.value.trim() || !initProjectDescription.value.trim()) {
-    initError.value = 'Please fill in all fields.';
-    return;
-  }
-  if (!selectedFiles.value.length) {
-    initError.value = 'Please select a folder with .eaf files.';
-    return;
-  }
-  initing.value = true;
-  try {
-    await gitService.initProjectFromFolderUpload({
-      project_name: initProjectName.value.trim(),
-      description: initProjectDescription.value.trim(),
-      files: selectedFiles.value,
-    });
-    showInitDialog.value = false;
-    initProjectName.value = '';
-    initProjectDescription.value = '';
-    await fetchProjects();
-  } catch (e) {
-    initError.value =
-      e?.response?.data?.detail || 'Failed to initialize project.';
-  } finally {
-    initing.value = false;
-  }
-}
-
-async function synchronizeProject() {
+async function openSyncDialog() {
   if (!currentProjectName.value) return;
   syncing.value = true;
-  try {
-    await gitService.synchronizeProject(currentProjectName.value);
-    await fetchProjectFiles();
-    await fetchProjects();
-  } catch {
-    syncing.value = false;
-    console.error('Failed to synchronize project:', currentProjectName.value);
-  } finally {
-    syncing.value = false;
-  }
+  syncDialogVisible.value = true;
+  syncing.value = false;
 }
 
+function handleSyncCompleted() {
+  fetchProjectFiles();
+  fetchProjects();
+}
+
+const userConfirm = useUserConfirm();
+
 async function deleteProject(projectName) {
-  if (
-    !confirm(
-      `Are you sure you want to delete project "${projectName}"? This cannot be undone.`
-    )
-  )
-    return;
+  const confirmed = await userConfirm({
+    title: t('projectsPage.deleteTitle'),
+    message: t('projectsPage.deleteMessage', { projectName }),
+    confirmText: t('projectsPage.deleteConfirm'),
+    cancelText: t('projectsPage.deleteCancel'),
+  });
+  if (!confirmed) return;
+
   try {
     await gitService.deleteProject(projectName);
     await fetchProjects();
@@ -365,58 +384,29 @@ async function deleteProject(projectName) {
     }
   } catch {
     console.error('Failed to delete project:', projectName);
-  } finally {
-    await fetchProjects();
   }
 }
 
-function openRenameDialog(project) {
-  renamingProject.value = project;
-  renameInput.value = project.project_name || project;
-  renameError.value = '';
-  renameDialogVisible.value = true;
+const editDialogVisible = ref(false);
+const editingProject = ref(null);
+
+function openEditDialog(project) {
+  editingProject.value = project;
+  editDialogVisible.value = true;
 }
 
-function closeRenameDialog() {
-  renamingProject.value = null;
-  renameInput.value = '';
-  renameError.value = '';
-  renameDialogVisible.value = false;
+function closeEditDialog() {
+  editingProject.value = null;
+  editDialogVisible.value = false;
 }
 
-async function renameProject() {
-  renameError.value = '';
-  if (!renameInput.value.trim()) {
-    renameError.value = 'Please enter a new project name.';
-    return;
-  }
-  renaming.value = true;
-  try {
-    await gitService.renameProject(
-      renamingProject.value,
-      renameInput.value.trim()
-    );
-    // Update project list and current project reactively
-    await fetchProjects();
-    // Find the updated project in the new list and set as current
-    const updated = projectStore.projects.find(
-      (p) => p.project_id === renamingProject.value.project_id
-    );
-    if (updated) {
-      projectStore.setCurrentProject(updated);
-    }
-    closeRenameDialog();
-  } catch (e) {
-    renameError.value =
-      e?.response?.data?.detail || 'Failed to rename project.';
-  } finally {
-    renaming.value = false;
-  }
+async function onProjectEdited() {
+  closeEditDialog();
+  await fetchProjects();
 }
 
-// Share modal functions
 function openShareModal(project) {
-  shareProjectName.value = project.project_name || project;
+  shareProjectName.value = project.project_name;
   showShareModal.value = true;
 }
 
@@ -430,7 +420,6 @@ function onShareSuccess() {
   console.log('Project shared successfully');
 }
 
-// Fetch files when current project changes
 watch(
   [() => projectStore.projects, currentProjectName],
   ([projectsVal, currentProjectVal]) => {
@@ -446,7 +435,9 @@ watch(
 );
 
 onMounted(() => {
-  fetchProjects();
+  if (projectStore.projects.length === 0) {
+    fetchProjects();
+  }
   projectStore.loadCurrentProject();
 });
 
@@ -455,6 +446,11 @@ function goToStandardsPage(project) {
     name: 'ProjectConfigurationPage',
     params: { projectId: project.project_id },
   });
+}
+
+function onProjectCreated() {
+  showCreateDialog.value = false;
+  fetchProjects();
 }
 </script>
 

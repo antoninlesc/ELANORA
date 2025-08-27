@@ -1,97 +1,137 @@
 <template>
   <div class="configure-filetypes-page">
-    <h2 class="configure-filetypes-title">{{ t('configureFileTypes.title') }}</h2>
-    <div v-if="isLoading" class="configure-filetypes-loading">{{ t('configureFileTypes.loading') }}</div>
+    <h2 class="configure-filetypes-title">
+      {{ t('configureFileTypes.title') }}
+    </h2>
+    <div v-if="isLoading" class="configure-filetypes-loading">
+      {{ t('configureFileTypes.loading') }}
+    </div>
     <div v-else>
-      <div v-if="fileTypes.length === 0" class="configure-filetypes-empty">
-        <em>{{ t('configureFileTypes.empty') }}</em>
+      <!-- Default File Types Table -->
+      <div v-if="defaultFileTypes.length">
+        <h3>{{ t('configureFileTypes.defaultFileTypes') }}</h3>
+        <table class="configure-filetypes-table">
+          <thead>
+            <tr>
+              <th>{{ t('configureFileTypes.name') }}</th>
+              <th>{{ t('configureFileTypes.extension') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="ft in defaultFileTypes" :key="ft.id">
+              <td>{{ ft.name }}</td>
+              <td>{{ ft.extension }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <table v-if="fileTypes.length" class="configure-filetypes-table">
-        <thead>
-          <tr>
-            <th>{{ t('configureFileTypes.name') }}</th>
-            <th>{{ t('configureFileTypes.extension') }}</th>
-            <th>{{ t('configureFileTypes.actions') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="ft in fileTypes" :key="ft.id">
-            <td>
-              <template v-if="editId === ft.id">
-                <input
-                  v-model="editFileType.name"
-                  class="configure-file-types-edit-highlight"
-                  autofocus
-                  @keydown.enter="saveEdit(ft.id)"
-                  @keydown.esc="cancelEdit"
-                />
-              </template>
-              <template v-else>
-                {{ ft.name }}
-              </template>
-            </td>
-            <td>
-              <template v-if="editId === ft.id">
-                <input
-                  v-model="editFileType.extension"
-                  class="configure-file-types-edit-highlight"
-                  @keydown.enter="saveEdit(ft.id)"
-                  @keydown.esc="cancelEdit"
-                />
-              </template>
-              <template v-else>
-                {{ ft.extension }}
-              </template>
-            </td>
-            <td>
-              <div class="configure-file-types-actions">
+
+      <!-- Custom File Types Table -->
+      <div v-if="customFileTypes.length">
+        <h3>{{ t('configureFileTypes.customFileTypes') }}</h3>
+        <table class="configure-filetypes-table">
+          <thead>
+            <tr>
+              <th>{{ t('configureFileTypes.name') }}</th>
+              <th>{{ t('configureFileTypes.extension') }}</th>
+              <th>{{ t('configureFileTypes.actions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="ft in customFileTypes" :key="ft.id">
+              <td>
                 <template v-if="editId === ft.id">
-                  <button
-                    class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    :title="t('configureFileTypes.edit')"
-                    @click="saveEdit(ft.id)"
-                  >
-                    <font-awesome-icon icon="fa-regular fa-pen-to-square" />
-                  </button>
-                  <button
-                    class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    :title="t('configureFileTypes.delete')"
-                    @click="cancelEdit"
-                  >
-                    <span style="font-size: 1.1em">✖</span>
-                  </button>
+                  <input
+                    v-model="editFileType.name"
+                    class="configure-file-types-edit-highlight"
+                    autofocus
+                    @keydown.enter="saveEdit(ft.id)"
+                    @keydown.esc="cancelEdit"
+                  />
                 </template>
                 <template v-else>
-                  <button
-                    class="configure-file-types-action-btn configure-file-types-edit-btn"
-                    :title="t('configureFileTypes.edit')"
-                    @click="startEdit(ft)"
-                  >
-                    <font-awesome-icon icon="fa-regular fa-pen-to-square" />
-                  </button>
-                  <button
-                    class="configure-file-types-action-btn configure-file-types-delete-btn"
-                    :title="t('configureFileTypes.delete')"
-                    @click="deleteFileType(ft.id)"
-                  >
-                    <font-awesome-icon icon="trash" />
-                  </button>
+                  {{ ft.name }}
                 </template>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+              <td>
+                <template v-if="editId === ft.id">
+                  <input
+                    v-model="editFileType.extension"
+                    class="configure-file-types-edit-highlight"
+                    @keydown.enter="saveEdit(ft.id)"
+                    @keydown.esc="cancelEdit"
+                  />
+                </template>
+                <template v-else>
+                  {{ ft.extension }}
+                </template>
+              </td>
+              <td>
+                <div class="configure-file-types-actions">
+                  <template v-if="editId === ft.id">
+                    <button
+                      class="configure-file-types-action-btn configure-file-types-edit-btn"
+                      :title="t('configureFileTypes.edit')"
+                      @click="saveEdit(ft.id)"
+                    >
+                      <font-awesome-icon icon="fa-regular fa-pen-to-square" />
+                    </button>
+                    <button
+                      class="configure-file-types-action-btn configure-file-types-edit-btn"
+                      :title="t('configureFileTypes.delete')"
+                      @click="cancelEdit"
+                    >
+                      <span style="font-size: 1.1em">✖</span>
+                    </button>
+                  </template>
+                  <template v-else>
+                    <button
+                      class="configure-file-types-action-btn configure-file-types-edit-btn"
+                      :title="t('configureFileTypes.edit')"
+                      @click="startEdit(ft)"
+                    >
+                      <font-awesome-icon icon="fa-regular fa-pen-to-square" />
+                    </button>
+                    <button
+                      class="configure-file-types-action-btn configure-file-types-delete-btn"
+                      :title="t('configureFileTypes.delete')"
+                      @click="deleteFileType(ft.id)"
+                    >
+                      <font-awesome-icon icon="trash" />
+                    </button>
+                  </template>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add Custom File Type Form -->
       <div class="configure-filetypes-add-form">
         <div class="add-form-col">
-          <input v-model="newFileType.name" :placeholder="t('configureFileTypes.name')" />
-          <span v-if="addNameError" class="configure-file-types-input-error">{{ addNameError }}</span>
+          <input
+            v-model="newFileType.name"
+            :placeholder="t('configureFileTypes.name')"
+          />
+          <span v-if="addNameError" class="configure-file-types-input-error">{{
+            addNameError
+          }}</span>
         </div>
         <div class="add-form-col">
-          <input v-model="newFileType.extension" :placeholder="t('configureFileTypes.extension')" />
-          <span v-if="addExtensionError" class="configure-file-types-input-error">{{ addExtensionError }}</span>
+          <input
+            v-model="newFileType.extension"
+            :placeholder="t('configureFileTypes.extension')"
+          />
+          <span
+            v-if="addExtensionError"
+            class="configure-file-types-input-error"
+            >{{ addExtensionError }}</span
+          >
         </div>
-        <button @click="addFileType">{{ t('configureFileTypes.createFileType') }}</button>
+        <button @click="addFileType">
+          {{ t('configureFileTypes.createFileType') }}
+        </button>
       </div>
     </div>
   </div>
@@ -117,7 +157,13 @@ const userConfirm = useUserConfirm();
 const projectId = computed(() => Number(route.params.projectId));
 
 const fileTypes = computed(() => fileTypeStore.fileTypes);
-const isLoading = computed(() => fileTypeStore.isLoading);
+
+const defaultFileTypes = computed(() =>
+  fileTypes.value.filter(ft => ft.is_required)
+);
+const customFileTypes = computed(() =>
+  fileTypes.value.filter(ft => !ft.is_required)
+);
 
 const newFileType = ref({ name: '', extension: '' });
 const editId = ref(null);
@@ -125,6 +171,8 @@ const editFileType = ref({ name: '', extension: '' });
 
 const addNameError = ref('');
 const addExtensionError = ref('');
+
+const isLoading = computed(() => fileTypeStore.isLoading);
 
 // Refetch file types when projectId changes
 watch(
@@ -143,7 +191,9 @@ function startEdit(ft) {
   editId.value = ft.id;
   editFileType.value = { name: ft.name, extension: ft.extension };
   nextTick(() => {
-    const input = document.querySelector('.configure-file-types-edit-highlight');
+    const input = document.querySelector(
+      '.configure-file-types-edit-highlight'
+    );
     if (input) input.focus();
   });
 }
@@ -166,37 +216,67 @@ function isValidName(name) {
 async function saveEdit(id) {
   editFileType.value.name = editFileType.value.name.trim();
   editFileType.value.extension = editFileType.value.extension.trim();
-  if (editFileType.value.extension && !editFileType.value.extension.startsWith('.')) {
+  if (
+    editFileType.value.extension &&
+    !editFileType.value.extension.startsWith('.')
+  ) {
     editFileType.value.extension = '.' + editFileType.value.extension;
   }
   if (!isValidName(editFileType.value.name)) {
-    eventMessageStore.addMessage('configureFileTypes.invalidName', 'error', 5000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.invalidName',
+      'error',
+      5000
+    );
     return;
   }
   if (!isValidExtension(editFileType.value.extension)) {
-    eventMessageStore.addMessage('configureFileTypes.invalidExtension', 'error', 5000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.invalidExtension',
+      'error',
+      5000
+    );
     return;
   }
   try {
-    await fileTypeStore.updateFileType(id, { ...editFileType.value }, projectId.value);
-    eventMessageStore.addMessage('configureFileTypes.eventMessages.updateSuccess', 'success', 4000);
+    await fileTypeStore.updateFileType(
+      id,
+      { ...editFileType.value },
+      projectId.value
+    );
+    eventMessageStore.addMessage(
+      'configureFileTypes.eventMessages.updateSuccess',
+      'success',
+      4000
+    );
   } catch {
-    eventMessageStore.addMessage('configureFileTypes.eventMessages.updateFailed', 'error', 7000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.eventMessages.updateFailed',
+      'error',
+      7000
+    );
   }
   cancelEdit();
 }
 
 async function deleteFileType(id) {
   const ok = await userConfirm({
-    message: t('configureFileTypes.delete') + '?\n' + t('configureFileTypes.deleteMessage'),
+    message:
+      t('configureFileTypes.delete') +
+      '?\n' +
+      t('configureFileTypes.deleteMessage'),
     title: t('configureFileTypes.deleteTitle'),
     confirmText: t('common.confirm'),
-    cancelText: t('common.cancel')
+    cancelText: t('common.cancel'),
   });
   if (!ok) return;
   try {
     await fileTypeStore.deleteFileType(id, projectId.value);
-    eventMessageStore.addMessage('configureFileTypes.eventMessages.deleteSuccess', 'success', 4000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.eventMessages.deleteSuccess',
+      'success',
+      4000
+    );
   } catch (e) {
     const detail = e?.response?.data?.detail;
     if (detail && detail.error === 'file_type_in_use') {
@@ -220,7 +300,10 @@ async function addFileType() {
   addExtensionError.value = '';
   newFileType.value.name = newFileType.value.name.trim();
   newFileType.value.extension = newFileType.value.extension.trim();
-  if (newFileType.value.extension && !newFileType.value.extension.startsWith('.')) {
+  if (
+    newFileType.value.extension &&
+    !newFileType.value.extension.startsWith('.')
+  ) {
     newFileType.value.extension = '.' + newFileType.value.extension;
   }
   let valid = true;
@@ -234,7 +317,8 @@ async function addFileType() {
   }
   if (!valid) return;
   const duplicate = fileTypes.value.some(
-    ft => ft.name.trim().toLowerCase() === newFileType.value.name.toLowerCase()
+    (ft) =>
+      ft.name.trim().toLowerCase() === newFileType.value.name.toLowerCase()
   );
   if (duplicate) {
     eventMessageStore.addMessage(
@@ -249,10 +333,18 @@ async function addFileType() {
       { ...newFileType.value, project_id: projectId.value },
       projectId.value
     );
-    eventMessageStore.addMessage('configureFileTypes.eventMessages.addSuccess', 'success', 4000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.eventMessages.addSuccess',
+      'success',
+      4000
+    );
     newFileType.value = { name: '', extension: '' };
   } catch {
-    eventMessageStore.addMessage('configureFileTypes.eventMessages.addFailed', 'error', 7000);
+    eventMessageStore.addMessage(
+      'configureFileTypes.eventMessages.addFailed',
+      'error',
+      7000
+    );
   }
 }
 </script>
@@ -416,7 +508,7 @@ async function addFileType() {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  word-break: break-word;
+  overflow-wrap: break-word;
   white-space: normal;
 }
 </style>

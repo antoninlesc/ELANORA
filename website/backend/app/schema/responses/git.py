@@ -1,3 +1,5 @@
+from pydantic import Field
+
 from app.schema.common.base import CustomBaseModel
 from app.schema.common.git import FileStatus
 
@@ -106,16 +108,6 @@ class BatchFileUploadResponse(CustomBaseModel):
     message: str | None = None
 
 
-class ProjectStatusResponse(CustomBaseModel):
-    """Schema for project status response."""
-
-    project_name: str
-    files: list[FileStatus]
-    recent_commits: list[str]
-    conflicts: list[str]
-    status: str
-
-
 class ProjectCheckoutResponse(CustomBaseModel):
     """Schema for project branch checkout response."""
 
@@ -128,16 +120,18 @@ class ProjectCheckoutResponse(CustomBaseModel):
 class ProjectInfo(CustomBaseModel):
     project_id: int
     project_name: str
+    project_description: str | None = None
 
 
 class ProjectListResponse(CustomBaseModel):
     projects: list[ProjectInfo]
 
 
-class ProjectRenameResponse(CustomBaseModel):
-    """Schema for project rename response."""
+class ProjectEditResponse(CustomBaseModel):
+    """Schema for project edit response."""
 
     new_project_name: str
+    new_project_description: str | None = None
 
 
 class ProjectDeleteResponse(CustomBaseModel):
@@ -146,3 +140,12 @@ class ProjectDeleteResponse(CustomBaseModel):
     project_id: int
     status: str
     message: str | None = None
+
+
+class ProjectSyncCheckResponse(CustomBaseModel):
+    """Schema for project synchronization check response."""
+
+    project_name: str
+    in_sync: bool
+    files_status: list[FileStatus] = Field(default_factory=list)
+    status: str | None = None

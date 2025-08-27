@@ -147,6 +147,7 @@ async function loadUserProfile() {
   }
 }
 
+
 // Lifecycle
 onMounted(() => {
   loadUserProfile();
@@ -156,3 +157,4 @@ onMounted(() => {
 <style scoped>
 @import '../assets/css/profile-page.css';
 </style>
+

@@ -1,28 +1,30 @@
 <template>
-  <li class="tiers-tree-node">
-    <div class="tiers-tree-label" @click="toggle">
-      <span v-if="hasChildren" class="tiers-tree-toggle">
-        <span v-if="open">▼</span>
-        <span v-else>▶</span>
-      </span>
-      <span v-else class="tiers-tree-toggle" style="opacity: 0">▶</span>
-      <span v-if="hasChildren" class="tiers-tree-icon">📁</span>
-      <span v-else class="tiers-tree-icon">📄</span>
-      <span class="tiers-tree-tiername">{{ tier.tier_name }}</span>
-      <span v-if="hasChildren" class="tiers-tree-children-count">
-        ({{ tier.children.length }})
-      </span>
-    </div>
-    <transition name="fade">
-      <ul v-if="hasChildren && open" class="tiers-tree-children">
-        <TierNode
-          v-for="child in sortedChildren"
-          :key="child.tier_id"
-          :tier="child"
-        />
-      </ul>
-    </transition>
-  </li>
+  <ul>
+    <li class="tiers-tree-node">
+      <div class="tiers-tree-label" @click="toggle">
+        <span v-if="hasChildren" class="tiers-tree-toggle">
+          <span v-if="open">▼</span>
+          <span v-else>▶</span>
+        </span>
+        <span v-else class="tiers-tree-toggle" style="opacity: 0">▶</span>
+        <span v-if="hasChildren" class="tiers-tree-icon">📁</span>
+        <span v-else class="tiers-tree-icon">📄</span>
+        <span class="tiers-tree-tiername">{{ tier.tier_name }}</span>
+        <span v-if="hasChildren" class="tiers-tree-children-count">
+          ({{ tier.children.length }})
+        </span>
+      </div>
+      <transition name="fade">
+        <ul v-if="hasChildren && open" class="tiers-tree-children">
+          <TierNode
+            v-for="child in sortedChildren"
+            :key="child.tier_id"
+            :tier="child"
+          />
+        </ul>
+      </transition>
+    </li>
+  </ul>
 </template>
 
 <script setup>

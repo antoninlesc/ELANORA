@@ -8,12 +8,9 @@
   --text-main: #374151;
   --text-secondary: #4b5563;
   --border-radius: 1.5rem;
-  --shadow-main: 0 25px 50px rgba(0,0,0,0.2);
+  --shadow-main: 0 25px 50px rgb(0 0 0 / 20%);
   --input-border: var(--main-bg-gradient);
   --input-radius: 0.75rem;
-  --btn-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
-  --btn-shadow-hover: 0 4px 16px rgba(37, 99, 235, 0.12);
-  
   /* Profile-specific variables */
   --profile-card-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   --profile-card-shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.12);
@@ -27,23 +24,26 @@
   --warning-bg: #fef3c7;
   --info-color: #3b82f6;
   --info-bg: #dbeafe;
+  --btn-shadow: 0 2px 8px rgb(37 99 235 / 8%);
+  --btn-shadow-hover: 0 4px 16px rgb(37 99 235 / 12%);
+
 }
 
 body {
   background: var(--main-bg-gradient);
 }
 
-
 .bg-main-gradient {
   background: var(--main-bg-gradient);
 }
+
 .text-primary {
   color: var(--primary-color);
 }
+
 .bg-card {
   background: var(--card-bg);
 }
-
 
 .form-label {
   display: block;
@@ -51,6 +51,7 @@ body {
   font-weight: 500;
   color: var(--text-secondary);
 }
+
 .form-input {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -61,6 +62,7 @@ body {
   transition: border 0.2s;
   color: var(--text-main);
 }
+
 .form-input:focus {
   outline: none;
   border-color: var(--primary-color);
@@ -78,12 +80,16 @@ body {
   border-radius: var(--input-radius);
   box-shadow: var(--btn-shadow);
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
 }
+
 .btn-primary:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
+
 .btn-primary:hover:not(:disabled) {
   background: var(--primary-color-dark);
   box-shadow: var(--btn-shadow-hover);

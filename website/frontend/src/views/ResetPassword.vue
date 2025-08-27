@@ -2,31 +2,35 @@
   <div class="reset-password-wrapper">
     <div class="reset-password-card">
       <h1 class="reset-password-title">{{ t('resetPassword.title') }}</h1>
-      <form @submit.prevent="handleSubmit" class="reset-password-form">
+      <form class="reset-password-form" @submit.prevent="handleSubmit">
         <div class="form-group">
-          <label for="code" class="form-label">{{ t('resetPassword.code_label') }}</label>
-          <input 
-            id="code" 
+          <label for="code" class="form-label">{{
+            t('resetPassword.code_label')
+          }}</label>
+          <input
+            id="code"
             v-model="form.code"
-            type="text" 
-            class="form-input" 
-            :placeholder="t('resetPassword.code_placeholder')" 
-            required 
+            type="text"
+            class="form-input"
+            :placeholder="t('resetPassword.code_placeholder')"
+            required
             maxlength="6"
             inputmode="numeric"
             pattern="\d{6}"
-            @input="form.code = form.code.replace(/[^\d]/g, '').slice(0,6)"
+            @input="form.code = form.code.replace(/[^\d]/g, '').slice(0, 6)"
           />
         </div>
         <div class="form-group">
-          <label for="new-password" class="form-label">{{ t('resetPassword.new_password_label') }}</label>
-          <input 
-            id="new-password" 
+          <label for="new-password" class="form-label">{{
+            t('resetPassword.new_password_label')
+          }}</label>
+          <input
+            id="new-password"
             v-model="form.newPassword"
-            type="password" 
-            class="form-input" 
-            :placeholder="t('resetPassword.new_password_placeholder')" 
-            required 
+            type="password"
+            class="form-input"
+            :placeholder="t('resetPassword.new_password_placeholder')"
+            required
             autocomplete="new-password"
             @input="validatePassword"
           />
@@ -44,14 +48,16 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="confirm-password" class="form-label">{{ t('resetPassword.confirm_password_label') }}</label>
-          <input 
-            id="confirm-password" 
+          <label for="confirm-password" class="form-label">{{
+            t('resetPassword.confirm_password_label')
+          }}</label>
+          <input
+            id="confirm-password"
             v-model="form.confirmPassword"
-            type="password" 
-            class="form-input" 
-            :placeholder="t('resetPassword.confirm_password_placeholder')" 
-            required 
+            type="password"
+            class="form-input"
+            :placeholder="t('resetPassword.confirm_password_placeholder')"
+            required
             autocomplete="new-password"
           />
           <div v-if="form.confirmPassword && !passwordsMatch" class="error-message">
@@ -83,7 +89,7 @@ const eventMessageStore = useEventMessageStore();
 const form = ref({
   code: '',
   newPassword: '',
-  confirmPassword: ''
+  confirmPassword: '',
 });
 
 const loading = ref(false);
@@ -182,4 +188,3 @@ watch(() => form.value.newPassword, (newVal) => {
   }
 });
 </script>
-

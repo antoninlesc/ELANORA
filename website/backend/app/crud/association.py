@@ -1,12 +1,9 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select
-from app.model.project_file_type import ProjectFileType
+from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
-from app.model.project_file_type import ProjectFileType
-
 from app.model.association import (
     ElanFileToMedia,
     ElanFileToProject,
@@ -14,6 +11,7 @@ from app.model.association import (
     ProjectAnnotStandard,
     UserToProject,
 )
+from app.model.project_file_type import ProjectFileType
 from app.model.user import User
 from app.utils.database import DatabaseUtils
 
@@ -66,6 +64,7 @@ async def remove_elan_file_from_project(
     await DatabaseUtils.delete_by_filter(
         db, ElanFileToProject, elan_id=elan_id, project_id=project_id
     )
+    await db.flush()
 
 
 async def update_elan_file_project(
@@ -77,6 +76,14 @@ async def update_elan_file_project(
         {"elan_id": elan_id, "project_id": old_project_id},
         {"project_id": new_project_id},
     )
+
+
+async def has_any_project_for_elan_file(db: AsyncSession, elan_id: int) -> bool:
+    """Return True if the ELAN file is associated with any project."""
+    result = await db.execute(
+        select(ElanFileToProject).where(ElanFileToProject.elan_id == elan_id)
+    )
+    return result.scalar_one_or_none() is not None
 
 
 # --- ElanFileToTier ---
@@ -186,13 +193,13 @@ async def remove_file_type_from_project(
 
 
 async def add_project_file_type(
-    db: AsyncSession, project_id: int, name: str, file_type_id: int
+    db: AsyncSession, project_id: int, name: str, file_type_id: int, is_required: bool = False
 ):
     filters = {"project_id": project_id, "name": name}
     exists = await DatabaseUtils.get_one_by_filter(db, ProjectFileType, filters)
     if not exists:
         assoc = ProjectFileType(
-            project_id=project_id, name=name, file_type_id=file_type_id
+            project_id=project_id, name=name, file_type_id=file_type_id, is_required=is_required
         )
         await DatabaseUtils.create(db, assoc)
         await db.flush()

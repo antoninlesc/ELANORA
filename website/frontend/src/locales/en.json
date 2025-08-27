@@ -26,6 +26,7 @@
     "title": "ELANORA"
   },
   "homePage": {
+    "pageTitle": "Welcome",
     "welcomeMessage": "Welcome to ELANORA!",
     "description": "A collaborative platform for managing and annotating linguistic corpora.",
     "instructions": "To get started, create or join a project and explore your data.",
@@ -420,16 +421,80 @@
   },
 
   "projectsPage": {
-    "title": "Projects",
-    "subtitle": "Manage your linguistic projects and corpora",
-    "createProject": "Create New Project",
-    "noProjects": "No projects available. Create your first project!",
+    "pageTitle": "Projects",
+    "title": "{instanceName}'s projects",
+    "projectListTitle": "Projects",
+    "noProjects": "No current projects for this instance.\nYou can start by clicking on the button \"Create a new project\" to create one.",
+    "noDescription": "No description",
+    "filesInProject": "Files in {projectName}",
+    "synchronizing": "Synchronizing...",
+    "synchronize": "Synchronize",
+    "loadingFiles": "Loading files...",
+    "noFilesFound": "No files found.",
+    "deleteTitle": "Delete Project",
+    "deleteMessage": "Are you sure you want to delete project \"{projectName}\"? This cannot be undone.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "createProject": "Create a new project",
+    "folderPreview": "Folder Preview",
     "project": {
       "buttons": {
         "settings": "Project settings",
         "share": "Share project",
         "delete": "Delete project",
-        "Rename": "Rename project"
+        "rename": "Rename project"
+      }
+    },
+    "syncDialog": {
+      "title": "Synchronize Project",
+      "checkingStatus": "Checking status...",
+      "missingFolder": "Project folder is missing. You can restore from backup or delete the project.",
+      "missingGit": "Project .git folder is missing. You can restore from backup or delete the project.",
+      "missingElanFiles": "Project elan_files folder is missing. You can restore from backup or delete the project.",
+      "illFormed": "Project folder looks ill-formed. What would you like to do?",
+      "detectedChanges": "Detected changes",
+      "affectedFile": "Affected File",
+      "status": "Status",
+      "inspect": "Inspect",
+      "added": "Added",
+      "modified": "Modified",
+      "deleted": "Deleted",
+      "restoreFromBackup": "Restore from Backup",
+      "deleteProject": "Delete Project",
+      "deleteConfirm": "Are you sure you want to delete this project? This cannot be undone.",
+      "deleteFailed": "Failed to delete project.",
+      "discardLocalChanges": "Discard local changes and resync",
+      "discardConfirm": "Are you sure you want to discard all local changes? This cannot be undone.",
+      "discardFailed": "Failed to discard local changes.",
+      "syncToMaster": "Use current state and update Database",
+      "syncFailed": "Failed to synchronize project.",
+      "checkFailed": "Failed to check sync status.",
+      "restoreFailed": "Failed to restore from backup.",
+      "eventMessages": {
+        "succesfullyRestored": "Project successfully restored from backup.",
+        "succesfullyDeleted": "Project successfully deleted.",
+        "succesfullyDiscarded": "Local changes successfully discarded.",
+        "succesfullySynced": "Project successfully synchronized and database updated.",
+        "alreadyUpToDate": "No changes detected. Project is already in sync."
+      }
+    },
+    "createDialog": {
+      "title": "Create a new project",
+      "projectNamePlaceholder": "Project name",
+      "projectDescriptionPlaceholder": "Description (optional)",
+      "dropFolder": "Drop a folder here or click to browse",
+      "onlyEafFiles": "Only .eaf files will be included",
+      "folderPreview": "Folder Preview",
+      "create": "Create",
+      "creating": "Creating...",
+      "errors": {
+        "nameRequired": "Project name is required.",
+        "nameTooLong": "Project name must be at most 100 characters.",
+        "nameExists": "A project with this name already exists.",
+        "descTooLong": "Description must be at most 5000 characters.",
+        "fixAbove": "Please fix the errors above.",
+        "folderDropNotSupported": "Your browser does not support folder drag & drop. Please use the \"Browse\" button.",
+        "createFailed": "Failed to create project."
       }
     }
   },
@@ -441,9 +506,10 @@
       "sections": {
         "technical": "Technical Settings",
         "collaborators": "Collaborators",
-        "subsections" : {
+        "subsections": {
           "fileTypes": "File Types",
           "namingStandards": "Naming Standards",
+          "effectiveStandards": "Effective Standards",
           "members": "Members and Access",
           "invitations": "Invitations"
         }
@@ -529,6 +595,8 @@
 
   "configureFileTypes": {
     "title": "Manage file types for your project",
+    "defaultFileTypes": "Default File Types",
+    "customFileTypes": "Custom File Types",
     "loading": "Loading file types...",
     "empty": "No file types found. Create your first file type!",
     "createFileType": "Add",
@@ -552,7 +620,7 @@
     "deleteTitle": "Delete File Type",
     "deleteMessage": "Are you sure you want to delete this file type? This action cannot be undone."
   },
-  
+
   "configureNamingStandards": {
     "title": "Configure naming standards for your project",
     "loading": "Loading naming standards...",
@@ -599,6 +667,7 @@
       "addSuccess": "Naming standard added successfully.",
       "addFailed": "Failed to add naming standard.",
       "addFailedDuplicate": "A naming standard with this name and file type already exists in this project.",
+      "addFailedEmptyRegex": "Cannot add naming standard: regex for components cannot be empty.",
       "deleteSuccess": "Naming standard deleted successfully.",
       "deleteFailed": "Failed to delete naming standard.",
       "importSuccessStandard": "Naming standards imported successfully.",
@@ -771,5 +840,22 @@
     "error_unknown": "An unexpected error occurred. Please try again later.",
     "response_note": "You will receive a response at the email address you provided.",
     "back_to_site": "Back to Site"
+    "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle",
+    "promptExtractedValue": "The value {value} has been extracted for the component \"{name}\". If you wish to use the extracted value only, leave this blank and click \"OK\". However, it is recommended entering a valid range (e.g. {example})."
+  },
+
+  "configureEffectiveStandards": {
+    "title": "Configure Effective Naming Standards",
+    "fileType": "File Type",
+    "effectiveStandard": "Effective Standard",
+    "eventMessages": {
+      "loadFailed": "Failed to load effective standards.",
+      "updateSuccess": "Effective standard updated successfully.",
+      "updateFailed": "Failed to update effective standard."
+    }
+  },
+
+  "tiersPage": {
+    "pageTitle": "Tiers"
   }
 }

@@ -1,5 +1,6 @@
-from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.database import Base
 
 
@@ -17,5 +18,6 @@ class ProjectFileType(Base):
         Integer, ForeignKey("FILE_TYPE.id"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(50), nullable=False)
+    is_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     file_type = relationship("FileType")

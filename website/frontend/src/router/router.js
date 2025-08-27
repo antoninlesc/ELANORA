@@ -173,9 +173,14 @@ router.beforeEach(async (to, from, next) => {
   const eventMessageStore = useEventMessageStore();
   const userStore = useUserStore();
 
-
   // Always wait for authentication to be initialized before allowing navigation to public auth pages
-  const publicAuthPages = ['LoginPage', 'RegisterPage', 'ForgotPassword', 'ResetPassword', 'EmailVerificationPage'];
+  const publicAuthPages = [
+    'LoginPage',
+    'RegisterPage',
+    'ForgotPassword',
+    'ResetPassword',
+    'EmailVerificationPage',
+  ];
   if (publicAuthPages.includes(to.name)) {
     // If auth state is not initialized, verify authentication first
     if (!userStore.authState.initialized) {

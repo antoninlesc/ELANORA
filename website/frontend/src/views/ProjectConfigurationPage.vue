@@ -4,7 +4,9 @@
       <h1 class="project-standards-title">
         <span class="project-standards-title-text">
           {{ titleParts.before }}
-          <span class="project-standards-title-project-name">{{ projectName }}</span>
+          <span class="project-standards-title-project-name">{{
+            projectName
+          }}</span>
           {{ titleParts.after }}
         </span>
       </h1>
@@ -33,16 +35,16 @@
                 @click="toggleSection(section.key)"
               >
                 <span>{{ t(section.titleKey) }}</span>
-                <span :class="{ open: openSections.includes(section.key) }">&#9660;</span>
+                <span :class="{ open: openSections.includes(section.key) }"
+                  >&#9660;</span
+                >
               </div>
               <transition name="accordion">
                 <div
                   v-show="openSections.includes(section.key)"
                   class="settings-section-body"
                 >
-                  <component
-                    :is="section.component"
-                  />
+                  <component :is="section.component" />
                 </div>
               </transition>
             </div>
@@ -58,10 +60,12 @@ import ConfigureNamingStandards from '@components/pageSpecific/projectConfigurat
 import ConfigureFileTypes from '@components/pageSpecific/projectConfiguration/ConfigureFileTypes.vue';
 import ConfigureProjectMembers from '@components/pageSpecific/projectConfiguration/ConfigureProjectMembers.vue';
 import ConfigurePendingInvitations from '@components/pageSpecific/projectConfiguration/ConfigurePendingInvitations.vue';
+import ConfigureEffectiveStandards from '@components/pageSpecific/projectConfiguration/ConfigureEffectiveStandards.vue';
 
 import { ref, computed } from 'vue';
 import { useProjectStore } from '@stores/project.js';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 
 import '@/assets/css/ProjectConfigurationPage.css';
 
@@ -80,10 +84,16 @@ function toggleSection(section) {
     openSections.value.splice(idx, 1);
   }
 }
-
+const route = useRoute();
 const { t } = useI18n();
 const projectStore = useProjectStore();
-const projectName = computed(() => projectStore.projectName || '');
+const projectId = computed(() => Number(route.params.projectId));
+const projectName = computed(() => {
+  const project = projectStore.projects.find(
+    (p) => p.project_id === projectId.value
+  );
+  return project ? project.project_name : '';
+});
 
 const titleParts = computed(() => {
   // Get the translation with a unique placeholder
@@ -104,8 +114,15 @@ const sectionGroups = [
       },
       {
         key: 'naming',
-        titleKey: 'projectSettings.sectionNames.sections.subsections.namingStandards',
+        titleKey:
+          'projectSettings.sectionNames.sections.subsections.namingStandards',
         component: ConfigureNamingStandards,
+      },
+      {
+        key: 'effectiveStandards',
+        titleKey:
+          'projectSettings.sectionNames.sections.subsections.effectiveStandards',
+        component: ConfigureEffectiveStandards,
       },
     ],
   },
@@ -120,7 +137,8 @@ const sectionGroups = [
       },
       {
         key: 'invitations',
-        titleKey: 'projectSettings.sectionNames.sections.subsections.invitations',
+        titleKey:
+          'projectSettings.sectionNames.sections.subsections.invitations',
         component: ConfigurePendingInvitations,
       },
     ],

@@ -9,7 +9,7 @@ from app.schema.requests.git import (
     CommitRequest,
     ProjectCheckoutRequest,
     ProjectCreateRequest,
-    ProjectRenameRequest,
+    ProjectEditRequest,
 )
 from app.schema.responses.git import (
     BatchFileUploadResponse,
@@ -17,9 +17,9 @@ from app.schema.responses.git import (
     GitStatusResponse,
     ProjectCheckoutResponse,
     ProjectCreateResponse,
+    ProjectEditResponse,
     ProjectListResponse,
-    ProjectRenameResponse,
-    ProjectStatusResponse,
+    ProjectSyncCheckResponse,
 )
 from app.service.git import GitService
 
@@ -81,29 +81,6 @@ async def create_project(
         return ProjectCreateResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get("/projects/{project_name}/status", response_model=ProjectStatusResponse)
-async def get_project_status(project_name: str) -> ProjectStatusResponse:
-    """Get Git status of a project.
-
-    Args:
-        project_name: Name of the project to check status for.
-
-    Returns:
-        ProjectStatusResponse: Project status including file changes, recent commits, and conflicts.
-
-    Raises:
-        HTTPException: 404 if project not found, 500 if status check fails.
-
-    """
-    try:
-        result = git_service.get_project_status(project_name)
-        return ProjectStatusResponse(**result)
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -281,16 +258,16 @@ async def get_project_files(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/projects/{project_name}/synchronize")
-async def synchronize_project(
+@router.get("/projects/{project_name}/synchronize/check")
+async def synchronize_project_check(
     project_name: str,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
+    response_model=ProjectSyncCheckResponse,
 ):
     """Synchronize the project's elan_files folder with the git repo and database."""
     try:
-        result = await git_service.synchronize_project(project_name, db, user.user_id)
-        return {"status": "success", "detail": result}
+        return git_service.synchronize_project_check(project_name)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -310,24 +287,84 @@ async def delete_project(
 
 
 @router.post(
-    "/projects/{project_name}/rename",
-    response_model=ProjectRenameResponse,
+    "/projects/{project_name}/edit",
+    response_model=ProjectEditResponse,
 )
-async def rename_project(
+async def edit_project(
     project_name: str,
-    req: ProjectRenameRequest,
+    req: ProjectEditRequest,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
-    """Rename a project (folder and DB)."""
     try:
-        result = await git_service.rename_project(
-            project_name, req.new_project_name, db
+        result = await git_service.edit_project(
+            project_name, req.new_project_name, req.new_project_description, db
         )
-        return ProjectRenameResponse(**result)
+        return ProjectEditResponse(**result)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except FileExistsError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post(
+    "/projects/{project_name}/synchronize", response_model=ProjectSyncCheckResponse
+)
+async def synchronize_project(
+    project_name: str,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Synchronize the project's elan_files folder with the git repo and update the database.
+
+    Only changed, added, or deleted files are processed.
+    """
+    try:
+        result = await git_service.synchronize_project(project_name, db, user.user_id)
+        return ProjectSyncCheckResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/projects/{project_name}/discard-local-changes")
+async def discard_local_changes(
+    project_name: str,
+    user: User = get_admin_dep,
+):
+    """Discard all local changes and reset the project folder to match the master branch."""
+    try:
+        result = git_service.discard_local_changes(project_name)
+        return {"status": "success", "detail": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/projects/{project_name}/restore-from-backup")
+async def restore_from_backup(
+    project_name: str,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Restore the project folder from the most recent backup and update the database."""
+    try:
+        result = await git_service.restore_project_from_backup(
+            project_name, db, user.user_id
+        )
+        return {"status": "success", "detail": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/projects/{project_name}/decline-backup")
+async def decline_backup(
+    project_name: str,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Decline restoration of the most recent backup for the project, delete it and erase all related data from the database."""
+    try:
+        await git_service.decline_project_backup(db, project_name)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

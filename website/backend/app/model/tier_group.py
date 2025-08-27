@@ -16,7 +16,11 @@ class TierGroup(Base):
     project_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PROJECT.project_id"), nullable=False
     )
+    elan_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("ELAN_FILE.elan_id", ondelete="CASCADE"), nullable=False
+    )
     elan_file_name: Mapped[str] = mapped_column(String, nullable=False)
 
     # Relationships
     section = relationship("TierSection", back_populates="tier_groups")
+    elan_file = relationship("ElanFile")

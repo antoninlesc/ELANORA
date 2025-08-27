@@ -69,9 +69,9 @@ class ElanFileProcessor:
 
     @staticmethod
     def find_files_in_directory(
-        directory_path: str, pattern: str = "**/*.eaf"
+        directory_path: str, pattern: str = "*.eaf"
     ) -> list[Path]:
-        """Find all ELAN files in directory."""
+        """Find all ELAN files in flat directory (no recursion)."""
         directory = Path(directory_path)
         logger.info(
             f"Searching for ELAN files in directory: {directory_path} with pattern: {pattern}"
@@ -163,3 +163,14 @@ class XmlAttributeExtractor:
         }
         logger.debug(f"Extracted ref annotation: {attrs}")
         return attrs
+
+
+def list_untracked_contents(folder_path: Path, parent_path: Path) -> list:
+    items = []
+    for path in folder_path.rglob("*"):
+        rel_path = str(path.relative_to(parent_path))
+        if path.is_dir():
+            items.append({"filename": rel_path + "/", "status": "untracked"})
+        else:
+            items.append({"filename": rel_path, "status": "untracked"})
+    return items

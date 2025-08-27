@@ -13,7 +13,15 @@ def create_project_structure(project_path: Path):
 
 
 def create_gitignore(project_path: Path):
-    gitignore_content = "*\n!.gitignore\n!README.md\n!elan_files/\n!elan_files/*.eaf\n"
+    gitignore_content = (
+        "*\n"
+        "!*.md\n"
+        "!.gitignore\n"
+        "!elan_files/\n"
+        "!elan_files/*.eaf\n"
+        "elan_files/*\n"
+        "!elan_files/*.eaf\n"
+    )
     file_path = project_path / ".gitignore"
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(gitignore_content)

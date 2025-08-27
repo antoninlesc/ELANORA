@@ -15,7 +15,16 @@
           :icon="faDiagramProject"
           class="project-section-icon"
         />
-        {{ currentProjectName || t('appHeader.projectSection.selectProject') }}
+        <span
+          class="project-section-current-name"
+          :title="
+            currentProjectName || t('appHeader.projectSection.selectProject')
+          "
+        >
+          {{
+            currentProjectName || t('appHeader.projectSection.selectProject')
+          }}
+        </span>
       </span>
       <svg
         class="project-section-chevron"
@@ -41,7 +50,12 @@
             :disabled="isCurrentProject(project)"
             @click="selectProject(project)"
           >
-            {{ project.project_name || project }}
+            <span
+              class="project-section-menuitem-name"
+              :title="project.project_name || project"
+            >
+              {{ project.project_name || project }}
+            </span>
             <span
               v-if="isCurrentProject(project)"
               class="project-section-current-indicator"
@@ -112,6 +126,8 @@ onBeforeUnmount(() => {
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 0;
+  max-width: 22vw;
 }
 
 .project-section-trigger {
@@ -130,29 +146,48 @@ onBeforeUnmount(() => {
     background 0.18s,
     color 0.18s;
   box-shadow: 0 1px 4px 0 #e0e7ef;
+  min-width: 0;
+  max-width: 18vw;
+  overflow: hidden;
 }
 
-.project-section-trigger:hover {
-  background: #e6eaff;
+.project-section-trigger:hover,
+.project-section-trigger:focus {
+  background: #c7d2fe;
   color: #5b21b6;
+  outline: none;
 }
 
 .project-section-current {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.project-section-current-name {
+  display: inline-block;
+  max-width: 11vw;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .project-section-icon {
   font-size: 1.2em;
   color: #7c3aed;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .project-section-chevron {
   margin-left: 0.2rem;
   transition: transform 0.2s;
   fill: #a78bfa;
+  flex-shrink: 0;
 }
 
 .project-section-trigger[aria-expanded='true'] .project-section-chevron {
@@ -179,6 +214,7 @@ onBeforeUnmount(() => {
   left: 0;
   top: 110%;
   min-width: 200px;
+  max-width: 18vw;
   background: rgb(255 255 255 / 98%);
   color: #4b5563;
   border-radius: 16px;
@@ -190,6 +226,7 @@ onBeforeUnmount(() => {
   animation: project-section-slide 0.18s;
   backdrop-filter: blur(8px);
   border: 1px solid #e0e7ef;
+  overflow-x: hidden;
 }
 
 @keyframes project-section-slide {
@@ -227,6 +264,19 @@ onBeforeUnmount(() => {
   text-decoration: none;
   min-height: 44px;
   box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.project-section-menuitem-name {
+  display: inline-block;
+  max-width: 11vw;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .project-section-action:hover,

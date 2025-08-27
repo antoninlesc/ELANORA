@@ -1,6 +1,5 @@
 <template>
   <div class="admin-invitation-page">
-    
     <div class="admin-container">
       <div class="admin-header">
         <h1 class="admin-title">{{ t('invitation.send_title') }}</h1>
@@ -40,9 +39,9 @@
               required
             >
               <option value="">{{ t('invitation.selectProject') }}</option>
-              <option 
-                v-for="project in projects" 
-                :key="project.project_id || project" 
+              <option
+                v-for="project in projects"
+                :key="project.project_id || project"
                 :value="project.project_name || project"
               >
                 {{ project.project_name || project }}
@@ -76,9 +75,9 @@
             </select>
           </div>
 
-          <button 
-            type="submit" 
-            class="btn-primary send-btn" 
+          <button
+            type="submit"
+            class="btn-primary send-btn"
             :disabled="sending || !form.email || !form.projectName"
           >
             <span v-if="sending">{{ t('invitation.sending') }}</span>
@@ -132,7 +131,10 @@
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
-import { sendInvitation, getSentInvitations } from '@/api/service/invitationService';
+import {
+  sendInvitation,
+  getSentInvitations,
+} from '@/api/service/invitationService';
 import gitService from '@/api/service/gitService';
 
 const { t } = useI18n();
@@ -164,7 +166,10 @@ const loadProjects = async () => {
     projects.value = response.projects || [];
   } catch (error) {
     console.error('Failed to load projects:', error);
-    eventMessageStore.addMessage(t('appHeader.projectSection.loadError'), 'error');
+    eventMessageStore.addMessage(
+      t('appHeader.projectSection.loadError'),
+      'error'
+    );
   }
 };
 
@@ -194,7 +199,7 @@ const handleSendInvitation = async () => {
   try {
     const response = await sendInvitation({
       receiver_email: form.value.email,
-      project_name: form.value.projectName,  // Utiliser directement le nom du projet
+      project_name: form.value.projectName, // Utiliser directement le nom du projet
       message: form.value.message || null,
       expires_in_days: 7,
       language: form.value.language || 'en',
@@ -235,7 +240,9 @@ const loadSentInvitations = async () => {
     const invitations = response.data.invitations || [];
 
     // Sort invitations by creation date, newest first
-    sentInvitations.value = invitations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    sentInvitations.value = invitations.sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
   } catch (error) {
     console.error('Failed to load sent invitations:', error);
     sentInvitations.value = [];

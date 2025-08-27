@@ -12,9 +12,10 @@
           tabindex="-1"
           autocomplete="off"
         />
-
         <div class="form-group">
-          <label for="email" class="form-label">{{ t('forgotPassword.email_label') }}</label>
+          <label for="email" class="form-label">{{
+            t('forgotPassword.email_label')
+          }}</label>
           <input
             id="email"
             v-model="email"
@@ -73,14 +74,11 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-// À adapter selon ton store ou API
-import { useUserStore } from '@/stores/user';
 import { forgotPassword } from '@/api/service/authService';
 import { useEventMessageStore } from '@stores/eventMessage';
 
-const { t, locale} = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
-const userStore = useUserStore();
 const eventMessageStore = useEventMessageStore();
 
 const email = ref('');

@@ -1,12 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.model.project_naming_standard import ProjectNamingStandard
-from app.model.project import Project
-from app.utils.database import DatabaseUtils
-from app.model.project_file_type import ProjectFileType
-from app.crud.standard_component import get_by_standard as get_standard_components
 from app.crud.standard_component import get_components_by_standard
-from app.crud.component_template import get_by_id as get_component_template_by_id
+from app.model.project import Project
+from app.model.project_file_type import ProjectFileType
+from app.model.project_naming_standard import ProjectNamingStandard
+from app.utils.database import DatabaseUtils
 
 # --- ProjectNamingStandard CRUD ---
 
@@ -65,9 +63,7 @@ async def delete_standard(db: AsyncSession, standard_id: int) -> int:
 
 
 async def get_projects_with_standards(db: AsyncSession) -> list[Project]:
-    """
-    Returns all projects that have at least one naming standard.
-    """
+    """Returns all projects that have at least one naming standard."""
     try:
         return await DatabaseUtils.get_all_with_related_exists(
             db,
@@ -84,9 +80,7 @@ async def get_projects_with_standards(db: AsyncSession) -> list[Project]:
 async def get_standards_by_ids(
     db: AsyncSession, ids: list[int]
 ) -> list[ProjectNamingStandard]:
-    """
-    Returns all ProjectNamingStandard objects matching the given ids.
-    """
+    """Returns all ProjectNamingStandard objects matching the given ids."""
     try:
         return await DatabaseUtils.get_by_filter(db, ProjectNamingStandard, {"id": ids})
     except Exception as e:

@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -18,7 +19,8 @@ from app.crud.project import (
     list_projects_by_user,
     project_exists_by_name,
 )
-from app.schema.responses.git import ProjectInfo
+from app.schema.common.git import FileStatus
+from app.schema.responses.git import ProjectInfo, ProjectSyncCheckResponse
 from app.service.elan import ElanService
 from app.service.git_diff_parser import GitDiffParser
 from app.service.git_operations import (
@@ -28,6 +30,12 @@ from app.service.git_operations import (
     GitDiffAnalyzer,
     GitMerger,
     delete_project_folder,
+)
+from app.utils.file_processing import list_untracked_contents
+from app.utils.project_backup import (
+    create_project_backup_structure,
+    remove_project_backup,
+    restore_project_backup,
 )
 from app.utils.project_setup_utils import (
     copy_githooks,
@@ -103,7 +111,7 @@ class GitService:
         try:
             # Create project directory and structure
             create_project_structure(project_path)
-
+            create_project_backup_structure(project_name)
             runner = GitCommandRunner(project_path)
             runner.init_repo()
 
@@ -119,27 +127,8 @@ class GitService:
             runner.commit("Initial project setup")
 
             # Paths
-            central_githooks = project_path.parent / ".githooks"
             hooks_dir = project_path / ".git" / "hooks"
             hooks_dir.mkdir(parents=True, exist_ok=True)
-
-            # Install all hooks found in the central .githooks
-            for hook_file in central_githooks.iterdir():
-                if hook_file.is_file():
-                    hook_name = hook_file.name
-                    hook_dest = hooks_dir / hook_name
-
-                    # Read template and substitute variables
-                    async with aiofiles.open(hook_file, encoding="utf-8") as f:
-                        hook_content = await f.read()
-                    hook_content = (
-                        hook_content.replace("{{REPO_NAME}}", project_name)
-                        .replace("{{WORK_TREE}}", str(project_path))
-                        .replace("{{GIT_DIR}}", str(project_path / ".git"))
-                    )
-                    async with aiofiles.open(hook_dest, "w", encoding="utf-8") as f:
-                        await f.write(hook_content)
-                    os.chmod(hook_dest, 0o775)
 
             # Save to database
             await create_project_db(
@@ -164,37 +153,6 @@ class GitService:
             await db.rollback()
             raise RuntimeError(f"Project creation failed: {e}") from e
 
-    def get_project_status(self, project_name: str) -> dict[str, Any]:
-        """Get Git status of a project."""
-        project_path = self.base_path / project_name
-
-        if not project_path.exists():
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-
-        try:
-            runner = GitCommandRunner(project_path)
-
-            # Get Git status
-            files = self._parse_git_status(runner.get_status())
-
-            # Get recent commits
-            commits = self._get_recent_commits(project_path)
-
-            # Check for conflicts
-            conflicts = self._check_for_conflicts(project_path)
-
-            return {
-                "project_name": project_name,
-                "files": files,
-                "recent_commits": commits,
-                "conflicts": conflicts,
-                "status": "ok",
-            }
-
-        except Exception as e:
-            raise RuntimeError(f"Git status check failed: {e}") from e
-
-    # TODO: error 500 when commiting file that is already in folder projects
     def commit_changes(
         self, project_name: str, commit_message: str, user_name: str = "user"
     ) -> dict[str, Any]:
@@ -289,7 +247,6 @@ class GitService:
             )
 
         except subprocess.CalledProcessError as e:
-            self._cleanup_on_error(project_path)
             raise RuntimeError(f"Failed to add ELAN files: {e}") from e
         except Exception as e:
             logger.error(f"Batch file operation failed: {e}")
@@ -310,7 +267,11 @@ class GitService:
         """
         projects = await list_projects_by_instance(db, instance_id)
         return [
-            ProjectInfo(project_id=p.project_id, project_name=p.project_name)
+            ProjectInfo(
+                project_id=p.project_id,
+                project_name=p.project_name,
+                project_description=p.description,
+            )
             for p in projects
         ]
 
@@ -320,7 +281,11 @@ class GitService:
         """List projects that a specific user has access to."""
         projects = await list_projects_by_user(db, user_id, instance_id)
         return [
-            ProjectInfo(project_id=p.project_id, project_name=p.project_name)
+            ProjectInfo(
+                project_id=p.project_id,
+                project_name=p.project_name,
+                project_description=p.description,
+            )
             for p in projects
         ]
 
@@ -355,7 +320,11 @@ class GitService:
         project_path.mkdir(parents=True, exist_ok=True)
         elan_files_dir.mkdir(parents=True, exist_ok=True)
 
-        # Save only .eaf files, preserving folder structure
+        # Create README.md and .gitignore
+        create_gitignore(project_path)
+        create_readme(project_path, project_name)
+
+        # Save only .eaf files, directly in elan_files directory
         for file in files:
             if not file.filename or not file.filename.lower().endswith(".eaf"):
                 continue
@@ -500,24 +469,13 @@ class GitService:
 
     def _convert_upload_result(self, result) -> dict:
         """Convert FileUploadResult to dict for response."""
-        if hasattr(result, "success"):  # FileUploadResult object
+        if hasattr(result, "success"):
             return {
                 "filename": result.filename,
                 "size": result.size,
                 "existed": result.existed,
             }
         return result  # Already a dict
-
-    def _cleanup_on_error(self, project_path: Path) -> None:
-        """Cleanup on error - try to return to master branch."""
-        try:
-            subprocess.run(
-                ["git", "checkout", "master"],
-                cwd=project_path,
-                check=False,
-            )
-        except:
-            pass
 
     def get_branches(self, project_name: str) -> dict[str, Any]:
         """Get all branches for a project."""
@@ -649,12 +607,15 @@ class GitService:
     def _parse_git_status(self, status_output: str) -> list[dict[str, str]]:
         """Parse the output of 'git status --porcelain'."""
         files = []
+        pattern = re.compile(r"^([ MADRCU\?]{1,2})\s+(.*)$")
         for line in status_output.strip().splitlines():
             if not line:
                 continue
-            status = line[:2].strip()
-            filename = line[3:].strip()
-            files.append({"filename": filename, "status": status})
+            match = pattern.match(line)
+            if match:
+                status = match.group(1).strip()
+                filename = match.group(2).strip()
+                files.append({"filename": filename, "status": status})
         return files
 
     def _get_recent_commits(
@@ -699,9 +660,9 @@ class GitService:
             raise RuntimeError(f"Failed to checkout branch: {e}") from e
 
     async def list_project_files(self, project_name: str) -> dict[str, Any]:
-        """Return a tree of .eaf files and folders containing .eaf files for the given project.
+        """Return a flat list of .eaf files in the elan_files folder for the given project.
 
-        always from the master branch. Restore the previous branch after listing.
+        Always from the master branch. Restore the previous branch after listing.
         """
         project_path = self.base_path / project_name
         elan_files_dir = project_path / "elan_files"
@@ -727,81 +688,110 @@ class GitService:
         # Checkout master branch before listing files
         runner.checkout("master")
 
-        def build_tree(path: Path) -> dict | None:
-            if path.is_file():
-                if path.suffix.lower() == ".eaf":
-                    return {"name": path.name, "type": "file"}
-                return None
-            children = []
-            for child in sorted(
-                path.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower())
-            ):
-                subtree = build_tree(child)
-                if subtree:
-                    children.append(subtree)
-            if children:
-                return {"name": path.name, "type": "folder", "children": children}
-            return None
-
-        tree = build_tree(elan_files_dir)
+        # Only list .eaf files directly in elan_files (no recursion, no folders)
+        eaf_files = [
+            {"name": file.name, "type": "file"}
+            for file in elan_files_dir.glob("*.eaf")
+            if file.is_file()
+        ]
 
         # Restore previous branch if needed
         if current_branch and current_branch != "master":
             try:
                 runner.checkout(current_branch)
             except Exception:
-                pass
+                logger.error(
+                    f"Failed to restore previous branch '{current_branch}' after listing files."
+                )
 
-        return {"tree": tree}
+        return {"files": eaf_files}
 
     async def synchronize_project(
         self, project_name: str, db: AsyncSession, user_id: int
-    ):
-        """Checkout master branch.
+    ) -> dict:
+        """Idempotently synchronize the project's elan_files with the database.
 
-        - Add/commit new/changed .eaf files in elan_files/
-        - Parse all .eaf files and update the DB
+        Only process files that are new, modified, or deleted.
         """
         project_path = self.base_path / project_name
         elan_files_dir = project_path / "elan_files"
         runner = GitCommandRunner(project_path)
 
-        # Work on master branch
-        current_branch = None
-        try:
-            branches_raw = runner.get_branches()
-            for line in branches_raw:
-                stripped_line = line.strip()
-                if stripped_line.startswith("* "):
-                    current_branch = stripped_line[2:]
-                    break
-        except Exception:
-            pass
-        if current_branch != "master":
-            runner.checkout("master")
+        logger.info(f"[SYNC] Starting synchronization for project: {project_name}")
+        logger.info(f"[SYNC] Project path: {project_path}")
+        logger.info(f"[SYNC] ELAN files directory: {elan_files_dir}")
 
-        # Add and commit new/changed .eaf files
+        # Add all changes to staging area
+        logger.info("[SYNC] Adding all changes to staging area...")
         runner.add_all()
-        if runner.get_status().strip():
-            runner.commit("Synchronize .eaf files from filesystem")
+
+        status_output = runner.get_status()
+        logger.info(f"[SYNC] git status output:\n{status_output}")
+
+        added_files = []
+        modified_files = []
+        untracked_files = []
+        deleted_files = []
+
+        for entry in self._parse_git_status(status_output):
+            code = entry["status"]
+            filename = entry["filename"]
+            if filename.lower().endswith(".eaf"):
+                if code == "A":
+                    added_files.append(project_path / filename)
+                elif code == "M":
+                    modified_files.append(project_path / filename)
+                elif code == "??":
+                    untracked_files.append(project_path / filename)
+                elif code == "D":
+                    deleted_files.append(Path(filename).name)
 
         elan_service = ElanService(db)
-        elan_files = list(elan_files_dir.rglob("*.eaf"))
-        for elan_file in elan_files:
-            await elan_service.process_single_file(
-                str(elan_file), user_id, project_name
-            )
 
-        # Restore previous branch
-        if current_branch and current_branch != "master":
-            try:
-                runner.checkout(current_branch)
-            except Exception:
-                pass
+        # Add new files
+        for file_path in added_files + untracked_files:
+            if file_path.exists():
+                logger.info(f"[SYNC] Adding new file in DB: {file_path}")
+                await elan_service.process_single_file(
+                    str(file_path), user_id, project_name
+                )
 
-        return (
-            f"Synchronized {len(elan_files)} .eaf files for project '{project_name}'."
-        )
+        # Update modified files
+        for file_path in modified_files:
+            if file_path.exists():
+                logger.info(f"[SYNC] Updating modified file in DB: {file_path}")
+                await elan_service.process_single_file_and_update(
+                    str(file_path), user_id, project_name
+                )
+
+        # Remove deleted files
+        for filename in deleted_files:
+            logger.info(f"[SYNC] Removing deleted file from DB: {filename}")
+            await elan_service.delete_elan_files_from_db(filename, project_name)
+
+        if status_output.strip():
+            logger.info("[SYNC] Committing changes to git...")
+            runner.commit(f"Synchronized project '{project_name}' with ELAN files")
+        else:
+            logger.info("[SYNC] No changes to commit.")
+
+        logger.info(f"[SYNC] Synchronization complete for project: {project_name}")
+
+        # Return a status/check response
+        return ProjectSyncCheckResponse(
+            project_name=project_name,
+            in_sync=True,
+            files_status=[
+                FileStatus(
+                    filename=str(f), status="updated", description="File updated"
+                )
+                for f in modified_files
+            ]
+            + [
+                FileStatus(filename=f, status="deleted", description="File deleted")
+                for f in deleted_files
+            ],
+        ).model_dump()
 
     async def delete_project(self, project_name: str, db: AsyncSession):
         """Delete a project by its ID."""
@@ -825,21 +815,23 @@ class GitService:
         project_path = self.base_path / project_name
         delete_project_folder(project_path)
 
-    async def rename_project(
+    async def edit_project(
         self,
         old_project_name: str,
         new_project_name: str,
+        new_project_description: str | None,
         db: AsyncSession,
     ) -> dict:
-        """Rename an existing project both in the filesystem and in the database.
+        """Edit an existing project both in the filesystem and in the database.
 
         Args:
             old_project_name (str): The current name of the project.
             new_project_name (str): The new name to assign to the project.
+            new_project_description (str | None): The new description.
             db (AsyncSession): The database session.
 
         Returns:
-            dict: A dictionary containing the new project name.
+            dict: A dictionary containing the new project name and description.
 
         Raises:
             ValueError: If the old project is not found in the database.
@@ -849,7 +841,7 @@ class GitService:
 
         """
         logger.info(
-            f"Starting rename of project: '{old_project_name}' to '{new_project_name}'"
+            f"Starting edit of project: '{old_project_name}' to '{new_project_name}'"
         )
         project = await get_project_by_name(db, old_project_name)
         if not project:
@@ -857,29 +849,161 @@ class GitService:
             raise ValueError(f"Project '{old_project_name}' not found in DB")
 
         old_path = Path(self.base_path) / old_project_name
-        new_path = Path(self.base_path) / new_project_name
-        if not old_path.exists():
-            logger.error(f"Project folder '{old_project_name}' not found at {old_path}")
-            raise FileNotFoundError(f"Project folder '{old_project_name}' not found")
-        if new_path.exists():
-            logger.error(
-                f"Target project folder '{new_project_name}' already exists at {new_path}"
-            )
-            raise FileExistsError(
-                f"Target project folder '{new_project_name}' already exists"
-            )
-        try:
-            os.rename(old_path, new_path)
-            logger.info(f"Renamed folder from '{old_path}' to '{new_path}'")
-        except Exception as e:
-            logger.error(f"Failed to rename folder: {e}")
-            raise
 
-        project.project_name = new_project_name
-        project.project_path = str(new_path)
+        # Only rename if the name is actually changed
+        if new_project_name != old_project_name:
+            new_path = Path(self.base_path) / new_project_name
+            if not old_path.exists():
+                logger.error(
+                    f"Project folder '{old_project_name}' not found at {old_path}"
+                )
+                raise FileNotFoundError(
+                    f"Project folder '{old_project_name}' not found"
+                )
+            if new_path.exists():
+                logger.error(
+                    f"Target project folder '{new_project_name}' already exists at {new_path}"
+                )
+                raise FileExistsError(
+                    f"Target project folder '{new_project_name}' already exists"
+                )
+            try:
+                os.rename(old_path, new_path)
+                logger.info(f"Renamed folder from '{old_path}' to '{new_path}'")
+            except Exception as e:
+                logger.error(f"Failed to rename folder: {e}")
+                raise
+
+            project.project_name = new_project_name
+            project.project_path = str(new_path)
+        else:
+            # Name unchanged, just update description
+            logger.info("Project name unchanged, only updating description.")
+
+        project.description = new_project_description
         await db.commit()
         logger.info(
-            f"Renamed project in DB: '{old_project_name}' -> '{new_project_name}'"
+            f"Edited project in DB: '{old_project_name}' -> '{new_project_name}'"
+        )
+        logger.info(f"Changed project description to: {new_project_description}")
+        return {
+            "new_project_name": new_project_name,
+            "new_project_description": new_project_description,
+        }
+
+    def synchronize_project_check(self, project_name: str) -> dict:
+        project_path = self.base_path / project_name
+        elan_files_dir = project_path / "elan_files"
+        git_dir = project_path / ".git"
+
+        if not project_path.exists():
+            return {
+                "project_name": project_name,
+                "status": "missing_folder",
+                "in_sync": False,
+                "files_status": [],
+            }
+        if not git_dir.exists():
+            return {
+                "project_name": project_name,
+                "status": "missing_git",
+                "in_sync": False,
+                "files_status": [],
+            }
+        if not elan_files_dir.exists():
+            return {
+                "project_name": project_name,
+                "status": "missing_elan_files",
+                "in_sync": False,
+                "files_status": [],
+            }
+        runner = GitCommandRunner(project_path)
+        status_output = runner.get_status()
+        files_status = []
+
+        status_map = {"A": "added", "M": "modified", "D": "deleted", "??": "untracked"}
+
+        for entry in self._parse_git_status(status_output):
+            code = entry["status"]
+            filename = entry["filename"]
+            status = status_map.get(code, code)
+
+            # Remove quotes if present
+            clean_filename = filename.strip('"').strip("'")
+
+            if code == "??":
+                # Only add .eaf files directly in elan_files (no subfolders)
+                file_path = Path(clean_filename)
+                if (
+                    file_path.parent == Path("elan_files")
+                    and file_path.suffix.lower() == ".eaf"
+                ):
+                    files_status.append(
+                        FileStatus(
+                            filename=file_path.as_posix(),
+                            status="untracked",
+                            description=f"File {file_path.as_posix()} is untracked",
+                        )
+                    )
+            elif (
+                Path(clean_filename).parent == Path("elan_files")
+                and Path(clean_filename).suffix.lower() == ".eaf"
+            ):
+                files_status.append(
+                    FileStatus(
+                        filename=Path(clean_filename).as_posix(),
+                        status=status,
+                        description=f"File {Path(clean_filename).as_posix()} is {status}",
+                    )
+                )
+
+        in_sync = not bool(files_status)
+
+        return ProjectSyncCheckResponse(
+            project_name=project_name, in_sync=in_sync, files_status=files_status
+        ).model_dump()
+
+    def discard_local_changes(self, project_name: str) -> str:
+        project_path = self.base_path / project_name
+        runner = GitCommandRunner(project_path)
+        remotes = runner.run(["remote", "-v"]).stdout.strip()
+        if "origin" in remotes:
+            logger.info(f"Remote 'origin' found for project '{project_name}'")
+            runner.run(["fetch", "origin"], check=True)
+            runner.reset_hard("origin/master")
+        else:
+            logger.warning(f"No remote 'origin' found for project '{project_name}'")
+            runner.reset_hard()
+        runner.clean(force=True, directories=True)
+        return "Local changes discarded and folder reset to match the latest remote master."
+
+    from app.utils.project_backup import restore_project_backup
+
+    async def restore_project_from_backup(
+        self, project_name: str, db: AsyncSession, user_id: int
+    ) -> str:
+        """Restore the project folder from the most recent backup (including .git, elan_files, README.md).
+
+        and update the database to match the restored state.
+        """
+        restore_project_backup(project_name, self.base_path)
+
+        await self.synchronize_project(project_name, db, user_id)
+
+        return (
+            f"Project '{project_name}' restored from backup and database synchronized."
         )
 
-        return {"new_project_name": new_project_name}
+    async def decline_project_backup(self, db: AsyncSession, project_name: str) -> None:
+        """Remove the backup folder for the project and delete all related data."""
+        # Remove backup
+        remove_project_backup(project_name)
+
+        # Determine if the project folder exists
+        project_path = self.base_path / project_name
+        if project_path.exists():
+            delete_project_folder(project_path)
+
+        # Remove all DB artifacts
+        await delete_project_db(db, project_name)
+        await db.commit()

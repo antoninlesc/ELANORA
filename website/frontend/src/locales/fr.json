@@ -22,10 +22,11 @@
     "removing": "Suppression"
   },
   "app": {
-    "title": "ELANORA"
+    "title": "ELANora"
   },
   "homePage": {
-    "welcomeMessage": "Bienvenue sur ELANORA !",
+    "pageTitle": "Bienvenue",
+    "welcomeMessage": "Bienvenue sur ELANora !",
     "description": "Une plateforme collaborative pour gérer et annoter des corpus linguistiques.",
     "instructions": "Pour commencer, créez ou rejoignez un projet et explorez vos données.",
     "getStarted": "Commencer",
@@ -66,7 +67,7 @@
     },
     "cta": {
       "title": "Prêt à collaborer ?",
-      "description": "Rejoignez des milliers de chercheurs qui utilisent ELANORA pour leurs projets de linguistique.",
+      "description": "Rejoignez des milliers de chercheurs qui utilisent ELANora pour leurs projets de linguistique.",
       "get_started": "Commencer maintenant",
       "contact_us": "Nous contacter"
     }
@@ -87,7 +88,7 @@
     "have_invitation": "Vous avez une invitation ?",
     "join_project": "Rejoindre un projet",
     "need_help": "Besoin d'aide ? Contactez-nous",
-    "welcome_to_elanora": "Bienvenue sur ELANORA !",
+    "welcome_to_elanora": "Bienvenue sur ELANora !",
     "features": {
       "collaborative_elan": "Annotation ELAN collaborative",
       "conflict_detection": "Détection de conflits",
@@ -188,8 +189,8 @@
   },
   "register": {
     "title": "Créer votre compte",
-    "subtitle": "Rejoignez ELANORA pour commencer à collaborer sur des corpus linguistiques",
-    "invitation_welcome": "Bienvenue ! {senderName} vous a invité à rejoindre ELANORA.",
+    "subtitle": "Rejoignez ELANora pour commencer à collaborer sur des corpus linguistiques",
+    "invitation_welcome": "Bienvenue ! {senderName} vous a invité à rejoindre ELANora.",
     "invitation_code_label": "Code d'invitation",
     "invitation_code_placeholder": "Entrez votre code d'invitation",
     "invitation_code_required": "Le code d'invitation est requis",
@@ -289,7 +290,7 @@
   },
   "invitation": {
     "send_title": "Envoyer une invitation",
-    "send_description": "Inviter des utilisateurs à rejoindre un projet spécifique sur ELANORA",
+    "send_description": "Inviter des utilisateurs à rejoindre un projet spécifique sur ELANora",
     "email_label": "Adresse email",
     "email_placeholder": "Saisissez l'email du destinataire",
     "project_label": "Projet",
@@ -407,16 +408,80 @@
   },
 
   "projectsPage": {
-    "title": "Projets",
-    "subtitle": "Gérez vos projets et corpus linguistiques",
-    "createProject": "Créer un Nouveau Projet",
-    "noProjects": "Aucun projet disponible, créez votre premier projet !",
+    "pageTitle": "Projets",
+    "title": "Projets de {instanceName}",
+    "projectListTitle": "Projets",
+    "noProjects": "Aucun projet en cours pour cette instance.\nPour commencer, veuillez créer un project en cliquant sur le bouton \"Créer un nouveau projet\".",
+    "noDescription": "Pas de description",
+    "filesInProject": "Fichiers dans {projectName}",
+    "synchronizing": "Synchronisation...",
+    "synchronize": "Synchroniser",
+    "loadingFiles": "Chargement des fichiers...",
+    "noFilesFound": "Aucun fichier trouvé.",
+    "deleteTitle": "Supprimer le projet",
+    "deleteMessage": "Êtes-vous sûr de vouloir supprimer le projet \"{projectName}\" ? Cette action est irréversible.",
+    "deleteConfirm": "Supprimer",
+    "deleteCancel": "Annuler",
+    "createProject": "Créer un nouveau projet",
+    "folderPreview": "Aperçu du dossier",
     "project": {
       "buttons": {
         "settings": "Paramètres du projet",
         "share": "Partager le projet",
         "delete": "Supprimer le projet",
-        "Rename": "Renommer le projet"
+        "rename": "Renommer le projet"
+      }
+    },
+    "syncDialog": {
+      "title": "Synchroniser le projet",
+      "checkingStatus": "Vérification du statut...",
+      "missingFolder": "Le dossier du projet est manquant. Vous pouvez restaurer depuis une sauvegarde ou supprimer le projet.",
+      "missingGit": "Le dossier .git du projet est manquant. Vous pouvez restaurer depuis une sauvegarde ou supprimer le projet.",
+      "missingElanFiles": "Le dossier elan_files du projet est manquant. Vous pouvez restaurer depuis une sauvegarde ou supprimer le projet.",
+      "illFormed": "Le dossier du projet semble mal formé. Que souhaitez-vous faire ?",
+      "detectedChanges": "Modifications détectées",
+      "affectedFile": "Fichier concerné",
+      "status": "Statut",
+      "inspect": "Inspecter",
+      "added": "Ajouté",
+      "modified": "Modifié",
+      "deleted": "Supprimé",
+      "restoreFromBackup": "Restaurer depuis une sauvegarde",
+      "deleteProject": "Supprimer le projet",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.",
+      "deleteFailed": "Échec de la suppression du projet.",
+      "discardLocalChanges": "Ignorer les modifications locales et resynchroniser",
+      "discardConfirm": "Êtes-vous sûr de vouloir ignorer toutes les modifications locales ? Cette action est irréversible.",
+      "discardFailed": "Échec de l'annulation des modifications locales.",
+      "syncToMaster": "Utiliser l'état actuel et mettre à jour la base de données",
+      "syncFailed": "Échec de la synchronisation du projet.",
+      "checkFailed": "Échec de la vérification du statut de synchronisation.",
+      "restoreFailed": "Échec de la restauration depuis la sauvegarde.",
+      "eventMessages": {
+        "succesfullyRestored": "Project restauré avec succès depuis la sauvegarde.",
+        "succesfullyDeleted": "Project supprimé avec succès.",
+        "succesfullyDiscarded": "Changements locaux annulés avec succès.",
+        "succesfullySynced": "Project synchronisé avec succès.",
+        "alreadyUpToDate": "Aucun changement n'a été détecté. Le project est déjà synchronisé."
+      }
+    },
+    "createDialog": {
+      "title": "Créer un nouveau projet",
+      "projectNamePlaceholder": "Nom du projet",
+      "projectDescriptionPlaceholder": "Description (optionnelle)",
+      "dropFolder": "Déposez un dossier ici ou cliquez pour parcourir vos dossiers.",
+      "onlyEafFiles": "Seuls les fichiers .eaf seront inclus.",
+      "folderPreview": "Aperçu du dossier",
+      "create": "Créer",
+      "creating": "Création...",
+      "errors": {
+        "nameRequired": "Le nom du projet est requis.",
+        "nameTooLong": "Le nom du projet doit comporter au maximum 100 caractères.",
+        "nameExists": "Un projet avec ce nom existe déjà.",
+        "descTooLong": "La description doit comporter au maximum 5000 caractères.",
+        "fixAbove": "Veuillez corriger les erreurs ci-dessus.",
+        "folderDropNotSupported": "Votre navigateur ne supporte pas le glisser-déposer de dossier. Utilisez le bouton \"Parcourir\".",
+        "createFailed": "Échec de la création du projet."
       }
     }
   },
@@ -431,6 +496,7 @@
         "subsections": {
           "fileTypes": "Types de Fichiers",
           "namingStandards": "Normes de Nommage",
+          "effectiveStandards": "Normes Effectives",
           "members": "Membres et Accès",
           "invitations": "Invitations"
         }
@@ -516,8 +582,10 @@
 
   "configureFileTypes": {
     "title": "Gérer les types de fichiers pour votre projet",
+    "defaultFileTypes": "Types de fichiers par défaut",
+    "customFileTypes": "Types de fichiers personnalisés",
     "loading": "Chargement des types de fichiers...",
-    "empty": "Aucun type de fichier trouvé. Créez votre premier type de fichier !",
+    "empty": "Aucun type de fichier trouvé. Créez votre premier type de fichier pour commencer !",
     "createFileType": "Ajouter",
     "edit": "Modifier",
     "delete": "Supprimer",
@@ -587,6 +655,7 @@
       "addSuccess": "Norme de nommage ajoutée avec succès.",
       "addFailed": "Échec de l'ajout de la norme de nommage.",
       "addFailedDuplicate": "Une norme de nommage avec ce nom et ce type de fichier existe déjà dans ce projet.",
+      "addFailedEmptyRegex": "Standard ne peut pas être ajouté : veuillez entrer une expression régulière valide pour chaque composant.",
       "deleteSuccess": "Norme de nommage supprimée avec succès.",
       "deleteFailed": "Échec de la suppression de la norme de nommage.",
       "importSuccessstandard": "Normes de nommage importées avec succès.",
@@ -759,5 +828,22 @@
     "error_unknown": "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
     "response_note": "Vous recevrez une réponse à l'adresse email que vous avez fournie.",
     "back_to_site": "Retour au Site"
+    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra",
+    "promptExtractedValue": "La valeur {value} a été extraite pour le composant \"{name}\". Si vous souhaitez utiliser uniquement la valeur extraite, laissez ce champ vide et cliquez sur \"OK\". Cependant, il est recommandé d'entrer une plage de valeurs valides (ex. : {example})."
+  },
+
+  "configureEffectiveStandards": {
+    "title": "Configurer les normes effectives de nommage",
+    "fileType": "Type de fichier",
+    "effectiveStandard": "Norme effective",
+    "eventMessages": {
+      "loadFailed": "Échec du chargement des normes effectives.",
+      "updateSuccess": "Norme effective mise à jour avec succès.",
+      "updateFailed": "Échec de la mise à jour de la norme effective."
+    }
+  },
+  
+  "tiersPage": {
+    "pageTitle": "Tiers"
   }
 }

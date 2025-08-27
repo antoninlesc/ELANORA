@@ -5,7 +5,7 @@
     <div v-else-if="error" class="tiers-page-error">{{ error }}</div>
     <div v-else>
       <div class="tiers-tree-main-block">
-        <div v-if="useCustomSections" class="tiers-section-controls">
+        <div class="tiers-section-controls">
           <!-- Create Section -->
           <form
             class="tiers-section-create-form"
@@ -19,101 +19,90 @@
             <button type="submit">Create Section</button>
           </form>
         </div>
-        <template v-if="useCustomSections">
-          <div
-            v-for="section in sections"
-            :key="section.section_id"
-            class="tiers-section-block"
+        <div
+          v-for="section in sections"
+          :key="section.section_id"
+          class="tiers-section-block"
+        >
+          <h2>
+            <span v-if="editingSectionId !== section.section_id">{{
+              section.name
+            }}</span>
+            <input
+              v-else
+              v-model="renameSectionName"
+              required
+              @keyup.enter="handleRenameSection(section.section_id)"
+              @blur="editingSectionId = null"
+            />
+            <button
+              @click="startRenameSection(section.section_id, section.name)"
+            >
+              Rename
+            </button>
+            <button @click="handleDeleteSection(section.section_id)">
+              Delete
+            </button>
+          </h2>
+          <draggable
+            :list="
+              tierGroups.filter((g) => g.section_id === section.section_id)
+            "
+            group="tier-groups"
+            :move="onMove"
+            item-key="tier_group_id"
+            class="tier-group-draggable"
+            :scroll="true"
+            :force-fallback="true"
+            :scroll-sensitivity="100"
+            :scroll-speed="20"
+            @change="(evt) => onDrop(section.section_id, evt)"
+            @start="onDragStart"
+            @end="onDragEnd"
           >
-            <h2>
-              <span v-if="editingSectionId !== section.section_id">{{
-                section.name
-              }}</span>
-              <input
-                v-else
-                v-model="renameSectionName"
-                required
-                @keyup.enter="handleRenameSection(section.section_id)"
-                @blur="editingSectionId = null"
+            <template #item="{ element, index }">
+              <TierTree
+                :tiers="element.tiers"
+                :group-label="element.elan_file_name"
+                :group-index="index"
               />
-              <button
-                @click="startRenameSection(section.section_id, section.name)"
+            </template>
+          </draggable>
+        </div>
+        <!-- Always show Unsectioned at the bottom -->
+        <div style="margin-top: 2rem">
+          <h2>Unsectioned</h2>
+          <draggable
+            :list="unsectionedTierGroups"
+            group="tier-groups"
+            :move="onMove"
+            item-key="tier_group_id"
+            class="tier-group-draggable unsectioned"
+            :scroll="true"
+            :force-fallback="true"
+            :scroll-sensitivity="100"
+            :scroll-speed="20"
+            @change="(evt) => onDrop(null, evt)"
+            @start="onDragStart"
+            @end="onDragEnd"
+          >
+            <template #item="{ element, index }">
+              <TierTree
+                :tiers="element.tiers"
+                :group-label="element.elan_file_name"
+                :group-index="index"
+              />
+            </template>
+            <template #footer>
+              <div
+                v-if="unsectionedTierGroups.length === 0"
+                style="color: #888; text-align: center; padding: 1rem"
               >
-                Rename
-              </button>
-              <button @click="handleDeleteSection(section.section_id)">
-                Delete
-              </button>
-            </h2>
-            <draggable
-              :list="
-                tierGroups.filter((g) => g.section_id === section.section_id)
-              "
-              group="tier-groups"
-              :move="onMove"
-              item-key="tier_group_id"
-              class="tier-group-draggable"
-              :scroll="true"
-              :force-fallback="true"
-              :scroll-sensitivity="100"
-              :scroll-speed="20"
-              @change="(evt) => onDrop(section.section_id, evt)"
-              @start="onDragStart"
-              @end="onDragEnd"
-            >
-              <template #item="{ element, index }">
-                <TierTree
-                  :tiers="element.tiers"
-                  :group-label="element.elan_file_name"
-                  :group-index="index"
-                />
-              </template>
-            </draggable>
-          </div>
-          <!-- Always show Unsectioned at the bottom -->
-          <div style="margin-top: 2rem">
-            <h2>Unsectioned</h2>
-            <draggable
-              :list="tierGroups.filter((g) => !g.section_id)"
-              group="tier-groups"
-              :move="onMove"
-              item-key="tier_group_id"
-              class="tier-group-draggable unsectioned"
-              :scroll="true"
-              :force-fallback="true"
-              :scroll-sensitivity="100"
-              :scroll-speed="20"
-              @change="(evt) => onDrop(null, evt)"
-              @start="onDragStart"
-              @end="onDragEnd"
-            >
-              <template #item="{ element, index }">
-                <TierTree
-                  :tiers="element.tiers"
-                  :group-label="element.elan_file_name"
-                  :group-index="index"
-                />
-              </template>
-              <template #footer>
-                <div
-                  v-if="tierGroups.filter((g) => !g.section_id).length === 0"
-                  style="color: #888; text-align: center; padding: 1rem"
-                >
-                  No unsectioned tier groups.
-                </div>
-              </template>
-            </draggable>
-          </div>
-        </template>
-        <template v-else>
-          <TierTree
-            v-for="(group, idx) in tierTree"
-            :key="group.fileName"
-            :tiers="group.tiers"
-            :group-index="idx"
-            :group-label="group.fileName"
-          />
-        </template>
+                No unsectioned tier groups.
+              </div>
+            </template>
+          </draggable>
+        </div>
       </div>
     </div>
   </div>
@@ -123,6 +112,8 @@
 import '@/assets/css/tiers.css';
 import { ref, onMounted, computed } from 'vue';
 import { useProjectStore } from '@/stores/project';
+import { useHead } from '@unhead/vue';
+import { useI18n } from 'vue-i18n';
 import {
   fetchSectionsAndGroups,
   createSection,
@@ -131,21 +122,32 @@ import {
   moveTierGroup,
 } from '@/api/service/tierService';
 import TierTree from '@/components/common/TierTree.vue';
-import { VueDraggableNext as draggable } from 'vue-draggable-next';
+import draggable from 'vuedraggable';
 
 const projectStore = useProjectStore();
+const { t } = useI18n();
+
+useHead({
+  title: t('tiersPage.pageTitle'),
+  meta: [
+    { name: 'description', content: t('tiersPage.pageDescription') },
+  ],
+});
+
 const currentProject = computed(() => projectStore.currentProject);
 
-const tierTree = ref([]);
 const sections = ref([]);
 const tierGroups = ref([]);
 const loading = ref(true);
 const error = ref('');
-const useCustomSections = ref(false);
 const newSectionName = ref('');
 const renameSectionName = ref('');
 const editingSectionId = ref(null);
 const isDragging = ref(false);
+
+const unsectionedTierGroups = computed(() =>
+  tierGroups.value.filter((g) => g.section_id === null)
+);
 
 async function loadData({ silent = false } = {}) {
   if (!silent) loading.value = true;
@@ -160,7 +162,6 @@ async function loadData({ silent = false } = {}) {
     );
     sections.value = custom.sections;
     tierGroups.value = custom.tier_groups;
-    useCustomSections.value = true;
   } catch {
     error.value = 'Failed to load tiers.';
   } finally {

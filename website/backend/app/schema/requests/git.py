@@ -5,7 +5,7 @@ class ProjectCreateRequest(CustomBaseModel):
     """Schema for project creation request."""
 
     project_name: str
-    description: str
+    description: str | None = None
 
 
 class CommitRequest(CustomBaseModel):
@@ -21,10 +21,11 @@ class ProjectCheckoutRequest(CustomBaseModel):
     branch_name: str
 
 
-class ProjectRenameRequest(CustomBaseModel):
-    """Schema for project rename request."""
+class ProjectEditRequest(CustomBaseModel):
+    """Schema for project edit request."""
 
     new_project_name: str
+    new_project_description: str | None = None
 
 
 class ProjectDeleteRequest(CustomBaseModel):

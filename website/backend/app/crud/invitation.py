@@ -1,7 +1,6 @@
 """Invitation CRUD operations - Pure database access layer."""
 
 import secrets
-import uuid
 from datetime import datetime, timedelta
 
 from passlib.context import CryptContext

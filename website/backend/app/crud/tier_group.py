@@ -43,3 +43,15 @@ async def delete_tier_group(db: AsyncSession, tier_group_id: int) -> int:
     return await DatabaseUtils.delete_by_filter(
         db, TierGroup, tier_group_id=tier_group_id, auto_commit=True
     )
+
+
+async def delete_tier_groups_for_project_and_elan(
+    db: AsyncSession, project_id: int, elan_id: int
+) -> int:
+    return await DatabaseUtils.delete_by_filter(
+        db,
+        TierGroup,
+        project_id=project_id,
+        elan_id=elan_id,
+        auto_commit=True,
+    )

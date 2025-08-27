@@ -1,25 +1,23 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload
 
 from app.crud import file_type as file_type_crud
 from app.crud.association import (
     add_project_file_type,
-    get_project_file_types,
-    delete_project_file_type,
-    update_project_file_type_name,
-    update_project_file_type_file_type_id,
-    get_project_file_type_by_id,
     count_project_file_types_by_file_type_id,
+    delete_project_file_type,
+    get_project_file_type_by_id,
     get_project_file_type_with_file_type,
+    get_project_file_types,
+    update_project_file_type_file_type_id,
+    update_project_file_type_name,
 )
 from app.crud.file_type import (
-    get_file_type_by_id,
-    get_file_type_by_extension,
     create_file_type,
     delete_orphaned_file_types,
+    get_file_type_by_extension,
+    get_file_type_by_id,
 )
-from app.utils.database import DatabaseUtils
 
 
 class FileTypeService:
@@ -115,9 +113,7 @@ class FileTypeService:
     async def import_project_file_type(
         db, target_project_id: int, name: str, file_type_id: int
     ):
-        """
-        Create a new ProjectFileType in the target project, using an existing FileType.
-        """
+        """Create a new ProjectFileType in the target project, using an existing FileType."""
         try:
             project_file_type = await add_project_file_type(
                 db, target_project_id, name, file_type_id
@@ -136,9 +132,7 @@ class FileTypeService:
     async def import_selected_file_types(
         db, source_project_id: int, target_project_id: int, file_type_names: list[str]
     ):
-        """
-        Import selected file types (by name) from source_project_id to target_project_id.
-        """
+        """Import selected file types (by name) from source_project_id to target_project_id."""
         source_types = await FileTypeService.get_file_types_for_project(
             db, source_project_id
         )
@@ -158,6 +152,17 @@ class FileTypeService:
     async def remove_file_type_from_project(
         db, project_file_type_id: int, project_id: int
     ):
+        pft = await get_project_file_type_by_id(db, project_file_type_id)
+        if not pft:
+            raise HTTPException(status_code=404, detail="Project file type not found")
+        if pft.is_required:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "file_type_required",
+                    "message": "Cannot delete: This file type is required for the project.",
+                },
+            )
         try:
             await delete_project_file_type(db, project_file_type_id, project_id)
             await db.commit()
