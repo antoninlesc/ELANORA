@@ -61,13 +61,10 @@
             @show-message="handleMessage"
           />
 
-          <!-- Notifications Section (placeholder) -->
-          <div v-else-if="currentSection === 'notifications'" class="profile-section">
-            <div class="profile-placeholder">
-              <h3>{{ t('profile.notifications.title') }}</h3>
-              <p>{{ t('profile.notifications.coming_soon') }}</p>
-            </div>
-          </div>
+          <!-- Notifications Section -->
+          <NotificationPanel
+            v-else-if="currentSection === 'notifications'"
+          />
         </div>
       </main>
     </div>
@@ -75,22 +72,33 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useEventMessageStore } from '@/stores/eventMessage.js';
-import { fetchUserProfile } from '@/api/service/userService.js';
-import ProfileOverview from '@/components/pageSpecific/profile/ProfileOverview.vue';
-import ProfileSettings from '@/components/pageSpecific/profile/ProfileSettings.vue';
-import ProfileSecurity from '@/components/pageSpecific/profile/ProfileSecurity.vue';
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useEventMessageStore } from '@/stores/eventMessage.js'
+import { fetchUserProfile } from '@/api/service/userService.js'
+import ProfileOverview from '@/components/pageSpecific/profile/ProfileOverview.vue'
+import ProfileSettings from '@/components/pageSpecific/profile/ProfileSettings.vue'
+import ProfileSecurity from '@/components/pageSpecific/profile/ProfileSecurity.vue'
+import NotificationPanel from '@/components/common/NotificationPanel.vue'
 
-const { t } = useI18n();
-const eventMessageStore = useEventMessageStore();
+const { t } = useI18n()
+const route = useRoute()
+const eventMessageStore = useEventMessageStore()
 
 // State
-const currentSection = ref('overview');
-const userProfile = ref(null);
-const loading = ref(true);
-const error = ref('');
+const currentSection = ref('overview')
+const userProfile = ref(null)
+const loading = ref(true)
+const error = ref('')
+
+// Initialize section from route query
+onMounted(() => {
+  if (route.query.tab && ['overview', 'settings', 'security', 'notifications'].includes(route.query.tab)) {
+    currentSection.value = route.query.tab
+  }
+  loadUserProfile()
+})
 
 // Menu configuration
 const menuItems = computed(() => [

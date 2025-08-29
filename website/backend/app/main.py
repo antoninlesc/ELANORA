@@ -11,10 +11,13 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.contact import router as contact_router
 from app.api.v1.file_type import router as file_type_router
 from app.api.v1.git import router as git_router
-from app.api.v1.effective_naming_standard import router as effective_naming_standard_router
+from app.api.v1.effective_naming_standard import (
+    router as effective_naming_standard_router,
+)
 from app.api.v1.instance import router as instance_router
 from app.api.v1.invitation import router as invitation_router
 from app.api.v1.location import router as location_router
+from app.api.v1.notification import router as notification_router
 from app.api.v1.project_associations import router as project_associations_router
 from app.api.v1.project_naming_standard import router as project_naming_standard_router
 from app.api.v1.tier import router as tier_router
@@ -120,8 +123,15 @@ app.include_router(
 
 app.include_router(contact_router, prefix=f"{API_V1_PREFIX}/contact", tags=["CONTACT"])
 
-app.include_router(effective_naming_standard_router, prefix=f"{API_V1_PREFIX}/effective-naming-standard", tags=["EFFECTIVE NAMING STANDARD"])
+app.include_router(
+    effective_naming_standard_router,
+    prefix=f"{API_V1_PREFIX}/effective-naming-standard",
+    tags=["EFFECTIVE NAMING STANDARD"],
+)
 
+app.include_router(
+    notification_router, prefix=f"{API_V1_PREFIX}/notifications", tags=["NOTIFICATION"]
+)
 
 
 # Root endpoint

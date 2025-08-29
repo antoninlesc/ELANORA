@@ -47,6 +47,8 @@ from .enums import (
 from .file_type import FileType
 from .instance import Instance
 from .invitation import Invitation
+from .notification import Notification
+from .notification_preference import NotificationPreference
 
 # Project model (depends on instance)
 from .project import Project
@@ -86,7 +88,8 @@ __all__ = [
     "Instance",
     "Invitation",
     "InvitationStatus",
-    "NamingComponent",
+    "Notification",
+    "NotificationPreference",
     "Project",
     "ProjectAnnotStandard",
     "ProjectNamingStandard",

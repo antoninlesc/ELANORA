@@ -223,6 +223,7 @@ async def delete_elan_file_full(db: AsyncSession, elan_id: int) -> bool:
         logger.error(f"Failed to fully delete ELAN file elan_id={elan_id}: {e}")
         return False
 
+
 async def store_elan_file_data_in_db(
     db: AsyncSession, file_info: dict, user_id: int, project_id: int
 ) -> int:

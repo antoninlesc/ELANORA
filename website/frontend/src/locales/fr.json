@@ -117,6 +117,9 @@
     "conflicts": "Conflits",
     "tiers": "Tiers",
     "export": "Export",
+    "profile": "Profil",
+    "notifications": "Notifications",
+    "logout": "Déconnexion",
     "projectSection": {
       "selectProject": "Sélectionnez un projet",
       "noProjectAvailable": "Aucun projet disponible",
@@ -778,8 +781,7 @@
     },
     "notifications": {
       "title": "Notifications",
-      "description": "Configurez vos préférences de notification",
-      "coming_soon": "Les paramètres de notification seront bientôt disponibles."
+      "description": "Configurez vos préférences de notification et consultez vos notifications récentes"
     },
     "errors": {
       "load_failed": "Échec du chargement des informations de profil. Veuillez réessayer."
