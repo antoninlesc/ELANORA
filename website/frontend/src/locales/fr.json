@@ -781,7 +781,36 @@
     },
     "notifications": {
       "title": "Notifications",
-      "description": "Configurez vos préférences de notification et consultez vos notifications récentes"
+      "description": "Gérez vos notifications et préférences",
+      "loading": "Chargement des notifications...",
+      "refresh": "Actualiser",
+      "mark_all_read": "Tout marquer comme lu",
+      "mark_read": "Marquer comme lu",
+      "view": "Voir",
+      "delete": "Supprimer",
+      "new": "Nouveau",
+      "load_more": "Charger plus",
+      "stats": {
+        "total": "Total",
+        "unread": "Non lues",
+        "read": "Lues"
+      },
+      "filters": {
+        "all": "Toutes",
+        "unread": "Non lues",
+        "read": "Lues"
+      },
+      "empty": {
+        "title": "Aucune notification",
+        "all": "Aucune notification à afficher.",
+        "unread": "Vous n'avez aucune notification non lue."
+      },
+      "preferences": {
+        "title": "Préférences de notification",
+        "description": "Configurez vos préférences de notification",
+        "email": "Notifications par email",
+        "email_description": "Recevoir les notifications par email"
+      }
     },
     "errors": {
       "load_failed": "Échec du chargement des informations de profil. Veuillez réessayer."

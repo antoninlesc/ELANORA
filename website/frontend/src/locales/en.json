@@ -790,8 +790,36 @@
     },
     "notifications": {
       "title": "Notifications",
-      "description": "Configure your notification preferences",
-      "coming_soon": "Notification settings will be available soon."
+      "description": "Manage your notifications and preferences",
+      "loading": "Loading notifications...",
+      "refresh": "Refresh",
+      "mark_all_read": "Mark all as read",
+      "mark_read": "Mark as read",
+      "view": "View",
+      "delete": "Delete",
+      "new": "New",
+      "load_more": "Load more",
+      "stats": {
+        "total": "Total",
+        "unread": "Unread",
+        "read": "Read"
+      },
+      "filters": {
+        "all": "All",
+        "unread": "Unread",
+        "read": "Read"
+      },
+      "empty": {
+        "title": "No notifications",
+        "all": "No notifications to display.",
+        "unread": "You have no unread notifications."
+      },
+      "preferences": {
+        "title": "Notification preferences",
+        "description": "Configure your notification preferences",
+        "email": "Email notifications",
+        "email_description": "Receive notifications via email"
+      }
     },
     "errors": {
       "load_failed": "Failed to load profile information. Please try again."

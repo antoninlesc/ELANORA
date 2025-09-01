@@ -62,7 +62,7 @@
           />
 
           <!-- Notifications Section -->
-          <NotificationPanel
+          <ProfileNotifications
             v-else-if="currentSection === 'notifications'"
           />
         </div>
@@ -80,7 +80,7 @@ import { fetchUserProfile } from '@/api/service/userService.js'
 import ProfileOverview from '@/components/pageSpecific/profile/ProfileOverview.vue'
 import ProfileSettings from '@/components/pageSpecific/profile/ProfileSettings.vue'
 import ProfileSecurity from '@/components/pageSpecific/profile/ProfileSecurity.vue'
-import NotificationPanel from '@/components/common/NotificationPanel.vue'
+import ProfileNotifications from '@/components/pageSpecific/profile/ProfileNotifications.vue'
 
 const { t } = useI18n()
 const route = useRoute()

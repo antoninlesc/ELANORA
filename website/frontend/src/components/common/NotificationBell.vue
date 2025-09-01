@@ -3,13 +3,17 @@
     <!-- Notification Bell Button -->
     <button
       @click="toggleDropdown"
-      class="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full"
-      :class="{ 'text-blue-600': hasUnreadNotifications }"
+      class="relative p-3 text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105"
+      :class="{ 
+        'text-blue-600 bg-blue-50': hasUnreadNotifications,
+        'hover:bg-gray-100': !hasUnreadNotifications
+      }"
       :title="unreadCount > 0 ? `${unreadCount} notifications non lues` : 'Notifications'"
     >
       <!-- Bell Icon -->
       <svg
-        class="w-6 h-6"
+        class="w-6 h-6 transition-transform duration-200"
+        :class="{ 'animate-pulse': hasUnreadNotifications }"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -24,109 +28,169 @@
       </svg>
       
       <!-- Unread Count Badge -->
-      <span
-        v-if="unreadCount > 0"
-        class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
-      >
-        {{ unreadCount > 99 ? '99+' : unreadCount }}
-      </span>
+      <transition name="badge-bounce">
+        <span
+          v-if="unreadCount > 0"
+          class="absolute -top-1 -right-1 bg-gradient-to-br from-red-500 to-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-lg border-2 border-white transform animate-bounce"
+        >
+          {{ unreadCount > 99 ? '99+' : unreadCount }}
+        </span>
+      </transition>
     </button>
 
     <!-- Dropdown Panel -->
-    <div
-      v-if="showDropdown"
-      class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
-      @click.stop
-    >
-      <!-- Dropdown Header -->
-      <div class="px-4 py-3 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
-          <button
-            v-if="unreadCount > 0"
-            @click="markAllAsRead"
-            class="text-sm text-blue-600 hover:text-blue-800 font-medium"
-            :disabled="loading"
-          >
-            Tout marquer comme lu
-          </button>
-        </div>
-        <p class="text-sm text-gray-500 mt-1">
-          {{ unreadCount }} non lue{{ unreadCount !== 1 ? 's' : '' }}
-        </p>
-      </div>
-
-      <!-- Notifications List -->
-      <div class="max-h-96 overflow-y-auto">
-        <div v-if="loading" class="p-4 text-center">
-          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-          <p class="text-sm text-gray-500 mt-2">Chargement...</p>
-        </div>
-
-        <div v-else-if="notifications.length === 0" class="p-4 text-center">
-          <p class="text-gray-500">Aucune notification</p>
-        </div>
-
-        <div v-else>
-          <div
-            v-for="notification in notifications.slice(0, 10)"
-            :key="notification.notification_id"
-            class="px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-            :class="{ 'bg-blue-50': !notification.is_read }"
-            @click="handleNotificationClick(notification)"
-          >
-            <div class="flex items-start justify-between">
-              <div class="flex-1 min-w-0">
-                <h4 class="text-sm font-medium text-gray-900 truncate">
-                  {{ notification.title }}
-                </h4>
-                <p class="text-sm text-gray-600 mt-1 line-clamp-2">
-                  {{ notification.message }}
-                </p>
-                <p class="text-xs text-gray-400 mt-1">
-                  {{ formatDate(notification.created_at) }}
-                </p>
+    <transition name="dropdown-fade">
+      <div
+        v-if="showDropdown"
+        class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
+        @click.stop
+      >
+        <!-- Dropdown Header -->
+        <div class="px-4 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div class="p-2 bg-blue-100 rounded-lg">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
               </div>
-              
-              <!-- Unread indicator -->
-              <div v-if="!notification.is_read" class="ml-2 mt-1">
-                <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-              </div>
-              
-              <!-- Actions -->
-              <div class="ml-2 flex flex-col space-y-1">
-                <button
-                  v-if="!notification.is_read"
-                  @click.stop="markAsRead(notification.notification_id)"
-                  class="text-xs text-blue-600 hover:text-blue-800"
-                  title="Marquer comme lu"
-                >
-                  ✓
-                </button>
-                <button
-                  @click.stop="deleteNotification(notification.notification_id)"
-                  class="text-xs text-red-600 hover:text-red-800"
-                  title="Supprimer"
-                >
-                  ✕
-                </button>
+              <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
+            </div>
+            <button
+              v-if="unreadCount > 0"
+              @click="markAllAsRead"
+              class="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors duration-200"
+              :disabled="loading"
+            >
+              <span class="flex items-center space-x-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span>Tout lire</span>
+              </span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between mt-2">
+            <p class="text-sm text-gray-600">
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {{ unreadCount }} non lue{{ unreadCount !== 1 ? 's' : '' }}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Notifications List -->
+        <div class="max-h-96 overflow-y-auto">
+          <div v-if="loading" class="p-8 text-center">
+            <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-4">
+              <div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+            </div>
+            <p class="text-sm text-gray-600 font-medium">Chargement des notifications...</p>
+          </div>
+
+          <div v-else-if="notifications.length === 0" class="p-8 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+            </div>
+            <p class="text-gray-500 font-medium">Aucune notification</p>
+            <p class="text-xs text-gray-400 mt-1">Vous êtes à jour !</p>
+          </div>
+
+          <div v-else class="divide-y divide-gray-100">
+            <div
+              v-for="notification in notifications"
+              :key="notification.notification_id"
+              class="px-4 py-4 hover:bg-gray-50 cursor-pointer transition-all duration-200 group"
+              :class="{ 
+                'bg-gradient-to-r from-blue-50 to-transparent border-l-4 border-blue-400': !notification.is_read,
+                'hover:transform hover:scale-[1.01]': true
+              }"
+              @click="handleNotificationClick(notification)"
+            >
+              <div class="flex items-start space-x-3">
+                <!-- Notification Icon -->
+                <div class="flex-shrink-0 mt-1">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                       :class="!notification.is_read ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </div>
+                </div>
+                
+                <!-- Notification Content -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-start justify-between">
+                    <h4 class="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200"
+                        :class="{ 'text-blue-800': !notification.is_read }">
+                      {{ notification.title }}
+                    </h4>
+                    <!-- Unread indicator -->
+                    <div v-if="!notification.is_read" class="ml-2 mt-1">
+                      <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                  <p class="text-sm text-gray-600 mt-1 line-clamp-2 leading-relaxed">
+                    {{ notification.message }}
+                  </p>
+                  <div class="flex items-center justify-between mt-2">
+                    <p class="text-xs text-gray-500 flex items-center space-x-1">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <span>{{ formatDate(notification.created_at) }}</span>
+                    </p>
+
+                    <!-- Action Buttons -->
+                    <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <button
+                        v-if="!notification.is_read"
+                        @click.stop="markAsRead(notification.notification_id)"
+                        class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition-all duration-200"
+                        title="Marquer comme lu"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                      </button>
+                      <button
+                        @click.stop="deleteNotification(notification.notification_id)"
+                        class="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-full transition-all duration-200"
+                        title="Supprimer"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Dropdown Footer -->
-      <div class="px-4 py-3 border-t border-gray-200">
-        <router-link
-          to="/profile?tab=notifications"
-          class="block text-sm text-blue-600 hover:text-blue-800 font-medium text-center"
-          @click="closeDropdown"
-        >
-          Voir toutes les notifications
-        </router-link>
+        <!-- Dropdown Footer -->
+        <div class="px-4 py-4 bg-gray-50 border-t border-gray-200">
+          <router-link
+            to="/profile?tab=notifications"
+            class="flex items-center justify-center space-x-2 w-full px-4 py-2 text-sm text-blue-600 hover:text-blue-800 font-medium bg-white hover:bg-blue-50 border border-blue-200 rounded-lg transition-all duration-200 transform hover:scale-105"
+            @click="closeDropdown"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            <span>Voir toutes les notifications</span>
+          </router-link>
+        </div>
       </div>
-    </div>
+    </transition>
 
     <!-- Overlay to close dropdown -->
     <div
@@ -151,7 +215,7 @@ const notificationStore = useNotificationStore()
 const showDropdown = ref(false)
 
 // Computed properties
-const notifications = computed(() => notificationStore.notifications)
+const notifications = computed(() => notificationStore.unreadNotifications)
 const unreadCount = computed(() => notificationStore.unreadCount)
 const hasUnreadNotifications = computed(() => notificationStore.hasUnreadNotifications)
 const loading = computed(() => notificationStore.loading)
@@ -276,5 +340,100 @@ onUnmounted(() => {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* transition animations */
+.badge-bounce-enter-active,
+.badge-bounce-leave-active {
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.badge-bounce-enter-from,
+.badge-bounce-leave-to {
+  opacity: 0;
+  transform: scale(0.5) rotate(180deg);
+}
+
+.dropdown-fade-enter-active,
+.dropdown-fade-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dropdown-fade-enter-from,
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+}
+
+/* Custom scrollbar for notifications list */
+.max-h-96::-webkit-scrollbar {
+  width: 6px;
+}
+
+.max-h-96::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.max-h-96::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.max-h-96::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Smooth hover animations */
+.group:hover .opacity-0 {
+  opacity: 1;
+}
+
+/* Focus states */
+button:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Pulse animation for unread indicators */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Bounce animation for notification badge */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
 }
 </style>
