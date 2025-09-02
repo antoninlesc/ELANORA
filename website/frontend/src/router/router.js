@@ -16,6 +16,7 @@ import UploadPage from '@views/UploadPage.vue';
 import ConflictsPage from '@views/ConflictsPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import InvitationResponsePage from '@views/InvitationResponsePage.vue';
+import InvitationDecisionPage from '@views/InvitationDecisionPage.vue';
 import TiersPage from '@views/TiersPage.vue';
 import TestProjectUsersPage from '@views/TestProjectUsersPage.vue';
 import ProjectConfigurationPage from '@views/ProjectConfigurationPage.vue';
@@ -59,6 +60,14 @@ const routes = [
     path: '/invitation/:action/:invitationId',
     name: 'InvitationResponse',
     component: InvitationResponsePage,
+    props: true,
+    meta: { requiresAuth: true },
+  },
+  // Invitation decision page (for notifications)
+  {
+    path: '/invitation/respond/:invitationId',
+    name: 'InvitationDecision',
+    component: InvitationDecisionPage,
     props: true,
     meta: { requiresAuth: true },
   },

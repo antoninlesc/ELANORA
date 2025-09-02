@@ -91,3 +91,12 @@ export async function resendInvitation(invitationId) {
 export async function cancelInvitation(invitationId) {
   return await axiosInstance.post(`/invitation/cancel/${invitationId}`);
 }
+
+/**
+ * Get invitation details for decision page.
+ * @param {number} invitationId
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+export async function getInvitationDetails(invitationId) {
+  return await axiosInstance.get(`/invitation/details/${invitationId}`);
+}

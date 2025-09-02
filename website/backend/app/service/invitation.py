@@ -15,6 +15,10 @@ from app.crud.invitation import (
     get_pending_invitations_by_email,
     update_invitation_status,
 )
+from app.crud.notification import (
+    create_notification,
+    get_notification_preference_by_user_id,
+)
 from app.crud.project import (
     add_user_to_project,
     get_project_by_id,
@@ -24,6 +28,7 @@ from app.crud.project import (
 from app.crud.user import get_user_by_id, get_user_by_username_or_email
 from app.model.enums import InvitationStatus
 from app.model.invitation import Invitation
+from app.schema.requests.notification import NotificationCreateRequest
 from app.schema.requests.invitation import InvitationSendRequest
 from app.schema.responses.invitation import (
     InvitationListResponse,
@@ -102,16 +107,26 @@ class InvitationService:
             # Send different email based on whether user exists
             language = request.language or "en"
             if existing_user:
-                # Send existing user invitation email with accept/reject buttons
-                email_sent = (
-                    await self.email_service.send_existing_user_invitation_email(
-                        email=request.receiver_email,
-                        invitation_id=invitation.invitation_id,
-                        sender_name=f"{sender.first_name} {sender.last_name}",
-                        project_name=project.project_name,
-                        custom_message=request.message,
-                        language=language,
-                    )
+                # Create notification for existing user
+                await self._create_invitation_notification(
+                    db=db,
+                    user_id=existing_user.user_id,
+                    invitation_id=invitation.invitation_id,
+                    sender_name=f"{sender.first_name} {sender.last_name}",
+                    project_name=project.project_name,
+                    language=language,
+                )
+
+                # Check user's email preferences and send email if enabled
+                email_sent = await self._send_invitation_email_if_enabled(
+                    db=db,
+                    user_id=existing_user.user_id,
+                    email=request.receiver_email,
+                    invitation_id=invitation.invitation_id,
+                    sender_name=f"{sender.first_name} {sender.last_name}",
+                    project_name=project.project_name,
+                    custom_message=request.message,
+                    language=language,
                 )
             else:
                 # Send new user invitation email with registration link
@@ -847,6 +862,189 @@ class InvitationService:
                 extra={
                     "invitation_id": invitation_id,
                     "sender_id": sender_id,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            return {"success": False, "message": "Internal server error"}
+
+    async def _create_invitation_notification(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        invitation_id: int,
+        sender_name: str,
+        project_name: str,
+        language: str = "en",
+    ) -> None:
+        """Create a notification for project invitation."""
+        try:
+            # Create notification with a link to the invitation response page
+            action_url = f"/invitation/respond/{invitation_id}"
+
+            # Set title and message based on language
+            if language.lower() == "fr":
+                title = "Nouvelle invitation au projet"
+                message = f"{sender_name} vous a invité à rejoindre le projet '{project_name}'"
+            else:
+                title = "New project invitation"
+                message = (
+                    f"{sender_name} invited you to join the project '{project_name}'"
+                )
+
+            notification = await create_notification(
+                db=db,
+                notification_data=NotificationCreateRequest(
+                    user_id=user_id,
+                    title=title,
+                    message=message,
+                    action_url=action_url,
+                ),
+            )
+
+            # Don't commit here - let the main transaction handle it
+            await db.flush()  # Just flush to get the notification_id
+
+            logger.info(
+                "Invitation notification created",
+                extra={
+                    "user_id": user_id,
+                    "invitation_id": invitation_id,
+                    "notification_id": notification.notification_id,
+                },
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to create invitation notification",
+                extra={
+                    "user_id": user_id,
+                    "invitation_id": invitation_id,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+
+    async def _send_invitation_email_if_enabled(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        email: str,
+        invitation_id: int,
+        sender_name: str,
+        project_name: str,
+        custom_message: str | None = None,
+        language: str = "en",
+    ) -> bool:
+        """Send invitation email only if user has email notifications enabled."""
+        try:
+            # Check user's email preferences
+            preferences = await get_notification_preference_by_user_id(db, user_id)
+
+            # If preferences don't exist or email is disabled, don't send email
+            if not preferences or not preferences.email_enabled:
+                logger.info(
+                    "Email notification skipped - user has email notifications disabled",
+                    extra={"user_id": user_id, "email": email},
+                )
+                return True  # Return True because the operation succeeded (just no email sent)
+
+            # Send the email since preferences allow it
+            email_sent = await self.email_service.send_existing_user_invitation_email(
+                email=email,
+                invitation_id=invitation_id,
+                sender_name=sender_name,
+                project_name=project_name,
+                custom_message=custom_message,
+                language=language,
+            )
+
+            if email_sent:
+                logger.info(
+                    "Invitation email sent successfully",
+                    extra={
+                        "user_id": user_id,
+                        "email": email,
+                        "invitation_id": invitation_id,
+                    },
+                )
+            else:
+                logger.warning(
+                    "Failed to send invitation email",
+                    extra={
+                        "user_id": user_id,
+                        "email": email,
+                        "invitation_id": invitation_id,
+                    },
+                )
+
+            return email_sent
+
+        except Exception as e:
+            logger.error(
+                "Error checking email preferences or sending email",
+                extra={
+                    "user_id": user_id,
+                    "email": email,
+                    "invitation_id": invitation_id,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            return False
+
+    async def get_invitation_details_for_user(
+        self,
+        db: AsyncSession,
+        invitation_id: int,
+        user_id: int,
+    ) -> dict[str, Any]:
+        """Get invitation details for a user to make accept/reject decision."""
+        try:
+            # Get invitation details
+            invitation = await get_invitation_by_id(db, invitation_id)
+            if not invitation:
+                return {"success": False, "message": "Invitation not found"}
+
+            # Check if invitation is still pending
+            if invitation.status != InvitationStatus.PENDING:
+                return {"success": False, "message": "Invitation is no longer pending"}
+
+            # Verify the user matches the invitation email
+            user = await get_user_by_id(db, user_id)
+            if not user or user.email != invitation.receiver_email:
+                return {
+                    "success": False,
+                    "message": "This invitation is not for your account",
+                }
+
+            # Get project details
+            project = await get_project_by_id(db, invitation.project_id)
+            if not project:
+                return {"success": False, "message": "Project not found"}
+
+            # Get sender details
+            sender = await get_user_by_id(db, invitation.sender)
+            sender_name = (
+                f"{sender.first_name} {sender.last_name}" if sender else "Unknown"
+            )
+
+            return {
+                "success": True,
+                "invitation_id": invitation.invitation_id,
+                "sender_name": sender_name,
+                "project_name": project.project_name,
+                "expires_at": invitation.expires_at.isoformat()
+                if invitation.expires_at
+                else None,
+                "created_at": invitation.created_at.isoformat(),
+            }
+
+        except Exception as e:
+            logger.error(
+                "Failed to get invitation details for user",
+                extra={
+                    "invitation_id": invitation_id,
+                    "user_id": user_id,
                     "error": str(e),
                 },
                 exc_info=True,

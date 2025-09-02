@@ -35,11 +35,19 @@ async def send_invitation(
         )
 
     invitation_service = InvitationService()
-    return await invitation_service.send_invitation(
-        db=db,
-        sender_id=user.user_id,
-        request=request,
-    )
+    try:
+        result = await invitation_service.send_invitation(
+            db=db,
+            sender_id=user.user_id,
+            request=request,
+        )
+        # Commit the transaction
+        await db.commit()
+        return result
+    except Exception:
+        # Rollback in case of error
+        await db.rollback()
+        raise
 
 
 @router.get("/validate/{invitation_code}", response_model=InvitationValidationResponse)
@@ -114,6 +122,21 @@ async def get_project_invitations(
     return await invitation_service.get_project_invitations(
         db=db,
         project_name=project_name,
+    )
+
+
+@router.get("/details/{invitation_id}")
+async def get_invitation_details(
+    invitation_id: int,
+    user: User = get_user_dep,
+    db: AsyncSession = get_db_dep,
+) -> dict[str, Any]:
+    """Get invitation details for the decision page (for authenticated users)."""
+    invitation_service = InvitationService()
+    return await invitation_service.get_invitation_details_for_user(
+        db=db,
+        invitation_id=invitation_id,
+        user_id=user.user_id,
     )
 
 
