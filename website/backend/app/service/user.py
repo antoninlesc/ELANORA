@@ -28,6 +28,7 @@ from app.schema.requests.user import (
 )
 from app.service.address import AddressService
 from app.service.email import EmailService
+from app.service.notification import NotificationService
 
 from app.utils.database import DatabaseUtils
 
@@ -247,6 +248,14 @@ class UserService:
 
             # Create user in database
             user = await create_user_in_db(db, user_data)
+
+            # Flush to get the user_id before creating preferences
+            await db.flush()
+
+            # Create default notification preferences
+            await NotificationService.create_user_preference(
+                db, user.user_id, email_enabled=True
+            )
 
             await db.commit()
             logger.info(f"User created successfully: {user.username}")
