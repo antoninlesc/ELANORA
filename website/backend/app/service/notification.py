@@ -204,7 +204,7 @@ class NotificationService:
             user_id=user_id,
             title="Nouvelle invitation au projet",
             message=f"{inviter_name} vous a invité à rejoindre le projet '{project_name}'.",
-            action_url=f"/projects/{project_id}",
+            action_url="/projects",
         )
 
         return await NotificationService.create_notification(db, notification_data)
@@ -222,7 +222,25 @@ class NotificationService:
             user_id=user_id,
             title="Rôle dans le projet modifié",
             message=f"Votre rôle dans le projet '{project_name}' a été modifié à '{new_role}'.",
-            action_url=f"/projects/{project_id}",
+            action_url=f"/projects/{project_id}/configuration",
+        )
+
+        return await NotificationService.create_notification(db, notification_data)
+
+    @staticmethod
+    async def create_project_member_joined_notification(
+        db: AsyncSession,
+        admin_user_id: int,
+        project_name: str,
+        new_member_name: str,
+        project_id: int,
+    ) -> NotificationResponse:
+        """Create a notification for admins when a new member joins a project."""
+        notification_data = NotificationCreateRequest(
+            user_id=admin_user_id,
+            title="Nouveau membre dans le projet",
+            message=f"{new_member_name} a rejoint le projet '{project_name}'.",
+            action_url=f"/projects/{project_id}/configuration",
         )
 
         return await NotificationService.create_notification(db, notification_data)
@@ -240,7 +258,7 @@ class NotificationService:
             user_id=user_id,
             title="Nouveau commentaire",
             message=f"{commenter_name} a ajouté un commentaire dans le projet '{project_name}'.",
-            action_url=f"/projects/{project_id}",
+            action_url="/projects",
         )
 
         return await NotificationService.create_notification(db, notification_data)
@@ -258,7 +276,7 @@ class NotificationService:
             user_id=user_id,
             title="Conflit résolu",
             message=f"{resolver_name} a résolu un conflit dans le projet '{project_name}'.",
-            action_url=f"/projects/{project_id}",
+            action_url="/conflicts",
         )
 
         return await NotificationService.create_notification(db, notification_data)

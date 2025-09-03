@@ -23,6 +23,7 @@ from app.crud.project import (
     add_user_to_project,
     get_project_by_id,
     get_project_by_name,
+    get_project_admins_and_owners,
     user_in_project,
 )
 from app.crud.user import get_user_by_id, get_user_by_username_or_email
@@ -37,6 +38,7 @@ from app.schema.responses.invitation import (
     InvitationValidationResponse,
 )
 from app.service.email import EmailService
+from app.service.notification import NotificationService
 
 # Get logger for this module
 logger = get_logger()
@@ -358,6 +360,42 @@ class InvitationService:
                             "permission": invitation.project_permission,
                         },
                     )
+
+                    # Notify project admins and owners about the new member
+                    try:
+                        # Get project details
+                        project = await get_project_by_id(db, invitation.project_id)
+                        # Get user details
+                        new_member = await get_user_by_id(db, user_id)
+
+                        if project and new_member:
+                            # Get all admins and owners of the project
+                            admin_user_ids = await get_project_admins_and_owners(
+                                db, invitation.project_id
+                            )
+
+                            # Create notifications for each admin/owner
+                            for admin_user_id in admin_user_ids:
+                                # Don't notify the user who just joined
+                                if admin_user_id != user_id:
+                                    await InvitationService._create_member_joined_notification(
+                                        db=db,
+                                        admin_user_id=admin_user_id,
+                                        project_name=project.project_name,
+                                        new_member_name=f"{new_member.first_name} {new_member.last_name}",
+                                        project_id=invitation.project_id,
+                                    )
+
+                    except Exception as notify_error:
+                        # Log but don't fail the invitation acceptance
+                        logger.warning(
+                            "Failed to notify admins about new member",
+                            extra={
+                                "invitation_id": invitation_id,
+                                "project_id": invitation.project_id,
+                                "error": str(notify_error),
+                            },
+                        )
                 except ValueError as ve:
                     # Handle case where user is already in the project
                     if "already a member" in str(ve):
@@ -1050,3 +1088,39 @@ class InvitationService:
                 exc_info=True,
             )
             return {"success": False, "message": "Internal server error"}
+
+    @staticmethod
+    async def _create_member_joined_notification(
+        db: AsyncSession,
+        admin_user_id: int,
+        project_name: str,
+        new_member_name: str,
+        project_id: int,
+    ) -> None:
+        """Create notification for admin when new member joins project."""
+        try:
+            await NotificationService.create_project_member_joined_notification(
+                db=db,
+                admin_user_id=admin_user_id,
+                project_name=project_name,
+                new_member_name=new_member_name,
+                project_id=project_id,
+            )
+
+            logger.info(
+                "Created member joined notification",
+                extra={
+                    "admin_user_id": admin_user_id,
+                    "project_id": project_id,
+                    "new_member_name": new_member_name,
+                },
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to create member joined notification",
+                extra={
+                    "admin_user_id": admin_user_id,
+                    "project_id": project_id,
+                    "error": str(e),
+                },
+            )
