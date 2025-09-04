@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.crud import notification as notification_crud
+from app.crud.notification import get_notification_preference_by_user_id
 from app.schema.requests.notification import (
     NotificationCreateRequest,
     NotificationPreferenceUpdateRequest,
@@ -13,6 +14,7 @@ from app.schema.responses.notification import (
     NotificationResponse,
     NotificationStatsResponse,
 )
+from app.service.email import EmailService
 
 logger = get_logger()
 
@@ -216,13 +218,14 @@ class NotificationService:
         project_name: str,
         new_role: str,
         project_id: int,
+        admin_name: str,
     ) -> NotificationResponse:
         """Create a notification for project role change."""
         notification_data = NotificationCreateRequest(
             user_id=user_id,
             title="Rôle dans le projet modifié",
-            message=f"Votre rôle dans le projet '{project_name}' a été modifié à '{new_role}'.",
-            action_url=f"/projects/{project_id}/configuration",
+            message=f"Votre rôle dans le projet '{project_name}' a été modifié à '{new_role}' par {admin_name}.",
+            action_url="/projects",
         )
 
         return await NotificationService.create_notification(db, notification_data)
@@ -280,3 +283,47 @@ class NotificationService:
         )
 
         return await NotificationService.create_notification(db, notification_data)
+
+    @staticmethod
+    async def send_role_change_notification_and_email(
+        db: AsyncSession,
+        user_id: int,
+        user_email: str,
+        username: str,
+        project_name: str,
+        new_role: str,
+        project_id: int,
+        admin_name: str,
+        language: str = "fr",
+    ) -> tuple[NotificationResponse, bool]:
+        """Create a notification and send email for role change if user preferences allow it."""
+        # Create notification
+        notification = (
+            await NotificationService.create_project_role_change_notification(
+                db=db,
+                user_id=user_id,
+                project_name=project_name,
+                new_role=new_role,
+                project_id=project_id,
+                admin_name=admin_name,
+            )
+        )
+
+        # Check if user wants email notifications
+        email_sent = False
+        try:
+            preference = await get_notification_preference_by_user_id(db, user_id)
+            if preference and preference.email_enabled:
+                email_service = EmailService()
+                email_sent = await email_service.send_role_change_email(
+                    email=user_email,
+                    username=username,
+                    project_name=project_name,
+                    new_role=new_role,
+                    admin_name=admin_name,
+                    language=language,
+                )
+        except Exception as e:
+            logger.warning(f"Failed to send role change email to user {user_id}: {e!s}")
+
+        return notification, email_sent

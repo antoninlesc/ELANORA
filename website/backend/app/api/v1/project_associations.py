@@ -1,5 +1,6 @@
 """API endpoints for managing project-user associations (admin only)."""
 
+import logging
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,6 +25,7 @@ from app.schema.responses.project_association import (
     ProjectUserListResponse,
     UserProjectListResponse,
 )
+from app.service.notification import NotificationService
 
 router = APIRouter()
 
@@ -174,6 +176,27 @@ async def update_user_project_permission_admin(
             raise HTTPException(
                 status_code=404, detail="User is not associated with this project"
             )
+
+        # Send notification and email about role change
+        admin_name = f"{user.first_name} {user.last_name}"
+        try:
+            _, _ = await NotificationService.send_role_change_notification_and_email(
+                db=db,
+                user_id=user_id,
+                user_email=target_user.email,
+                username=target_user.username,
+                project_name=project_name,
+                new_role=str(request.permission.value),
+                project_id=project.project_id,
+                admin_name=admin_name,
+                language="fr",  # You could get this from user preferences or request
+            )
+        except Exception as e:
+            # Log the error but don't fail the permission update
+            logging.warning(f"Failed to send role change notification: {e!s}")
+
+        # Commit the changes
+        await db.commit()
 
         return ProjectAssociationResponse(
             project_name=project_name,

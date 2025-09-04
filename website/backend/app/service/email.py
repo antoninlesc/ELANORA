@@ -27,6 +27,8 @@ EXISTING_USER_INVITATION_TEMPLATE_EN = (
 EXISTING_USER_INVITATION_TEMPLATE_FR = (
     TEMPLATES_DIR / "existing_user_invitation_fr.html"
 )
+ROLE_CHANGE_TEMPLATE_EN = TEMPLATES_DIR / "role_change_en.html"
+ROLE_CHANGE_TEMPLATE_FR = TEMPLATES_DIR / "role_change_fr.html"
 
 
 class EmailService:
@@ -456,3 +458,96 @@ class EmailService:
         except Exception as e:
             print(f"[EmailService] Failed to send existing user invitation email: {e}")
             raise e
+
+    async def send_role_change_email(
+        self,
+        email: str,
+        username: str,
+        project_name: str,
+        new_role: str,
+        admin_name: str,
+        language: str = "en",
+    ) -> bool:
+        """Send a role change notification email.
+
+        Args:
+            email (str): The email address to send the notification to
+            username (str): The username of the user whose role changed
+            project_name (str): The name of the project
+            new_role (str): The new role assigned to the user
+            admin_name (str): The name of the admin who made the change
+            language (str): The language for the email template ("en" or "fr")
+
+        Returns:
+            bool: True if the email was sent successfully, False otherwise
+
+        """
+        current_year = datetime.datetime.now().year
+        contact_url = f"{config.FRONTEND_HOST}/contact"
+        project_url = f"{config.FRONTEND_HOST}/projects"
+
+        # Determine email template and subject based on language
+        if language.lower() == "fr":
+            subject = "ELANORA - Rôle modifié dans le projet"
+            template_path = ROLE_CHANGE_TEMPLATE_FR
+            fallback_subject = "ELANORA - Rôle modifié dans le projet"
+        else:
+            subject = "ELANORA - Role Updated in Project"
+            template_path = ROLE_CHANGE_TEMPLATE_EN
+            fallback_subject = "ELANORA - Role Updated in Project"
+
+        # Load and format the email template
+        try:
+            template = self.load_template(template_path)
+            email_body = template.format(
+                username=username,
+                project_name=project_name,
+                new_role=new_role,
+                admin_name=admin_name,
+                project_url=project_url,
+                contact_url=contact_url,
+                year=current_year,
+            )
+        except Exception as e:
+            print(f"[EmailService] Failed to load or format role change template: {e}")
+            # Fallback template in case of error
+            if language.lower() == "fr":
+                email_body = f"""
+                <html>
+                  <body>
+                    <h1>Rôle modifié</h1>
+                    <p>Bonjour {username},</p>
+                    <p>Votre rôle dans le projet "{project_name}" a été modifié à "{new_role}" par {admin_name}.</p>
+                    <p>Cordialement,<br>L'équipe ELANORA</p>
+                    <p style="font-size: 12px; color: #999;">© {current_year} ELANORA. Tous droits réservés.</p>
+                  </body>
+                </html>
+                """
+            else:
+                email_body = f"""
+                <html>
+                  <body>
+                    <h1>Role Updated</h1>
+                    <p>Hello {username},</p>
+                    <p>Your role in project "{project_name}" has been updated to "{new_role}" by {admin_name}.</p>
+                    <p>Best regards,<br>The ELANORA Team</p>
+                    <p style="font-size: 12px; color: #999;">© {current_year} ELANORA. All rights reserved.</p>
+                  </body>
+                </html>
+                """
+            subject = fallback_subject
+
+        message = MessageSchema(
+            subject=subject,
+            recipients=[email],
+            body=email_body,
+            subtype=MessageType.html,
+        )
+
+        try:
+            fm = FastMail(self.conf)
+            await fm.send_message(message)
+            return True
+        except Exception as e:
+            print(f"[EmailService] Failed to send role change email: {e}")
+            return False
