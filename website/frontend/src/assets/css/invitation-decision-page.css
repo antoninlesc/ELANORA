@@ -124,9 +124,18 @@
 .invitation-header h1 {
   font-size: 1.75rem;
   font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  position: relative;
+  z-index: 1;
+}
+
+.invitation-subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
   margin: 0;
   position: relative;
   z-index: 1;
+  font-weight: 400;
 }
 
 /* Invitation Details */
@@ -136,6 +145,76 @@
 
 .invitation-info {
   text-align: center;
+}
+
+.invitation-card {
+  background: var(--profile-field-bg);
+  border: 1px solid var(--profile-field-border);
+  border-radius: 1.25rem;
+  padding: 2rem;
+  margin: 0 0 2rem 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.sender-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--profile-field-border);
+}
+
+.sender-avatar {
+  width: 3rem;
+  height: 3rem;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.sender-details {
+  flex: 1;
+  text-align: left;
+}
+
+.sender-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 0.25rem 0;
+}
+
+.invitation-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.project-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.project-icon {
+  font-size: 1.5rem;
+  opacity: 0.8;
+}
+
+.project-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
 }
 
 .invitation-message {

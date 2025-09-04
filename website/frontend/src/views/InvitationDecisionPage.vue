@@ -23,21 +23,37 @@
           <div class="invitation-header">
             <div class="invitation-icon">📨</div>
             <h1>{{ t('invitation.decision_title') }}</h1>
+            <p class="invitation-subtitle">{{ t('invitation.review_invitation') }}</p>
           </div>
 
           <div class="invitation-details">
             <div class="invitation-info">
-              <p class="invitation-message">
-                <strong>{{ invitationData.sender_name }}</strong> 
-                {{ t('invitation.invited_you_to_join') }}
-                <strong>{{ invitationData.project_name }}</strong>
-              </p>
+              <div class="invitation-card">
+                <div class="sender-info">
+                  <div class="sender-avatar">{{ invitationData.sender_name.charAt(0).toUpperCase() }}</div>
+                  <div class="sender-details">
+                    <p class="sender-name">{{ invitationData.sender_name }}</p>
+                    <p class="invitation-text">{{ t('invitation.invited_you_to_join') }}</p>
+                  </div>
+                </div>
+                
+                <div class="project-info">
+                  <div class="project-icon">📁</div>
+                  <h3 class="project-name">{{ invitationData.project_name }}</h3>
+                </div>
+              </div>
               
               <div v-if="invitationData.message" class="custom-message">
                 <h3>{{ t('invitation.personal_message') }}</h3>
                 <div class="message-content">{{ invitationData.message }}</div>
               </div>
 
+              <div v-if="invitationData.expires_at" class="invitation-meta">
+                <div class="expiry-info">
+                  <span class="icon">⏰</span>
+                  {{ t('invitation.expires_at') }} {{ formatDate(invitationData.expires_at) }}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -199,6 +215,21 @@ const rejectInvitation = async () => {
     errorMessage.value = err.response?.data?.detail || err.message || t('invitation.reject_error');
   } finally {
     processing.value = false;
+  }
+};
+
+const formatDate = (dateString) => {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return dateString;
   }
 };
 
