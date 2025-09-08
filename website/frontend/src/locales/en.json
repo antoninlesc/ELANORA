@@ -153,7 +153,9 @@
     "sso_error": "SSO login failed.",
     "access_request_sent": "Access request sent to the instance for {email}.",
     "access_request_error": "Failed to send access request.",
-    "retrieving_lab_info": "Retrieving lab information..."
+    "retrieving_lab_info": "Retrieving lab information...",
+    "email_verification_required": "Please verify your email before logging in.",
+    "login_connection_error": "Login failed. Please try again."
   },
   "auth": {
     "login": "Login",
@@ -867,6 +869,21 @@
     "errors": {
       "load_failed": "Failed to load profile information. Please try again."
     }
+  },
+
+  "notificationBell": {
+    "title": "Notifications",
+    "unread_notifications": "{count} unread notifications",
+    "no_unread_notifications": "No unread notifications",
+    "mark_all_read": "Mark all as read",
+    "loading_notifications": "Loading notifications...",
+    "no_notifications": "No notifications",
+    "up_to_date": "You're up to date!",
+    "unread_badge": "{count} unread",
+    "unread_badge_singular": "1 unread",
+    "mark_as_read": "Mark as read",
+    "delete": "Delete",
+    "view_all_notifications": "View all notifications"
   },
 
   "contact": {

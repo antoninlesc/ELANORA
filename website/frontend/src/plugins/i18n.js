@@ -1,9 +1,15 @@
 import { createI18n } from 'vue-i18n';
-import en from '@locales/en.json';
-import fr from '@locales/fr.json';
 
-// Define available languages
-const messages = { en, fr };
+// Dynamically import all locale files
+const modules = import.meta.glob('../locales/*.json', { eager: true });
+
+const messages = {};
+Object.entries(modules).forEach(([path, mod]) => {
+  const lang = path.match(/\/([^/]+)\.json$/)?.[1];
+  if (lang) {
+    messages[lang] = mod.default || mod;
+  }
+});
 
 // Function to set up i18n
 export const setupI18n = () => {

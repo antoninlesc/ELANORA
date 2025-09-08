@@ -122,7 +122,9 @@
     "sso_error": "Échec de la connexion SSO.",
     "access_request_sent": "Demande d'accès envoyée à l'instance pour {email}.",
     "access_request_error": "Échec de l'envoi de la demande d'accès.",
-    "retrieving_lab_info": "Récupération des informations du laboratoire..."
+    "retrieving_lab_info": "Récupération des informations du laboratoire...",
+    "email_verification_required": "Vérifiez votre email avant de vous connecter.",
+    "login_connection_error": "Erreur de connexion. Veuillez réessayer."
   },
 
   "appHeader": {
@@ -859,6 +861,21 @@
     "errors": {
       "load_failed": "Échec du chargement des informations de profil. Veuillez réessayer."
     }
+  },
+
+  "notificationBell": {
+    "title": "Notifications",
+    "unread_notifications": "{count} notifications non lues",
+    "no_unread_notifications": "Aucune notification non lue",
+    "mark_all_read": "Tout lire",
+    "loading_notifications": "Chargement des notifications...",
+    "no_notifications": "Aucune notification",
+    "up_to_date": "Vous êtes à jour !",
+    "unread_badge": "{count} non lue{count, plural, =1 {} other {s}}",
+    "unread_badge_singular": "1 non lue",
+    "mark_as_read": "Marquer comme lu",
+    "delete": "Supprimer",
+    "view_all_notifications": "Voir toutes les notifications"
   },
 
   "contact": {

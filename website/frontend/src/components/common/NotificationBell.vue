@@ -8,7 +8,7 @@
         'text-blue-600 bg-blue-50': hasUnreadNotifications,
         'hover:bg-gray-100': !hasUnreadNotifications
       }"
-      :title="unreadCount > 0 ? `${unreadCount} notifications non lues` : 'Notifications'"
+      :title="unreadCount > 0 ? t('notificationBell.unread_notifications', { count: unreadCount }) : t('notificationBell.title')"
     >
       <!-- Bell Icon -->
       <svg
@@ -55,7 +55,7 @@
                     d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                 </svg>
               </div>
-              <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
+              <h3 class="text-lg font-semibold text-gray-900">{{ t('notificationBell.title') }}</h3>
             </div>
             <button
               v-if="unreadCount > 0"
@@ -67,14 +67,14 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
-                <span>Tout lire</span>
+                <span>{{ t('notificationBell.mark_all_read') }}</span>
               </span>
             </button>
           </div>
           <div class="flex items-center justify-between mt-2">
             <p class="text-sm text-gray-600">
               <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {{ unreadCount }} non lue{{ unreadCount !== 1 ? 's' : '' }}
+                {{ t('notificationBell.unread_badge', { count: unreadCount }) }}
               </span>
             </p>
           </div>
@@ -86,7 +86,7 @@
             <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-4">
               <div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
             </div>
-            <p class="text-sm text-gray-600 font-medium">Chargement des notifications...</p>
+            <p class="text-sm text-gray-600 font-medium">{{ t('notificationBell.loading_notifications') }}</p>
           </div>
 
           <div v-else-if="notifications.length === 0" class="p-8 text-center">
@@ -96,8 +96,8 @@
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
               </svg>
             </div>
-            <p class="text-gray-500 font-medium">Aucune notification</p>
-            <p class="text-xs text-gray-400 mt-1">Vous êtes à jour !</p>
+            <p class="text-gray-500 font-medium">{{ t('notificationBell.no_notifications') }}</p>
+            <p class="text-xs text-gray-400 mt-1">{{ t('notificationBell.up_to_date') }}</p>
           </div>
 
           <div v-else class="divide-y divide-gray-100">
@@ -152,7 +152,7 @@
                         v-if="!notification.is_read"
                         @click.stop="markAsRead(notification.notification_id)"
                         class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition-all duration-200"
-                        title="Marquer comme lu"
+                        :title="t('notificationBell.mark_as_read')"
                       >
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -161,7 +161,7 @@
                       <button
                         @click.stop="deleteNotification(notification.notification_id)"
                         class="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-full transition-all duration-200"
-                        title="Supprimer"
+                        :title="t('notificationBell.delete')"
                       >
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -186,7 +186,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
             </svg>
-            <span>Voir toutes les notifications</span>
+            <span>{{ t('notificationBell.view_all_notifications') }}</span>
           </router-link>
         </div>
       </div>
@@ -204,12 +204,14 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useNotificationStore } from '@/stores/notification'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 const router = useRouter()
 const notificationStore = useNotificationStore()
+const { t } = useI18n()
 
 // Local state
 const showDropdown = ref(false)
