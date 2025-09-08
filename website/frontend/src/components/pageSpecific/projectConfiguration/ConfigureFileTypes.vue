@@ -1,34 +1,17 @@
 <template>
   <div class="configure-filetypes-page">
-    <h2 class="configure-filetypes-title">
-      {{ t('configureFileTypes.title') }}
-    </h2>
+    <div class="configure-filetypes-header">
+      <h2 class="configure-filetypes-title">
+        {{ t('configureFileTypes.title') }}
+      </h2>
+    </div>
     <div v-if="isLoading" class="configure-filetypes-loading">
       {{ t('configureFileTypes.loading') }}
     </div>
     <div v-else>
-      <!-- Default File Types Table -->
-      <div v-if="defaultFileTypes.length">
-        <h3>{{ t('configureFileTypes.defaultFileTypes') }}</h3>
-        <table class="configure-filetypes-table">
-          <thead>
-            <tr>
-              <th>{{ t('configureFileTypes.name') }}</th>
-              <th>{{ t('configureFileTypes.extension') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="ft in defaultFileTypes" :key="ft.id">
-              <td>{{ ft.name }}</td>
-              <td>{{ ft.extension }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Custom File Types Table -->
-      <div v-if="customFileTypes.length">
-        <h3>{{ t('configureFileTypes.customFileTypes') }}</h3>
+      <!-- File Types Table -->
+      <div v-if="fileTypes.length">
+        <h3>{{ t('configureFileTypes.FileTypes') }}</h3>
         <table class="configure-filetypes-table">
           <thead>
             <tr>
@@ -38,7 +21,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="ft in customFileTypes" :key="ft.id">
+            <tr v-for="ft in fileTypes" :key="ft.id">
               <td>
                 <template v-if="editId === ft.id">
                   <input
@@ -157,13 +140,6 @@ const userConfirm = useUserConfirm();
 const projectId = computed(() => Number(route.params.projectId));
 
 const fileTypes = computed(() => fileTypeStore.fileTypes);
-
-const defaultFileTypes = computed(() =>
-  fileTypes.value.filter(ft => ft.is_required)
-);
-const customFileTypes = computed(() =>
-  fileTypes.value.filter(ft => !ft.is_required)
-);
 
 const newFileType = ref({ name: '', extension: '' });
 const editId = ref(null);
@@ -353,14 +329,22 @@ async function addFileType() {
 .configure-filetypes-page {
   width: 100%;
   min-height: 200px;
-  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.configure-filetypes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
 }
 
 .configure-filetypes-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 24px;
-  color: #2a2a2a;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1f2937;
 }
 
 .configure-filetypes-loading,

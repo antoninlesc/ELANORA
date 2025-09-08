@@ -33,6 +33,7 @@ from app.core.limiter import limiter
 from app.middleware.csrf import CSRFMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.utils.project_backup import create_hidden_folder_in_root
+from app.api.v1.project_location_file_type import router as project_location_file_type_router
 
 # Get logger (this will automatically call setup_application_logging)
 logger = get_logger()
@@ -120,17 +121,16 @@ app.include_router(
 app.include_router(
     file_type_router, prefix=f"{API_V1_PREFIX}/file-type", tags=["FILE TYPE"]
 )
-
-app.include_router(contact_router, prefix=f"{API_V1_PREFIX}/contact", tags=["CONTACT"])
-
 app.include_router(
     effective_naming_standard_router,
     prefix=f"{API_V1_PREFIX}/effective-naming-standard",
-    tags=["EFFECTIVE NAMING STANDARD"],
+    tags=["EFFECTIVE NAMING STANDARD"]
 )
 
 app.include_router(
-    notification_router, prefix=f"{API_V1_PREFIX}/notifications", tags=["NOTIFICATION"]
+    project_location_file_type_router,
+    prefix=f"{API_V1_PREFIX}/project-location-file-type",
+    tags=["PROJECT LOCATION FILE TYPE"],
 )
 
 

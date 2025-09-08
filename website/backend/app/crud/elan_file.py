@@ -1,6 +1,8 @@
 """ELAN File CRUD operations - Simplified using utilities."""
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from datetime import datetime
 
 from app.core.centralized_logging import get_logger
 from app.crud.annotation import (
@@ -14,6 +16,7 @@ from app.crud.elan_file_media import (
 from app.model.association import ElanFileToMedia, ElanFileToProject, ElanFileToTier
 from app.model.elan_file import ElanFile
 from app.model.tier_group import TierGroup
+from app.model.user import User
 from app.utils.database import DatabaseUtils
 from app.utils.validation import ValidationUtils
 
@@ -92,6 +95,7 @@ async def create_elan_file_in_db(
     file_size: int,
     user_id: int,
     project_id: int,
+    last_modified: datetime,
 ) -> ElanFile:
     """Create a new ELAN file record in the database."""
     ValidationUtils.validate_user_id(user_id)
@@ -102,6 +106,7 @@ async def create_elan_file_in_db(
         file_path=file_path,
         file_size=file_size,
         user_id=user_id,
+        last_modified=last_modified,
     )
 
     elan_file = await DatabaseUtils.create(db, elan_file)
@@ -257,6 +262,7 @@ async def store_elan_file_data_in_db(
         file_size=file_info["file_size"],
         user_id=user_id,
         project_id=project_id,
+        last_modified=file_info["last_modified"],
     )
 
     # Always sync ELAN_FILE_TO_PROJECT associations
@@ -282,3 +288,12 @@ async def store_elan_file_data_in_db(
     await DatabaseUtils.create(db, tier_group)
 
     return elan_file_obj.elan_id
+
+async def get_elan_files_by_project(db: AsyncSession, project_id: int) -> list[tuple[ElanFile, str]]:
+    """Get all ELAN files for a specific project, with user info joined."""
+    stmt = select(ElanFile, User.username).join(User, ElanFile.user_id == User.user_id).where(
+        ElanFile.elan_id.in_(
+            select(ElanFileToProject.elan_id).where(ElanFileToProject.project_id == project_id)
+        )
+    )
+    return await DatabaseUtils.get_with_join(db, stmt)

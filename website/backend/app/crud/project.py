@@ -5,7 +5,6 @@ from app.core.centralized_logging import get_logger
 from app.crud.annotation import delete_unused_annotation_values
 from app.crud.association import delete_project_associations
 from app.crud.comment import delete_project_comments
-from app.crud.conflict import delete_project_conflicts
 from app.crud.elan_file import delete_elan_file_full, get_orphan_elan_files_by_project
 from app.crud.elan_file_media import delete_orphaned_media
 from app.crud.file_type import delete_orphaned_file_types
@@ -13,19 +12,13 @@ from app.crud.invitation import delete_project_invitations
 from app.crud.tier import delete_tiers_for_elan_file
 from app.model.association import UserToProject
 from app.model.enums import ProjectPermission
-from app.model.file_type import FileType
-from app.model.project_file_type import ProjectFileType
 from app.model.project import Project
 from app.model.tier_group import TierGroup
 from app.model.tier_section import TierSection
 from app.service.project_naming_standard import ProjectNamingStandardService
 from app.utils.database import DatabaseUtils
-from app.core.effective_naming_standard import EFFECTIVE_NAMING_STANDARDS
-from app.crud.file_type import get_file_type_by_extension, create_file_type
-from app.crud.association import add_project_file_type
 
 logger = get_logger()
-
 
 async def create_project_db(
     db: AsyncSession,
@@ -35,6 +28,8 @@ async def create_project_db(
     instance_id: int,
     creator_user_id: int,
 ) -> Project:
+    if description is not None and description.strip() == "":
+        description = None
     project = Project(
         project_name=project_name,
         description=description,
@@ -50,20 +45,6 @@ async def create_project_db(
         permission=ProjectPermission.OWNER,
     )
     await DatabaseUtils.create(db, user_to_project)
-
-    # Add required file types for this project using CRUD functions
-    for standard in EFFECTIVE_NAMING_STANDARDS:
-        extension = standard["extension"]
-        file_type = await get_file_type_by_extension(db, extension)
-        if not file_type:
-            file_type = await create_file_type(db, extension)
-        await add_project_file_type(
-            db,
-            project.project_id,
-            standard["name"],
-            file_type.id,
-            is_required=True,
-        )
     return project
 
 
@@ -115,7 +96,6 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
         await delete_project_associations(db, project.project_id)
         await delete_orphaned_file_types(db)
         await delete_project_invitations(db, project.project_id)
-        await delete_project_conflicts(db, project.project_id)
         await delete_project_comments(db, project.project_id)
         await db.flush()
         # Clean up unused annotation values

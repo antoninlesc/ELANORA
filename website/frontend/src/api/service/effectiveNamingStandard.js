@@ -1,18 +1,21 @@
 import axiosInstance from '@api/apiClient.js';
 
 export default {
-  async getEffectiveStandards(projectId) {
-    return axiosInstance.get(`/effective-naming-standard/project/${projectId}/effective-standards`);
+  async getEffectiveStandardsLocations() {
+    return axiosInstance.get('/effective-naming-standard/locations');
   },
-  async assignEffectiveStandard(projectId, projectFileTypeId, namingStandardId) {
+  async getEffectiveStandards(projectId, locationId) {
+    return axiosInstance.get(`/effective-naming-standard/project/${projectId}/location/${locationId}/effective-standards`);
+  },
+  async assignEffectiveStandard(projectId, projectFileTypeId, namingStandardId, locationId) {
     return axiosInstance.post(
       `/effective-naming-standard/project/${projectId}/filetype/${projectFileTypeId}/assign`,
-      { naming_standard_id: namingStandardId }
+      { naming_standard_id: namingStandardId, location_id: locationId }
     );
   },
-  async unassignEffectiveStandard(projectId, projectFileTypeId) {
+  async unassignEffectiveStandard(projectId, projectFileTypeId, locationId) {
     return axiosInstance.delete(
-      `/effective-naming-standard/project/${projectId}/filetype/${projectFileTypeId}/unassign`
+      `/effective-naming-standard/project/${projectId}/filetype/${projectFileTypeId}/location/${locationId}/unassign`
     );
   },
 };

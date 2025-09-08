@@ -155,14 +155,6 @@ class FileTypeService:
         pft = await get_project_file_type_by_id(db, project_file_type_id)
         if not pft:
             raise HTTPException(status_code=404, detail="Project file type not found")
-        if pft.is_required:
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "error": "file_type_required",
-                    "message": "Cannot delete: This file type is required for the project.",
-                },
-            )
         try:
             await delete_project_file_type(db, project_file_type_id, project_id)
             await db.commit()

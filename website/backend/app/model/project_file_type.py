@@ -18,6 +18,5 @@ class ProjectFileType(Base):
         Integer, ForeignKey("FILE_TYPE.id"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(50), nullable=False)
-    is_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     file_type = relationship("FileType")

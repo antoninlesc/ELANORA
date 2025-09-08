@@ -1,18 +1,18 @@
 <template>
   <div class="upload-page">
     <div class="upload-container">
-      <h1 class="upload-title">Upload ELAN Files</h1>
+      <h1 class="upload-title">{{ $t('uploadPage.title') }}</h1>
 
       <!-- Project Selection -->
       <div class="project-selection">
-        <label for="projectSelect" class="project-label">Select Project:</label>
+        <label for="projectSelect" class="project-label">{{ $t('uploadPage.projectSelection.label') }}</label>
         <select
           id="projectSelect"
           v-model="selectedProject"
           class="project-select"
           :disabled="loading"
         >
-          <option value="">Choose a project...</option>
+          <option value="">{{ $t('uploadPage.projectSelection.placeholder') }}</option>
           <option
             v-for="project in projects"
             :key="project.project_id || project"
@@ -23,67 +23,30 @@
         </select>
       </div>
 
-      <!-- Upload Zone -->
-      <div
-        v-if="selectedProject"
-        class="upload-zone"
-        :class="{ dragover: isDragOver, uploading: uploading }"
-        @drop="handleDrop"
-        @dragover.prevent="isDragOver = true"
-        @dragleave="isDragOver = false"
-        @click="triggerFileInput"
-      >
-        <input
-          ref="fileInput"
-          type="file"
-          multiple
-          accept=".eaf"
-          style="display: none"
-          @change="handleFileSelect"
+      <!-- Upload Component -->
+      <div v-if="selectedProject">
+        <UploadFolder
+          v-model="selectedFiles"
+          :title="$t('uploadPage.uploadZone.title')"
+          :subtitle="$t('uploadPage.uploadZone.subtitle')"
         />
 
-        <div v-if="!uploading" class="upload-content">
-          <div class="upload-icon">📁</div>
-          <h3>Drop ELAN files here or click to browse</h3>
-          <p>Only .eaf files are accepted (max 50MB per file)</p>
-        </div>
-
-        <div v-else class="upload-progress">
-          <div class="spinner"></div>
-          <p>Uploading {{ selectedFiles.length }} file(s)...</p>
-        </div>
-      </div>
-
-      <!-- Selected Files Preview -->
-      <div v-if="selectedFiles.length > 0 && !uploading" class="files-preview">
-        <h3>Selected Files ({{ selectedFiles.length }})</h3>
-        <div class="files-list">
-          <div
-            v-for="(file, index) in selectedFiles"
-            :key="index"
-            class="file-item"
-          >
-            <span class="file-name">{{ file.name }}</span>
-            <span class="file-size">{{ formatFileSize(file.size) }}</span>
-            <button class="remove-btn" @click="removeFile(index)">×</button>
-          </div>
-        </div>
-
-        <div class="upload-actions">
+        <!-- Upload Actions -->
+        <div v-if="selectedFiles.length > 0" class="upload-actions">
           <button
             class="upload-btn"
             :disabled="uploading || selectedFiles.length === 0"
             @click="uploadFiles"
           >
-            Upload Files
+            <span v-if="uploading" class="spinner"></span>
+            {{ uploading ? $t('uploadPage.uploadingFiles', { count: selectedFiles.length }) : $t('uploadPage.uploadButton') }}
           </button>
-          <button class="clear-btn" @click="clearFiles">Clear All</button>
         </div>
       </div>
 
       <!-- Upload Results -->
       <div v-if="uploadResults.length > 0" class="upload-results">
-        <h3>Upload Results</h3>
+        <h3>{{ $t('uploadPage.uploadResults') }}</h3>
         <div class="results-list">
           <div
             v-for="result in uploadResults"
@@ -93,11 +56,9 @@
           >
             <span class="result-filename">{{ result.filename }}</span>
             <span class="result-status">
-              {{ result.success ? '✓ Success' : '✗ Failed' }}
+              {{ result.success ? $t('uploadPage.resultSuccess') : $t('uploadPage.resultFailed') }}
             </span>
-            <span v-if="result.error" class="result-error">{{
-              result.error
-            }}</span>
+            <span v-if="result.error" class="result-error">{{ result.error }}</span>
           </div>
         </div>
       </div>
@@ -111,92 +72,47 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import UploadFolder from '@/components/common/UploadFolder.vue';
 import gitService from '@/api/service/gitService';
+import "@/assets/css/upload-page.css";
+import { useUserStore } from '@/stores/user';
 
+const { t } = useI18n();
 const projects = ref([]);
 const selectedProject = ref('');
 const selectedFiles = ref([]);
 const uploading = ref(false);
 const loading = ref(true);
-const isDragOver = ref(false);
 const uploadResults = ref([]);
 const error = ref('');
-const fileInput = ref(null);
+const userStore = useUserStore();
 
 onMounted(async () => {
   await fetchProjects();
 });
 
+const username = computed(
+  () => userStore.user?.username || userStore.user?.login || ''
+);
+
 async function fetchProjects() {
   try {
     loading.value = true;
-    const response = await gitService.listUserProjects();
-    projects.value = response.projects || [];
+    const response = await gitService.listProjects();
+    projects.value = response.projects;
   } catch (e) {
-    error.value = 'Failed to load projects';
+    error.value = t('uploadPage.errors.failedToLoadProjects');
     console.error('Error fetching projects:', e);
   } finally {
     loading.value = false;
   }
 }
 
-function triggerFileInput() {
-  if (!uploading.value) {
-    fileInput.value?.click();
-  }
-}
-
-function handleFileSelect(event) {
-  const files = Array.from(event.target.files);
-  addFiles(files);
-}
-
-function handleDrop(event) {
-  event.preventDefault();
-  isDragOver.value = false;
-  const files = Array.from(event.dataTransfer.files);
-  addFiles(files);
-}
-
-function addFiles(files) {
-  const eafFiles = files.filter((file) =>
-    file.name.toLowerCase().endsWith('.eaf')
-  );
-
-  if (eafFiles.length !== files.length) {
-    error.value = 'Only .eaf files are allowed';
-    setTimeout(() => (error.value = ''), 3000);
-  }
-
-  // Check file sizes
-  const oversizedFiles = eafFiles.filter(
-    (file) => file.size > 50 * 1024 * 1024
-  );
-  if (oversizedFiles.length > 0) {
-    error.value = `Some files are too large (max 50MB): ${oversizedFiles.map((f) => f.name).join(', ')}`;
-    return;
-  }
-
-  selectedFiles.value = [...selectedFiles.value, ...eafFiles];
-  error.value = '';
-}
-
-function removeFile(index) {
-  selectedFiles.value.splice(index, 1);
-}
-
-function clearFiles() {
-  selectedFiles.value = [];
-  uploadResults.value = [];
-  if (fileInput.value) {
-    fileInput.value.value = '';
-  }
-}
-
 async function uploadFiles() {
   if (!selectedProject.value || selectedFiles.value.length === 0) {
-    error.value = 'Please select a project and files';
+    error.value = t('uploadPage.errors.selectProjectAndFiles');
     return;
   }
 
@@ -208,31 +124,66 @@ async function uploadFiles() {
     const response = await gitService.uploadElanFiles(
       selectedProject.value,
       selectedFiles.value,
-      'user'
+      username.value
     );
 
     uploadResults.value = response.files || [];
-
-    // Clear selected files on successful upload
-    selectedFiles.value = [];
-    if (fileInput.value) {
-      fileInput.value.value = '';
-    }
+    selectedFiles.value = []; // Clear files after successful upload
   } catch (e) {
-    error.value = e?.response?.data?.detail || 'Upload failed';
+    error.value = e?.response?.data?.detail || t('uploadPage.errors.uploadFailed');
     console.error('Upload error:', e);
   } finally {
     uploading.value = false;
   }
 }
-
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
 </script>
 
-<style src="@/assets/css/upload-page.css"></style>
+<style scoped>
+/* All existing styles remain the same */
+.upload-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.upload-btn {
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff40;
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ...rest of existing styles... */
+</style>

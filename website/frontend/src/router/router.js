@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
+import { useProjectStore } from '@stores/project.js';
+import gitService from '@/api/service/gitService';
 
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import HomePage from '@views/HomePage.vue';
@@ -13,7 +15,7 @@ import ContactPage from '@views/ContactPage.vue';
 import HTTPStatusPage from '@views/HTTPStatusPage.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import UploadPage from '@views/UploadPage.vue';
-import ConflictsPage from '@views/ConflictsPage.vue';
+import PendingUploadPage from '@views/PendingUploadPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import InvitationResponsePage from '@views/InvitationResponsePage.vue';
 import InvitationDecisionPage from '@views/InvitationDecisionPage.vue';
@@ -101,9 +103,9 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
-        path: 'conflicts',
-        name: 'Conflicts',
-        component: ConflictsPage,
+        path: 'contribution',
+        name: 'PendingUpload',
+        component: PendingUploadPage,
         meta: { requiresAuth: true },
       },
       {
@@ -122,7 +124,7 @@ const routes = [
         path: '/projects/:projectId/configuration',
         name: 'ProjectConfigurationPage',
         component: ProjectConfigurationPage,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, requiresAdmin: true },
       },
       {
         path: 'profile',
@@ -216,6 +218,24 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
     if (!userStore.isAuthenticated) {
       return handleNotAuthenticated(eventMessageStore, to, next);
+    } else {
+      const projectStore = useProjectStore();
+      if (!projectStore.projects.length) {
+        try {
+          const res = await gitService.listUserProjects();
+          if (res?.projects) {
+            projectStore.setProjects(res.projects);
+            if (res.projects.length === 0) {
+              projectStore.clearCurrentProject();
+            } else if (!projectStore.currentProject) {
+              projectStore.setCurrentProject(res.projects[0]);
+            }
+          }
+        } catch (e) {
+          // Optionally handle error
+          console.error('Failed to fetch projects:', e);
+        }
+      }
     }
   }
 

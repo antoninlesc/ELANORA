@@ -4,9 +4,9 @@
       class="project-section-trigger"
       :aria-expanded="dropdownOpen"
       :aria-label="
-        currentProjectName
-          ? `Current project: ${currentProjectName}`
-          : 'Select project'
+        currentProject
+          ? currentProjectName
+          : t('appHeader.projectSection.selectProject')
       "
       @click="toggleDropdown"
     >
@@ -81,11 +81,13 @@ const { t } = useI18n();
 const projects = computed(() => projectStore.projects || []);
 const currentProject = computed(() => projectStore.currentProject);
 const currentProjectName = computed(() => {
-  if (!currentProject.value) return '';
-  if (typeof currentProject.value === 'object') {
-    return currentProject.value.project_name || '';
+  if (!currentProject.value) {
+    return t('appHeader.projectSection.selectProject');
   }
-  return currentProject.value || '';
+  if (typeof currentProject.value === 'object') {
+    return currentProject.value.project_name || t('appHeader.projectSection.selectProject');
+  }
+  return currentProject.value || t('appHeader.projectSection.selectProject');
 });
 
 const dropdownOpen = ref(false);

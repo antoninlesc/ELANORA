@@ -14,6 +14,11 @@ import {
   faRetweet,
   faPlus,
   faChevronUp,
+  faSquareXmark,
+  faSquareCheck,
+  faCircleInfo,
+  faSortUp,
+  faSortDown,
 } from '@fortawesome/free-solid-svg-icons';
 import {
   faPenToSquare,
@@ -37,7 +42,12 @@ library.add(
   faRetweet,
   faPlus,
   faChevronUp,
-  faCommentDots
+  faCommentDots,
+  faSquareXmark,
+  faSquareCheck,
+  faCircleInfo,
+  faSortUp,
+  faSortDown,
 );
 
 export default FontAwesomeIcon;

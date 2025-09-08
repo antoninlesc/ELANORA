@@ -1,8 +1,18 @@
 <template>
   <div class="configure-naming-page">
-    <h2 class="configure-naming-title">
-      {{ t('configureNamingStandards.title') }}
-    </h2>
+    <div ref="standardsTopRef" class="configure-naming-header">
+      <h2 class="configure-naming-title">
+        {{ t('configureNamingStandards.title') }}
+      </h2>
+      <div class="configure-naming-header-actions">
+        <button class="configure-naming-add-btn" @click="handleShowAddStandard">
+          + {{ t('configureNamingStandards.add') }}
+        </button>
+        <button class="configure-naming-add-btn" @click="startImportFlow">
+          {{ t('configureNamingStandards.import') || 'Import from another project' }}
+        </button>
+      </div>
+    </div>
     <div v-if="loading">{{ t('configureNamingStandards.loading') }}</div>
     <div v-else>
       <div v-if="standards.length === 0">
@@ -152,15 +162,11 @@
           </transition>
         </div>
       </div>
-      <button class="configure-naming-add-btn" @click="showAddStandard = true">
-        + {{ t('configureNamingStandards.add') }}
-      </button>
-      <button class="configure-naming-add-btn" @click="startImportFlow">
-        {{
-          t('configureNamingStandards.import') || 'Import from another project'
-        }}
-      </button>
-      <div v-if="showAddStandard" class="configure-naming-add-form">
+      <div
+        v-if="showAddStandard"
+        ref="addFormRef"
+        class="configure-naming-add-form"
+      >
         <div class="configure-naming-add-title">
           {{ t('configureNamingStandards.add') }}
         </div>
@@ -1161,6 +1167,18 @@ async function extractRegexFromExample() {
   }
 }
 
+const addFormRef = ref(null);
+const standardsTopRef = ref(null);
+
+async function handleShowAddStandard() {
+  showAddStandard.value = true;
+  nextTick(() => {
+    if (addFormRef.value) {
+      addFormRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+}
+
 async function addStandard() {
   const exists = namingStandardStore.standards.some(
     std =>
@@ -1215,6 +1233,11 @@ async function addStandard() {
       4000
     );
     await namingStandardStore.fetchStandardsAndComponentNames(projectId.value);
+    nextTick(() => {
+      if (standardsTopRef.value) {
+        standardsTopRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
   } catch (err) {
     if (err?.response?.status === 409) {
       eventMessageStore.addMessage(
@@ -1489,6 +1512,11 @@ function resetAddForm() {
   commaPattern.value = '';
   exampleFilename.value = '';
   regexExtractionError.value = '';
+  nextTick(() => {
+    if (standardsTopRef.value) {
+      standardsTopRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
 }
 
 // Detect if any accepted_values_str looks like "B A W" (single value, multiple tokens separated by space)
@@ -1701,20 +1729,51 @@ function splitPatternBlocks(pattern, sep) {
 </script>
 
 <style scoped>
-.configure-naming-page {
-  width: 100%;
-  height: 100%;
-  font-family: 'Segoe UI', Arial, sans-serif;
+.configure-naming-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
 }
 
 .configure-naming-title {
-  font-size: 2.2rem;
-  font-weight: 700;
-  margin-bottom: 32px;
-  color: #2a2a2a;
-  padding: 0 0 16px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1f2937;
+}
+
+.configure-naming-header-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-left: 2rem;
+}
+
+.configure-naming-add-btn {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 26px;
+  cursor: pointer;
+  transition: background 0.18s;
+  display: block;
+  width: 100%;
+  margin: 0;
+}
+
+.configure-naming-add-btn:hover {
+  background: #059669;
+}
+
+.configure-naming-page {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .configure-naming-accordion {
@@ -1808,7 +1867,6 @@ function splitPatternBlocks(pattern, sep) {
   overflow-x: auto;
   overflow-wrap: break-word;
   white-space: pre-line;
-  font-family: monospace;
 }
 
 .configure-naming-pattern-breakdown {
@@ -1850,7 +1908,6 @@ function splitPatternBlocks(pattern, sep) {
 
 .breakdown-group-value {
   color: #222;
-  font-family: monospace;
 }
 
 .configure-naming-accordion-components {
@@ -1875,8 +1932,8 @@ function splitPatternBlocks(pattern, sep) {
   padding: 6px 10px;
   text-align: left;
   overflow-wrap: break-word;
-  max-width: 180px; /* Adjust as needed for your layout */
-  white-space: pre-line; /* Allows wrapping and preserves line breaks */
+  max-width: 180px;
+  white-space: pre-line; 
   box-sizing: border-box;
 }
 
@@ -1922,24 +1979,6 @@ function splitPatternBlocks(pattern, sep) {
 
 .configure-naming-btn:hover {
   filter: brightness(1.08);
-}
-
-.configure-naming-add-btn {
-  background: #10b981;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 26px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.18s;
-  display: block;
-  margin: 2rem auto;
-}
-
-.configure-naming-add-btn:hover {
-  background: #059669;
 }
 
 .configure-naming-add-form {

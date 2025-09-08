@@ -482,3 +482,145 @@
   display: inline-block;
   vertical-align: middle;
 }
+
+/* --- FILETREE STATUS ROW --- */
+.filetree-status-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding: 8px 0;
+}
+
+.filetree-status-icon {
+  font-size: 1.5rem;
+  vertical-align: middle;
+  color: #d32f2fca;
+  transition: color 0.2s;
+}
+
+.filetree-status-count {
+  color: #d32f2fca;
+  margin-right: 4px;
+}
+
+.filetree-status-icon[icon="fa-solid fa-square-check"],
+.filetree-status-count:has(+ .filetree-status-icon[icon="fa-solid fa-square-check"]) {
+  color: #388e3cca;
+}
+
+.filetree-bulk-rename-btn {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 1px 4px rgb(211 47 47 / 8%);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.filetree-bulk-rename-btn:disabled {
+  background: #90caf9;
+  cursor: not-allowed;
+}
+
+.filetree-bulk-rename-btn:hover:not(:disabled),
+.filetree-bulk-rename-btn:focus-visible:not(:disabled) {
+  background: #1565c0;
+  box-shadow: 0 2px 8px rgb(211 47 47 / 16%);
+}
+
+.project-page-files-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin-bottom: 18px;
+  font-size: 1.08rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgb(255 224 130 / 12%);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+/* Non-compliant (yellow) */
+.info-banner-noncompliant {
+  background: linear-gradient(90deg, #fffde7 60%, #fff 100%);
+  border: 2px solid #ffe082;
+}
+
+/* Compliant (green) */
+.info-banner-compliant {
+  background: linear-gradient(90deg, #e8f5e9 60%, #fff 100%);
+  border: 2px solid #a5d6a7;
+}
+
+/* No standard (neutral grey) */
+.info-banner-no-standard {
+  background: linear-gradient(90deg, #e8f0f5 60%, #fff 100%);
+  border: 2px solid #b3d9ff;
+}
+
+.info-banner-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  transition: color 0.3s;
+}
+
+.icon-noncompliant {
+  color: #d32f2f;
+}
+
+.icon-compliant {
+  color: #388e3c;
+}
+
+.icon-no-standard {
+  color: #1565c0;
+}
+
+.project-page-files-info-banner .info-banner-icon[icon="fa-solid fa-square-check"] {
+  color: #388e3c;
+}
+
+.info-banner-text {
+  color: #795548;
+  letter-spacing: 0.2px;
+}
+
+.info-banner-bulk-rename-link {
+  color: #d32f2f;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+.info-banner-bulk-rename-link:hover,
+.info-banner-bulk-rename-link:focus-visible {
+  color: #b71c1c;
+  text-decoration: underline;
+}
+
+.info-banner-link {
+  color: #1976d2; /* Blue color to match theme */
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  transition: color 0.2s;
+}
+
+.info-banner-link:hover,
+.info-banner-link:focus-visible {
+  color: #1565c0; /* Darker blue on hover */
+  text-decoration: underline;
+}

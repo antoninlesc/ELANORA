@@ -6,6 +6,7 @@ class EffectiveNamingStandardOut(BaseModel):
     project_id: int
     project_file_type_id: int
     naming_standard_id: int
+    location_id: int
 
 
 class EffectiveNamingStandardResponse(BaseModel):

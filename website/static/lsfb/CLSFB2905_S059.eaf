@@ -22,7 +22,7 @@
         <PROPERTY NAME="lastUsedAnnotationId">3072</PROPERTY>
     </HEADER>
     <TIME_ORDER>
-        <TIME_SLOT TIME_SLOT_ID="ts1" TIME_VALUE="0"/>
+        <TIME_SLOT TIME_SLOT_ID="ts1" TIME_VALUE="4"/>
         <TIME_SLOT TIME_SLOT_ID="ts2" TIME_VALUE="0"/>
         <TIME_SLOT TIME_SLOT_ID="ts3" TIME_VALUE="1882"/>
         <TIME_SLOT TIME_SLOT_ID="ts4" TIME_VALUE="16744"/>

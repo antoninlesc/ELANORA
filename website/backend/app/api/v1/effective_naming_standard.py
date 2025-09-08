@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.effective_naming_standard import EFFECTIVE_NAMING_STANDARDS
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep
 from app.service.effective_naming_standard import (
@@ -17,13 +16,13 @@ from app.schema.responses.effective_naming_standard import (
     UnassignEffectiveNamingStandardResponse,
     GetEffectiveStandardsResponse,
 )
+from app.core.effective_naming_standard_locations import EFFECTIVE_NAMING_STANDARD_LOCATIONS
 
 router = APIRouter()
 
-
-@router.get("/effective-naming-standards")
-async def get_effective_naming_standards():
-    return {"effective_naming_standards": EFFECTIVE_NAMING_STANDARDS}
+@router.get("/locations")
+async def get_effective_naming_standard_locations():
+    return {"locations": EFFECTIVE_NAMING_STANDARD_LOCATIONS}
 
 
 @router.post(
@@ -38,29 +37,32 @@ async def assign_standard(
     admin_user=get_admin_dep,
 ):
     result = await assign_effective_standard(
-        db, project_id, project_file_type_id, payload.naming_standard_id
+        db, project_id, project_file_type_id, payload.naming_standard_id, payload.location_id
     )
     return {"success": True, "effective_standard": result}
 
 
 @router.delete(
-    "/project/{project_id}/filetype/{project_file_type_id}/unassign",
+    "/project/{project_id}/filetype/{project_file_type_id}/location/{location_id}/unassign",
     response_model=UnassignEffectiveNamingStandardResponse,
 )
 async def unassign_standard(
     project_id: int,
     project_file_type_id: int,
+    location_id: int,
     db: AsyncSession = get_db_dep,
     admin_user=get_admin_dep,
 ):
-    await unassign_effective_standard(db, project_id, project_file_type_id)
+    await unassign_effective_standard(db, project_id, project_file_type_id, location_id)
     return {"success": True}
 
 
 @router.get(
-    "/project/{project_id}/effective-standards",
+    "/project/{project_id}/location/{location_id}/effective-standards",
     response_model=GetEffectiveStandardsResponse,
 )
-async def get_effective_standards(project_id: int, db: AsyncSession = get_db_dep):
-    standards = await fetch_effective_standards(db, project_id)
+async def get_effective_standards_for_location(
+    project_id: int, location_id: int, db: AsyncSession = get_db_dep
+):
+    standards = await fetch_effective_standards(db, project_id, location_id)
     return {"effective_standards": standards}

@@ -22,6 +22,20 @@
     "removing": "Removing"
   },
 
+  "http_status": {
+    "400": "Bad Request",
+    "401": "Unauthorized - Please log in",
+    "403": "Forbidden - You don't have permission to access this resource",
+    "404": "Not Found - The requested resource could not be found",
+    "422": "Unprocessable Entity - The request was well-formed but contains invalid data",
+    "429": "Too Many Requests - You have sent too many requests in a short time",
+    "500": "Internal Server Error - An error occurred on the server",
+    "502": "Bad Gateway - Invalid response from the upstream server",
+    "503": "Service Unavailable - The server is currently unavailable",
+    "504": "Gateway Timeout - The upstream server failed to send a request in time",
+    "unknown": "An unknown error occurred"
+  },
+
   "app": {
     "title": "ELANORA"
   },
@@ -77,9 +91,9 @@
     "projects": "Projects",
     "dashboard": "Dashboard",
     "upload": "File Upload",
-    "conflicts": "Conflicts",
     "tiers": "Tiers",
     "export": "Export",
+    "contribution": "Contribution",
     "projectSection": {
       "selectProject": "Select a project",
       "noProjectAvailable": "No projects available",
@@ -443,6 +457,7 @@
 
   "projectsPage": {
     "pageTitle": "Projects",
+    "pageDescription": "Manage and collaborate on your linguistic projects",
     "title": "{instanceName}'s projects",
     "projectListTitle": "Projects",
     "noProjects": "No current projects for this instance.\nYou can start by clicking on the button \"Create a new project\" to create one.",
@@ -503,8 +518,8 @@
       "title": "Create a new project",
       "projectNamePlaceholder": "Project name",
       "projectDescriptionPlaceholder": "Description (optional)",
-      "dropFolder": "Drop a folder here or click to browse",
-      "onlyEafFiles": "Only .eaf files will be included",
+      "dropFolder": "Drop ELAN files here or click to browse",
+      "onlyEafFiles": "Drag folders to include all .eaf files, or browse for individual files",
       "folderPreview": "Folder Preview",
       "create": "Create",
       "creating": "Creating...",
@@ -517,6 +532,14 @@
         "folderDropNotSupported": "Your browser does not support folder drag & drop. Please use the \"Browse\" button.",
         "createFailed": "Failed to create project."
       }
+    },
+    "infoBanner": {
+      "nonCompliant": "{count} file(s) do not respect the naming standard(s).",
+      "allCompliant": "All files respect the naming standard(s).",
+      "noEffectiveStandard1": "No naming standard is currently enforced. Go to ",
+      "noEffectiveStandard2": "project settings",
+      "noEffectiveStandard3": " to create one.",
+      "bulkRename": "Bulk rename."
     }
   },
 
@@ -616,8 +639,7 @@
 
   "configureFileTypes": {
     "title": "Manage file types for your project",
-    "defaultFileTypes": "Default File Types",
-    "customFileTypes": "Custom File Types",
+    "FileTypes": "File Types",
     "loading": "Loading file types...",
     "empty": "No file types found. Create your first file type!",
     "createFileType": "Add",
@@ -897,14 +919,131 @@
     "title": "Configure Effective Naming Standards",
     "fileType": "File Type",
     "effectiveStandard": "Effective Standard",
+    "standardLocation": "Standard location",
+    "assignStandardsTitle": "Assign naming standard to file type",
+    "availableFileTypes": "Available file types",
+    "associatedFileTypes": "Associated file types",
+    "selectStandard": "No standard selected",
+    "standardLocations": {
+      "projectFiles": "Project files",
+      "tiers": "Tiers",
+      "elanMedia": "ELAN media"
+    },
     "eventMessages": {
-      "loadFailed": "Failed to load effective standards.",
+      "fileTypeAdded": "File type \"{fileType}\" associated successfully with \"{location}\".",
+      "fileTypeAddFailed": "Failed to assocaite file type.",
+      "fileTypeRemoved": "File type \"{fileType}\" no longer associated with \"{location}\".",
+      "fileTypeRemoveFailed": "Failed to remove file type association.",
       "updateSuccess": "Effective standard updated successfully.",
-      "updateFailed": "Failed to update effective standard."
+      "removeSuccess": "Effective standard removed successfully.",
+      "removeFailed": "Failed to remove effective standard.",
+      "updateFailed": "Failed to update effective standard.",
+      "loadFailed": "Failed to load effective standards."
     }
   },
 
   "tiersPage": {
     "pageTitle": "Tiers"
+  },
+  "pendingUploads": {
+    "title": "Manage Pending Uploads for",
+    "loading": "Loading pending uploads...",
+    "noProjectSelected": {
+      "title": "No Project Selected",
+      "message": "Please select a project to view pending uploads.",
+      "selectProject": "Select Project"
+    },
+    "noUploads": {
+      "title": "No Pending Uploads",
+      "message": "All uploads have been processed for this project."
+    },
+    "summary": {
+      "totalPending": "Total Pending",
+      "readyToMerge": "Ready to Merge",
+      "needResolution": "Need Resolution"
+    },
+    "uploadedBy": "by User {user}",
+    "fileTypes": {
+      "new": "new",
+      "modified": "modified",
+      "deleted": "deleted"
+    },
+    "conflictedFiles": "Conflicted Files",
+    "actions": {
+      "viewDetails": "View Details",
+      "mergeNow": "Merge Now",
+      "merging": "Merging...",
+      "resolveConflicts": "Resolve Conflicts",
+      "testMerge": "Test Merge",
+      "testing": "Testing...",
+      "mergeAllReady": "Merge All Ready ({count})",
+      "mergingAll": "Merging All..."
+    },
+    "modal": {
+      "uploadDetails": "Upload Details",
+      "resolveConflicts": "Resolve Upload Conflicts"
+    },
+    "status": {
+      "readyToMerge": "Ready to Merge",
+      "needsResolution": "Needs Resolution",
+      "error": "Error",
+      "pendingReview": "Pending Review"
+    },
+    "uploadTypes": {
+      "newFiles": "New Files",
+      "withModifications": "With Modifications",
+      "withDeletions": "With Deletions"
+    },
+    "errors": {
+      "loadFailed": "Failed to load pending uploads",
+      "testMergeFailed": "Failed to test merge",
+      "notReadyToMerge": "Upload is not ready to merge. Please test merge first.",
+      "mergeFailed": "Failed to merge upload",
+      "noReadyUploads": "No uploads are ready to merge",
+      "batchMergeFailed": "Failed to merge uploads"
+    },
+    "unknown": "Unknown"
+  },
+  "upload": {
+    "zone": {
+      "title": "Drop files or folders here, or click to browse",
+      "subtitle": "Drag folders to include all .eaf files, or browse for individual files"
+    },
+    "selectedFiles": "Selected Files ({count})",
+    "addMoreFiles": "Add more files",
+    "clearAllFiles": "Clear all files",
+    "removeFile": "Remove file",
+    "totalSize": "Total: {size}",
+    "filesExceedLimit": "Some files exceed {maxSize}",
+    "noFilesSelected": "No files selected",
+    "filesSkipped": "{count} non-.eaf file(s) were skipped",
+    "noEafFiles": "No .eaf files found",
+    "filesTooLarge": "Files exceed size limit ({maxSize}): {files}",
+    "duplicatesSkipped": "{count} duplicate file(s) skipped",
+    "noNewFiles": "No new files to add",
+    "filesAddedFromFolder": "Added {count} files from folder",
+    "fileAdded": "Added: {fileName}",
+    "filesAdded": "Added {count} files"
+  },
+  "uploadPage": {
+    "title": "Upload ELAN Files",
+    "projectSelection": {
+      "label": "Select Project:",
+      "placeholder": "Choose a project..."
+    },
+    "uploadZone": {
+      "title": "Drop ELAN files here or click to browse",
+      "subtitle": "Only .eaf files are accepted (max 50MB per file)"
+    },
+    "uploadButton": "Upload Files",
+    "uploadingFiles": "Uploading {count} file(s)...",
+    "uploadResults": "Upload Results",
+    "resultSuccess": "✓ Success",
+    "resultFailed": "✗ Failed",
+    "errors": {
+      "failedToLoadProjects": "Failed to load projects",
+      "selectProjectAndFiles": "Please select a project and files",
+      "uploadFailed": "Upload failed"
+    }
   }
 }

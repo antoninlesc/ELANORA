@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
+from datetime import datetime
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -22,6 +23,7 @@ class ElanFile(Base):
     user_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("USER.user_id", ondelete="SET NULL"), nullable=True
     )
+    last_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="elan_files")
