@@ -8,6 +8,7 @@
       :type="msg.type"
       :duration="msg.duration"
       :show="msg.show"
+      :params="msg.params"
       @close="handleClose"
     />
   </div>

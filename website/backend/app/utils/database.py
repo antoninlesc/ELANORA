@@ -401,3 +401,28 @@ class DatabaseUtils:
         stmt = select(model).filter_by(**filters)
         result = await db.execute(stmt)
         return result.scalars().all()
+
+    @staticmethod
+    async def get_with_join(
+        db: AsyncSession,
+        stmt: select,  # Pre-built SQLAlchemy select statement with joins
+        as_dict: bool = False,  # Optional: return as dict if needed
+    ) -> list[Any]:
+        """Execute a select statement with joins and return results.
+
+        Args:
+            db: AsyncSession instance.
+            stmt: SQLAlchemy select statement (e.g., with joins).
+            as_dict: If True, return results as dicts (for non-ORM queries).
+
+        Returns:
+            List of results (ORM objects or dicts).
+        """
+        try:
+            result = await db.execute(stmt)
+            if as_dict:
+                return [dict(row) for row in result.all()]
+            return result.all()
+        except Exception as e:
+            logger.error(f"Error executing join query: {e}")
+            raise

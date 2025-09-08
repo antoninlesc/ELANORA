@@ -18,8 +18,7 @@ export const useUserStore = defineStore('user', {
       initialized: false,
       isAuthenticated: false,
       loading: true,
-    },
-    // TODO: Add other state properties
+    }
   }),
 
   /* =========================
@@ -125,8 +124,7 @@ export const useUserStore = defineStore('user', {
       if (document.cookie.indexOf(csrfCookieName) >= 0) {
         document.cookie = `${csrfCookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
       }
-    },
-    // TODO: Add other actions
+    }
   },
 
   /* =========================

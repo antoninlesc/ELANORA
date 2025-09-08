@@ -193,13 +193,13 @@ async def remove_file_type_from_project(
 
 
 async def add_project_file_type(
-    db: AsyncSession, project_id: int, name: str, file_type_id: int, is_required: bool = False
+    db: AsyncSession, project_id: int, name: str, file_type_id: int,
 ):
     filters = {"project_id": project_id, "name": name}
     exists = await DatabaseUtils.get_one_by_filter(db, ProjectFileType, filters)
     if not exists:
         assoc = ProjectFileType(
-            project_id=project_id, name=name, file_type_id=file_type_id, is_required=is_required
+            project_id=project_id, name=name, file_type_id=file_type_id,
         )
         await DatabaseUtils.create(db, assoc)
         await db.flush()

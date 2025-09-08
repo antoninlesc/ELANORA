@@ -1,34 +1,23 @@
 <template>
-  <div v-if="!loading">
     <router-view />
     <EventMessageContainer />
-  </div>
-  <div v-else>Loading...</div>
 </template>
 
 <script setup>
-import { onMounted, watch, ref } from 'vue';
+import { onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLanguageStore } from '@stores/language';
-import { useUserStore } from '@/stores/user';
-import { useProjectStore } from '@/stores/project';
 import { useAppInfoStore } from '@/stores/appInfo';
-import gitService from '@/api/service/gitService';
 import instanceService from '@/api/service/instanceService';
 
 import EventMessageContainer from '@components/eventComponent/eventMessageContainer.vue';
 
 const languageStore = useLanguageStore();
 const { locale } = useI18n();
-const userStore = useUserStore();
-const projectStore = useProjectStore();
 const appInfoStore = useAppInfoStore();
-const loading = ref(true);
 
 onMounted(async () => {
   languageStore.initializeFromStorage();
-  userStore.initializeFromStorage();
-  projectStore.initializeFromStorage();
 
   try {
     const response = await instanceService.getInstanceInfo();
@@ -43,25 +32,7 @@ onMounted(async () => {
     }
   }
 
-  // Only fetch projects if authenticated
-  if (userStore.isAuthenticated) {
-    try {
-      const res = await gitService.listUserProjects();
-      if (res && res.projects) {
-        projectStore.setProjects(res.projects);
-        if (res.projects.length === 0) {
-          projectStore.clearCurrentProject();
-        } else if (!projectStore.currentProject) {
-          projectStore.setCurrentProject(res.projects[0]);
-        }
-      }
-    } catch (e) {
-      console.error('Failed to fetch projects:', e);
-    }
-  }
-
   locale.value = languageStore.language;
-  loading.value = false;
 });
 
 watch(

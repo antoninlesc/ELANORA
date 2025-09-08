@@ -28,7 +28,6 @@ async def get_file_types_for_project(project_id: int, db: AsyncSession = get_db_
                 name=pft.name,
                 extension=extension,
                 file_type_id=pft.file_type_id if pft.file_type else None,
-                is_required=pft.is_required,
             )
         )
     return result

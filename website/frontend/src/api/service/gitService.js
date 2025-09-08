@@ -120,9 +120,8 @@ const gitService = {
   async initProjectFromFolderUpload({ project_name, description, files }) {
     const formData = new FormData();
     formData.append('project_name', project_name);
-    formData.append('description', description);
+    formData.append('description', !description || description === "undefined" ? "" : description);
     files.forEach((file) => {
-      // webkitRelativePath preserves folder structure
       formData.append('files', file, file.webkitRelativePath);
     });
     const { data } = await axiosInstance.post(

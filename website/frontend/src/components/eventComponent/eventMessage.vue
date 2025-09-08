@@ -19,7 +19,7 @@
         <font-awesome-icon v-if="type === 'success'" :icon="faCheckCircle" />
       </div>
       <div class="event-message-text">
-        {{ t(translationKey) }}
+        {{ t(translationKey, params || {}) }}
       </div>
       <button
         class="event-message-close"
@@ -66,6 +66,10 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  params: {
+    type: Object,
+    default: () => ({})
+  }
 });
 
 const { t } = useI18n();

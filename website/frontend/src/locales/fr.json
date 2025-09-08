@@ -14,6 +14,21 @@
     "remove": "Supprimer",
     "removing": "Suppression en cours"
   },
+
+  "http_status": {
+    "400": "Requête incorrecte",
+    "401": "Non autorisé - Veuillez vous connecter",
+    "403": "Accès interdit - Vous n'avez pas l'autorisation d'accéder à cette ressource",
+    "404": "Non trouvé - La ressource demandée est introuvable",
+    "422": "Entité non traitable - La requête est bien formée mais contient des données invalides",
+    "429": "Trop de requêtes - Vous avez envoyé trop de requêtes en peu de temps",
+    "500": "Erreur interne du serveur - Une erreur s'est produite sur le serveur",
+    "502": "Passerelle incorrecte - Réponse invalide du serveur en amont",
+    "503": "Service indisponible - Le serveur est actuellement indisponible",
+    "504": "Délai d'attente de la passerelle - Le serveur en amont n'a pas répondu dans les temps",
+    "unknown": "Une erreur inconnue s'est produite"
+  },
+  
   "app": {
     "title": "ELANora"
   },
@@ -393,6 +408,7 @@
 
   "projectsPage": {
     "pageTitle": "Projets",
+    "pageDescription": "Gérez vos projets de corpus linguistiques. Créez, ouvrez, synchronisez ou supprimez des projets.",
     "title": "Projets de {instanceName}",
     "projectListTitle": "Projets",
     "noProjects": "Aucun projet en cours pour cette instance.\nPour commencer, veuillez créer un project en cliquant sur le bouton \"Créer un nouveau projet\".",
@@ -453,8 +469,8 @@
       "title": "Créer un nouveau projet",
       "projectNamePlaceholder": "Nom du projet",
       "projectDescriptionPlaceholder": "Description (optionnelle)",
-      "dropFolder": "Déposez un dossier ici ou cliquez pour parcourir vos dossiers.",
-      "onlyEafFiles": "Seuls les fichiers .eaf seront inclus.",
+      "dropFolder": "Déposez des fichiers ELAN ici ou cliquez pour parcourir",
+      "onlyEafFiles": "Glissez des dossiers pour inclure tous les fichiers .eaf, ou parcourez pour des fichiers individuels",
       "folderPreview": "Aperçu du dossier",
       "create": "Créer",
       "creating": "Création...",
@@ -467,6 +483,14 @@
         "folderDropNotSupported": "Votre navigateur ne supporte pas le glisser-déposer de dossier. Utilisez le bouton \"Parcourir\".",
         "createFailed": "Échec de la création du projet."
       }
+    },
+    "infoBanner": {
+      "nonCompliant": "{count} fichier(s) ne respectent pas le(s) standard(s) de nommage.",
+      "allCompliant": "Tous les fichiers respectent le(s) standard(s) de nommage.",
+      "noEffectiveStandard1": "Aucun standard de nommage n'est actuellement appliqué. Allez dans les ",
+      "noEffectiveStandard2": "paramètres du projet", 
+      "noEffectiveStandard3": "pour en créer un.",
+      "bulkRename": "Renommer les fichiers."
     }
   },
 
@@ -566,8 +590,7 @@
 
   "configureFileTypes": {
     "title": "Gérer les types de fichiers pour votre projet",
-    "defaultFileTypes": "Types de fichiers par défaut",
-    "customFileTypes": "Types de fichiers personnalisés",
+    "FileTypes": "Types de fichiers",
     "loading": "Chargement des types de fichiers...",
     "empty": "Aucun type de fichier trouvé. Créez votre premier type de fichier pour commencer !",
     "createFileType": "Ajouter",
@@ -671,13 +694,29 @@
   },
 
   "configureEffectiveStandards": {
-    "title": "Configurer les normes effectives de nommage",
-    "fileType": "Type de fichier",
-    "effectiveStandard": "Norme effective",
-    "eventMessages": {
-      "loadFailed": "Échec du chargement des normes effectives.",
+  "title": "Configurer les normes effectives de nommage",
+  "fileType": "Type de fichier",
+  "effectiveStandard": "Norme effective",
+  "standardLocation": "Emplacement de la norme",
+  "assignStandardsTitle": "Assigner une norme de nommage au type de fichier",
+  "availableFileTypes": "Types de fichiers disponibles",
+  "associatedFileTypes": "Types de fichiers associés",
+  "selectStandard": "No standard selected",
+  "standardLocations": {
+    "projectFiles": "Fichiers du projet",
+    "tiers": "Tiers",
+    "elanMedia": "Médias ELAN"
+  },
+  "eventMessages": {
+      "fileTypeAdded": "Type de fichier \"{fileType}\" a été associé avec succès avec \"{location}\".",
+      "fileTypeAddFailed": "Échec de l'association du type de fichier.",
+      "fileTypeRemoved": "Le type de fichier \"{fileType}\" n'est plus associé avec \"{location}\".",
+      "fileTypeRemoveFailed": "Échec de la suppression de l'association du type de fichier.",
       "updateSuccess": "Norme effective mise à jour avec succès.",
-      "updateFailed": "Échec de la mise à jour de la norme effective."
+      "removeSuccess": "Norme effective supprimée avec succès.",
+      "updateFailed": "Échec de la mise à jour de la norme effective.",
+      "removeFailed": "Échec de la suppression de la norme effective.",
+      "loadFailed": "Échec du chargement des normes effectives."
     }
   },
   
@@ -742,5 +781,47 @@
       "batchMergeFailed": "Échec de la fusion des téléchargements"
     },
     "unknown": "Inconnu"
+  },
+  "upload": {
+    "zone": {
+      "title": "Déposez des fichiers ou dossiers ici, ou cliquez pour parcourir",
+      "subtitle": "Glissez des dossiers pour inclure tous les fichiers .eaf, ou parcourez pour des fichiers individuels"
+    },
+    "selectedFiles": "Fichiers sélectionnés ({count})",
+    "addMoreFiles": "Ajouter plus de fichiers",
+    "clearAllFiles": "Effacer tous les fichiers",
+    "removeFile": "Supprimer le fichier",
+    "totalSize": "Total : {size}",
+    "filesExceedLimit": "Certains fichiers dépassent {maxSize}",
+    "noFilesSelected": "Aucun fichier sélectionné",
+    "filesSkipped": "{count} fichier(s) non-.eaf ont été ignorés",
+    "noEafFiles": "Aucun fichier .eaf trouvé",
+    "filesTooLarge": "Fichiers dépassent la limite de taille ({maxSize}) : {files}",
+    "duplicatesSkipped": "{count} fichier(s) en double ignorés",
+    "noNewFiles": "Aucun nouveau fichier à ajouter",
+    "filesAddedFromFolder": "Ajouté {count} fichiers depuis le dossier",
+    "fileAdded": "Ajouté : {fileName}",
+    "filesAdded": "Ajouté {count} fichiers"
+  },
+  "uploadPage": {
+    "title": "Upload des fichiers ELAN",
+    "projectSelection": {
+      "label": "Sélectionner un projet :",
+      "placeholder": "Choisir un projet..."
+    },
+    "uploadZone": {
+      "title": "Déposez des fichiers ELAN ici ou cliquez pour parcourir",
+      "subtitle": "Seuls les fichiers .eaf sont acceptés (max 50MB par fichier)"
+    },
+    "uploadButton": "Uploader les fichiers",
+    "uploadingFiles": "Upload de {count} fichier(s)...",
+    "uploadResults": "Résultats de l'upload",
+    "resultSuccess": "✓ Succès",
+    "resultFailed": "✗ Échec",
+    "errors": {
+      "failedToLoadProjects": "Échec du chargement des projets",
+      "selectProjectAndFiles": "Veuillez sélectionner un projet et des fichiers",
+      "uploadFailed": "Échec de l'upload des fichiers."
+    }
   }
 }

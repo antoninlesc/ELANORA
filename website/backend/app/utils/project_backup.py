@@ -179,3 +179,35 @@ def restore_project_backup(project_name: str, projects_root: Path | None):
         logger.info(f"Restored .gitignore from backup for project '{project_name}'")
     else:
         logger.warning(f"No .gitignore backup found for project '{project_name}'")
+
+
+def rename_project_backup_folder(old_project_name: str, new_project_name: str):
+    """Rename the backup folder for a project in the hidden backup directory.
+
+    Args:
+        old_project_name (str): The current name of the project.
+        new_project_name (str): The new name to assign to the backup folder.
+
+    Raises:
+        FileNotFoundError: If the old backup folder does not exist.
+        FileExistsError: If the new backup folder already exists.
+        Exception: If renaming fails.
+
+    """
+    logger = get_logger()
+    hidden_folder = create_hidden_folder_in_root()
+    old_backup_path = hidden_folder / old_project_name
+    new_backup_path = hidden_folder / new_project_name
+
+    if not old_backup_path.exists():
+        logger.error(f"Backup folder '{old_backup_path}' not found.")
+        raise FileNotFoundError(f"Backup folder '{old_backup_path}' not found.")
+    if new_backup_path.exists():
+        logger.error(f"Target backup folder '{new_backup_path}' already exists.")
+        raise FileExistsError(f"Target backup folder '{new_backup_path}' already exists.")
+    try:
+        shutil.move(str(old_backup_path), str(new_backup_path))
+        logger.info(f"Renamed backup folder from '{old_backup_path}' to '{new_backup_path}'")
+    except Exception as e:
+        logger.error(f"Failed to rename backup folder: {e}")
+        raise

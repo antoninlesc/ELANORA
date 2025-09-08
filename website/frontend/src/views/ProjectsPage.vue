@@ -12,6 +12,7 @@
             t('projectsPage.projectListTitle')
           }}</span>
           <button
+            v-if="isAdmin"
             class="project-page-create-btn"
             @click="showCreateDialog = true"
           >
@@ -52,7 +53,7 @@
                     {{ project.project_name }}
                   </span>
                 </div>
-                <div class="project-card-actions">
+                <div v-if="isAdmin" class="project-card-actions">
                   <button
                     class="project-card-action-btn edit"
                     :title="t('projectsPage.project.buttons.rename')"
@@ -61,7 +62,6 @@
                     <font-awesome-icon icon="fa-regular fa-pen-to-square" />
                   </button>
                   <button
-                    v-if="isAdmin"
                     class="project-card-action-btn share"
                     :title="t('projectsPage.project.buttons.share')"
                     @click.stop="openShareModal(project)"
@@ -157,6 +157,7 @@
               }}
             </div>
             <button
+              v-if="isAdmin"
               class="project-page-create-btn"
               :disabled="syncing"
               @click="openSyncDialog"
@@ -176,7 +177,53 @@
             {{ t('projectsPage.loadingFiles') }}
           </div>
           <div v-else>
-            <FileTree v-if="projectFiles" :files="projectFiles.files"/>
+            <!-- INFO BANNER containing the status row (only for admins) -->
+            <div
+              v-if="isAdmin"
+              class="project-page-files-info-banner"
+              :class="{
+                'info-banner-compliant': hasEffectiveStandard && nonCompliantCount === 0,
+                'info-banner-noncompliant': hasEffectiveStandard && nonCompliantCount > 0,
+                'info-banner-no-standard': !hasEffectiveStandard
+              }"
+            >
+              <font-awesome-icon
+                :icon="getBannerIcon"
+                :class="['info-banner-icon', getBannerIconClass]"
+              />
+              <span class="info-banner-text">
+                <template v-if="!hasEffectiveStandard">
+                  {{ t('projectsPage.infoBanner.noEffectiveStandard1') }}
+                  <button
+                    class="info-banner-link"
+                    @click="goToStandardsPage(projectStore.currentProject)"
+                  >
+                    {{ t('projectsPage.infoBanner.noEffectiveStandard2') }}
+                  </button>
+                  {{ t('projectsPage.infoBanner.noEffectiveStandard3') }}
+                </template>
+                <template v-else-if="nonCompliantCount > 0">
+                  {{ t('projectsPage.infoBanner.nonCompliant', { count: nonCompliantCount }) }} 
+                  <button
+                    class="info-banner-bulk-rename-link"
+                    tabindex="0"
+                    @click="openBulkRenameDialog"
+                    @keydown.enter="openBulkRenameDialog"
+                  >
+                    {{ t('projectsPage.infoBanner.bulkRename') }}
+                  </button>
+                </template>
+                <template v-else>
+                  {{ t('projectsPage.infoBanner.allCompliant') }}
+                </template>
+              </span>
+            </div>
+            <div v-if="projectFiles && projectFiles.files && projectFiles.files.length > 0">
+              <FileTree 
+                :files="projectFiles.files" 
+                :show-compliance="isAdmin && hasEffectiveStandard"
+              />
+            </div>
             <div v-else class="project-page-loading">
               {{ t('projectsPage.noFilesFound') }}
             </div>
@@ -184,35 +231,44 @@
         </div>
       </div>
 
-      <!-- Project Create Modal -->
+      <!-- Project Create Modal (admin only) -->
       <ProjectCreateDialog
-        v-if="showCreateDialog"
+        v-if="showCreateDialog && isAdmin"
         @close="showCreateDialog = false"
         @created="onProjectCreated"
       />
 
-      <!-- Edit Project Section -->
+      <!-- Edit Project Section (admin only) -->
       <ProjectEditDialog
-        v-if="editDialogVisible"
+        v-if="editDialogVisible && isAdmin"
         :project="editingProject"
         @close="closeEditDialog"
         @edited="onProjectEdited"
       />
 
-      <!-- Project Share Modal -->
+      <!-- Project Share Modal (admin only) -->
       <ProjectShareModal
+        v-if="isAdmin"
         :show="showShareModal"
         :project-name="shareProjectName"
         @close="closeShareModal"
         @success="onShareSuccess"
       />
 
-      <!-- Sync Dialog -->
+      <!-- Sync Dialog (admin only) -->
       <ProjectSyncDialog
+        v-if="isAdmin"
         v-model:visible="syncDialogVisible"
         :project-name="currentProjectName"
         :is-admin="isAdmin"
         @sync-completed="handleSyncCompleted"
+      />
+
+      <!-- BulkRenameDialog (admin only) -->
+      <BulkRenameDialog
+        v-if="bulkRenameDialogVisible && isAdmin"
+        :files="nonCompliantFiles"
+        @close="bulkRenameDialogVisible = false"
       />
     </div>
   </div>
@@ -233,6 +289,9 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import { useHead } from '@unhead/vue';
+import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
+import { useNamingStandardStore } from '@/stores/namingStandard';
+import { isFilenameCompliant } from '@/utils/filenameCompliance';
 
 const projectStore = useProjectStore();
 const userStore = useUserStore();
@@ -241,6 +300,7 @@ const router = useRouter();
 const projects = ref([]);
 const loading = ref(true);
 const { t } = useI18n();
+const standardName = ref('');
 
 useHead({
   title: computed(() => t('projectsPage.pageTitle')),
@@ -278,6 +338,9 @@ const shareProjectName = ref('');
 // Check if user is admin
 const isAdmin = computed(() => userStore.user?.role === 'admin');
 
+// Standard state
+const hasEffectiveStandard = ref(false);
+
 // Pagination state
 const pageSize = 6;
 const currentPage = ref(1);
@@ -289,6 +352,17 @@ const totalPages = computed(() =>
 const paginatedProjects = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
   return projectStore.projects.slice(start, start + pageSize);
+});
+
+// Banner computed properties
+const getBannerIcon = computed(() => {
+  if (!hasEffectiveStandard.value) return 'fa-solid fa-circle-info';
+  return nonCompliantCount.value > 0 ? 'fa-solid fa-square-xmark' : 'fa-solid fa-square-check';
+});
+
+const getBannerIconClass = computed(() => {
+  if (!hasEffectiveStandard.value) return 'icon-no-standard';
+  return nonCompliantCount.value > 0 ? 'icon-noncompliant' : 'icon-compliant';
 });
 
 function goToPage(page) {
@@ -341,11 +415,53 @@ function selectProject(project) {
 async function fetchProjectFiles() {
   if (!currentProjectName.value) {
     projectFiles.value = null;
+    hasEffectiveStandard.value = false;
     return;
   }
   filesLoading.value = true;
   try {
     const res = await gitService.listProjectFiles(currentProjectName.value);
+
+    const PROJECT_FILES_LOCATION_ID = 1;
+
+    // Fetch standards for this project/location
+    const effectiveStandardStore = useEffectiveStandardStore();
+    await effectiveStandardStore.fetchEffectiveStandards(
+      projectStore.currentProject.project_id,
+      PROJECT_FILES_LOCATION_ID
+    );
+
+    // Fetch naming standards
+    const namingStandardStore = useNamingStandardStore();
+    await namingStandardStore.fetchStandardsAndComponentNames(currentProjectId.value);
+
+    // Get the first naming standard ID assigned for this location
+    let standardId;
+    const standardsObj = effectiveStandardStore.effectiveStandards[PROJECT_FILES_LOCATION_ID];
+    if (standardsObj && typeof standardsObj === 'object') {
+      // Get the first available naming_standard_id
+      const ids = Object.values(standardsObj).filter(id => !!id);
+      standardId = ids.length > 0 ? ids[0] : undefined;
+    } else if (typeof standardsObj === 'string' || typeof standardsObj === 'number') {
+      standardId = standardsObj;
+    }
+
+    // Check if there's an effective standard
+    hasEffectiveStandard.value = !!standardId;
+
+    // Check compliance for each file and add isCompliant property
+    const standard = namingStandardStore.standards.find(std => std.id === standardId);
+    standardName.value = standard ? standard.name : '';
+    
+    // Only check compliance if there's a standard and user is admin
+    res.files = res.files.map(file => {
+      const isCompliant = (standard && isAdmin.value) ? isFilenameCompliant(standard, file.name) : true;
+      return {
+        ...file,
+        isCompliant,
+      };
+    });
+    
     projectFiles.value = res;
   } finally {
     filesLoading.value = false;
@@ -353,7 +469,7 @@ async function fetchProjectFiles() {
 }
 
 async function openSyncDialog() {
-  if (!currentProjectName.value) return;
+  if (!currentProjectName.value || !isAdmin.value) return;
   syncing.value = true;
   syncDialogVisible.value = true;
   syncing.value = false;
@@ -367,6 +483,8 @@ function handleSyncCompleted() {
 const userConfirm = useUserConfirm();
 
 async function deleteProject(projectName) {
+  if (!isAdmin.value) return;
+  
   const confirmed = await userConfirm({
     title: t('projectsPage.deleteTitle'),
     message: t('projectsPage.deleteMessage', { projectName }),
@@ -391,6 +509,7 @@ const editDialogVisible = ref(false);
 const editingProject = ref(null);
 
 function openEditDialog(project) {
+  if (!isAdmin.value) return;
   editingProject.value = project;
   editDialogVisible.value = true;
 }
@@ -406,6 +525,7 @@ async function onProjectEdited() {
 }
 
 function openShareModal(project) {
+  if (!isAdmin.value) return;
   shareProjectName.value = project.project_name;
   showShareModal.value = true;
 }
@@ -442,6 +562,7 @@ onMounted(() => {
 });
 
 function goToStandardsPage(project) {
+  if (!isAdmin.value) return;
   router.push({
     name: 'ProjectConfigurationPage',
     params: { projectId: project.project_id },
@@ -451,6 +572,19 @@ function goToStandardsPage(project) {
 function onProjectCreated() {
   showCreateDialog.value = false;
   fetchProjects();
+}
+
+const nonCompliantFiles = computed(() =>
+  (isAdmin.value && hasEffectiveStandard.value) 
+    ? (projectFiles.value?.files?.filter(f => f.isCompliant === false) || [])
+    : []
+);
+const nonCompliantCount = computed(() => nonCompliantFiles.value.length);
+
+const bulkRenameDialogVisible = ref(false);
+function openBulkRenameDialog() {
+  if (!isAdmin.value) return;
+  bulkRenameDialogVisible.value = true;
 }
 </script>
 

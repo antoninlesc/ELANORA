@@ -6,5 +6,4 @@ class FileTypeResponse(CustomBaseModel):
     name: str
     extension: str | None = None
     file_type_id: int | None = None
-    is_required: bool = False
     exists_in_target: bool = False

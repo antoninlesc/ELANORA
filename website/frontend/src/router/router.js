@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
+import { useProjectStore } from '@stores/project.js';
+import gitService from '@/api/service/gitService';
 
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import HomePage from '@views/HomePage.vue';
@@ -107,7 +109,7 @@ const routes = [
         path: '/projects/:projectId/configuration',
         name: 'ProjectConfigurationPage',
         component: ProjectConfigurationPage,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, requiresAdmin: true },
       },
       {
         path: 'profile',
@@ -201,6 +203,24 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
     if (!userStore.isAuthenticated) {
       return handleNotAuthenticated(eventMessageStore, to, next);
+    } else {
+      const projectStore = useProjectStore();
+      if (!projectStore.projects.length) {
+        try {
+          const res = await gitService.listUserProjects();
+          if (res?.projects) {
+            projectStore.setProjects(res.projects);
+            if (res.projects.length === 0) {
+              projectStore.clearCurrentProject();
+            } else if (!projectStore.currentProject) {
+              projectStore.setCurrentProject(res.projects[0]);
+            }
+          }
+        } catch (e) {
+          // Optionally handle error
+          console.error('Failed to fetch projects:', e);
+        }
+      }
     }
   }
 

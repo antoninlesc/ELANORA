@@ -218,3 +218,15 @@ class PendingUploadsResponse(CustomBaseModel):
     total_pending: int
     ready_count: int = 0
     conflicts_count: int = 0
+
+
+class FileInfo(CustomBaseModel):
+    name: str
+    size: int
+    lastModified: str
+    lastUpdatedBy: str
+    type: str = "file"
+
+
+class ProjectFilesResponse(CustomBaseModel):
+    files: list[FileInfo]

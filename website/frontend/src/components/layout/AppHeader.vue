@@ -5,7 +5,7 @@
         <router-link to="/homePage" class="elanora-header-logo-link">
           <img
             src="@logos/ELANora-logo.png"
-            alt="ELANORA Logo"
+            alt=""
             class="elanora-header-logo"
           />
         </router-link>
@@ -18,7 +18,7 @@
             {{ t('appHeader.upload') }}
           </a>
           <a href="/contribution" class="elanora-header-menu-link">
-            {{ t('navigation.contribution') }}
+            {{ t('appHeader.contribution') }}
           </a>
           <router-link
             :to="{ name: 'TiersPage' }"

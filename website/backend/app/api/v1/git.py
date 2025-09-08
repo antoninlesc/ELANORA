@@ -21,6 +21,7 @@ from app.schema.responses.git import (
     ProjectListResponse,
     ProjectSyncCheckResponse,
     PendingUploadsResponse,
+    ProjectFilesResponse,
 )
 from app.service.git import GitService
 
@@ -209,11 +210,13 @@ async def list_user_projects(
 async def init_project_from_folder_upload(
     project_name: str = Form(...),
     description: str = Form(...),
-    files: list[UploadFile] = File(...),
+    files: list[UploadFile] | None = None,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
     """Initialize a project by uploading a folder (only .eaf files and structure are kept)."""
+    if files is None:
+        files = File(...)
     try:
         result = await git_service.init_project_from_folder_upload(
             project_name, description, files, db, user.user_id
@@ -223,18 +226,15 @@ async def init_project_from_folder_upload(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/projects/{project_name}/files")
+@router.get("/projects/{project_name}/files", response_model=ProjectFilesResponse)
 async def get_project_files(
     project_name: str,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
-    """List all .eaf files and folders containing .eaf files in a project as a tree."""
     try:
-        result = await git_service.list_project_files(project_name)
+        result = await git_service.list_project_files(project_name, db)
         return result
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 

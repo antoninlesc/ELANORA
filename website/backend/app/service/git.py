@@ -23,6 +23,7 @@ from app.crud.project import (
     list_projects_by_user,
     project_exists_by_name,
 )
+from app.crud.elan_file import get_elan_files_by_project
 from app.schema.common.git import FileStatus
 from app.schema.responses.git import ProjectInfo, ProjectSyncCheckResponse
 from app.service.elan import ElanService
@@ -38,12 +39,14 @@ from app.utils.project_backup import (
     create_project_backup_structure,
     remove_project_backup,
     restore_project_backup,
+    rename_project_backup_folder,
 )
 from app.utils.project_setup_utils import (
     copy_githooks,
     create_gitignore,
     create_project_structure,
     create_readme,
+    update_project_githooks,
 )
 
 logger = get_logger()
@@ -858,121 +861,80 @@ class GitService:
         except Exception as e:
             raise RuntimeError(f"Failed to checkout branch: {e}") from e
 
-    async def list_project_files(self, project_name: str) -> dict[str, Any]:
-        """Return a flat list of .eaf files in the elan_files folder for the given project.
+    async def list_project_files(self, project_name: str, db: AsyncSession) -> dict[str, Any]:
+        """Return enriched .eaf files for the project using CRUD."""
+        project = await get_project_by_name(db, project_name)
+        if not project:
+            raise ValueError(f"Project '{project_name}' not found.")
 
-        Always from the master branch. Restore the previous branch after listing.
-        """
-        project_path = self.base_path / project_name
-        elan_files_dir = project_path / "elan_files"
-        if not elan_files_dir.exists():
-            raise FileNotFoundError(
-                f"Project '{project_name}' does not have an 'elan_files' directory."
-            )
+        # Use CRUD to get files with user info
+        db_files = await get_elan_files_by_project(db, project.project_id)
+        enriched_files = []
+        for elan_file, username in db_files:
+            file_path = Path(elan_file.file_path)
+            if file_path.exists():
+                last_modified = datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
+                enriched_files.append({
+                    "name": elan_file.filename,
+                    "size": elan_file.file_size,
+                    "lastModified": last_modified,
+                    "lastUpdatedBy": username or "N/A",
+                    "type": "file"
+                })
+            else:
+                enriched_files.append({
+                    "name": elan_file.filename,
+                    "size": elan_file.file_size,
+                    "lastModified": "N/A",
+                    "lastUpdatedBy": username or "N/A",
+                    "type": "file"
+                })
 
-        runner = GitCommandRunner(project_path)
-
-        # Detect current branch
-        current_branch = None
-        try:
-            branches_raw = runner.get_branches()
-            for line in branches_raw:
-                stripped_line = line.strip()
-                if stripped_line.startswith("* "):
-                    current_branch = stripped_line[2:]
-                    break
-        except Exception:
-            current_branch = None
-
-        # Checkout master branch before listing files
-        runner.checkout("master")
-
-        # Only list .eaf files directly in elan_files (no recursion, no folders)
-        eaf_files = [
-            {"name": file.name, "type": "file"}
-            for file in elan_files_dir.glob("*.eaf")
-            if file.is_file()
-        ]
-
-        # Restore previous branch if needed
-        if current_branch and current_branch != "master":
-            try:
-                runner.checkout(current_branch)
-            except Exception:
-                logger.error(
-                    f"Failed to restore previous branch '{current_branch}' after listing files."
-                )
-
-        return {"files": eaf_files}
+        return {"files": enriched_files}
 
     async def synchronize_project(
         self, project_name: str, db: AsyncSession, user_id: int
     ) -> dict:
-        """Idempotently synchronize the project's elan_files with the database.
-
-        Only process files that are new, modified, or deleted.
-        """
+        """Idempotently synchronize the project's elan_files with the database."""
         project_path = self.base_path / project_name
-        elan_files_dir = project_path / "elan_files"
         runner = GitCommandRunner(project_path)
 
         logger.info(f"[SYNC] Starting synchronization for project: {project_name}")
-        logger.info(f"[SYNC] Project path: {project_path}")
-        logger.info(f"[SYNC] ELAN files directory: {elan_files_dir}")
 
         # Add all changes to staging area
-        logger.info("[SYNC] Adding all changes to staging area...")
         runner.add_all()
 
-        status_output = runner.get_status()
-        logger.info(f"[SYNC] git status output:\n{status_output}")
-
-        added_files = []
-        modified_files = []
-        untracked_files = []
-        deleted_files = []
-
-        for entry in self._parse_git_status(status_output):
-            code = entry["status"]
-            filename = entry["filename"]
-            if filename.lower().endswith(".eaf"):
-                if code == "A":
-                    added_files.append(project_path / filename)
-                elif code == "M":
-                    modified_files.append(project_path / filename)
-                elif code == "??":
-                    untracked_files.append(project_path / filename)
-                elif code == "D":
-                    deleted_files.append(Path(filename).name)
+        # Use the sync check logic to get file statuses
+        sync_check = self.synchronize_project_check(project_name)
+        files_status = sync_check["files_status"]
 
         elan_service = ElanService(db)
+        updated_files = []
+        deleted_files = []
 
-        # Add new files
-        for file_path in added_files + untracked_files:
-            if file_path.exists():
-                logger.info(f"[SYNC] Adding new file in DB: {file_path}")
-                await elan_service.process_single_file(
-                    str(file_path), user_id, project_name
-                )
+        for file_info in files_status:
+            filename = file_info["filename"]
+            status = file_info["status"]
+            file_path = project_path / filename
+            if status in {"added", "untracked"}:
+                if file_path.exists():
+                    logger.info(f"[SYNC] Adding new file in DB: {file_path}")
+                    await elan_service.process_single_file(str(file_path), user_id, project_name)
+                    updated_files.append(file_path)
+            elif status == "modified":
+                if file_path.exists():
+                    logger.info(f"[SYNC] Updating modified file in DB: {file_path}")
+                    await elan_service.process_single_file_and_update(str(file_path), user_id, project_name)
+                    updated_files.append(file_path)
+            elif status == "deleted":
+                logger.info(f"[SYNC] Removing deleted file from DB: {filename}")
+                await elan_service.delete_elan_files_from_db(filename, project_name)
+                deleted_files.append(filename)
 
-        # Update modified files
-        for file_path in modified_files:
-            if file_path.exists():
-                logger.info(f"[SYNC] Updating modified file in DB: {file_path}")
-                await elan_service.process_single_file_and_update(
-                    str(file_path), user_id, project_name
-                )
-
-        # Remove deleted files
-        for filename in deleted_files:
-            logger.info(f"[SYNC] Removing deleted file from DB: {filename}")
-            await elan_service.delete_elan_files_from_db(filename, project_name)
-
+        # Commit changes if any
+        status_output = runner.get_status()
         if status_output.strip():
-            logger.info("[SYNC] Committing changes to git...")
             runner.commit(f"Synchronized project '{project_name}' with ELAN files")
-        else:
-            logger.info("[SYNC] No changes to commit.")
 
         logger.info(f"[SYNC] Synchronization complete for project: {project_name}")
 
@@ -984,7 +946,7 @@ class GitService:
                 FileStatus(
                     filename=str(f), status="updated", description="File updated"
                 )
-                for f in modified_files
+                for f in updated_files
             ]
             + [
                 FileStatus(filename=f, status="deleted", description="File deleted")
@@ -1075,6 +1037,8 @@ class GitService:
 
             project.project_name = new_project_name
             project.project_path = str(new_path)
+            rename_project_backup_folder(old_project_name, project.project_name)
+            update_project_githooks(new_path, project.project_name)
         else:
             # Name unchanged, just update description
             logger.info("Project name unchanged, only updating description.")
@@ -1121,38 +1085,37 @@ class GitService:
         files_status = []
 
         status_map = {"A": "added", "M": "modified", "D": "deleted", "??": "untracked"}
+        tracked_files = set()
 
         for entry in self._parse_git_status(status_output):
             code = entry["status"]
             filename = entry["filename"]
             status = status_map.get(code, code)
-
-            # Remove quotes if present
             clean_filename = filename.strip('"').strip("'")
-
-            if code == "??":
-                # Only add .eaf files directly in elan_files (no subfolders)
-                file_path = Path(clean_filename)
-                if (
-                    file_path.parent == Path("elan_files")
-                    and file_path.suffix.lower() == ".eaf"
-                ):
-                    files_status.append(
-                        FileStatus(
-                            filename=file_path.as_posix(),
-                            status="untracked",
-                            description=f"File {file_path.as_posix()} is untracked",
-                        )
-                    )
-            elif (
-                Path(clean_filename).parent == Path("elan_files")
-                and Path(clean_filename).suffix.lower() == ".eaf"
+            tracked_files.add(clean_filename)
+            file_path = Path(clean_filename)
+            # Only consider .eaf files directly in elan_files
+            if (
+                file_path.parent == Path("elan_files")
+                and file_path.suffix.lower() == ".eaf"
             ):
                 files_status.append(
                     FileStatus(
-                        filename=Path(clean_filename).as_posix(),
+                        filename=file_path.as_posix(),
                         status=status,
-                        description=f"File {Path(clean_filename).as_posix()} is {status}",
+                        description=f"File {file_path.as_posix()} is {status}",
+                    )
+                )
+
+        # Scan elan_files folder for .eaf files not reported by git
+        for file in elan_files_dir.glob("*.eaf"):
+            rel_path = Path("elan_files") / file.name
+            if rel_path.as_posix() not in tracked_files:
+                files_status.append(
+                    FileStatus(
+                        filename=rel_path.as_posix(),
+                        status="untracked",
+                        description=f"File {rel_path.as_posix()} is untracked (not reported by git)",
                     )
                 )
 
