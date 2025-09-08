@@ -847,6 +847,21 @@
     }
   },
 
+  "notificationBell": {
+    "title": "Notifications",
+    "unread_notifications": "{count} unread notifications",
+    "no_unread_notifications": "No unread notifications",
+    "mark_all_read": "Mark all as read",
+    "loading_notifications": "Loading notifications...",
+    "no_notifications": "No notifications",
+    "up_to_date": "You're up to date!",
+    "unread_badge": "{count} unread",
+    "unread_badge_singular": "1 unread",
+    "mark_as_read": "Mark as read",
+    "delete": "Delete",
+    "view_all_notifications": "View all notifications"
+  },
+
   "contact": {
     "title": "Contact Us",
     "subtitle": "Have a question or need help? We're here to assist you.",
