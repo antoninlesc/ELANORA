@@ -9,7 +9,9 @@ from app.service.effective_naming_standard import (
     unassign_effective_standard,
     fetch_effective_standards,
 )
-from app.schema.requests.effective_naming_standard import AssignEffectiveNamingStandardRequest
+from app.schema.requests.effective_naming_standard import (
+    AssignEffectiveNamingStandardRequest,
+)
 from app.schema.responses.effective_naming_standard import (
     EffectiveNamingStandardResponse,
     UnassignEffectiveNamingStandardResponse,
@@ -18,9 +20,11 @@ from app.schema.responses.effective_naming_standard import (
 
 router = APIRouter()
 
+
 @router.get("/effective-naming-standards")
 async def get_effective_naming_standards():
     return {"effective_naming_standards": EFFECTIVE_NAMING_STANDARDS}
+
 
 @router.post(
     "/project/{project_id}/filetype/{project_file_type_id}/assign",
@@ -38,6 +42,7 @@ async def assign_standard(
     )
     return {"success": True, "effective_standard": result}
 
+
 @router.delete(
     "/project/{project_id}/filetype/{project_file_type_id}/unassign",
     response_model=UnassignEffectiveNamingStandardResponse,
@@ -51,12 +56,11 @@ async def unassign_standard(
     await unassign_effective_standard(db, project_id, project_file_type_id)
     return {"success": True}
 
+
 @router.get(
     "/project/{project_id}/effective-standards",
     response_model=GetEffectiveStandardsResponse,
 )
-async def get_effective_standards(
-    project_id: int, db: AsyncSession = get_db_dep
-):
+async def get_effective_standards(project_id: int, db: AsyncSession = get_db_dep):
     standards = await fetch_effective_standards(db, project_id)
     return {"effective_standards": standards}

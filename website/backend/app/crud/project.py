@@ -66,6 +66,7 @@ async def create_project_db(
         )
     return project
 
+
 async def get_project_name_by_id(db: AsyncSession, project_id: int) -> str | None:
     project = await DatabaseUtils.get_by_id(db, Project, "project_id", project_id)
     if project:
@@ -215,3 +216,15 @@ async def update_user_project_permission(
     await db.commit()
     await db.refresh(existing_membership)
     return existing_membership
+
+
+async def get_project_admins_and_owners(db: AsyncSession, project_id: int) -> list[int]:
+    """Get all user IDs with ADMIN or OWNER permissions for a project."""
+    query = select(UserToProject.user_id).where(
+        UserToProject.project_id == project_id,
+        UserToProject.permission.in_(
+            [ProjectPermission.ADMIN, ProjectPermission.OWNER]
+        ),
+    )
+    result = await db.execute(query)
+    return list(result.scalars().all())

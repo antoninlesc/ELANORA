@@ -72,7 +72,7 @@ class ProjectNamingStandardService:
                 if not regex or not str(regex).strip():
                     raise HTTPException(
                         status_code=400,
-                        detail="Regex must not be empty for any component."
+                        detail="Regex must not be empty for any component.",
                     )
             standard = await project_naming_standard.create_standard(
                 db, project_id, name, project_file_type_id, pattern, description

@@ -117,6 +117,9 @@
     "conflicts": "Conflits",
     "tiers": "Tiers",
     "export": "Export",
+    "profile": "Profil",
+    "notifications": "Notifications",
+    "logout": "Déconnexion",
     "projectSection": {
       "selectProject": "Sélectionnez un projet",
       "noProjectAvailable": "Aucun projet disponible",
@@ -303,7 +306,28 @@
     "sending": "Envoi en cours...",
     "success": "Invitation envoyée avec succès !",
     "error": "Échec de l'envoi de l'invitation",
-    "invalid_email": "Veuillez saisir une adresse email valide"
+    "invalid_email": "Veuillez saisir une adresse email valide",
+    "loading_invitation": "Chargement des détails de l'invitation...",
+    "decision_title": "Invitation au projet",
+    "review_invitation": "Veuillez examiner cette invitation",
+    "invited_you_to_join": "vous a invité à rejoindre le projet",
+    "personal_message": "Message personnel :",
+    "expires_at": "Expire le",
+    "expires_in_days": "Cette invitation expirera dans {days} jours.",
+    "accept": "Accepter",
+    "reject": "Refuser",
+    "processing": "Traitement en cours...",
+    "error_title": "Erreur",
+    "load_error": "Impossible de charger les détails de l'invitation",
+    "accept_error": "Impossible d'accepter l'invitation",
+    "reject_error": "Impossible de refuser l'invitation",
+    "accept_success_title": "Invitation Acceptée !",
+    "reject_success_title": "Invitation Refusée",
+    "accept_success_message": "Vous avez rejoint le projet avec succès. Bienvenue !",
+    "reject_success_message": "Vous avez décliné l'invitation.",
+    "go_to_projects": "Aller aux Projets",
+    "back_to_home": "Retour à l'Accueil",
+    "general_error": "Une erreur inattendue s'est produite"
   },
   "project": {
     "load_error": "Échec du chargement des projets",
@@ -778,8 +802,36 @@
     },
     "notifications": {
       "title": "Notifications",
-      "description": "Configurez vos préférences de notification",
-      "coming_soon": "Les paramètres de notification seront bientôt disponibles."
+      "description": "Gérez vos notifications et préférences",
+      "loading": "Chargement des notifications...",
+      "refresh": "Actualiser",
+      "mark_all_read": "Tout marquer comme lu",
+      "mark_read": "Marquer comme lu",
+      "view": "Voir",
+      "delete": "Supprimer",
+      "new": "Nouveau",
+      "load_more": "Charger plus",
+      "stats": {
+        "total": "Total",
+        "unread": "Non lues",
+        "read": "Lues"
+      },
+      "filters": {
+        "all": "Toutes",
+        "unread": "Non lues",
+        "read": "Lues"
+      },
+      "empty": {
+        "title": "Aucune notification",
+        "all": "Aucune notification à afficher.",
+        "unread": "Vous n'avez aucune notification non lue."
+      },
+      "preferences": {
+        "title": "Préférences de notification",
+        "description": "Configurez vos préférences de notification",
+        "email": "Notifications par email",
+        "email_description": "Recevoir les notifications par email"
+      }
     },
     "errors": {
       "load_failed": "Échec du chargement des informations de profil. Veuillez réessayer."

@@ -146,22 +146,6 @@
             />
             <div class="input-indicator">
               <div v-if="usernameCheckLoading" class="loading-spinner"></div>
-              <div
-                v-else-if="
-                  usernameAvailable === true && !validationErrors.username
-                "
-                class="success-icon"
-              >
-                ✓
-              </div>
-              <div
-                v-else-if="
-                  usernameAvailable === false || validationErrors.username
-                "
-                class="error-icon"
-              >
-                ✗
-              </div>
             </div>
           </div>
           <div class="validation-messages">
@@ -363,18 +347,6 @@
             />
             <div class="input-indicator">
               <div v-if="emailCheckLoading" class="loading-spinner"></div>
-              <div
-                v-else-if="emailAvailable === true && !validationErrors.email"
-                class="success-icon"
-              >
-                ✓
-              </div>
-              <div
-                v-else-if="emailAvailable === false || validationErrors.email"
-                class="error-icon"
-              >
-                ✗
-              </div>
             </div>
           </div>
           <div class="validation-messages">

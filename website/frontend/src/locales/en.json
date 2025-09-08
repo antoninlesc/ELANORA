@@ -316,7 +316,28 @@
     "sending": "Sending...",
     "success": "Invitation sent successfully!",
     "error": "Failed to send invitation",
-    "invalid_email": "Please enter a valid email address"
+    "invalid_email": "Please enter a valid email address",
+    "loading_invitation": "Loading invitation details...",
+    "decision_title": "Project Invitation",
+    "review_invitation": "Please review this invitation",
+    "invited_you_to_join": "has invited you to join the project",
+    "personal_message": "Personal message:",
+    "expires_at": "Expires on",
+    "expires_in_days": "This invitation will expire in {days} days.",
+    "accept": "Accept",
+    "reject": "Reject",
+    "processing": "Processing...",
+    "error_title": "Error",
+    "load_error": "Failed to load invitation details",
+    "accept_error": "Failed to accept invitation",
+    "reject_error": "Failed to reject invitation",
+    "accept_success_title": "Invitation Accepted!",
+    "reject_success_title": "Invitation Rejected",
+    "accept_success_message": "You have successfully joined the project. Welcome aboard!",
+    "reject_success_message": "You have declined the invitation.",
+    "go_to_projects": "Go to Projects",
+    "back_to_home": "Back to Home",
+    "general_error": "An unexpected error occurred"
   },
   "project": {
     "load_error": "Failed to load projects",
@@ -790,8 +811,36 @@
     },
     "notifications": {
       "title": "Notifications",
-      "description": "Configure your notification preferences",
-      "coming_soon": "Notification settings will be available soon."
+      "description": "Manage your notifications and preferences",
+      "loading": "Loading notifications...",
+      "refresh": "Refresh",
+      "mark_all_read": "Mark all as read",
+      "mark_read": "Mark as read",
+      "view": "View",
+      "delete": "Delete",
+      "new": "New",
+      "load_more": "Load more",
+      "stats": {
+        "total": "Total",
+        "unread": "Unread",
+        "read": "Read"
+      },
+      "filters": {
+        "all": "All",
+        "unread": "Unread",
+        "read": "Read"
+      },
+      "empty": {
+        "title": "No notifications",
+        "all": "No notifications to display.",
+        "unread": "You have no unread notifications."
+      },
+      "preferences": {
+        "title": "Notification preferences",
+        "description": "Configure your notification preferences",
+        "email": "Email notifications",
+        "email_description": "Receive notifications via email"
+      }
     },
     "errors": {
       "load_failed": "Failed to load profile information. Please try again."

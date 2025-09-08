@@ -24,6 +24,8 @@ if TYPE_CHECKING:
     from .conflict import Conflict
     from .elan_file import ElanFile
     from .invitation import Invitation
+    from .notification import Notification
+    from .notification_preference import NotificationPreference
 
 
 class User(Base):
@@ -84,6 +86,12 @@ class User(Base):
     comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="user")
     resolved_conflicts: Mapped[list["Conflict"]] = relationship(
         "Conflict", foreign_keys="Conflict.resolved_by", back_populates="resolver"
+    )
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification", back_populates="user"
+    )
+    notification_preference: Mapped["NotificationPreference | None"] = relationship(
+        "NotificationPreference", back_populates="user", uselist=False
     )
 
     def __repr__(self) -> str:
