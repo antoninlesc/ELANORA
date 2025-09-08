@@ -139,7 +139,9 @@
     "sso_error": "SSO login failed.",
     "access_request_sent": "Access request sent to the instance for {email}.",
     "access_request_error": "Failed to send access request.",
-    "retrieving_lab_info": "Retrieving lab information..."
+    "retrieving_lab_info": "Retrieving lab information...",
+    "email_verification_required": "Please verify your email before logging in.",
+    "login_connection_error": "Login failed. Please try again."
   },
   "auth": {
     "login": "Login",

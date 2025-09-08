@@ -107,7 +107,9 @@
     "sso_error": "Échec de la connexion SSO.",
     "access_request_sent": "Demande d'accès envoyée à l'instance pour {email}.",
     "access_request_error": "Échec de l'envoi de la demande d'accès.",
-    "retrieving_lab_info": "Récupération des informations du laboratoire..."
+    "retrieving_lab_info": "Récupération des informations du laboratoire...",
+    "email_verification_required": "Vérifiez votre email avant de vous connecter.",
+    "login_connection_error": "Erreur de connexion. Veuillez réessayer."
   },
 
   "appHeader": {

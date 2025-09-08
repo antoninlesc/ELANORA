@@ -169,7 +169,7 @@ const handleLogin = async () => {
 
     if (response.needs_verification) {
       eventMessageStore.addMessage(
-        response.message || 'Vérifiez votre email avant de vous connecter.',
+        response.message || t('login.email_verification_required'),
         'warning'
       );
 
@@ -184,14 +184,14 @@ const handleLogin = async () => {
       return;
     }
     if (!userStore.user) {
-      eventMessageStore.addMessage('Erreur de connexion', 'error');
+      eventMessageStore.addMessage(t('login.login_connection_error'), 'error');
       return;
     }
-    eventMessageStore.addMessage('Connexion réussie', 'success');
+    eventMessageStore.addMessage(t('login.login_success'), 'success');
     router.push({ name: 'HomePage' });
   } catch (error) {
     console.error('Login error:', error);
-    let msg = 'Erreur de connexion';
+    let msg = t('login.login_connection_error');
     if (error.response && error.response.data && error.response.data.detail) {
       msg = error.response.data.detail;
     }
