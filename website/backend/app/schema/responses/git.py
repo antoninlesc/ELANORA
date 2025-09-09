@@ -228,5 +228,21 @@ class FileInfo(CustomBaseModel):
     type: str = "file"
 
 
+class FileInfoWithMedia(CustomBaseModel):
+    """Extended file info that includes database ID and associated media filenames."""
+    name: str
+    size: int
+    lastModified: str
+    lastUpdatedBy: str
+    type: str = "file"
+    elan_id: int | None = None  # Database ID for rename operations
+    media_filenames: list[str] = []  # Associated media filenames
+
+
 class ProjectFilesResponse(CustomBaseModel):
     files: list[FileInfo]
+
+
+class ProjectFilesWithMediaResponse(CustomBaseModel):
+    """Response for project files that includes media information."""
+    files: list[FileInfoWithMedia]

@@ -110,11 +110,15 @@
 <script setup>
 import { ref, computed } from 'vue';
 import FileRenameSuggestion from '@components/common/FileRenameSuggestion.vue';
+import { extractComponentsFromMedia, generateSuggestedFilename } from '@/utils/filenameFromMediaFile';
 
 const props = defineProps({
   files: { type: Array, required: true },
   showCompliance: { type: Boolean, default: false },
-  showFilters: { type: Boolean, default: false }
+  showFilters: { type: Boolean, default: false },
+  projectId: { type: Number, default: null },
+  mediaStandard: { type: Object, default: null },
+  projectStandard: { type: Object, default: null }
 });
 
 const emit = defineEmits(['rename']);
@@ -177,7 +181,24 @@ function formatDate(dateStr) {
 }
 
 function getRenameSuggestion(file) {
-  return file?.suggestedName || 'suggested_filename.eaf';
+  // If file already has a suggestion, use it
+  if (file?.suggestedName) {
+    return file.suggestedName;
+  }
+  
+  // Try to generate media-based suggestion if we have the required data
+  if (file?.media_filenames && file.media_filenames.length > 0 && props.mediaStandard && props.projectStandard) {
+    const extractedComponents = extractComponentsFromMedia(file.media_filenames, props.mediaStandard);
+    if (extractedComponents) {
+      const suggestion = generateSuggestedFilename(extractedComponents, props.projectStandard);
+      if (suggestion) {
+        return suggestion;
+      }
+    }
+  }
+  
+  // Fallback suggestion
+  return 'suggested_filename.eaf';
 }
 
 function handleRename(file, newName) {

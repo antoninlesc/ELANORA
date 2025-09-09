@@ -534,6 +534,20 @@
     }
   },
 
+  "bulkRenameDialog": {
+    "title": "Renommer les fichiers en lot",
+    "loading": "Chargement des fichiers...",
+    "noSuggestions": "Aucun fichier disponible pour le renommage.",
+    "generateSuggestions": "Générer des suggestions depuis les médias",
+    "current": "Actuel",
+    "suggested": "Suggéré",
+    "manual": "Manuel",
+    "useSuggestion": "Utiliser",
+    "enterNewName": "Entrez le nouveau nom de fichier",
+    "extractedFrom": "Basé sur les fichiers média",
+    "apply": "Appliquer les renommages"
+  },
+
   "projectSettings": {
     "title": "Configuration du projet {projectName}",
     "subtitle": "Personnalisez les paramètres de votre projet",
@@ -729,7 +743,8 @@
     "rangeStartEnd": "Le début de la plage doit être inférieur ou égal à la fin.",
     "enterSingleOrListOrRange": "Entrez une seule valeur, une liste séparée par des virgules/points-virgules, ou une plage (ex. : {example}).",
     "invalidLength": "Longueur invalide pour \"{name}\".",
-    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra"
+    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra",
+    "promptExtractedValue": "La valeur '{value}' a été extraite pour le composant \"{name}\". Si vous souhaitez utiliser uniquement la valeur extraite, laissez ce champ vide et cliquez sur \"OK\". Cependant, il est recommandé d'entrer une plage valide (par ex. {example})."
   },
 
   "profile": {
@@ -902,9 +917,7 @@
     "error_payload_too_large": "Le message est trop volumineux. Veuillez réduire la taille de votre message.",
     "error_unknown": "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
     "response_note": "Vous recevrez une réponse à l'adresse email que vous avez fournie.",
-    "back_to_site": "Retour au Site",
-    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra",
-    "promptExtractedValue": "La valeur {value} a été extraite pour le composant \"{name}\". Si vous souhaitez utiliser uniquement la valeur extraite, laissez ce champ vide et cliquez sur \"OK\". Cependant, il est recommandé d'entrer une plage de valeurs valides (ex. : {example})."
+    "back_to_site": "Retour au Site"
   },
 
   "configureEffectiveStandards": {

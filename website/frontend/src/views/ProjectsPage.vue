@@ -222,6 +222,9 @@
               <FileTree 
                 :files="projectFiles.files" 
                 :show-compliance="isAdmin && hasEffectiveStandard"
+                :project-id="currentProjectId"
+                :media-standard="mediaStandard"
+                :project-standard="projectStandard"
               />
             </div>
             <div v-else class="project-page-loading">
@@ -268,6 +271,8 @@
       <BulkRenameDialog
         v-if="bulkRenameDialogVisible && isAdmin"
         :files="nonCompliantFiles"
+        :all-files="projectFiles?.files || []"
+        :project-id="currentProjectId"
         @close="bulkRenameDialogVisible = false"
       />
     </div>
@@ -285,6 +290,7 @@ import ProjectCreateDialog from '@/components/pageSpecific/projectsPage/ProjectC
 import ProjectShareModal from '@components/common/ProjectShareModal.vue';
 import ProjectSyncDialog from '@/components/pageSpecific/projectsPage/ProjectSyncDialog.vue';
 import ProjectEditDialog from '@/components/pageSpecific/projectsPage/ProjectEditDialog.vue';
+import BulkRenameDialog from '@/components/pageSpecific/projectsPage/BulkRenameDialog.vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUserConfirm } from '@/composables/useUserConfirm';
@@ -292,6 +298,7 @@ import { useHead } from '@unhead/vue';
 import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
 import { useNamingStandardStore } from '@/stores/namingStandard';
 import { isFilenameCompliant } from '@/utils/filenameCompliance';
+import { getMediaStandardForProject } from '@/utils/filenameFromMediaFile';
 
 const projectStore = useProjectStore();
 const userStore = useUserStore();
@@ -340,6 +347,8 @@ const isAdmin = computed(() => userStore.user?.role === 'admin');
 
 // Standard state
 const hasEffectiveStandard = ref(false);
+const projectStandard = ref(null);
+const mediaStandard = ref(null);
 
 // Pagination state
 const pageSize = 6;
@@ -426,7 +435,7 @@ async function fetchProjectFiles() {
   
   filesLoading.value = true;
   try {
-    const res = await gitService.listProjectFiles(currentProjectName.value);
+    const res = await gitService.listProjectFiles(currentProjectName.value, true); // Always include media info
 
     const PROJECT_FILES_LOCATION_ID = 1;
 
@@ -458,6 +467,16 @@ async function fetchProjectFiles() {
     // Check compliance for each file and add isCompliant property
     const standard = namingStandardStore.standards.find(std => std.id === standardId);
     standardName.value = standard ? standard.name : '';
+    
+    // Store the project standard for use in FileTree suggestions
+    projectStandard.value = standard;
+    
+    // Get media standard for suggestions
+    mediaStandard.value = await getMediaStandardForProject(
+      currentProjectId.value, 
+      effectiveStandardStore, 
+      namingStandardStore
+    );
     
     // Only check compliance if there's a standard and user is admin
     res.files = res.files.map(file => {

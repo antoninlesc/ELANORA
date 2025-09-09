@@ -543,6 +543,20 @@
     }
   },
 
+  "bulkRenameDialog": {
+    "title": "Bulk Rename Files",
+    "loading": "Loading files...",
+    "noSuggestions": "No files available for renaming.",
+    "generateSuggestions": "Generate Suggestions from Media",
+    "current": "Current",
+    "suggested": "Suggested",
+    "manual": "Manual",
+    "useSuggestion": "Use",
+    "enterNewName": "Enter new filename",
+    "extractedFrom": "Based on media files",
+    "apply": "Apply Renames"
+  },
+
   "projectSettings": {
     "title": "Configure the {projectName} project",
     "subtitle": "Customize your project settings",
@@ -691,6 +705,7 @@
     "deleteConfirm": "Are you sure you want to delete this standard? This action cannot be undone.",
     "deleteError": "Failed to delete standard.",
     "patternExample": "Pattern example",
+    "promptExtractedValue": "The value '{value}' has been extracted for the component \"{name}\". If you wish to use the extracted value only, leave this blank and click \"OK\". However, it is recommended to enter a valid range (e.g. {example}).",
     "importModal": {
       "selectProject": "Select a project to import from:",
       "chooseProject": "-- Choose a project --",
@@ -910,9 +925,7 @@
     "error_payload_too_large": "The message is too large. Please reduce the size of your message.",
     "error_unknown": "An unexpected error occurred. Please try again later.",
     "response_note": "You will receive a response at the email address you provided.",
-    "back_to_site": "Back to Site",
-    "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle",
-    "promptExtractedValue": "The value {value} has been extracted for the component \"{name}\". If you wish to use the extracted value only, leave this blank and click \"OK\". However, it is recommended entering a valid range (e.g. {example})."
+    "back_to_site": "Back to Site"
   },
 
   "configureEffectiveStandards": {

@@ -109,9 +109,11 @@ const gitService = {
   },
 
   // List files in a project (recursive structure)
-  async listProjectFiles(projectName) {
+  async listProjectFiles(projectName, includeMedia = false) {
+    const params = includeMedia ? { include_media: true } : {};
     const { data } = await axiosInstance.get(
-      `/git/projects/${encodeURIComponent(projectName)}/files`
+      `/git/projects/${encodeURIComponent(projectName)}/files`,
+      { params }
     );
     return data;
   },

@@ -26,6 +26,7 @@ from app.crud.project import (
     get_project_name_by_id,
 )
 from app.crud.elan_file import get_elan_files_by_project
+from app.crud import elan_file_media as elan_media_crud
 from app.crud.effective_naming_standard import get_effective_standards_for_project
 from app.crud.project_naming_standard import get_standard_with_components_full
 from app.core.effective_naming_standard_locations import get_location_id_by_name
@@ -1005,35 +1006,55 @@ class GitService:
         except Exception as e:
             raise RuntimeError(f"Failed to checkout branch: {e}") from e
 
-    async def list_project_files(self, project_name: str, db: AsyncSession) -> dict[str, Any]:
-        """Return enriched .eaf files for the project using CRUD."""
+    async def list_project_files(self, project_name: str, db: AsyncSession, include_media: bool = False) -> dict[str, Any]:
+        """Return enriched .eaf files for the project using CRUD, optionally with media information."""
         project = await get_project_by_name(db, project_name)
         if not project:
             raise ValueError(f"Project '{project_name}' not found.")
 
         # Use CRUD to get files with user info
         db_files = await get_elan_files_by_project(db, project.project_id)
+
+        # If media is requested, get media information
+        media_mapping = {}
+        if include_media:
+            files_with_media = await elan_media_crud.get_project_files_with_media_simple(db, project.project_id)
+
+            # Create a mapping of filename to media info
+            media_mapping = {
+                file_data['filename']: {
+                    'media_filenames': file_data['media_filenames'],
+                    'elan_id': file_data['elan_id']
+                }
+                for file_data in files_with_media
+            }
+
         enriched_files = []
         for elan_file, username in db_files:
             file_path = Path(elan_file.absolute_file_path)
             logger.info(f"Getting info for file: {file_path}")
-            if file_path.exists():
-                last_modified = datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
-                enriched_files.append({
-                    "name": elan_file.filename,
-                    "size": elan_file.file_size,
-                    "lastModified": last_modified,
-                    "lastUpdatedBy": username or "N/A",
-                    "type": "file"
-                })
-            else:
-                enriched_files.append({
-                    "name": elan_file.filename,
-                    "size": elan_file.file_size,
-                    "lastModified": "N/A",
-                    "lastUpdatedBy": username or "N/A",
-                    "type": "file"
-                })
+
+            # Build base file info
+            file_info = {
+                "name": elan_file.filename,
+                "size": elan_file.file_size,
+                "lastModified": datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat() if file_path.exists() else "N/A",
+                "lastUpdatedBy": username or "N/A",
+                "type": "file"
+            }
+
+            # Add media information if requested
+            if include_media:
+                if elan_file.filename in media_mapping:
+                    media_info = media_mapping[elan_file.filename]
+                    file_info['media_filenames'] = media_info['media_filenames']
+                    file_info['elan_id'] = media_info['elan_id']
+                else:
+                    file_info['media_filenames'] = []
+                    file_info['elan_id'] = elan_file.elan_id 
+
+            enriched_files.append(file_info)
+
         logger.info(f"Retrieved files for project '{project_name}': {enriched_files}")
         return {"files": enriched_files}
 

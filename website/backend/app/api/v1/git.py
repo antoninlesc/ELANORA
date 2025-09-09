@@ -21,7 +21,6 @@ from app.schema.responses.git import (
     ProjectListResponse,
     ProjectSyncCheckResponse,
     PendingUploadsResponse,
-    ProjectFilesResponse,
 )
 from app.service.git import GitService
 
@@ -229,14 +228,27 @@ async def init_project_from_folder_upload(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/projects/{project_name}/files", response_model=ProjectFilesResponse)
+@router.get("/projects/{project_name}/files")
 async def get_project_files(
     project_name: str,
+    include_media: bool = False,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
+    """Get project files, optionally with media information.
+
+    Args:
+        project_name: Name of the project
+        include_media: Whether to include media filenames for each file
+        db: Database session
+        user: Authenticated admin user
+
+    Returns:
+        ProjectFilesResponse or ProjectFilesWithMediaResponse depending on include_media
+
+    """
     try:
-        result = await git_service.list_project_files(project_name, db)
+        result = await git_service.list_project_files(project_name, db, include_media)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
