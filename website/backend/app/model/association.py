@@ -11,17 +11,6 @@ CONFLICT_CONFLICTID_FK = "CONFLICT.conflict_id"
 COMMENT_COMMENTID_FK = "COMMENT.comment_id"
 
 
-class ElanFileToProject(Base):
-    """Association table linking ELAN files to projects."""
-
-    __tablename__ = "ELAN_FILE_TO_PROJECT"
-
-    elan_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey(ELAN_FILE_ELANID_FK), primary_key=True
-    )
-    project_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey(PROJECT_PROJECTID_FK), primary_key=True
-    )
 
 
 class ElanFileToTier(Base):

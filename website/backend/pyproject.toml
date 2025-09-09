@@ -23,6 +23,7 @@ slowapi = "^0.1.9"
 bcrypt = "^4.3.0"
 lxml = "^6.0.0"
 aiofiles = "^24.1.0"
+regex = "^2025.9.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"

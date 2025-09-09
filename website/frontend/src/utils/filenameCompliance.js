@@ -30,10 +30,7 @@ const isRegexLiteral = (s) => /^\/.*\/[gimsuy]*$/.test(s);
 
 function checkRegex(comp, value) {
   const rx = toRegExp(comp.regex);
-  if (rx && !rx.test(value)) {
-    return false;
-  }
-  return true;
+  return !rx || rx.test(value);
 }
 
 function isAcceptedValueRegex(av, value) {
@@ -73,10 +70,7 @@ function checkFixedValue(comp, value) {
 
 function checkNumericRangeString(comp, value) {
   const r = parseRange(comp.numericRange);
-  if (!r || !matchesRangeValue(value, r)) {
-    return false;
-  }
-  return true;
+  return r && matchesRangeValue(value, r);
 }
 
 function checkNumericRangeObject(comp, value) {

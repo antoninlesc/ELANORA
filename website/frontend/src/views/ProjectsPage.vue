@@ -418,6 +418,12 @@ async function fetchProjectFiles() {
     hasEffectiveStandard.value = false;
     return;
   }
+  
+  // Prevent duplicate calls
+  if (filesLoading.value) {
+    return;
+  }
+  
   filesLoading.value = true;
   try {
     const res = await gitService.listProjectFiles(currentProjectName.value);
@@ -558,6 +564,7 @@ onMounted(() => {
   if (projectStore.projects.length === 0) {
     fetchProjects();
   }
+  projectStore.initBroadcastChannel();
   projectStore.loadCurrentProject();
 });
 

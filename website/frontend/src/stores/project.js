@@ -5,6 +5,7 @@ export const useProjectStore = defineStore('project', {
     currentProject: null,
     projects: [],
     isLoading: false,
+    broadcastChannel: null,
   }),
 
   getters: {
@@ -16,6 +17,23 @@ export const useProjectStore = defineStore('project', {
   },
 
   actions: {
+    initBroadcastChannel() {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        this.broadcastChannel = new BroadcastChannel('project-sync');
+
+        // Listen for messages from other tabs
+        this.broadcastChannel.onmessage = (event) => {
+          if (event.data.type === 'projects-updated') {
+            // Update local store with the latest projects
+            this.projects = event.data.projects;
+            this.sortProjects();
+            // Update localStorage
+            localStorage.setItem('projects', JSON.stringify(this.projects));
+          }
+        };
+      }
+    },
+
     sortProjects() {
       this.projects = this.projects.slice().sort((a, b) =>
         a.project_name.localeCompare(b.project_name)
@@ -43,6 +61,14 @@ export const useProjectStore = defineStore('project', {
       this.projects = projects.slice();
       this.sortProjects();
       localStorage.setItem('projects', JSON.stringify(this.projects));
+
+      // Broadcast to other tabs with serialized data
+      if (this.broadcastChannel) {
+        this.broadcastChannel.postMessage({
+          type: 'projects-updated',
+          projects: JSON.parse(JSON.stringify(this.projects)),
+        });
+      }
     },
     loadCurrentProject() {
       this.isLoading = true;
@@ -55,6 +81,12 @@ export const useProjectStore = defineStore('project', {
     clearCurrentProject() {
       this.currentProject = null;
       localStorage.removeItem('currentProject');
+    },
+
+    $dispose() {
+      if (this.broadcastChannel) {
+        this.broadcastChannel.close();
+      }
     },
   },
 });

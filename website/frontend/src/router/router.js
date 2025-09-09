@@ -227,8 +227,15 @@ router.beforeEach(async (to, from, next) => {
             projectStore.setProjects(res.projects);
             if (res.projects.length === 0) {
               projectStore.clearCurrentProject();
-            } else if (!projectStore.currentProject) {
-              projectStore.setCurrentProject(res.projects[0]);
+            } else {
+              // Load saved currentProject from localStorage if it exists
+              const savedCurrentProject = localStorage.getItem('currentProject');
+              if (savedCurrentProject) {
+                projectStore.currentProject = JSON.parse(savedCurrentProject);
+              } else if (!projectStore.currentProject) {
+                // Fallback: set to the first project (sorted by setProjects)
+                projectStore.setCurrentProject(res.projects[0]);
+              }
             }
           }
         } catch (e) {

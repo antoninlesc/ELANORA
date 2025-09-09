@@ -1,5 +1,6 @@
 [
   { "id": 1, "label": "projectFiles" },
   { "id": 2, "label": "tiers" },
-  { "id": 3, "label": "elanMedia" }
+  { "id": 3, "label": "elanMedia" },
+  { "id": 4, "label": "uploadPage" }
 ]

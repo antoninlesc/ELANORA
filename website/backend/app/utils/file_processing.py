@@ -12,6 +12,65 @@ from app.core.centralized_logging import get_logger
 logger = get_logger()
 
 
+def get_elanora_projects_base_path() -> str:
+    """Get the base path for elanora_projects directory."""
+    try:
+        # Try to use config if available
+        from app.core.config import ELAN_PROJECTS_BASE_PATH
+
+        configured_path = ELAN_PROJECTS_BASE_PATH
+        logger.debug(f"Using configured base path: {configured_path}")
+
+        # If it's a relative path, make it relative to the repo root
+        if not Path(configured_path).is_absolute():
+            # Navigate up from current file to repo root
+            current_dir = Path(__file__).resolve()
+            # file_processing.py -> utils -> app -> backend -> website -> repo_root
+            repo_root = current_dir.parent.parent.parent.parent.parent
+            base_path = str(repo_root / configured_path)
+            logger.debug(f"Converted relative path to absolute: {base_path}")
+            return base_path
+        else:
+            # It's already an absolute path
+            return configured_path
+            
+    except ImportError:
+        # Fallback to calculated path
+        current_dir = Path(__file__).resolve()
+        # Navigate up: file_processing.py -> utils -> app -> backend -> website -> repo_root
+        repo_root = current_dir.parent.parent.parent.parent.parent
+        base_path = str(repo_root / "elanora_projects")
+        logger.debug(f"Calculated base path: {base_path}")
+        return base_path
+
+
+def make_path_relative_to_projects(absolute_path: str) -> str:
+    """Convert absolute path to relative path from elanora_projects directory."""
+    base_path = get_elanora_projects_base_path()
+    abs_path = Path(absolute_path).resolve()
+    base = Path(base_path).resolve()
+
+    logger.debug(f"Converting path: {absolute_path}")
+    logger.debug(f"Base path: {base}")
+    logger.debug(f"Absolute path: {abs_path}")
+
+    try:
+        relative_path = abs_path.relative_to(base)
+        result = str(relative_path).replace("\\", "/")  # Use forward slashes for consistency
+        logger.info(f"Path conversion: {absolute_path} -> {result}")
+        return result
+    except ValueError as e:
+        # Path is not under elanora_projects, return as-is but log warning
+        logger.warning(f"Path {absolute_path} is not under elanora_projects directory: {e}")
+        return absolute_path
+
+
+def make_path_absolute_from_projects(relative_path: str) -> str:
+    """Convert relative path from elanora_projects to absolute path."""
+    base_path = get_elanora_projects_base_path()
+    return str(Path(base_path) / relative_path)
+
+
 class ElanFileProcessor:
     """Utilities for processing ELAN XML files."""
 
@@ -34,9 +93,16 @@ class ElanFileProcessor:
         """Extract basic file information."""
         last_modified_timestamp = os.path.getmtime(file_path_obj)
         last_modified = datetime.fromtimestamp(last_modified_timestamp)
+
+        # Convert absolute path to relative path for storage
+        absolute_path = str(file_path_obj.absolute())
+        relative_path = make_path_relative_to_projects(absolute_path)
+
+        logger.info(f"File info conversion: {absolute_path} -> {relative_path}")
+
         info = {
             "filename": file_path_obj.name,
-            "file_path": str(file_path_obj.absolute()),
+            "file_path": relative_path,  # Store relative path
             "file_size": file_path_obj.stat().st_size,
             "last_modified": last_modified,
         }

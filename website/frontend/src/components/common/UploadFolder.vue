@@ -57,6 +57,7 @@
             v-for="(file, index) in selectedFiles"
             :key="getFileKey(file, index)"
             class="file-item"
+            :class="{ 'file-noncompliant': filesWithCompliance?.[index]?.isCompliant === false }"
           >
             <img
               src="/images/icons/ELAN.svg"
@@ -105,7 +106,8 @@ const props = defineProps({
   subtitle: { type: String, default: '' },
   maxFileSize: { type: Number, default: 50 * 1024 * 1024 },
   compact: { type: Boolean, default: false },
-  allowDuplicates: { type: Boolean, default: false }
+  allowDuplicates: { type: Boolean, default: false },
+  filesWithCompliance: { type: Array, default: () => [] } // New: Array of compliance statuses
 });
 
 const emit = defineEmits(['update:modelValue', 'error', 'files-changed']);
@@ -116,10 +118,10 @@ const selectedFiles = ref([]);
 const isDragOver = ref(false);
 const fileInput = ref(null);
 
-// Initialize from modelValue
+// Initialize from modelValue and sort
 watch(() => props.modelValue, (newValue) => {
   if (newValue && Array.isArray(newValue)) {
-    selectedFiles.value = [...newValue];
+    selectedFiles.value = [...newValue].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   }
 }, { immediate: true });
 
@@ -288,8 +290,12 @@ function addFiles(files) {
     return;
   }
   
-  // Add files and show success
+  // Add files
   selectedFiles.value.push(...filesToAdd);
+  
+  // Sort alphabetically by file name (case-insensitive)
+  selectedFiles.value.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  
   updateModelValue();
   
   const hasFolder = filesToAdd.some(f => f.webkitRelativePath);
@@ -305,6 +311,8 @@ function addFiles(files) {
 
 function removeFile(index) {
   selectedFiles.value.splice(index, 1);
+  selectedFiles.value.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  
   updateModelValue();
 }
 
@@ -336,7 +344,6 @@ defineExpose({
 .upload-zone {
   border: 2px dashed #1976d2;
   border-radius: 12px;
-  padding: 32px 24px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -347,7 +354,7 @@ defineExpose({
 
 .upload-zone:hover {
   border-color: #1565c0;
-  background: #f5f5f5;
+  background: #eeeeee;
 }
 
 .upload-zone.compact {
@@ -546,6 +553,17 @@ defineExpose({
 .size-warning {
   color: #f57c00;
   font-weight: 500;
+}
+
+/* New: Highlight non-compliant files in red */
+.file-noncompliant {
+  background: #ffe5e5;
+  border-left: 4px solid #d9534f;
+}
+
+.file-noncompliant .file-name {
+  color: #d9534f;
+  font-weight: bold;
 }
 
 @media (max-width: 768px) {

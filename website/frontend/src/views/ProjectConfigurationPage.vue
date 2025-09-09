@@ -62,7 +62,7 @@ import ConfigureProjectMembers from '@components/pageSpecific/projectConfigurati
 import ConfigurePendingInvitations from '@components/pageSpecific/projectConfiguration/ConfigurePendingInvitations.vue';
 import ConfigureEffectiveStandards from '@components/pageSpecific/projectConfiguration/ConfigureEffectiveStandards.vue';
 
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useProjectStore } from '@stores/project.js';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -144,4 +144,8 @@ const sectionGroups = [
     ],
   },
 ];
+
+onMounted(() => {
+  projectStore.initBroadcastChannel();
+});
 </script>

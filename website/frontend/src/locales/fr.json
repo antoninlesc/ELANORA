@@ -919,7 +919,8 @@
   "standardLocations": {
     "projectFiles": "Fichiers du projet",
     "tiers": "Tiers",
-    "elanMedia": "Médias ELAN"
+    "elanMedia": "Médias ELAN",
+    "uploadPage": "Page d'upload"
   },
   "eventMessages": {
       "fileTypeAdded": "Type de fichier \"{fileType}\" a été associé avec succès avec \"{location}\".",
@@ -1036,6 +1037,7 @@
       "failedToLoadProjects": "Échec du chargement des projets",
       "selectProjectAndFiles": "Veuillez sélectionner un projet et des fichiers",
       "uploadFailed": "Échec de l'upload des fichiers."
-    }
+    },
+    "complianceWarning": "Certains fichiers ne respectent pas la norme de nommage. Veuillez vérifier les noms des fichiers et réessayer."
   }
 }

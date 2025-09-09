@@ -82,13 +82,13 @@
               v-if="canRemoveUser(user)"
               class="btn-remove"
               :disabled="updatingUsers.has(user.user_id) || removingUser"
-              @click="confirmRemoveUser(user)"
               :title="t('common.remove')"
+              @click="confirmRemoveUser(user)"
             >
               ×
             </button>
             <div v-else class="no-actions">
-              <span class="owner-badge" v-if="user.permission === 'owner'">
+              <span v-if="user.permission === 'owner'" class="owner-badge">
                 {{ t('projectSettings.permissions.owner') }}
               </span>
             </div>
@@ -105,7 +105,7 @@
           <button class="modal-close" @click="closeAddUserModal">×</button>
         </div>
         
-        <form @submit.prevent="addUser" class="add-member-form">
+        <form class="add-member-form" @submit.prevent="addUser">
           <div class="form-group">
             <label for="userId">{{ t('project.share.select_user') }} <span class="share-required">*</span></label>
             <select
@@ -283,7 +283,7 @@ const canRemoveUser = (user) => {
   return true;
 };
 
-const getAvailablePermissions = (user) => {
+const getAvailablePermissions = () => {
   const allPermissions = ['read', 'write', 'admin'];
 
   // Filter permissions based on current user role
@@ -430,6 +430,7 @@ onMounted(() => {
   if (projectName.value) {
     loadUsers();
   }
+  projectStore.initBroadcastChannel();
 });
 
 // When opening the Add Member modal, load available users

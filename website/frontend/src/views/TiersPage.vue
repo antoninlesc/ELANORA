@@ -215,5 +215,8 @@ function onDragEnd() {
   isDragging.value = false;
 }
 
-onMounted(loadData);
+onMounted(() => {
+  loadData();
+  projectStore.initBroadcastChannel();
+});
 </script>

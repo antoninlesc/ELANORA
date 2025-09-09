@@ -1,14 +1,8 @@
-.upload-page {
-  max-width: 800px;
-  margin: 40px auto;
-  padding: 24px;
+.upload-page-root {
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 2px 16px rgb(0 0 0 / 8%);
-}
-
-.upload-container {
-  width: 100%;
+  padding: 3rem 3rem;
 }
 
 .upload-title {

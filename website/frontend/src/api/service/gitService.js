@@ -42,7 +42,7 @@ const gitService = {
   },
 
   // Upload ELAN files to a project
-  async uploadElanFiles(projectName, files, userName) {
+  async uploadElanFiles(projectId, files, userName) {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('files', file);
@@ -50,7 +50,7 @@ const gitService = {
     formData.append('user_name', userName);
 
     const { data } = await axiosInstance.post(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/upload`,
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectId)}/upload`,
       formData,
       {
         headers: {
@@ -121,9 +121,11 @@ const gitService = {
     const formData = new FormData();
     formData.append('project_name', project_name);
     formData.append('description', !description || description === "undefined" ? "" : description);
+    
     files.forEach((file) => {
-      formData.append('files', file, file.webkitRelativePath);
+      formData.append('files', file, file.name);
     });
+    
     const { data } = await axiosInstance.post(
       `/git/projects/init-from-folder-upload`,
       formData,

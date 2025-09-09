@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .pending_upload import PendingUpload
     from .instance import Instance
     from .invitation import Invitation
+    from .elan_file import ElanFile
 
 
 class Project(Base):
@@ -27,6 +28,9 @@ class Project(Base):
     project_path: Mapped[str] = mapped_column(String(512), nullable=False, unique=True)
 
     # Relationships - use string references
+    elan_files: Mapped[list["ElanFile"]] = relationship(
+        "ElanFile", back_populates="project", cascade="all, delete-orphan"
+    )
     pending_uploads: Mapped[list["PendingUpload"]] = relationship(
         "PendingUpload", back_populates="project", cascade="all, delete-orphan"
     )
