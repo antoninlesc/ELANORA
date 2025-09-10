@@ -228,5 +228,58 @@ class FileInfo(CustomBaseModel):
     type: str = "file"
 
 
+class FileInfoWithMedia(CustomBaseModel):
+    """Extended file info that includes database ID and associated media filenames."""
+    name: str
+    size: int
+    lastModified: str
+    lastUpdatedBy: str
+    type: str = "file"
+    elan_id: int | None = None  # Database ID for rename operations
+    media_filenames: list[str] = []  # Associated media filenames
+
+
 class ProjectFilesResponse(CustomBaseModel):
     files: list[FileInfo]
+
+
+class ProjectFilesWithMediaResponse(CustomBaseModel):
+    """Response for project files that includes media information."""
+
+    files: list[FileInfoWithMedia]
+
+
+class RenameResult(CustomBaseModel):
+    """Schema for individual file rename result."""
+
+    old_filename: str
+    new_filename: str
+    success: bool
+    error: str | None = None
+
+
+class FileRenameResponse(CustomBaseModel):
+    """Schema for single file rename response."""
+
+    project_name: str
+    old_filename: str
+    new_filename: str
+    success: bool
+    committed: bool
+    commit_hash: str | None = None
+    renamed_at: str
+    message: str | None = None
+
+
+class BulkRenameResponse(CustomBaseModel):
+    """Schema for bulk file rename response."""
+
+    project_name: str
+    total_files: int
+    successful_renames: int
+    failed_renames: int
+    results: list[RenameResult]
+    committed: bool
+    commit_hash: str | None = None
+    renamed_at: str
+    message: str | None = None

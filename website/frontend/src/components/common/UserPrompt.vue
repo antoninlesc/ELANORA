@@ -85,13 +85,14 @@ defineExpose({ inputValue });
   border-radius: 10px;
   padding: 28px 32px 22px;
   min-width: 320px;
-  max-width: 80vw;
+  max-width: 50vw;
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 4px 32px #0002;
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  text-align: justify;
 }
 
 .user-prompt-message {

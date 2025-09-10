@@ -116,7 +116,8 @@ function handleClickOutside(event) {
   }
 }
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
+  projectStore.initializeFromStorage();
+  projectStore.initBroadcastChannel();
 });
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside);

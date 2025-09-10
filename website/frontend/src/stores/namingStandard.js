@@ -23,11 +23,11 @@ export const useNamingStandardStore = defineStore('namingStandard', {
         this.isLoading = false;
       }
     },
-    async fetchStandardsAndComponentNames(projectId) {
+    async fetchStandardsAndComponentNames(projectId, forceRefresh = false) {
       if (this.isLoading) {
         return;
       }
-      if (this.standards.length > 0 && this.componentNames.length > 0) {
+      if (!forceRefresh && this.standards.length > 0 && this.componentNames.length > 0) {
         return;
       }
       this.isLoading = true;
@@ -57,11 +57,11 @@ export const useNamingStandardStore = defineStore('namingStandard', {
     },
     async addNamingStandard(newStandard, projectId) {
       await namingStandardService.createStandardWithComponents(newStandard);
-      await this.fetchNamingStandards(projectId);
+      await this.fetchStandardsAndComponentNames(projectId, true);
     },
     async deleteNamingStandard(id, projectId) {
       await namingStandardService.deleteStandard(id);
-      await this.fetchNamingStandards(projectId);
+      await this.fetchStandardsAndComponentNames(projectId, true);
     },
   },
 });

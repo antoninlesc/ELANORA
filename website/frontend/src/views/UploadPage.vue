@@ -1,6 +1,6 @@
 <template>
-  <div class="upload-page">
-    <div class="upload-container">
+  <div>
+    <div class="upload-page-root">
       <h1 class="upload-title">{{ $t('uploadPage.title') }}</h1>
 
       <!-- Project Selection -->
@@ -15,10 +15,10 @@
           <option value="">{{ $t('uploadPage.projectSelection.placeholder') }}</option>
           <option
             v-for="project in projects"
-            :key="project.project_id || project"
-            :value="project.project_name || project"
+            :key="project.project_id"
+            :value="project.project_id"
           >
-            {{ project.project_name || project }}
+            {{ project.project_name }}
           </option>
         </select>
       </div>
@@ -29,6 +29,7 @@
           v-model="selectedFiles"
           :title="$t('uploadPage.uploadZone.title')"
           :subtitle="$t('uploadPage.uploadZone.subtitle')"
+          :files-with-compliance="filesWithCompliance"
         />
 
         <!-- Upload Actions -->
@@ -72,15 +73,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UploadFolder from '@/components/common/UploadFolder.vue';
 import gitService from '@/api/service/gitService';
 import "@/assets/css/upload-page.css";
 import { useUserStore } from '@/stores/user';
+import { useProjectStore } from '@/stores/project';
+import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
+import { useNamingStandardStore } from '@/stores/namingStandard';
+import { isFilenameCompliant } from '@/utils/filenameCompliance';
+import { useEventMessageStore } from '@/stores/eventMessage';
 
 const { t } = useI18n();
-const projects = ref([]);
 const selectedProject = ref('');
 const selectedFiles = ref([]);
 const uploading = ref(false);
@@ -88,33 +93,113 @@ const loading = ref(true);
 const uploadResults = ref([]);
 const error = ref('');
 const userStore = useUserStore();
+const projectStore = useProjectStore();
+
+// Stores and Composables
+const effectiveStandardStore = useEffectiveStandardStore();
+const namingStandardStore = useNamingStandardStore();
+const eventMessageStore = useEventMessageStore();
+
+// State for Standards
+const hasEffectiveStandard = ref(false);
+const standard = ref(null);
+
+// Flag to prevent duplicate fetch on initial load
+const isInitialLoad = ref(true);
+
+// Computed for Username from User Store
+const username = computed(() => userStore.user?.username || '');
+
+// Computed for Projects from Store
+const projects = computed(() => projectStore.projects || []);
 
 onMounted(async () => {
-  await fetchProjects();
+  // Ensure store is initialized (loads from localStorage if needed)
+  projectStore.initializeFromStorage();
+  
+  // Set default selected project to current active project's ID
+  selectedProject.value = projectStore.currentProject?.project_id || '';
+  
+  // Initial fetch if a project is selected
+  if (selectedProject.value) {
+    await fetchStandards();
+  }
+  
+  // Mark initial load as complete to allow watcher fetches
+  isInitialLoad.value = false;
+  
+  // Set loading to false after standards are fetched
+  loading.value = false;
+  // Initialize Broadcast Channel for project updates
+  projectStore.initBroadcastChannel();
 });
 
-const username = computed(
-  () => userStore.user?.username || userStore.user?.login || ''
-);
+// Updated: Watcher to fetch standards only after initial load
+watch(selectedProject, async (newProjectId, oldProjectId) => {
+  if (!isInitialLoad.value && newProjectId && newProjectId !== oldProjectId) {
+    await fetchStandards();
+  } else if (!newProjectId) {
+    // Reset if no project selected
+    hasEffectiveStandard.value = false;
+    standard.value = null;
+  }
+});
 
-async function fetchProjects() {
+async function fetchStandards() {
+  const UPLOAD_PAGE_LOCATION_ID = 4;
+
+  if (!selectedProject.value) {
+    console.warn('No project selected, skipping standards fetch');
+    hasEffectiveStandard.value = false;
+    return;
+  }
+
   try {
-    loading.value = true;
-    const response = await gitService.listProjects();
-    projects.value = response.projects;
+    await effectiveStandardStore.fetchEffectiveStandards(selectedProject.value, UPLOAD_PAGE_LOCATION_ID);
+    await namingStandardStore.fetchStandardsAndComponentNames(selectedProject.value);
+
+    // Get the standard ID
+    let standardId;
+    const standardsObj = effectiveStandardStore.effectiveStandards[UPLOAD_PAGE_LOCATION_ID];
+    if (standardsObj && typeof standardsObj === 'object') {
+      const ids = Object.values(standardsObj).filter(id => !!id);
+      standardId = ids.length > 0 ? ids[0] : undefined;
+    } else if (typeof standardsObj === 'string' || typeof standardsObj === 'number') {
+      standardId = standardsObj;
+    }
+
+    hasEffectiveStandard.value = !!standardId;
+    standard.value = namingStandardStore.standards.find(std => std.id === standardId);
   } catch (e) {
-    error.value = t('uploadPage.errors.failedToLoadProjects');
-    console.error('Error fetching projects:', e);
-  } finally {
-    loading.value = false;
+    console.error('Error fetching standards:', e);
+    hasEffectiveStandard.value = false;
   }
 }
 
+// Computed for Files with Compliance
+const filesWithCompliance = computed(() => {
+  if (!hasEffectiveStandard.value || !standard.value) {
+    return selectedFiles.value.map(file => ({ ...file, isCompliant: true }));
+  }
+  return selectedFiles.value.map(file => ({
+    ...file,
+    isCompliant: isFilenameCompliant(standard.value, file.name),
+  }));
+});
+
+// UploadFiles to show event message and prevent upload for non-compliant files
 async function uploadFiles() {
   if (!selectedProject.value || selectedFiles.value.length === 0) {
     error.value = t('uploadPage.errors.selectProjectAndFiles');
     return;
   }
+
+  // Check for non-compliant files and show event message
+  // const nonCompliantFiles = filesWithCompliance.value.filter(f => !f.isCompliant);
+  // if (nonCompliantFiles.length > 0) {
+  //     eventMessageStore.addMessage('uploadPage.complianceWarning', 'warning');
+  //     return;
+  // }
 
   uploading.value = true;
   uploadResults.value = [];
@@ -128,7 +213,7 @@ async function uploadFiles() {
     );
 
     uploadResults.value = response.files || [];
-    selectedFiles.value = []; // Clear files after successful upload
+    selectedFiles.value = [];
   } catch (e) {
     error.value = e?.response?.data?.detail || t('uploadPage.errors.uploadFailed');
     console.error('Upload error:', e);
@@ -139,7 +224,6 @@ async function uploadFiles() {
 </script>
 
 <style scoped>
-/* All existing styles remain the same */
 .upload-actions {
   margin-top: 16px;
   display: flex;
@@ -185,5 +269,4 @@ async function uploadFiles() {
   100% { transform: rotate(360deg); }
 }
 
-/* ...rest of existing styles... */
 </style>

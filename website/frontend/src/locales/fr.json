@@ -536,6 +536,33 @@
     }
   },
 
+  "bulkRenameDialog": {
+    "title": "Renommer les fichiers en lot",
+    "loading": "Chargement des fichiers...",
+    "noSuggestions": "Aucun fichier disponible pour le renommage.",
+    "generateSuggestions": "Générer des suggestions depuis les médias",
+    "current": "Actuel",
+    "suggested": "Modifié",
+    "manual": "Manuel",
+    "useSuggestion": "Utiliser",
+    "enterNewName": "Entrez le nouveau nom de fichier",
+    "extractedFrom": "Basé sur les fichiers média",
+    "apply": "Appliquer les renommages",
+    "renameAll": "Tout renommer",
+    "renaming": "Renommage...",
+    "notCompliant": "Ce nom de fichier ne respecte pas le standard de nommage",
+    "complianceRequired": "Tous les renommages doivent respecter le standard de nommage"
+  },
+
+  "fileRenameSuggestion": {
+    "title": "Renommer le fichier",
+    "enterNewName": "Entrez le nouveau nom",
+    "confirm": "Renommer",
+    "renaming": "Renommage...",
+    "basedOnMediaFiles": "Basé sur les fichiers média",
+    "notCompliant": "Ce nom de fichier ne respecte pas le standard de nommage"
+  },
+
   "projectSettings": {
     "title": "Configuration du projet {projectName}",
     "subtitle": "Personnalisez les paramètres de votre projet",
@@ -731,7 +758,8 @@
     "rangeStartEnd": "Le début de la plage doit être inférieur ou égal à la fin.",
     "enterSingleOrListOrRange": "Entrez une seule valeur, une liste séparée par des virgules/points-virgules, ou une plage (ex. : {example}).",
     "invalidLength": "Longueur invalide pour \"{name}\".",
-    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra"
+    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra",
+    "promptExtractedValue": "La valeur '{value}' a été extraite pour le composant \"{name}\". Si vous souhaitez utiliser uniquement la valeur extraite, laissez ce champ vide et cliquez sur \"OK\". Cependant, il est recommandé d'entrer une plage valide (par ex. {example})."
   },
 
   "profile": {
@@ -919,9 +947,7 @@
     "error_payload_too_large": "Le message est trop volumineux. Veuillez réduire la taille de votre message.",
     "error_unknown": "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
     "response_note": "Vous recevrez une réponse à l'adresse email que vous avez fournie.",
-    "back_to_site": "Retour au Site",
-    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra",
-    "promptExtractedValue": "La valeur {value} a été extraite pour le composant \"{name}\". Si vous souhaitez utiliser uniquement la valeur extraite, laissez ce champ vide et cliquez sur \"OK\". Cependant, il est recommandé d'entrer une plage de valeurs valides (ex. : {example})."
+    "back_to_site": "Retour au Site"
   },
 
   "configureEffectiveStandards": {
@@ -936,7 +962,8 @@
   "standardLocations": {
     "projectFiles": "Fichiers du projet",
     "tiers": "Tiers",
-    "elanMedia": "Médias ELAN"
+    "elanMedia": "Médias ELAN",
+    "uploadPage": "Page d'upload"
   },
   "eventMessages": {
       "fileTypeAdded": "Type de fichier \"{fileType}\" a été associé avec succès avec \"{location}\".",
@@ -1053,6 +1080,7 @@
       "failedToLoadProjects": "Échec du chargement des projets",
       "selectProjectAndFiles": "Veuillez sélectionner un projet et des fichiers",
       "uploadFailed": "Échec de l'upload des fichiers."
-    }
+    },
+    "complianceWarning": "Certains fichiers ne respectent pas la norme de nommage. Veuillez vérifier les noms des fichiers et réessayer."
   }
 }

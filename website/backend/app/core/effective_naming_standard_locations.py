@@ -8,7 +8,7 @@ with open(JSON_PATH, encoding="utf-8") as f:
 
 def get_location_id_by_name(name: str) -> int | None:
     for loc in EFFECTIVE_NAMING_STANDARD_LOCATIONS:
-        if loc["name"] == name:
+        if loc["label"] == name:
             return loc["id"]
     return None
 

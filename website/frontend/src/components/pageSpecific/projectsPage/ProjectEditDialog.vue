@@ -59,7 +59,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import gitService from '@api/service/gitService';
 import { useProjectStore } from '@stores/project';
 
@@ -147,6 +147,10 @@ async function handleEdit() {
     editing.value = false;
   }
 }
+
+onMounted(() => {
+  projectStore.initBroadcastChannel();
+});
 </script>
 
 <style scoped>

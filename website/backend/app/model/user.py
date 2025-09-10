@@ -21,11 +21,11 @@ from .enums import UserRole
 if TYPE_CHECKING:
     from .address import Address
     from .comment import Comment
-    from .pending_upload import PendingUpload
-    from .elan_file import ElanFile
+    from .file_content import FileContent
     from .invitation import Invitation
     from .notification import Notification
     from .notification_preference import NotificationPreference
+    from .pending_upload import PendingUpload
 
 
 class User(Base):
@@ -74,8 +74,8 @@ class User(Base):
 
     # Relationships
     address: Mapped["Address | None"] = relationship("Address", back_populates="users")
-    elan_files: Mapped[list["ElanFile"]] = relationship(
-        "ElanFile", back_populates="user"
+    file_contents: Mapped[list["FileContent"]] = relationship(
+        "FileContent", back_populates="user"
     )
     sent_invitations: Mapped[list["Invitation"]] = relationship(
         "Invitation", foreign_keys="Invitation.sender", back_populates="sender_user"
