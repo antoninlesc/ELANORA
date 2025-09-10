@@ -674,7 +674,18 @@ const projectId = computed(() => Number(route.params.projectId));
 const userConfirm = useUserConfirm();
 
 const loading = computed(() => namingStandardStore.isLoading);
-const standards = computed(() => namingStandardStore.standards);
+const standards = computed(() => {
+  return [...namingStandardStore.standards].sort((a, b) => {
+    // First sort by name alphabetically
+    const nameComparison = a.name.localeCompare(b.name);
+    if (nameComparison !== 0) return nameComparison;
+    
+    // If names are equal, sort by file type display name
+    const fileTypeA = getFileTypeDisplay(a.project_file_type_id);
+    const fileTypeB = getFileTypeDisplay(b.project_file_type_id);
+    return fileTypeA.localeCompare(fileTypeB);
+  });
+});
 const showAddStandard = ref(false);
 const newStandard = ref({
   name: '',
@@ -1224,6 +1235,10 @@ async function addStandard() {
         project_file_type_id: newStandard.value.project_file_type_id,
       })),
     };
+    
+    // Clear cache before adding
+    exampleValuesCache.value = {};
+    
     await namingStandardStore.addNamingStandard(standardData, projectId.value);
     showAddStandard.value = false;
     resetAddForm();
@@ -1232,12 +1247,12 @@ async function addStandard() {
       'success',
       4000
     );
-    await namingStandardStore.fetchStandardsAndComponentNames(projectId.value);
-    nextTick(() => {
-      if (standardsTopRef.value) {
-        standardsTopRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
+    
+    // Ensure DOM updates and scroll to top
+    await nextTick();
+    if (standardsTopRef.value) {
+      standardsTopRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   } catch (err) {
     if (err?.response?.status === 409) {
       eventMessageStore.addMessage(
@@ -1263,13 +1278,15 @@ async function deleteStandard(id) {
   });
   if (!confirmed) return;
   try {
+    // Clear cache before deleting
+    exampleValuesCache.value = {};
+    
     await namingStandardStore.deleteNamingStandard(id, projectId.value);
     eventMessageStore.addMessage(
       'configureNamingStandards.eventMessages.deleteSuccess',
       'success',
       4000
     );
-    await namingStandardStore.fetchStandardsAndComponentNames(projectId.value);
   } catch {
     eventMessageStore.addMessage(
       'configureNamingStandards.eventMessages.deleteFailed',
@@ -1405,9 +1422,27 @@ function getExampleValuesForStandard(std) {
 }
 
 // Call this whenever standards change to clear the cache
-watch(standards, () => {
-  exampleValuesCache.value = {};
-});
+watch(
+  standards, 
+  (newStandards, oldStandards) => {
+    // Clear cache when standards change
+    exampleValuesCache.value = {};
+    
+    // Force reactivity update for newly added standards
+    if (newStandards.length > (oldStandards?.length || 0)) {
+      nextTick(() => {
+        // Trigger re-computation of example values for all standards
+        newStandards.forEach(std => {
+          if (std.id && !exampleValuesCache.value[std.id]) {
+            // This will trigger the cache to be populated
+            getExampleValuesForStandard(std);
+          }
+        });
+      });
+    }
+  }, 
+  { immediate: true, deep: true }
+);
 
 /**
  * Returns the example filename for a standard, including the file extension.
@@ -1641,12 +1676,18 @@ async function importSelectedStandards() {
       target_project_id: projectId.value,
       standard_ids: selectedStandardIds.value,
     });
+    
     showImportModal.value = false;
+    
+    // Clear cache before fetching new data
+    exampleValuesCache.value = {};
+    
+    await namingStandardStore.fetchStandardsAndComponentNames(projectId.value, true);
+    
     eventMessageStore.addMessage(
       'configureNamingStandards.eventMessages.importSuccessStandard',
       'success'
     );
-    await namingStandardStore.fetchStandardsAndComponentNames(projectId.value);
   } catch (err) {
     if (err?.response?.status === 409) {
       eventMessageStore.addMessage(

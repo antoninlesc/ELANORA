@@ -251,9 +251,10 @@ onMounted(async () => {
   // Set up auto-refresh every 30 seconds
   refreshInterval = setInterval(() => {
     if (currentProject.value) {
-      fetchPendingUploads(false); // Silent refresh
+      fetchPendingUploads(false);
     }
   }, 30000);
+  projectStore.initBroadcastChannel();
 });
 
 // Cleanup interval on unmount

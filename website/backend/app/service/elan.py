@@ -291,69 +291,97 @@ class ElanService:
 
     async def process_single_file(
         self, file_path: str, user_id: int, project_name: str
-    ) -> int:
+    ) -> dict:
         """Process and store a single ELAN file for the given project."""
-        logger.info(f"Processing single ELAN file: {file_path}")
+        logger.info("Processing single ELAN file: %s", file_path)
 
         # Resolve project name to ID
         project = await get_project_by_name(self.db, project_name)
         if not project:
             raise ValueError(f"Project '{project_name}' not found")
 
+        # Extract filename for duplicate checking
+        filename = Path(file_path).name
+
+        # Check if this file was already processed for this project
+        existing_file = await get_elan_file_by_filename(self.db, filename)
+        if existing_file:
+            # Check if it's associated with this project
+            project_elan_ids = await get_elan_ids_for_project(self.db, project.project_id)
+            if existing_file.elan_id in project_elan_ids:
+                logger.info("File %s already processed for project %s, skipping", filename, project_name)
+                return {"status": "skipped", "reason": "already_processed", "filename": filename, "elan_id": existing_file.elan_id}
+
+        logger.debug("Processing new file: %s for project: %s", filename, project_name)
         file_info = self.parse_elan_file(file_path)
         elan_id = await self.store_elan_file_data(
             file_info, user_id, project.project_id
         )
-        logger.info(f"Completed processing file: {file_path} (ID: {elan_id})")
-        return elan_id
+        logger.info("Successfully processed file: %s with ID: %d", filename, elan_id)
+        return {"status": "processed", "filename": filename, "elan_id": elan_id}
 
     async def process_single_file_and_update(
         self, file_path: str, user_id: int, project_name: str
-    ) -> int:
+    ) -> dict:
         """Process and update a single ELAN file for the given project."""
-        logger.info(f"Processing single ELAN file for update: {file_path}")
+        logger.info("Processing single ELAN file for update: %s", file_path)
+
         # Resolve project name to ID
         project = await get_project_by_name(self.db, project_name)
         if not project:
             raise ValueError(f"Project '{project_name}' not found")
+
+        filename = Path(file_path).name
+        logger.debug("Updating file: %s for project: %s", filename, project_name)
+
         file_info = self.parse_elan_file(file_path)
         elan_id = await self.update_elan_file_data(
             file_info, user_id, project.project_id
         )
-        logger.info(
-            f"Completed processing file for update: {file_path} (ID: {elan_id})"
-        )
-        return elan_id
+        logger.info("Successfully updated file: %s with ID: %d", filename, elan_id)
+        return {"status": "updated", "filename": filename, "elan_id": elan_id}
 
     async def process_directory(
         self, directory_path: str, user_id: int, project_name: str
-    ) -> dict[str, int | None]:
+    ) -> dict[str, dict]:
         """Process all ELAN files in a flat directory for the given project."""
-        logger.info(f"Starting directory processing: {directory_path}")
+        logger.info("Starting directory processing: %s", directory_path)
         eaf_files = self.get_files_in_directory(directory_path)
 
-        logger.info(f"Found {len(eaf_files)} ELAN files in {directory_path}")
+        logger.info("Found %d ELAN files in %s", len(eaf_files), directory_path)
 
         results = {}
         processed_count = 0
+        skipped_count = 0
         failed_count = 0
 
         for eaf_file in eaf_files:
             try:
-                logger.info(f"Processing: {eaf_file.name}")
-                elan_id = await self.process_single_file(
+                logger.debug("Processing: %s", eaf_file.name)
+                result = await self.process_single_file(
                     str(eaf_file), user_id, project_name
                 )
-                results[eaf_file.name] = elan_id
-                processed_count += 1
+                results[eaf_file.name] = result
+
+                if result["status"] == "processed":
+                    processed_count += 1
+                    logger.debug("Successfully processed: %s", result["filename"])
+                elif result["status"] == "skipped":
+                    skipped_count += 1
+                    logger.debug("Skipped existing file: %s", result["filename"])
+
             except Exception as e:
-                logger.error(f"Failed to process {eaf_file.name}: {e}")
-                results[eaf_file.name] = None
+                logger.error("Failed to process %s: %s", eaf_file.name, e)
+                results[eaf_file.name] = {"status": "failed", "filename": eaf_file.name, "error": str(e)}
                 failed_count += 1
 
-        logger.info(
-            f"Directory processing completed. Processed: {processed_count}, Failed: {failed_count}"
-        )
+        logger.info("Directory processing completed. Processed: %d, Skipped: %d, Failed: %d",
+                    processed_count, skipped_count, failed_count)
+
+        if skipped_count > 0:
+            skipped_files = [result["filename"] for result in results.values() if result["status"] == "skipped"]
+            logger.info("Skipped files (already in database): %s", skipped_files)
+
         return results
 
     # ==================== QUERY METHODS ====================
@@ -540,7 +568,7 @@ class ElanService:
                 self.db, project.project_id, elan_file_obj.elan_id
             )
             logger.info(
-                f"[ELAN-DELETE] Removed ElanFileToProject association for ELAN file '{base_filename}' and project '{project_name}'."
+                f"[ELAN-DELETE] Removed associations for ELAN file '{base_filename}' and project '{project_name}'."
             )
 
             # If no more associations, delete the ELAN file and related data

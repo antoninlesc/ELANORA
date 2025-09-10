@@ -6,11 +6,11 @@ from sqlalchemy.orm import selectinload
 from app.core.centralized_logging import get_logger
 from app.model.association import (
     ElanFileToMedia,
-    ElanFileToProject,
     ElanFileToTier,
     ProjectAnnotStandard,
     UserToProject,
 )
+from app.model.elan_file import ElanFile
 from app.model.project_file_type import ProjectFileType
 from app.model.user import User
 from app.utils.database import DatabaseUtils
@@ -46,44 +46,29 @@ async def update_elan_file_media(
     )
 
 
-# --- ElanFileToProject ---
+# --- ElanFileToProject REMOVED ---
+# These operations are no longer needed as files belong directly to projects via project_id foreign key
 
-
+# Legacy functions kept for backward compatibility during migration
 async def add_elan_file_to_project(db: AsyncSession, elan_id: int, project_id: int):
-    filters = {"elan_id": elan_id, "project_id": project_id}
-    exists = await DatabaseUtils.get_one_by_filter(db, ElanFileToProject, filters)
-    if not exists:
-        assoc = ElanFileToProject(elan_id=elan_id, project_id=project_id)
-        await DatabaseUtils.create(db, assoc)
-        await db.flush()
+    """DEPRECATED: Files now belong directly to projects via project_id FK."""
+    logger.warning("add_elan_file_to_project is deprecated - use project_id in ElanFile directly")
+    pass  # No-op since project_id is set during file creation
 
+async def remove_elan_file_from_project(db: AsyncSession, elan_id: int, project_id: int):
+    """DEPRECATED: Files now belong directly to projects via project_id FK."""
+    logger.warning("remove_elan_file_from_project is deprecated - delete the ElanFile instead")
+    pass  # No-op since cascade delete handles this
 
-async def remove_elan_file_from_project(
-    db: AsyncSession, elan_id: int, project_id: int
-):
-    await DatabaseUtils.delete_by_filter(
-        db, ElanFileToProject, elan_id=elan_id, project_id=project_id
-    )
-    await db.flush()
-
-
-async def update_elan_file_project(
-    db: AsyncSession, elan_id: int, old_project_id: int, new_project_id: int
-):
-    await DatabaseUtils.update_by_filter(
-        db,
-        ElanFileToProject,
-        {"elan_id": elan_id, "project_id": old_project_id},
-        {"project_id": new_project_id},
-    )
-
+async def update_elan_file_project(db: AsyncSession, elan_id: int, old_project_id: int, new_project_id: int):
+    """DEPRECATED: Files now belong directly to projects via project_id FK."""
+    logger.warning("update_elan_file_project is deprecated - update project_id in ElanFile directly")
+    pass  # No-op
 
 async def has_any_project_for_elan_file(db: AsyncSession, elan_id: int) -> bool:
-    """Return True if the ELAN file is associated with any project."""
-    result = await db.execute(
-        select(ElanFileToProject).where(ElanFileToProject.elan_id == elan_id)
-    )
-    return result.scalar_one_or_none() is not None
+    """DEPRECATED: Files now belong directly to projects via project_id FK."""
+    logger.warning("has_any_project_for_elan_file is deprecated - check project_id in ElanFile directly")
+    return True  # Always true now since project_id is required
 
 
 # --- ElanFileToTier ---
@@ -300,14 +285,12 @@ async def get_project_file_type_with_file_type(db, project_file_type_id: int):
 
 
 async def delete_project_associations(db: AsyncSession, project_id: int):
-    logger.info(f"Bulk deleting project associations for project_id={project_id}")
+    logger.info("Bulk deleting project associations for project_id=%s", project_id)
     try:
         await DatabaseUtils.bulk_delete(
             db, ProjectFileType, ProjectFileType.project_id == project_id
         )
-        await DatabaseUtils.bulk_delete(
-            db, ElanFileToProject, ElanFileToProject.project_id == project_id
-        )
+        # ElanFileToProject removed - files are now deleted via cascade from project_id FK
         await DatabaseUtils.bulk_delete(
             db, ProjectAnnotStandard, ProjectAnnotStandard.project_id == project_id
         )
@@ -319,7 +302,7 @@ async def delete_project_associations(db: AsyncSession, project_id: int):
     except Exception as e:
         await db.rollback()
         logger.error(
-            f"Failed to bulk delete project associations for project_id={project_id}: {e}"
+            "Failed to bulk delete project associations for project_id=%s: %s", project_id, e
         )
 
 
@@ -327,8 +310,9 @@ async def delete_project_associations(db: AsyncSession, project_id: int):
 
 
 async def get_elan_ids_for_project(db, project_id):
+    """Get all ELAN file IDs for a project - now uses direct project_id FK."""
     records = await DatabaseUtils.get_by_filter(
-        db, ElanFileToProject, {"project_id": project_id}
+        db, ElanFile, {"project_id": project_id}
     )
     return [r.elan_id for r in records]
 

@@ -1,20 +1,23 @@
-"""ELAN File CRUD operations - Simplified using utilities."""
+
+from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from datetime import datetime
+from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
 from app.crud.annotation import (
     delete_unused_annotation_values,
 )
-from app.crud.association import add_elan_file_to_media, add_elan_file_to_project
+from app.crud.association import add_elan_file_to_media
 from app.crud.elan_file_media import (
     create_or_get_media_in_db,
     delete_orphaned_media,
 )
-from app.model.association import ElanFileToMedia, ElanFileToProject, ElanFileToTier
+from app.crud.file_content import get_or_create_file_content
+from app.model.association import ElanFileToMedia, ElanFileToTier
 from app.model.elan_file import ElanFile
+from app.model.file_content import FileContent
 from app.model.tier_group import TierGroup
 from app.model.user import User
 from app.utils.database import DatabaseUtils
@@ -26,44 +29,30 @@ logger = get_logger()
 async def get_orphan_elan_files_by_project(
     db: AsyncSession, project_id: int
 ) -> list[ElanFile]:
-    logger.info(f"Fetching ELAN files for project_id={project_id}")
+    """Get ELAN files that belong directly to a project via project_id FK."""
+    logger.info("Fetching ELAN files for project_id=%s", project_id)
     filters = {"project_id": project_id}
-    links = await DatabaseUtils.get_by_filter(db, ElanFileToProject, filters)
-    logger.info(
-        f"Found {len(links)} ElanFileToProject links for project_id={project_id}"
-    )
-    orphaned_elan_files = await DatabaseUtils.get_orphaned_by_association(
-        db,
-        ElanFile,
-        ElanFileToProject,
-        "elan_id",
-        "elan_id",
-        "project_id",
-        project_id,
-    )
-    logger.info(
-        f"Found {len(orphaned_elan_files)} ELAN files for project_id={project_id}"
-    )
-    return orphaned_elan_files
+    elan_files = await DatabaseUtils.get_by_filter(db, ElanFile, filters)
+    logger.info("Found %d ELAN files for project_id=%s", len(elan_files), project_id)
+    return elan_files
 
 
 async def delete_elan_file_associations(db: AsyncSession, elan_id: int):
-    logger.info(f"Attempting to delete ELAN file associations for elan_id={elan_id}")
+    """Delete ELAN file associations - now only handles media/tier links since project link is direct FK."""
+    logger.info("Attempting to delete ELAN file associations for elan_id=%s", elan_id)
     try:
         await DatabaseUtils.bulk_delete(
             db, ElanFileToTier, ElanFileToTier.elan_id == elan_id
         )
-        await DatabaseUtils.bulk_delete(
-            db, ElanFileToProject, ElanFileToProject.elan_id == elan_id
-        )
+        # ElanFileToProject removed - project association handled by CASCADE on project_id FK
         await DatabaseUtils.bulk_delete(
             db, ElanFileToMedia, ElanFileToMedia.elan_id == elan_id
         )
         await DatabaseUtils.delete_by_filter(db, TierGroup, elan_id=elan_id)
-        logger.info(f"Deleted ELAN file associations for elan_id={elan_id}")
+        logger.info("Deleted ELAN file associations for elan_id=%s", elan_id)
     except Exception as e:
         logger.error(
-            f"Failed to delete ELAN file associations for elan_id={elan_id}: {e}"
+            "Failed to delete ELAN file associations for elan_id=%s: %s", elan_id, e
         )
 
 
@@ -74,18 +63,45 @@ async def get_elan_file_by_id(db: AsyncSession, elan_id: int) -> ElanFile | None
 
 async def get_elan_file_by_filename(db: AsyncSession, filename: str) -> ElanFile | None:
     """Retrieve an ELAN file by filename."""
-    return await DatabaseUtils.get_by_id(db, ElanFile, "filename", filename)
+    stmt = select(ElanFile).join(FileContent).where(FileContent.filename == filename)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def get_elan_files_by_user(db: AsyncSession, user_id: int) -> list[ElanFile]:
     """Get all ELAN files for a specific user."""
-    filters = {"user_id": user_id}
-    return await DatabaseUtils.get_by_filter(db, ElanFile, filters)
+    stmt = select(ElanFile).join(FileContent).where(FileContent.user_id == user_id)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
 
 
 async def check_elan_file_exists_by_filename(db: AsyncSession, filename: str) -> bool:
     """Check if an ELAN file with the given filename exists."""
-    return await DatabaseUtils.exists(db, ElanFile, "filename", filename)
+    stmt = select(ElanFile).join(FileContent).where(FileContent.filename == filename)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none() is not None
+
+
+async def get_elan_file_by_filename_and_project(db: AsyncSession, filename: str, project_id: int) -> ElanFile | None:
+    """Retrieve an ELAN file by filename and project ID."""
+    stmt = (
+        select(ElanFile)
+        .join(FileContent)
+        .where(FileContent.filename == filename, ElanFile.project_id == project_id)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def check_elan_file_exists_by_filename_and_project(db: AsyncSession, filename: str, project_id: int) -> bool:
+    """Check if an ELAN file with the given filename exists in a specific project."""
+    stmt = (
+        select(ElanFile)
+        .join(FileContent)
+        .where(FileContent.filename == filename, ElanFile.project_id == project_id)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none() is not None
 
 
 async def create_elan_file_in_db(
@@ -97,21 +113,29 @@ async def create_elan_file_in_db(
     project_id: int,
     last_modified: datetime,
 ) -> ElanFile:
-    """Create a new ELAN file record in the database."""
+    """Create a new ELAN file record in the database with project association."""
     ValidationUtils.validate_user_id(user_id)
     sanitized_filename = ValidationUtils.sanitize_filename(filename)
 
-    elan_file = ElanFile(
+    # Use existing file content CRUD to handle deduplication
+    file_content = await get_or_create_file_content(
+        db=db,
         filename=sanitized_filename,
-        file_path=file_path,
         file_size=file_size,
+        file_path=file_path,
         user_id=user_id,
+    )
+
+    # Then create the ElanFile with the content_id
+    elan_file = ElanFile(
+        content_id=file_content.content_id,
+        project_id=project_id,
+        file_path=file_path,
         last_modified=last_modified,
     )
 
     elan_file = await DatabaseUtils.create(db, elan_file)
     await db.flush()
-    await add_elan_file_to_project(db, elan_file.elan_id, project_id)
     return elan_file
 
 
@@ -163,6 +187,13 @@ async def remove_elan_file_to_tier(
 async def sync_elan_file_to_tiers(
     db: AsyncSession, elan_id: int, new_tier_ids: list[int]
 ) -> None:
+    """Synchronize ELAN file associations with tiers.
+    
+    Args:
+        db: Database session
+        elan_id: ID of the ELAN file
+        new_tier_ids: List of tier IDs to associate with the file
+    """
     current_tier_ids = set(await get_tiers_for_elan_file(db, elan_id))
     new_tier_ids_set = set(new_tier_ids)
 
@@ -182,10 +213,12 @@ async def sync_elan_file_to_tiers(
 
 
 async def get_projects_for_elan_file(db: AsyncSession, elan_id: int) -> list[int]:
-    """Get all project_ids associated with an ELAN file."""
-    filters = {"elan_id": elan_id}
-    associations = await DatabaseUtils.get_by_filter(db, ElanFileToProject, filters)
-    return [assoc.project_id for assoc in associations]
+    """Get the project_id associated with an ELAN file."""
+    # With new schema, each ELAN file belongs to only one project
+    elan_file = await DatabaseUtils.get_by_id(db, ElanFile, elan_id)
+    if elan_file and elan_file.project_id:
+        return [elan_file.project_id]
+    return []
 
 
 async def delete_elan_file_full(db: AsyncSession, elan_id: int) -> bool:
@@ -236,11 +269,11 @@ async def store_elan_file_data_in_db(
 
     Returns the elan_id.
     """
-    # Check if file already exists
-    if await check_elan_file_exists_by_filename(db, file_info["filename"]):
-        existing_file = await get_elan_file_by_filename(db, file_info["filename"])
+    # Check if file already exists in this project
+    if await check_elan_file_exists_by_filename_and_project(db, file_info["filename"], project_id):
+        existing_file = await get_elan_file_by_filename_and_project(db, file_info["filename"], project_id)
         if existing_file:
-            await add_elan_file_to_project(db, existing_file.elan_id, project_id)
+            # File already exists in this project, no need to add association
             # Sync media associations for existing file
             for media in file_info.get("media", []):
                 media_obj = await create_or_get_media_in_db(
@@ -265,8 +298,7 @@ async def store_elan_file_data_in_db(
         last_modified=file_info["last_modified"],
     )
 
-    # Always sync ELAN_FILE_TO_PROJECT associations
-    await add_elan_file_to_project(db, elan_file_obj.elan_id, project_id)
+    # No need to sync ELAN_FILE_TO_PROJECT - project_id FK handles association
 
     # Store media descriptors and associations
     for media in file_info.get("media", []):
@@ -291,9 +323,11 @@ async def store_elan_file_data_in_db(
 
 async def get_elan_files_by_project(db: AsyncSession, project_id: int) -> list[tuple[ElanFile, str]]:
     """Get all ELAN files for a specific project, with user info joined."""
-    stmt = select(ElanFile, User.username).join(User, ElanFile.user_id == User.user_id).where(
-        ElanFile.elan_id.in_(
-            select(ElanFileToProject.elan_id).where(ElanFileToProject.project_id == project_id)
-        )
+    stmt = (
+        select(ElanFile, User.username)
+        .join(FileContent, ElanFile.content_id == FileContent.content_id)
+        .join(User, FileContent.user_id == User.user_id)
+        .where(ElanFile.project_id == project_id)
+        .options(selectinload(ElanFile.file_content))
     )
     return await DatabaseUtils.get_with_join(db, stmt)

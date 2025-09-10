@@ -1,10 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
-from app.crud.association import get_elan_ids_for_project, get_tier_ids_for_elan_file
+from app.crud.association import get_elan_ids_for_project
 from app.crud.elan_file import get_elan_file_by_id
 from app.crud.project import get_project_by_id, get_project_id_by_name
-from app.crud.tier import get_tiers_by_ids
+from app.crud.tier import get_tiers_by_elan_id
 from app.crud.tier_group import (
     create_tier_group,
     get_tier_groups_by_project,
@@ -66,11 +66,10 @@ class TierService:
             elan_file = await get_elan_file_by_id(db, elan_id)
             if not elan_file:
                 continue
-            tier_ids = await get_tier_ids_for_elan_file(db, elan_id)
-            if not tier_ids:
+            tiers = await get_tiers_by_elan_id(db, elan_id)
+            if not tiers:
                 result[elan_file.filename] = []
                 continue
-            tiers = await get_tiers_by_ids(db, tier_ids)
             result[elan_file.filename] = TierService.build_tier_tree(tiers)
 
         return {"tiers": result}

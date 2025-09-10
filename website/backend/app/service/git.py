@@ -22,8 +22,19 @@ from app.crud.project import (
     list_projects_by_instance,
     list_projects_by_user,
     project_exists_by_name,
+    get_project_by_id,
+    get_project_name_by_id,
 )
 from app.crud.elan_file import get_elan_files_by_project
+from app.crud import elan_file_media as elan_media_crud
+from app.crud.effective_naming_standard import get_effective_standards_for_project
+from app.schema.responses.git import (
+    FileRenameResponse,
+    BulkRenameResponse,
+    RenameResult,
+)
+from app.crud.project_naming_standard import get_standard_with_components_full
+from app.core.effective_naming_standard_locations import get_location_id_by_name
 from app.schema.common.git import FileStatus
 from app.schema.responses.git import ProjectInfo, ProjectSyncCheckResponse
 from app.service.elan import ElanService
@@ -48,9 +59,9 @@ from app.utils.project_setup_utils import (
     create_readme,
     update_project_githooks,
 )
+from app.utils.validation import ValidationUtils
 
 logger = get_logger()
-
 
 class GitService:
     """Service for managing Git operations for ELAN projects."""
@@ -197,17 +208,78 @@ class GitService:
 
     async def add_elan_files(
         self,
-        project_name: str,
+        project_id: int,
         files: list[UploadFile],
         db: AsyncSession,
         user_id: int,
         user_name: str,
     ) -> dict[str, Any]:
         """Add multiple ELAN files to the project with branch-based workflow."""
-        project_path = self.base_path / project_name
-        logger.info(f"Adding {len(files)} ELAN files to project: {project_name}")
+        # Fetch project details by ID
+        project = await get_project_by_id(db, project_id)
+        if not project:
+            logger.error(f"Project with ID '{project_id}' not found in database")
+            raise ValueError(f"Project with ID '{project_id}' not found")
+        logger.info(f"Fetched project: project_id={project.project_id}, project_name={project.project_name}")
 
+        project_path = self.base_path / project.project_name
+        logger.info(f"Starting add_elan_files for project ID: {project_id}, user: {user_name}, files: {[f.filename for f in files]}")
+
+        # Get location ID for upload page
+        location_id = get_location_id_by_name("uploadPage")
+        if location_id is None:
+            logger.warning("Location ID for 'uploadPage' not found; defaulting to no compliance check")
+        else:
+            logger.debug(f"Using location ID: {location_id} for upload page")
+
+        standard = None
+        if location_id is not None:
+            # Fetch effective standards using CRUD
+            effective_standards = await get_effective_standards_for_project(db, project_id, location_id)
+            logger.info(f"Fetched {len(effective_standards)} effective standards for project_id={project_id}, location_id={location_id}")
+            if effective_standards:
+                # Use the first effective standard (adjust if multiple need handling)
+                effective_standard = effective_standards[0]
+                logger.debug(f"Using effective standard: id={effective_standard.id}, naming_standard_id={effective_standard.naming_standard_id}")
+                # Fetch the full naming standard with components
+                full_standard = await get_standard_with_components_full(db, effective_standard.naming_standard_id)
+                if full_standard:
+                    # Extract the dict format expected by ValidationUtils
+                    standard = {
+                        'pattern': full_standard['pattern'],
+                        'components': full_standard['components']
+                    }
+                    logger.info(f"Fetched full naming standard: pattern='{full_standard['pattern']}', components_count={len(full_standard['components'])}")
+                else:
+                    logger.warning(f"No full naming standard found for naming_standard_id={effective_standard.naming_standard_id}")
+            else:
+                logger.info("No effective standards found; proceeding without compliance check")
+        else:
+            logger.info("No location ID; skipping standard fetching")
+
+        # Check filename compliance for each file
+        compliant_files = []
+        non_compliant_files = []
+        try:
+            for file in files:
+                filename = file.filename
+                if ValidationUtils.is_filename_compliant(standard, filename):
+                    compliant_files.append(filename)
+                    logger.debug(f"File '{filename}' is compliant with naming standard")
+                else:
+                    non_compliant_files.append(filename)
+                    logger.warning(f"File '{filename}' is non-compliant with naming standard")
+            if non_compliant_files:
+                logger.error(f"Compliance check failed for files: {non_compliant_files}")
+                raise ValueError(f"Filename '{non_compliant_files[0]}' does not comply with the project's naming standard.")  # Raise for first failure
+            else:
+                logger.info(f"All {len(files)} files are compliant: {compliant_files}")
+        except Exception as e:
+            logger.error(f"Compliance check error for files { [f.filename for f in files] }: {e}", exc_info=True)
+            raise ValueError(f"Filename compliance check failed due to data issue: {e}") from e
+        # Proceed with the rest of the method
         self._validate_upload_request(project_path, files)
+        logger.info("Upload request validated successfully")
 
         try:
             # Setup Git environment
@@ -240,8 +312,9 @@ class GitService:
             )
 
             # Build response
+            logger.info(f"Successfully processed upload for project: {project.project_name}")
             return self._build_upload_response(
-                project_name,
+                project.project_name,
                 uploaded_files,
                 failed_files,
                 existing_files,
@@ -429,31 +502,71 @@ class GitService:
             ValueError: If the project already exists.
 
         """
+        logger.info("Starting project initialization from folder upload for project: %s", project_name)
+        logger.info("User ID: %s, Files count: %d", user_id, len(files))
+        logger.debug("Files: %s", [f.filename for f in files])
+
         project_path = self.base_path / project_name
         elan_files_dir = project_path / "elan_files"
+        logger.debug("Project path: %s", project_path)
+        logger.debug("ELAN files directory: %s", elan_files_dir)
+
         if project_path.exists():
+            logger.error("Project path already exists: %s", project_path)
             raise ValueError(f"Project '{project_name}' already exists")
+
+        logger.info("Creating project directories")
         project_path.mkdir(parents=True, exist_ok=True)
         elan_files_dir.mkdir(parents=True, exist_ok=True)
+        logger.debug("Directories created successfully")
 
         # Create README.md and .gitignore
+        logger.info("Creating gitignore and README files")
         create_gitignore(project_path)
         create_readme(project_path, project_name)
+        logger.debug("Project files created")
 
         # Save only .eaf files, directly in elan_files directory
+        logger.info("Processing uploaded files")
+        saved_files = []
         for file in files:
+            logger.debug("Processing file: %s", file.filename)
             if not file.filename or not file.filename.lower().endswith(".eaf"):
+                logger.debug("Skipping non-.eaf file: %s", file.filename)
                 continue
-            dest_path = elan_files_dir / Path(file.filename).name
-            async with aiofiles.open(dest_path, "wb") as f:
-                await f.write(await file.read())
 
+            dest_path = elan_files_dir / Path(file.filename).name
+            logger.debug("Saving .eaf file: %s to %s", file.filename, dest_path)
+
+            try:
+                file_content = await file.read()
+                logger.debug("Read %d bytes from %s", len(file_content), file.filename)
+
+                async with aiofiles.open(dest_path, "wb") as f:
+                    await f.write(file_content)
+
+                logger.debug("Successfully saved: %s", dest_path)
+                saved_files.append(file.filename)
+            except Exception as e:
+                logger.error("Failed to save file %s: %s", file.filename, e)
+                raise
+
+        logger.info("Saved %d .eaf files: %s", len(saved_files), saved_files)
+
+        # Git operations
+        logger.info("Initializing Git repository")
         runner = GitCommandRunner(project_path)
         runner.init_repo()
+        logger.debug("Git repository initialized")
+
         runner.add_all()
+        logger.debug("Files added to Git")
+
         runner.commit("Initial commit from uploaded folder")
+        logger.debug("Initial commit created")
 
         try:
+            logger.info("Creating project in database")
             await create_project_db(
                 db=db,
                 project_name=project_name,
@@ -463,26 +576,63 @@ class GitService:
                 creator_user_id=user_id,
             )
             await db.commit()
+            logger.debug("Project created in database successfully")
 
+            logger.info("Processing ELAN files for database")
             elan_service = ElanService(db)
             elan_files = list(elan_files_dir.rglob("*.eaf"))
+            logger.info("Found %d .eaf files to process: %s", len(elan_files), [f.name for f in elan_files])
+
+            processed_files = []
+            skipped_files = []
+            failed_files = []
+
             for elan_file in elan_files:
-                await elan_service.process_single_file(
-                    str(elan_file), user_id, project_name
-                )
+                logger.debug("Processing ELAN file: %s", elan_file)
+                try:
+                    result = await elan_service.process_single_file(
+                        str(elan_file), user_id, project_name
+                    )
+                    
+                    if result["status"] == "processed":
+                        processed_files.append(result["filename"])
+                    elif result["status"] == "skipped":
+                        skipped_files.append(result["filename"])
+                    elif result["status"] == "failed":
+                        failed_files.append(result["filename"])
+                        
+                except Exception as e:
+                    logger.error("Failed to process ELAN file %s: %s", elan_file, e)
+                    failed_files.append(elan_file.name)
+                    raise
+
             await db.commit()
+            logger.info("ELAN processing complete. Processed: %d, Skipped: %d, Failed: %d", 
+                        len(processed_files), len(skipped_files), len(failed_files))
+
+            if skipped_files:
+                logger.info("Skipped files (already in database): %s", skipped_files)
+            if failed_files:
+                logger.warning("Failed files: %s", failed_files)
+
         except Exception as e:
             await db.rollback()
-            logger.error(f"Failed to initialize project from folder: {e}")
+            logger.error("Failed to initialize project from folder: %s", e)
+            logger.error("Rolling back database changes")
             raise
 
-        return {
+        result = {
             "project_name": project_name,
             "path": str(project_path),
             "status": "initialized",
             "git_initialized": True,
             "created_at": datetime.now().isoformat(),
         }
+
+        logger.info("Project initialization completed successfully")
+        logger.debug("Result: %s", result)
+
+        return result
 
     async def _sync_elan_files_with_db(
         self, project_path: Path, db: AsyncSession, user_id: int, project_name: str
@@ -500,7 +650,7 @@ class GitService:
     ) -> None:
         """Validate the upload request."""
         if not project_path.exists():
-            raise FileNotFoundError("Project not found")
+            raise FileNotFoundError("Project not found at the specified path: {project_path}")
         if not files:
             raise ValueError("No files provided")
         for file in files:
@@ -861,35 +1011,56 @@ class GitService:
         except Exception as e:
             raise RuntimeError(f"Failed to checkout branch: {e}") from e
 
-    async def list_project_files(self, project_name: str, db: AsyncSession) -> dict[str, Any]:
-        """Return enriched .eaf files for the project using CRUD."""
+    async def list_project_files(self, project_name: str, db: AsyncSession, include_media: bool = False) -> dict[str, Any]:
+        """Return enriched .eaf files for the project using CRUD, optionally with media information."""
         project = await get_project_by_name(db, project_name)
         if not project:
             raise ValueError(f"Project '{project_name}' not found.")
 
         # Use CRUD to get files with user info
         db_files = await get_elan_files_by_project(db, project.project_id)
+
+        # If media is requested, get media information
+        media_mapping = {}
+        if include_media:
+            files_with_media = await elan_media_crud.get_project_files_with_media_simple(db, project.project_id)
+
+            # Create a mapping of filename to media info
+            media_mapping = {
+                file_data['filename']: {
+                    'media_filenames': file_data['media_filenames'],
+                    'elan_id': file_data['elan_id']
+                }
+                for file_data in files_with_media
+            }
+
         enriched_files = []
         for elan_file, username in db_files:
-            file_path = Path(elan_file.file_path)
-            if file_path.exists():
-                last_modified = datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
-                enriched_files.append({
-                    "name": elan_file.filename,
-                    "size": elan_file.file_size,
-                    "lastModified": last_modified,
-                    "lastUpdatedBy": username or "N/A",
-                    "type": "file"
-                })
-            else:
-                enriched_files.append({
-                    "name": elan_file.filename,
-                    "size": elan_file.file_size,
-                    "lastModified": "N/A",
-                    "lastUpdatedBy": username or "N/A",
-                    "type": "file"
-                })
+            file_path = Path(elan_file.absolute_file_path)
+            logger.info(f"Getting info for file: {file_path}")
 
+            # Build base file info
+            file_info = {
+                "name": elan_file.filename,
+                "size": elan_file.file_size,
+                "lastModified": datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat() if file_path.exists() else "N/A",
+                "lastUpdatedBy": username or "N/A",
+                "type": "file"
+            }
+
+            # Add media information if requested
+            if include_media:
+                if elan_file.filename in media_mapping:
+                    media_info = media_mapping[elan_file.filename]
+                    file_info['media_filenames'] = media_info['media_filenames']
+                    file_info['elan_id'] = media_info['elan_id']
+                else:
+                    file_info['media_filenames'] = []
+                    file_info['elan_id'] = elan_file.elan_id 
+
+            enriched_files.append(file_info)
+
+        logger.info(f"Retrieved files for project '{project_name}': {enriched_files}")
         return {"files": enriched_files}
 
     async def synchronize_project(
@@ -899,7 +1070,7 @@ class GitService:
         project_path = self.base_path / project_name
         runner = GitCommandRunner(project_path)
 
-        logger.info(f"[SYNC] Starting synchronization for project: {project_name}")
+        logger.info(f"Starting synchronization for project: {project_name}")
 
         # Add all changes to staging area
         runner.add_all()
@@ -918,16 +1089,16 @@ class GitService:
             file_path = project_path / filename
             if status in {"added", "untracked"}:
                 if file_path.exists():
-                    logger.info(f"[SYNC] Adding new file in DB: {file_path}")
+                    logger.info(f"Adding new file in DB: {file_path}")
                     await elan_service.process_single_file(str(file_path), user_id, project_name)
                     updated_files.append(file_path)
             elif status == "modified":
                 if file_path.exists():
-                    logger.info(f"[SYNC] Updating modified file in DB: {file_path}")
+                    logger.info(f"Updating modified file in DB: {file_path}")
                     await elan_service.process_single_file_and_update(str(file_path), user_id, project_name)
                     updated_files.append(file_path)
             elif status == "deleted":
-                logger.info(f"[SYNC] Removing deleted file from DB: {filename}")
+                logger.info(f"Removing deleted file from DB: {filename}")
                 await elan_service.delete_elan_files_from_db(filename, project_name)
                 deleted_files.append(filename)
 
@@ -936,7 +1107,7 @@ class GitService:
         if status_output.strip():
             runner.commit(f"Synchronized project '{project_name}' with ELAN files")
 
-        logger.info(f"[SYNC] Synchronization complete for project: {project_name}")
+        logger.info(f"Synchronization complete for project: {project_name}")
 
         # Return a status/check response
         return ProjectSyncCheckResponse(
@@ -1169,3 +1340,197 @@ class GitService:
         # Remove all DB artifacts
         await delete_project_db(db, project_name)
         await db.commit()
+
+    async def rename_file(
+        self, project_name: str, old_filename: str, new_filename: str, db: AsyncSession
+    ) -> FileRenameResponse:
+        """Rename a single file in the project."""
+        project_path = self.base_path / project_name
+
+        if not project_path.exists():
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+
+        old_file_path = project_path / "elan_files" / old_filename
+        new_file_path = project_path / "elan_files" / new_filename
+
+        if not old_file_path.exists():
+            raise FileNotFoundError(f"File '{old_filename}' not found in project")
+
+        if new_file_path.exists():
+            raise ValueError(f"File '{new_filename}' already exists in project")
+
+        try:
+            # Rename the file
+            old_file_path.rename(new_file_path)
+            logger.info(f"Renamed file: {old_filename} -> {new_filename}")
+
+            # Update git
+            runner = GitCommandRunner(project_path)
+            runner.add(f"elan_files/{old_filename}")  # Remove old
+            runner.add(f"elan_files/{new_filename}")  # Add new
+            commit_hash = runner.commit(f"Rename file: {old_filename} -> {new_filename}")
+
+            # Update database
+            elan_service = ElanService(db)
+            # Delete old entry
+            await elan_service.delete_elan_files_from_db(old_filename, project_name)
+            # Add new entry - we'll use user_id 1 as a placeholder since it's not provided
+            await elan_service.process_single_file(str(new_file_path), 1, project_name)
+
+            await db.commit()
+
+            return FileRenameResponse(
+                project_name=project_name,
+                old_filename=old_filename,
+                new_filename=new_filename,
+                success=True,
+                committed=True,
+                commit_hash=commit_hash,
+                renamed_at=datetime.now().isoformat(),
+                message=f"Successfully renamed {old_filename} to {new_filename}"
+            )
+
+        except Exception as e:
+            await db.rollback()
+            # Try to rollback filesystem change if possible
+            if new_file_path.exists() and not old_file_path.exists():
+                try:
+                    new_file_path.rename(old_file_path)
+                except Exception:
+                    logger.warning(f"Could not rollback file rename for {new_filename}")
+            raise RuntimeError(f"Failed to rename file: {e}") from e
+
+    async def rename_files(
+        self, project_name: str, renames: list[dict], db: AsyncSession
+    ) -> BulkRenameResponse:
+        """Rename multiple files in the project."""
+        project_path = self.base_path / project_name
+
+        if not project_path.exists():
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+
+        # Validate all renames first
+        validation_errors = self._validate_renames(project_path, renames)
+        if validation_errors:
+            raise ValueError(f"Validation failed for {len(validation_errors)} files")
+
+        # Perform the renames
+        return await self._perform_bulk_rename(project_path, project_name, renames, db)
+
+    def _validate_renames(self, project_path: Path, renames: list[dict]) -> list[dict]:
+        """Validate all rename operations before executing them."""
+        errors = []
+        for rename_info in renames:
+            old_filename = rename_info.get("old_filename") or rename_info.get("old_name") or rename_info.get("oldName")
+            new_filename = rename_info.get("new_filename") or rename_info.get("new_name") or rename_info.get("newName")
+
+            if not old_filename or not new_filename:
+                errors.append({
+                    "old_filename": old_filename,
+                    "new_filename": new_filename,
+                    "error": "Missing old or new filename"
+                })
+                continue
+
+            old_file_path = project_path / "elan_files" / old_filename
+            new_file_path = project_path / "elan_files" / new_filename
+
+            if not old_file_path.exists():
+                errors.append({
+                    "old_filename": old_filename,
+                    "new_filename": new_filename,
+                    "error": f"File '{old_filename}' not found"
+                })
+            elif new_file_path.exists():
+                errors.append({
+                    "old_filename": old_filename,
+                    "new_filename": new_filename,
+                    "error": f"File '{new_filename}' already exists"
+                })
+
+        return errors
+
+    async def _perform_bulk_rename(
+        self, project_path: Path, project_name: str, renames: list[dict], db: AsyncSession
+    ) -> BulkRenameResponse:
+        """Perform the actual bulk rename operations."""
+        successful_renames = []
+        failed_renames = []
+
+        try:
+            runner = GitCommandRunner(project_path)
+            elan_service = ElanService(db)
+
+            for rename_info in renames:
+                try:
+                    services = {"runner": runner, "elan_service": elan_service}
+                    result = await self._perform_single_rename(
+                        project_path, project_name, rename_info, services
+                    )
+                    successful_renames.append(result)
+                except Exception as e:
+                    old_filename = rename_info.get("old_filename") or rename_info.get("old_name") or rename_info.get("oldName")
+                    new_filename = rename_info.get("new_filename") or rename_info.get("new_name") or rename_info.get("newName")
+                    failed_renames.append(RenameResult(
+                        old_filename=old_filename or "",
+                        new_filename=new_filename or "",
+                        success=False,
+                        error=str(e)
+                    ))
+
+            # Commit all successful renames at once
+            commit_hash = None
+            if successful_renames:
+                commit_message = f"Bulk rename: {len(successful_renames)} files"
+                commit_hash = runner.commit(commit_message)
+                await db.commit()
+
+            if failed_renames:
+                await db.rollback()
+                raise ValueError(f"Some renames failed: {len(failed_renames)} failures")
+
+            return BulkRenameResponse(
+                project_name=project_name,
+                total_files=len(renames),
+                successful_renames=len(successful_renames),
+                failed_renames=len(failed_renames),
+                results=successful_renames + failed_renames,
+                committed=len(successful_renames) > 0,
+                commit_hash=commit_hash,
+                renamed_at=datetime.now().isoformat(),
+                message=f"Successfully renamed {len(successful_renames)} files"
+            )
+
+        except Exception as e:
+            await db.rollback()
+            raise RuntimeError(f"Failed to rename files: {e}") from e
+
+    async def _perform_single_rename(
+        self, project_path: Path, project_name: str, rename_info: dict, services: dict
+    ) -> RenameResult:
+        """Perform a single file rename operation."""
+        old_filename = rename_info.get("old_filename") or rename_info.get("old_name") or rename_info.get("oldName")
+        new_filename = rename_info.get("new_filename") or rename_info.get("new_name") or rename_info.get("newName")
+
+        old_file_path = project_path / "elan_files" / old_filename
+        new_file_path = project_path / "elan_files" / new_filename
+
+        # Rename the file
+        old_file_path.rename(new_file_path)
+
+        # Stage changes in git
+        runner = services["runner"]
+        runner.add(f"elan_files/{old_filename}")  # Remove old
+        runner.add(f"elan_files/{new_filename}")  # Add new
+
+        # Update database
+        elan_service = services["elan_service"]
+        await elan_service.delete_elan_files_from_db(old_filename, project_name)
+        await elan_service.process_single_file(str(new_file_path), 1, project_name)  # Using placeholder user_id
+
+        return RenameResult(
+            old_filename=old_filename,
+            new_filename=new_filename,
+            success=True,
+            error=None
+        )

@@ -75,7 +75,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UploadFolder from '@components/common/UploadFolder.vue';
 import gitService from '@api/service/gitService';
@@ -166,6 +166,10 @@ async function handleCreate() {
     creating.value = false;
   }
 }
+
+onMounted(() => {
+  projectStore.initBroadcastChannel();
+});
 </script>
 
 <style scoped>

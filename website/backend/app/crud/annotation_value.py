@@ -7,17 +7,17 @@ from app.utils.database import DatabaseUtils
 logger = get_logger()
 
 
-async def get_or_create_annotation_value(db: AsyncSession, value: str) -> int:
-    """Get the ID of an annotation value, or create it if it doesn't exist."""
+async def get_or_create_annotation_value(db: AsyncSession, value: str) -> AnnotationValue:
+    """Get the annotation value object, or create it if it doesn't exist."""
     filters = {"annotation_value": value}
     annotation_value = await DatabaseUtils.get_one_by_filter(
         db, AnnotationValue, filters
     )
     if annotation_value:
-        return annotation_value.value_id
+        return annotation_value
     annotation_value = AnnotationValue(annotation_value=value)
     await DatabaseUtils.create(db, annotation_value)
-    return annotation_value.value_id
+    return annotation_value
 
 
 async def get_annotation_value_by_id(db: AsyncSession, value_id: int) -> str | None:
@@ -32,11 +32,11 @@ async def bulk_get_or_create_annotation_values(
     db: AsyncSession, tiers_data: list[dict]
 ) -> dict[str, int]:
     """Bulk get or create annotation values, returning a mapping from value to ID."""
-    all_ann_values = set(
+    all_ann_values = {
         ann["annotation_value"]
         for tier_data in tiers_data
         for ann in tier_data["annotations"]
-    )
+    }
     logger.info(f"Extracted unique values: {all_ann_values}")
     value_map = {}
     logger.info(f"Start. Total unique values: {len(all_ann_values)}")

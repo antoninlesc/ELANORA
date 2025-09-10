@@ -1,36 +1,74 @@
-from typing import TYPE_CHECKING
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, String, DateTime
+from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+from app.utils.file_processing import make_path_absolute_from_projects
 
 if TYPE_CHECKING:
     from .association import ElanFileToMedia
-    from .user import User
+    from .file_content import FileContent
+    from .project import Project
 
 
 class ElanFile(Base):
-    """ElanFile model representing ELAN annotation files."""
+    """ElanFile model representing ELAN annotation files with normalized content."""
 
     __tablename__ = "ELAN_FILE"
 
     elan_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    filename: Mapped[str] = mapped_column(String(255), nullable=False)
-    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
-    file_size: Mapped[int] = mapped_column(Integer, nullable=False)
-    user_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("USER.user_id", ondelete="SET NULL"), nullable=True
+    content_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("FILE_CONTENT.content_id", ondelete="CASCADE"), nullable=False
     )
+    project_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("PROJECT.project_id", ondelete="CASCADE"), nullable=False
+    )
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     last_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
+    # Add unique constraint for content within a project (same file can't be in project twice)
+    __table_args__ = (
+        UniqueConstraint('content_id', 'project_id', name='uq_content_project'),
+    )
+
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="elan_files")
+    file_content: Mapped["FileContent"] = relationship("FileContent", back_populates="elan_files")
+    project: Mapped["Project"] = relationship("Project", back_populates="elan_files")
     media_links: Mapped[list["ElanFileToMedia"]] = relationship(
         "ElanFileToMedia", back_populates="elan_file", cascade="all, delete-orphan"
     )
 
+    # Convenience properties to access file content data
+    @property
+    def filename(self) -> str:
+        """Get the filename from the associated file content."""
+        return self.file_content.filename
+
+    @filename.setter
+    def filename(self, value: str) -> None:
+        """Set the filename in the associated file content."""
+        if self.file_content:
+            self.file_content.filename = value
+        else:
+            raise ValueError("No file_content associated with this ElanFile")
+
+    @property
+    def file_size(self) -> int:
+        """Get the file size from the associated file content."""
+        return self.file_content.file_size
+
+    @property
+    def user_id(self) -> int | None:
+        """Get the user ID from the associated file content."""
+        return self.file_content.user_id
+
+    @property
+    def absolute_file_path(self) -> str:
+        """Get the absolute file path by combining elanora_projects base with relative path."""
+        return make_path_absolute_from_projects(self.file_path)
+
     def __repr__(self) -> str:
         """Return a string representation of the ElanFile."""
-        return f"<ElanFile(elan_id={self.elan_id}, filename='{self.filename}')>"
+        return f"<ElanFile(elan_id={self.elan_id}, content_id={self.content_id}, project_id={self.project_id})>"

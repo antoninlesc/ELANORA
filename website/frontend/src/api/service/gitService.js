@@ -42,7 +42,7 @@ const gitService = {
   },
 
   // Upload ELAN files to a project
-  async uploadElanFiles(projectName, files, userName) {
+  async uploadElanFiles(projectId, files, userName) {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('files', file);
@@ -50,7 +50,7 @@ const gitService = {
     formData.append('user_name', userName);
 
     const { data } = await axiosInstance.post(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/upload`,
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectId)}/upload`,
       formData,
       {
         headers: {
@@ -109,9 +109,11 @@ const gitService = {
   },
 
   // List files in a project (recursive structure)
-  async listProjectFiles(projectName) {
+  async listProjectFiles(projectName, includeMedia = false) {
+    const params = includeMedia ? { include_media: true } : {};
     const { data } = await axiosInstance.get(
-      `/git/projects/${encodeURIComponent(projectName)}/files`
+      `/git/projects/${encodeURIComponent(projectName)}/files`,
+      { params }
     );
     return data;
   },
@@ -121,9 +123,11 @@ const gitService = {
     const formData = new FormData();
     formData.append('project_name', project_name);
     formData.append('description', !description || description === "undefined" ? "" : description);
+    
     files.forEach((file) => {
-      formData.append('files', file, file.webkitRelativePath);
+      formData.append('files', file, file.name);
     });
+    
     const { data } = await axiosInstance.post(
       `/git/projects/init-from-folder-upload`,
       formData,
@@ -207,6 +211,28 @@ const gitService = {
     const { data } = await axiosInstance.post(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts/${encodeURIComponent(filename)}/resolve-manual`,
       formData
+    );
+    return data;
+  },
+
+  // Rename a single file
+  async renameFile(projectName, oldFilename, newFilename) {
+    const formData = new FormData();
+    formData.append('old_filename', oldFilename);
+    formData.append('new_filename', newFilename);
+    
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/rename-file`,
+      formData
+    );
+    return data;
+  },
+
+  // Rename multiple files
+  async renameFiles(projectName, renames) {
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/rename-files`,
+      { renames }
     );
     return data;
   },

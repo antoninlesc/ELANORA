@@ -97,7 +97,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useNamingStandardStore } from '@stores/namingStandard';
 import { useFileTypeStore } from '@stores/fileType';
@@ -226,12 +226,6 @@ async function onEffectiveStandardChange(fileTypeId) {
 }
 
 onMounted(loadInitialData);
-
-watch(selectedLocationId, async (newVal, oldVal) => {
-  if (newVal !== oldVal) {
-    await onLocationChange();
-  }
-});
 </script>
 
 <style scoped>

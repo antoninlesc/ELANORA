@@ -19,7 +19,6 @@ from .association import (
     CommentProject,
     ConflictOfElanFile,
     ElanFileToMedia,
-    ElanFileToProject,
     ElanFileToTier,
     ProjectAnnotStandard,
     UserToProject,
@@ -31,6 +30,7 @@ from .city import City
 from .comment import Comment
 from .pending_upload import PendingUpload
 from .country import Country
+from .file_content import FileContent
 
 # Models with dependencies on user/project
 from .elan_file import ElanFile
@@ -82,8 +82,8 @@ __all__ = [
     "ElanFile",
     "ElanFileMedia",
     "ElanFileToMedia",
-    "ElanFileToProject",
     "ElanFileToTier",
+    "FileContent",
     "FileType",
     "Instance",
     "Invitation",

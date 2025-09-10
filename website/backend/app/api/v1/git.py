@@ -6,6 +6,7 @@ from app.dependency.elan_validation import validate_multiple_elan_files
 from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.user import User
 from app.schema.requests.git import (
+    BulkRenameRequest,
     CommitRequest,
     ProjectCheckoutRequest,
     ProjectCreateRequest,
@@ -13,7 +14,9 @@ from app.schema.requests.git import (
 )
 from app.schema.responses.git import (
     BatchFileUploadResponse,
+    BulkRenameResponse,
     CommitResponse,
+    FileRenameResponse,
     GitStatusResponse,
     ProjectCheckoutResponse,
     ProjectCreateResponse,
@@ -21,7 +24,6 @@ from app.schema.responses.git import (
     ProjectListResponse,
     ProjectSyncCheckResponse,
     PendingUploadsResponse,
-    ProjectFilesResponse,
 )
 from app.service.git import GitService
 
@@ -117,9 +119,9 @@ async def commit_changes(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/projects/{project_name}/upload", response_model=BatchFileUploadResponse)
+@router.post("/projects/{project_id}/upload", response_model=BatchFileUploadResponse)
 async def upload_elan_files(
-    project_name: str,
+    project_id: int,
     user_name: str = Form(...),
     files: list[UploadFile] = validate_elan_files_dep,
     db: AsyncSession = get_db_dep,
@@ -128,7 +130,7 @@ async def upload_elan_files(
     """Upload an ELAN file to a project.
 
     Args:
-        project_name: Name of the project to upload file to.
+        project_id: Name of the project to upload file to.
         file: ELAN file (.eaf) to upload. File is validated for format and size.
         user_name: Name of the user uploading the file.
 
@@ -137,19 +139,22 @@ async def upload_elan_files(
 
     Raises:
         HTTPException: 404 if project not found, 400 if file validation fails, 500 if upload fails.
+        HTTPException: 400 if file validation fails.
 
     Note:
         File validation includes checking for .eaf extension, file size limits,
-        and valid ELAN XML structure.
+        valid ELAN XML structure, and filename compliance with the project's naming standard.
 
     """
     try:
         result = await git_service.add_elan_files(
-            project_name, files, db, user.user_id, user_name
+            project_id, files, db, user.user_id, user_name
         )
         return BatchFileUploadResponse(**result)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -226,14 +231,27 @@ async def init_project_from_folder_upload(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/projects/{project_name}/files", response_model=ProjectFilesResponse)
+@router.get("/projects/{project_name}/files")
 async def get_project_files(
     project_name: str,
+    include_media: bool = False,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
+    """Get project files, optionally with media information.
+
+    Args:
+        project_name: Name of the project
+        include_media: Whether to include media filenames for each file
+        db: Database session
+        user: Authenticated admin user
+
+    Returns:
+        ProjectFilesResponse or ProjectFilesWithMediaResponse depending on include_media
+
+    """
     try:
-        result = await git_service.list_project_files(project_name, db)
+        result = await git_service.list_project_files(project_name, db, include_media)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -386,5 +404,57 @@ async def get_pending_uploads(
         return PendingUploadsResponse(**result)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/projects/{project_name}/rename-file", response_model=FileRenameResponse)
+async def rename_file(
+    project_name: str,
+    old_filename: str = Form(...),
+    new_filename: str = Form(...),
+    db: AsyncSession = get_db_dep,
+    user: User = get_user_dep,
+) -> FileRenameResponse:
+    """Rename a single file in the project."""
+    try:
+        result = await git_service.rename_file(
+            project_name=project_name,
+            old_filename=old_filename,
+            new_filename=new_filename,
+            db=db,
+        )
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/projects/{project_name}/rename-files", response_model=BulkRenameResponse)
+async def rename_files(
+    project_name: str,
+    request: BulkRenameRequest,
+    db: AsyncSession = get_db_dep,
+    user: User = get_user_dep,
+) -> BulkRenameResponse:
+    """Rename multiple files in the project."""
+    try:
+        renames = [
+            {"old_filename": rename.old_filename, "new_filename": rename.new_filename}
+            for rename in request.renames
+        ]
+        result = await git_service.rename_files(
+            project_name=project_name,
+            renames=renames,
+            db=db,
+        )
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

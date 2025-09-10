@@ -30,10 +30,7 @@ const isRegexLiteral = (s) => /^\/.*\/[gimsuy]*$/.test(s);
 
 function checkRegex(comp, value) {
   const rx = toRegExp(comp.regex);
-  if (rx && !rx.test(value)) {
-    return false;
-  }
-  return true;
+  return !rx || rx.test(value);
 }
 
 function isAcceptedValueRegex(av, value) {
@@ -73,10 +70,7 @@ function checkFixedValue(comp, value) {
 
 function checkNumericRangeString(comp, value) {
   const r = parseRange(comp.numericRange);
-  if (!r || !matchesRangeValue(value, r)) {
-    return false;
-  }
-  return true;
+  return r && matchesRangeValue(value, r);
 }
 
 function checkNumericRangeObject(comp, value) {
@@ -167,4 +161,66 @@ export function isFilenameCompliant(standard, name) {
   }
 
   return true;
+}
+
+/**
+ * Extract components from a filename using a naming standard
+ * @param {Object} standard - The naming standard to use for extraction
+ * @param {string} filename - The filename to extract components from (without extension)
+ * @returns {Object|null} Object with component names as keys and extracted values as values, or null if extraction fails
+ */
+export function extractComponentsFromFilename(standard, filename) {
+  if (!standard?.pattern || !Array.isArray(standard?.components) || !filename) {
+    return null;
+  }
+
+  const components = standard.components.map((c) => {
+    let acceptedValues = [];
+    if (Array.isArray(c.acceptedValues)) {
+      acceptedValues = c.acceptedValues;
+    } else if (Array.isArray(c.accepted_values)) {
+      acceptedValues = c.accepted_values;
+    } else if (typeof c.accepted_values_str === 'string') {
+      acceptedValues = c.accepted_values_str.split(',').map(s => s.trim()).filter(Boolean);
+    }
+
+    return {
+      ...c,
+      name: c.name,
+      regex: c.regex ?? c.pattern ?? null,
+      acceptedValues,
+      fixedValue: c.fixedValue ?? c.fixed_value ?? c.value ?? null,
+      numericRange: c.numericRange ?? c.numeric_range ?? (c.numericRangeValue ?? null),
+    };
+  });
+
+  // Build regex pattern by replacing component placeholders with capture groups
+  let pattern = standard.pattern;
+  for (const comp of components) {
+    const compRegex = comp.regex || '.+';
+    pattern = pattern.replace(new RegExp(`\\{${comp.name}\\}`, 'g'), `(${compRegex})`);
+  }
+
+  let topRx;
+  try {
+    topRx = new RegExp(`^${pattern}$`, 'u');
+  } catch {
+    return null;
+  }
+
+  const match = topRx.exec(filename);
+  if (!match) {
+    return null;
+  }
+
+  // Extract values for each component
+  const extractedComponents = {};
+  for (const [i, comp] of components.entries()) {
+    const value = match[i + 1];
+    if (value !== undefined) {
+      extractedComponents[comp.name] = value;
+    }
+  }
+
+  return extractedComponents;
 }
