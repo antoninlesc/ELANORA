@@ -1230,6 +1230,10 @@ class GitService:
         elan_files_dir = project_path / "elan_files"
         git_dir = project_path / ".git"
 
+        logger.info(f"GitService base_path: {self.base_path}")
+        logger.info(f"Project path: {project_path}")
+        logger.info(f"Project path exists: {project_path.exists()}")
+
         if not project_path.exists():
             return {
                 "project_name": project_name,
@@ -1251,19 +1255,23 @@ class GitService:
                 "in_sync": False,
                 "files_status": [],
             }
+
         runner = GitCommandRunner(project_path)
         status_output = runner.get_status()
+
+        logger.info(f"Git status output: '{status_output}'")
+
         files_status = []
-
         status_map = {"A": "added", "M": "modified", "D": "deleted", "??": "untracked"}
-        tracked_files = set()
+        files_with_changes = set()
 
+        # Process files with pending changes
         for entry in self._parse_git_status(status_output):
             code = entry["status"]
             filename = entry["filename"]
             status = status_map.get(code, code)
             clean_filename = filename.strip('"').strip("'")
-            tracked_files.add(clean_filename)
+            files_with_changes.add(clean_filename)
             file_path = Path(clean_filename)
             # Only consider .eaf files directly in elan_files
             if (
@@ -1278,17 +1286,26 @@ class GitService:
                     )
                 )
 
-        # Scan elan_files folder for .eaf files not reported by git
+        # Get all Git-tracked files
+        all_tracked_result = runner.run(["ls-files"], check=True)
+        all_tracked_files = set(all_tracked_result.stdout.strip().splitlines())
+        logger.info(f"All tracked files in Git: {all_tracked_files}")
+
+        # Scan elan_files folder for .eaf files
         for file in elan_files_dir.glob("*.eaf"):
             rel_path = Path("elan_files") / file.name
-            if rel_path.as_posix() not in tracked_files:
+            rel_path_str = rel_path.as_posix()
+            # Only report as untracked if it's actually not tracked by Git
+            if rel_path_str not in all_tracked_files:
                 files_status.append(
                     FileStatus(
-                        filename=rel_path.as_posix(),
+                        filename=rel_path_str,
                         status="untracked",
-                        description=f"File {rel_path.as_posix()} is untracked (not reported by git)",
+                        description=f"File {rel_path_str} is untracked (not in Git repository)",
                     )
                 )
+        logger.info(f"Files with changes: {files_with_changes}")
+        logger.info(f"Files status: {files_status}")
 
         in_sync = not bool(files_status)
 
