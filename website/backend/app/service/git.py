@@ -28,6 +28,11 @@ from app.crud.project import (
 from app.crud.elan_file import get_elan_files_by_project
 from app.crud import elan_file_media as elan_media_crud
 from app.crud.effective_naming_standard import get_effective_standards_for_project
+from app.schema.responses.git import (
+    FileRenameResponse,
+    BulkRenameResponse,
+    RenameResult,
+)
 from app.crud.project_naming_standard import get_standard_with_components_full
 from app.core.effective_naming_standard_locations import get_location_id_by_name
 from app.schema.common.git import FileStatus
@@ -1335,3 +1340,197 @@ class GitService:
         # Remove all DB artifacts
         await delete_project_db(db, project_name)
         await db.commit()
+
+    async def rename_file(
+        self, project_name: str, old_filename: str, new_filename: str, db: AsyncSession
+    ) -> FileRenameResponse:
+        """Rename a single file in the project."""
+        project_path = self.base_path / project_name
+
+        if not project_path.exists():
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+
+        old_file_path = project_path / "elan_files" / old_filename
+        new_file_path = project_path / "elan_files" / new_filename
+
+        if not old_file_path.exists():
+            raise FileNotFoundError(f"File '{old_filename}' not found in project")
+
+        if new_file_path.exists():
+            raise ValueError(f"File '{new_filename}' already exists in project")
+
+        try:
+            # Rename the file
+            old_file_path.rename(new_file_path)
+            logger.info(f"Renamed file: {old_filename} -> {new_filename}")
+
+            # Update git
+            runner = GitCommandRunner(project_path)
+            runner.add(f"elan_files/{old_filename}")  # Remove old
+            runner.add(f"elan_files/{new_filename}")  # Add new
+            commit_hash = runner.commit(f"Rename file: {old_filename} -> {new_filename}")
+
+            # Update database
+            elan_service = ElanService(db)
+            # Delete old entry
+            await elan_service.delete_elan_files_from_db(old_filename, project_name)
+            # Add new entry - we'll use user_id 1 as a placeholder since it's not provided
+            await elan_service.process_single_file(str(new_file_path), 1, project_name)
+
+            await db.commit()
+
+            return FileRenameResponse(
+                project_name=project_name,
+                old_filename=old_filename,
+                new_filename=new_filename,
+                success=True,
+                committed=True,
+                commit_hash=commit_hash,
+                renamed_at=datetime.now().isoformat(),
+                message=f"Successfully renamed {old_filename} to {new_filename}"
+            )
+
+        except Exception as e:
+            await db.rollback()
+            # Try to rollback filesystem change if possible
+            if new_file_path.exists() and not old_file_path.exists():
+                try:
+                    new_file_path.rename(old_file_path)
+                except Exception:
+                    logger.warning(f"Could not rollback file rename for {new_filename}")
+            raise RuntimeError(f"Failed to rename file: {e}") from e
+
+    async def rename_files(
+        self, project_name: str, renames: list[dict], db: AsyncSession
+    ) -> BulkRenameResponse:
+        """Rename multiple files in the project."""
+        project_path = self.base_path / project_name
+
+        if not project_path.exists():
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+
+        # Validate all renames first
+        validation_errors = self._validate_renames(project_path, renames)
+        if validation_errors:
+            raise ValueError(f"Validation failed for {len(validation_errors)} files")
+
+        # Perform the renames
+        return await self._perform_bulk_rename(project_path, project_name, renames, db)
+
+    def _validate_renames(self, project_path: Path, renames: list[dict]) -> list[dict]:
+        """Validate all rename operations before executing them."""
+        errors = []
+        for rename_info in renames:
+            old_filename = rename_info.get("old_filename") or rename_info.get("old_name") or rename_info.get("oldName")
+            new_filename = rename_info.get("new_filename") or rename_info.get("new_name") or rename_info.get("newName")
+
+            if not old_filename or not new_filename:
+                errors.append({
+                    "old_filename": old_filename,
+                    "new_filename": new_filename,
+                    "error": "Missing old or new filename"
+                })
+                continue
+
+            old_file_path = project_path / "elan_files" / old_filename
+            new_file_path = project_path / "elan_files" / new_filename
+
+            if not old_file_path.exists():
+                errors.append({
+                    "old_filename": old_filename,
+                    "new_filename": new_filename,
+                    "error": f"File '{old_filename}' not found"
+                })
+            elif new_file_path.exists():
+                errors.append({
+                    "old_filename": old_filename,
+                    "new_filename": new_filename,
+                    "error": f"File '{new_filename}' already exists"
+                })
+
+        return errors
+
+    async def _perform_bulk_rename(
+        self, project_path: Path, project_name: str, renames: list[dict], db: AsyncSession
+    ) -> BulkRenameResponse:
+        """Perform the actual bulk rename operations."""
+        successful_renames = []
+        failed_renames = []
+
+        try:
+            runner = GitCommandRunner(project_path)
+            elan_service = ElanService(db)
+
+            for rename_info in renames:
+                try:
+                    services = {"runner": runner, "elan_service": elan_service}
+                    result = await self._perform_single_rename(
+                        project_path, project_name, rename_info, services
+                    )
+                    successful_renames.append(result)
+                except Exception as e:
+                    old_filename = rename_info.get("old_filename") or rename_info.get("old_name") or rename_info.get("oldName")
+                    new_filename = rename_info.get("new_filename") or rename_info.get("new_name") or rename_info.get("newName")
+                    failed_renames.append(RenameResult(
+                        old_filename=old_filename or "",
+                        new_filename=new_filename or "",
+                        success=False,
+                        error=str(e)
+                    ))
+
+            # Commit all successful renames at once
+            commit_hash = None
+            if successful_renames:
+                commit_message = f"Bulk rename: {len(successful_renames)} files"
+                commit_hash = runner.commit(commit_message)
+                await db.commit()
+
+            if failed_renames:
+                await db.rollback()
+                raise ValueError(f"Some renames failed: {len(failed_renames)} failures")
+
+            return BulkRenameResponse(
+                project_name=project_name,
+                total_files=len(renames),
+                successful_renames=len(successful_renames),
+                failed_renames=len(failed_renames),
+                results=successful_renames + failed_renames,
+                committed=len(successful_renames) > 0,
+                commit_hash=commit_hash,
+                renamed_at=datetime.now().isoformat(),
+                message=f"Successfully renamed {len(successful_renames)} files"
+            )
+
+        except Exception as e:
+            await db.rollback()
+            raise RuntimeError(f"Failed to rename files: {e}") from e
+
+    async def _perform_single_rename(
+        self, project_path: Path, project_name: str, rename_info: dict, services: dict
+    ) -> RenameResult:
+        """Perform a single file rename operation."""
+        old_filename = rename_info.get("old_filename") or rename_info.get("old_name") or rename_info.get("oldName")
+        new_filename = rename_info.get("new_filename") or rename_info.get("new_name") or rename_info.get("newName")
+
+        old_file_path = project_path / "elan_files" / old_filename
+        new_file_path = project_path / "elan_files" / new_filename
+
+        # Rename the file
+        old_file_path.rename(new_file_path)
+
+        # Stage changes in git
+        runner = services["runner"]
+        runner.add(f"elan_files/{old_filename}")  # Remove old
+        runner.add(f"elan_files/{new_filename}")  # Add new
+
+        # Update database
+        elan_service = services["elan_service"]
+        await elan_service.delete_elan_files_from_db(old_filename, project_name)
+        await elan_service.process_single_file(str(new_file_path), 1, project_name)  # Using placeholder user_id
+
+        return RenameResult(
+            old_filename=old_filename,
+            new_filename=new_filename,
+            success=True,
+            error=None
+        )

@@ -245,4 +245,41 @@ class ProjectFilesResponse(CustomBaseModel):
 
 class ProjectFilesWithMediaResponse(CustomBaseModel):
     """Response for project files that includes media information."""
+
     files: list[FileInfoWithMedia]
+
+
+class RenameResult(CustomBaseModel):
+    """Schema for individual file rename result."""
+
+    old_filename: str
+    new_filename: str
+    success: bool
+    error: str | None = None
+
+
+class FileRenameResponse(CustomBaseModel):
+    """Schema for single file rename response."""
+
+    project_name: str
+    old_filename: str
+    new_filename: str
+    success: bool
+    committed: bool
+    commit_hash: str | None = None
+    renamed_at: str
+    message: str | None = None
+
+
+class BulkRenameResponse(CustomBaseModel):
+    """Schema for bulk file rename response."""
+
+    project_name: str
+    total_files: int
+    successful_renames: int
+    failed_renames: int
+    results: list[RenameResult]
+    committed: bool
+    commit_hash: str | None = None
+    renamed_at: str
+    message: str | None = None

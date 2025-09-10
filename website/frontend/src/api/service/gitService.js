@@ -214,6 +214,28 @@ const gitService = {
     );
     return data;
   },
+
+  // Rename a single file
+  async renameFile(projectName, oldFilename, newFilename) {
+    const formData = new FormData();
+    formData.append('old_filename', oldFilename);
+    formData.append('new_filename', newFilename);
+    
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/rename-file`,
+      formData
+    );
+    return data;
+  },
+
+  // Rename multiple files
+  async renameFiles(projectName, renames) {
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/rename-files`,
+      { renames }
+    );
+    return data;
+  },
 };
 
 export default gitService;

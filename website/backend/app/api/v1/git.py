@@ -6,6 +6,7 @@ from app.dependency.elan_validation import validate_multiple_elan_files
 from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.user import User
 from app.schema.requests.git import (
+    BulkRenameRequest,
     CommitRequest,
     ProjectCheckoutRequest,
     ProjectCreateRequest,
@@ -13,7 +14,9 @@ from app.schema.requests.git import (
 )
 from app.schema.responses.git import (
     BatchFileUploadResponse,
+    BulkRenameResponse,
     CommitResponse,
+    FileRenameResponse,
     GitStatusResponse,
     ProjectCheckoutResponse,
     ProjectCreateResponse,
@@ -401,5 +404,57 @@ async def get_pending_uploads(
         return PendingUploadsResponse(**result)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/projects/{project_name}/rename-file", response_model=FileRenameResponse)
+async def rename_file(
+    project_name: str,
+    old_filename: str = Form(...),
+    new_filename: str = Form(...),
+    db: AsyncSession = get_db_dep,
+    user: User = get_user_dep,
+) -> FileRenameResponse:
+    """Rename a single file in the project."""
+    try:
+        result = await git_service.rename_file(
+            project_name=project_name,
+            old_filename=old_filename,
+            new_filename=new_filename,
+            db=db,
+        )
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/projects/{project_name}/rename-files", response_model=BulkRenameResponse)
+async def rename_files(
+    project_name: str,
+    request: BulkRenameRequest,
+    db: AsyncSession = get_db_dep,
+    user: User = get_user_dep,
+) -> BulkRenameResponse:
+    """Rename multiple files in the project."""
+    try:
+        renames = [
+            {"old_filename": rename.old_filename, "new_filename": rename.new_filename}
+            for rename in request.renames
+        ]
+        result = await git_service.rename_files(
+            project_name=project_name,
+            renames=renames,
+            db=db,
+        )
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

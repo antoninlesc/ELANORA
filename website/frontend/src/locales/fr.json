@@ -540,12 +540,25 @@
     "noSuggestions": "Aucun fichier disponible pour le renommage.",
     "generateSuggestions": "Générer des suggestions depuis les médias",
     "current": "Actuel",
-    "suggested": "Suggéré",
+    "suggested": "Modifié",
     "manual": "Manuel",
     "useSuggestion": "Utiliser",
     "enterNewName": "Entrez le nouveau nom de fichier",
     "extractedFrom": "Basé sur les fichiers média",
-    "apply": "Appliquer les renommages"
+    "apply": "Appliquer les renommages",
+    "renameAll": "Tout renommer",
+    "renaming": "Renommage...",
+    "notCompliant": "Ce nom de fichier ne respecte pas le standard de nommage",
+    "complianceRequired": "Tous les renommages doivent respecter le standard de nommage"
+  },
+
+  "fileRenameSuggestion": {
+    "title": "Renommer le fichier",
+    "enterNewName": "Entrez le nouveau nom",
+    "confirm": "Renommer",
+    "renaming": "Renommage...",
+    "basedOnMediaFiles": "Basé sur les fichiers média",
+    "notCompliant": "Ce nom de fichier ne respecte pas le standard de nommage"
   },
 
   "projectSettings": {

@@ -33,3 +33,16 @@ class ProjectDeleteRequest(CustomBaseModel):
 
     project_id: int
     confirm: bool = False
+
+
+class FileRename(CustomBaseModel):
+    """Schema for a single file rename operation."""
+
+    old_filename: str
+    new_filename: str
+
+
+class BulkRenameRequest(CustomBaseModel):
+    """Schema for bulk file rename request."""
+
+    renames: list[FileRename]

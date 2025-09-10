@@ -549,12 +549,25 @@
     "noSuggestions": "No files available for renaming.",
     "generateSuggestions": "Generate Suggestions from Media",
     "current": "Current",
-    "suggested": "Suggested",
+    "suggested": "Modified",
     "manual": "Manual",
     "useSuggestion": "Use",
     "enterNewName": "Enter new filename",
     "extractedFrom": "Based on media files",
-    "apply": "Apply Renames"
+    "apply": "Apply Renames",
+    "renameAll": "Rename All",
+    "renaming": "Renaming...",
+    "notCompliant": "This filename doesn't comply with the naming standard",
+    "complianceRequired": "All renames must comply with the naming standard"
+  },
+
+  "fileRenameSuggestion": {
+    "title": "Rename File",
+    "enterNewName": "Enter new filename",
+    "confirm": "Rename",
+    "renaming": "Renaming...",
+    "basedOnMediaFiles": "Based on media files",
+    "notCompliant": "This filename doesn't comply with the naming standard"
   },
 
   "projectSettings": {

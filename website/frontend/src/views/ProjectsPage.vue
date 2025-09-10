@@ -223,6 +223,7 @@
                 :files="projectFiles.files" 
                 :show-compliance="isAdmin && hasEffectiveStandard"
                 :project-id="currentProjectId"
+                :project-name="currentProjectName"
                 :media-standard="mediaStandard"
                 :project-standard="projectStandard"
               />
