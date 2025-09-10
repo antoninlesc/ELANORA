@@ -76,18 +76,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
-import { useNamingStandardStore } from '@/stores/namingStandard';
 import { 
-  getMediaStandardForProject, 
   generateMediaBasedSuggestions 
 } from '@/utils/filenameFromMediaFile';
 import { isElanFilenameCompliant } from '@/utils/elanFilenameCompliance';
 import gitService from '@/api/service/gitService';
 
 const { t } = useI18n();
-const effectiveStandardStore = useEffectiveStandardStore();
-const namingStandardStore = useNamingStandardStore();
 
 const props = defineProps({
   files: {
@@ -105,6 +100,14 @@ const props = defineProps({
   projectName: {
     type: String,
     required: true
+  },
+  projectStandard: {
+    type: Object,
+    default: null
+  },
+  mediaStandard: {
+    type: Object,
+    default: null
   }
 });
 
@@ -114,7 +117,6 @@ const loading = ref(false);
 const loadingSuggestions = ref(false);
 const filesSuggestions = ref([]);
 const isRenaming = ref(false);
-const projectStandard = ref(null);
 
 // Initialize files with empty new names
 const initializeFiles = () => {
@@ -129,8 +131,8 @@ const initializeFiles = () => {
 
 // Helper function to check compliance, handling .eaf extension properly
 const isFileCompliant = (filename) => {
-  if (!projectStandard.value || !filename || !filename.trim()) return false;
-  return isElanFilenameCompliant(projectStandard.value, filename.trim());
+  if (!props.projectStandard || !filename || !filename.trim()) return false;
+  return isElanFilenameCompliant(props.projectStandard, filename.trim());
 };
 
 const hasValidRenames = computed(() => {
@@ -140,7 +142,7 @@ const hasValidRenames = computed(() => {
 });
 
 const allRenamesCompliant = computed(() => {
-  if (!projectStandard.value) return false; // Changed: require standard for compliance
+  if (!props.projectStandard) return false; // Changed: require standard for compliance
   
   return filesSuggestions.value.every(file => {
     if (!file.newName || !file.newName.trim() || file.newName === file.name) {
@@ -158,47 +160,20 @@ const canApplyRenames = computed(() => {
 async function generateSuggestions() {
   loadingSuggestions.value = true;
   try {
-    // Get media standard for the project
-    const mediaStandard = await getMediaStandardForProject(
-      props.projectId, 
-      effectiveStandardStore, 
-      namingStandardStore
-    );
-
-    if (!mediaStandard) {
-      console.warn('No media standard found for project');
+    // Check if we have the required standards
+    if (!props.mediaStandard || !props.projectStandard) {
+      console.warn('Missing required standards for suggestion generation');
       return;
     }
 
     // Use the already-fetched files with media (passed as prop)
     const filesWithMedia = { files: props.allFiles };
     
-    // Get project files standard (location 1)
-    const PROJECT_FILES_LOCATION_ID = 1;
-    await effectiveStandardStore.fetchEffectiveStandards(props.projectId, PROJECT_FILES_LOCATION_ID);
-    const projectEffectiveStandards = effectiveStandardStore.effectiveStandards[PROJECT_FILES_LOCATION_ID];
-    
-    if (!projectEffectiveStandards) {
-      console.warn('No project files standard found');
-      return;
-    }
-
-    const projectStandardId = Object.values(projectEffectiveStandards).find(id => id && id !== "");
-    const foundProjectStandard = namingStandardStore.standards.find(std => std.id === parseInt(projectStandardId));
-
-    if (!foundProjectStandard) {
-      console.warn('Project standard not found');
-      return;
-    }
-
-    // Store the project standard for compliance checking
-    projectStandard.value = foundProjectStandard;
-
-    // Generate suggestions
+    // Generate suggestions using the passed standards
     const suggestions = generateMediaBasedSuggestions(
       filesWithMedia.files,
-      mediaStandard,
-      foundProjectStandard
+      props.mediaStandard,
+      props.projectStandard
     );
 
     // Update files with suggestions
@@ -435,13 +410,13 @@ onMounted(async () => {
 }
 
 .apply-btn {
-  background: #4CAF50;
+  background: #1976d2;
   border: none;
   color: white;
 }
 
 .apply-btn:hover {
-  background: #45a049;
+  background: #1565c0;
 }
 
 .apply-btn:disabled {

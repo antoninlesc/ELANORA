@@ -274,7 +274,11 @@
         :files="nonCompliantFiles"
         :all-files="projectFiles?.files || []"
         :project-id="currentProjectId"
+        :project-name="currentProjectName"
+        :project-standard="projectStandard"
+        :media-standard="mediaStandard"
         @close="bulkRenameDialogVisible = false"
+        @rename="handleBulkRename"
       />
     </div>
   </div>
@@ -612,6 +616,12 @@ const bulkRenameDialogVisible = ref(false);
 function openBulkRenameDialog() {
   if (!isAdmin.value) return;
   bulkRenameDialogVisible.value = true;
+}
+
+function handleBulkRename() {
+  // Close the dialog and refresh file list
+  bulkRenameDialogVisible.value = false;
+  fetchProjectFiles();
 }
 </script>
 

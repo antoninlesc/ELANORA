@@ -245,7 +245,7 @@ watch(() => props.currentFilename, () => {
   padding: 4px 8px;
   background: #f5f5f5;
   border-radius: 4px;
-  border-left: 3px solid #2196F3;
+  border-left: 3px solid #1565c0;
 }
 
 .suggestion-input-container {
@@ -287,7 +287,7 @@ watch(() => props.currentFilename, () => {
 }
 
 .suggestion-confirm-btn {
-  background: #388e3c;
+  background: #1976d2;
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -306,6 +306,6 @@ watch(() => props.currentFilename, () => {
 }
 
 .suggestion-confirm-btn:hover:not(:disabled) {
-  background: #2e7d32;
+  background: #1565c0;
 }
 </style>
