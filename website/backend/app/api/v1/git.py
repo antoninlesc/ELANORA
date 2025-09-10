@@ -411,7 +411,7 @@ async def get_pending_uploads(
 @router.post("/projects/{project_name}/rename-file", response_model=FileRenameResponse)
 async def rename_file(
     project_name: str,
-    old_filename: str = Form(...),
+    elan_id: int = Form(...),
     new_filename: str = Form(...),
     db: AsyncSession = get_db_dep,
     user: User = get_user_dep,
@@ -420,7 +420,7 @@ async def rename_file(
     try:
         result = await git_service.rename_file(
             project_name=project_name,
-            old_filename=old_filename,
+            elan_id=elan_id,
             new_filename=new_filename,
             db=db,
         )
@@ -443,7 +443,7 @@ async def rename_files(
     """Rename multiple files in the project."""
     try:
         renames = [
-            {"old_filename": rename.old_filename, "new_filename": rename.new_filename}
+            {"elan_id": rename.elan_id, "new_filename": rename.new_filename}
             for rename in request.renames
         ]
         result = await git_service.rename_files(

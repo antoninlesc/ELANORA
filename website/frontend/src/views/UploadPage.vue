@@ -195,11 +195,11 @@ async function uploadFiles() {
   }
 
   // Check for non-compliant files and show event message
-  // const nonCompliantFiles = filesWithCompliance.value.filter(f => !f.isCompliant);
-  // if (nonCompliantFiles.length > 0) {
-  //     eventMessageStore.addMessage('uploadPage.complianceWarning', 'warning');
-  //     return;
-  // }
+    const nonCompliantFiles = filesWithCompliance.value.filter(f => !f.isCompliant);
+    if (nonCompliantFiles.length > 0) {
+    eventMessageStore.addMessage('uploadPage.complianceWarning', 'warning');
+    return;
+  }
 
   uploading.value = true;
   uploadResults.value = [];

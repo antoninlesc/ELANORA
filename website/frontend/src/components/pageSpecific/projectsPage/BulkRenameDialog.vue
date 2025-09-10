@@ -210,7 +210,7 @@ async function applyRenames() {
     const renames = filesSuggestions.value
       .filter(file => file.newName && file.newName.trim() && file.newName !== file.name)
       .map(file => ({
-        old_filename: file.name,
+        elan_id: file.elan_id,
         new_filename: file.newName.trim()
       }));
 

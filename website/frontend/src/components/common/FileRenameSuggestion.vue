@@ -52,6 +52,7 @@ const props = defineProps({
   suggestion: { type: String, required: true },
   currentFilename: { type: String, required: true },
   projectName: { type: String, required: true },
+  elanId: { type: Number, required: true },
   standard: { type: Object, default: null },
   mediaFiles: { type: Array, default: () => [] }
 });
@@ -94,7 +95,7 @@ async function confirmRename() {
   
   isRenaming.value = true;
   try {
-    await gitService.renameFile(props.projectName, props.currentFilename, renameValue.value.trim());
+    await gitService.renameFile(props.projectName, props.elanId, renameValue.value.trim());
     emit('accept', renameValue.value.trim());
     emit('close');
   } catch (error) {

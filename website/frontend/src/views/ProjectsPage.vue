@@ -226,6 +226,7 @@
                 :project-name="currentProjectName"
                 :media-standard="mediaStandard"
                 :project-standard="projectStandard"
+                @rename="handleFileRename"
               />
             </div>
             <div v-else class="project-page-loading">
@@ -554,6 +555,23 @@ async function onProjectEdited() {
   await fetchProjects();
 }
 
+function handleFileRename({ file, newName }) {
+  // Update the file in the local files array to reflect the rename
+  if (projectFiles.value && projectFiles.value.files) {
+    const fileIndex = projectFiles.value.files.findIndex(f => f.elan_id === file.elan_id);
+    if (fileIndex !== -1) {
+      // Update the filename only - DO NOT update lastModified since content hasn't changed
+      projectFiles.value.files[fileIndex].name = newName;
+      
+      // Update compliance status if standards are available
+      if (projectStandard.value) {
+        const isCompliant = isFilenameCompliant(projectStandard.value, newName);
+        projectFiles.value.files[fileIndex].isCompliant = isCompliant;
+      }
+    }
+  }
+}
+
 function openShareModal(project) {
   if (!isAdmin.value) return;
   shareProjectName.value = project.project_name;
@@ -618,10 +636,26 @@ function openBulkRenameDialog() {
   bulkRenameDialogVisible.value = true;
 }
 
-function handleBulkRename() {
-  // Close the dialog and refresh file list
+function handleBulkRename(renames) {
+  // Update files locally instead of refetching everything
+  if (projectFiles.value && projectFiles.value.files && renames && renames.length > 0) {
+    renames.forEach(rename => {
+      const fileIndex = projectFiles.value.files.findIndex(f => f.elan_id === rename.elan_id);
+      if (fileIndex !== -1) {
+        // Update the filename only - DO NOT update lastModified since content hasn't changed
+        projectFiles.value.files[fileIndex].name = rename.new_filename;
+        
+        // Update compliance status if standards are available
+        if (projectStandard.value) {
+          const isCompliant = isFilenameCompliant(projectStandard.value, rename.new_filename);
+          projectFiles.value.files[fileIndex].isCompliant = isCompliant;
+        }
+      }
+    });
+  }
+  
+  // Close the dialog
   bulkRenameDialogVisible.value = false;
-  fetchProjectFiles();
 }
 </script>
 
