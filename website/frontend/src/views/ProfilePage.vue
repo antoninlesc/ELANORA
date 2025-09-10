@@ -155,11 +155,6 @@ async function loadUserProfile() {
   }
 }
 
-
-// Lifecycle
-onMounted(() => {
-  loadUserProfile();
-});
 </script>
 
 <style scoped>
