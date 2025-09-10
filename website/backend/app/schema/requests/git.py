@@ -38,7 +38,7 @@ class ProjectDeleteRequest(CustomBaseModel):
 class FileRename(CustomBaseModel):
     """Schema for a single file rename operation."""
 
-    old_filename: str
+    elan_id: int
     new_filename: str
 
 

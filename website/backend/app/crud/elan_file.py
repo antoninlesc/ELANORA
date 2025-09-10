@@ -331,3 +331,58 @@ async def get_elan_files_by_project(db: AsyncSession, project_id: int) -> list[t
         .options(selectinload(ElanFile.file_content))
     )
     return await DatabaseUtils.get_with_join(db, stmt)
+
+
+async def update_elan_file_name(db: AsyncSession, elan_id: int, new_filename: str) -> ElanFile | None:
+    """Update the filename of an ELAN file by updating its FileContent record."""
+    logger.info("Updating filename for elan_id=%s to new_filename=%s", elan_id, new_filename)
+    
+    # Get the ELAN file with its content
+    stmt = (
+        select(ElanFile)
+        .options(selectinload(ElanFile.file_content))
+        .where(ElanFile.elan_id == elan_id)
+    )
+    result = await db.execute(stmt)
+    elan_file = result.scalar_one_or_none()
+    
+    if not elan_file:
+        logger.warning("ELAN file not found for elan_id=%s", elan_id)
+        return None
+    
+    old_filename = elan_file.file_content.filename
+    logger.info("Changing filename from %s to %s for elan_id=%s", old_filename, new_filename, elan_id)
+    
+    # Update the filename in the FileContent record
+    elan_file.file_content.filename = ValidationUtils.sanitize_filename(new_filename)
+    
+    # Update the file_path in the ElanFile record to reflect the new filename
+    # Assuming file_path format is like "project/elan_files/filename.eaf"
+    old_file_path = elan_file.file_path
+    # Replace the old filename in the path with the new one
+    if "/" in old_file_path:
+        path_parts = old_file_path.split("/")
+        path_parts[-1] = ValidationUtils.sanitize_filename(new_filename)  # Replace the last part (filename)
+        new_file_path = "/".join(path_parts)
+    else:
+        # If no path separators, just use the new filename
+        new_file_path = ValidationUtils.sanitize_filename(new_filename)
+    
+    elan_file.file_path = new_file_path
+    logger.info("Updated file_path from %s to %s for elan_id=%s", old_file_path, new_file_path, elan_id)
+    
+    await db.flush()
+    
+    logger.info("Successfully updated filename for elan_id=%s", elan_id)
+    return elan_file
+
+
+async def get_elan_file_name_by_id(db: AsyncSession, elan_id: int) -> str | None:
+    """Get the current filename of an ELAN file."""
+    stmt = (
+        select(FileContent.filename)
+        .join(ElanFile, ElanFile.content_id == FileContent.content_id)
+        .where(ElanFile.elan_id == elan_id)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()

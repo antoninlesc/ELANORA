@@ -103,6 +103,7 @@
       :suggestion="getRenameSuggestion(filteredFiles.find(f => f.name === hoveredFile))"
       :current-filename="hoveredFile"
       :project-name="projectName"
+      :elan-id="filteredFiles.find(f => f.name === hoveredFile)?.elan_id"
       :standard="projectStandard"
       :media-files="filteredFiles.find(f => f.name === hoveredFile)?.media_filenames || []"
       :style="popoverStyle"
@@ -142,12 +143,30 @@ const popoverCloseTimer = ref(null);
 const filteredFiles = computed(() => {
   let filtered = props.files.filter(file => {
     const matchesType = !filterType.value || getExtension(file.name).toLowerCase().includes(filterType.value.toLowerCase());
-    const matchesDate = !filterDate.value || new Date(file.lastModified).toDateString() === new Date(filterDate.value).toDateString();
+    
+    // Handle date filtering with proper null/invalid date checking
+    let matchesDate = true;
+    if (filterDate.value && file.lastModified && file.lastModified !== 'N/A' && file.lastModified !== null) {
+      const fileDate = new Date(file.lastModified);
+      const filterDateObj = new Date(filterDate.value);
+      if (!isNaN(fileDate.getTime()) && !isNaN(filterDateObj.getTime())) {
+        matchesDate = fileDate.toDateString() === filterDateObj.toDateString();
+      }
+    }
+    
     return matchesType && matchesDate;
   });
   return filtered.sort((a, b) => {
-    const aVal = a[sortKey.value];
-    const bVal = b[sortKey.value];
+    let aVal = a[sortKey.value];
+    let bVal = b[sortKey.value];
+    
+    // Special handling for lastModified to handle null/invalid dates
+    if (sortKey.value === 'lastModified') {
+      // Treat null, undefined, 'N/A', or null as earliest date
+      if (!aVal || aVal === 'N/A' || aVal === null) aVal = '1970-01-01T00:00:00.000Z';
+      if (!bVal || bVal === 'N/A' || bVal === null) bVal = '1970-01-01T00:00:00.000Z';
+    }
+    
     if (aVal < bVal) return -sortOrder.value;
     if (aVal > bVal) return sortOrder.value;
     return 0;
@@ -179,8 +198,10 @@ function formatSize(bytes) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return 'N/A';
+  if (!dateStr || dateStr === 'N/A' || dateStr === null) return 'N/A';
   const date = new Date(dateStr);
+  // Check if the date is valid
+  if (isNaN(date.getTime())) return 'N/A';
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();

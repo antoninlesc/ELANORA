@@ -14,6 +14,7 @@ from app.api.v1.git import router as git_router
 from app.api.v1.effective_naming_standard import (
     router as effective_naming_standard_router,
 )
+from app.api.v1.notification import router as notification_router
 from app.api.v1.instance import router as instance_router
 from app.api.v1.invitation import router as invitation_router
 from app.api.v1.location import router as location_router
@@ -133,6 +134,11 @@ app.include_router(
     tags=["PROJECT LOCATION FILE TYPE"],
 )
 
+app.include_router(
+    notification_router,
+    prefix=f"{API_V1_PREFIX}/notifications",
+    tags=["NOTIFICATION"]
+)
 
 # Root endpoint
 @app.get("/")

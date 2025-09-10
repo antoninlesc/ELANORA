@@ -52,6 +52,7 @@ const props = defineProps({
   suggestion: { type: String, required: true },
   currentFilename: { type: String, required: true },
   projectName: { type: String, required: true },
+  elanId: { type: Number, required: true },
   standard: { type: Object, default: null },
   mediaFiles: { type: Array, default: () => [] }
 });
@@ -94,7 +95,7 @@ async function confirmRename() {
   
   isRenaming.value = true;
   try {
-    await gitService.renameFile(props.projectName, props.currentFilename, renameValue.value.trim());
+    await gitService.renameFile(props.projectName, props.elanId, renameValue.value.trim());
     emit('accept', renameValue.value.trim());
     emit('close');
   } catch (error) {
@@ -245,7 +246,7 @@ watch(() => props.currentFilename, () => {
   padding: 4px 8px;
   background: #f5f5f5;
   border-radius: 4px;
-  border-left: 3px solid #2196F3;
+  border-left: 3px solid #1565c0;
 }
 
 .suggestion-input-container {
@@ -287,7 +288,7 @@ watch(() => props.currentFilename, () => {
 }
 
 .suggestion-confirm-btn {
-  background: #388e3c;
+  background: #1976d2;
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -306,6 +307,6 @@ watch(() => props.currentFilename, () => {
 }
 
 .suggestion-confirm-btn:hover:not(:disabled) {
-  background: #2e7d32;
+  background: #1565c0;
 }
 </style>
