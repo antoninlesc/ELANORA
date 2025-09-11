@@ -25,7 +25,7 @@ from app.schema.responses.git import (
     ProjectSyncCheckResponse,
     PendingUploadsResponse,
 )
-from app.service.git import GitService
+from app.service.git import GitService, RenameConflictError
 
 router = APIRouter()
 
@@ -425,6 +425,20 @@ async def rename_file(
             db=db,
         )
         return result
+    except RenameConflictError as e:
+        # Return conflict info with 409 status code
+        return FileRenameResponse(
+            project_name=project_name,
+            old_filename="",  # Will be filled by service if needed
+            new_filename=new_filename,
+            success=False,
+            committed=False,
+            commit_hash=None,
+            renamed_at="",
+            message=str(e),
+            conflict_elan_id=e.conflict_elan_id,
+            message_key=e.message_key
+        )
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:

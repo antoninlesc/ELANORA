@@ -564,6 +564,25 @@
     "notCompliant": "Ce nom de fichier ne respecte pas le standard de nommage"
   },
 
+  "rename": {
+    "conflict": "Un fichier avec ce nom existe déjà dans le projet",
+    "conflictMultiple": "{count} fichiers n'ont pas pu être renommés car ils existent déjà sous le même nom dans le projet",
+    "success": "Fichier renommé avec succès",
+    "bulkSuccess": "Tous les fichiers ont été renommés avec succès",
+    "bulkPartial": "Certains fichiers ont été renommés avec succès, mais {failed} ont échoué",
+    "bulkPartialSingular": "1 fichier a été renommé avec succès, mais 1 a échoué",
+    "bulkPartialOneSuccess": "1 fichier a été renommé avec succès, mais {failed} ont échoué",
+    "bulkPartialOneFailed": "{successful} fichiers ont été renommés avec succès, mais 1 a échoué",
+    "bulkMixed": "{successful} fichiers renommés avec succès, {failed} ignorés en raison de conflits de nommage",
+    "bulkMixedSingular": "1 fichier renommé avec succès, 1 ignoré en raison d'un conflit de nommage",
+    "bulkMixedOneSuccess": "1 fichier renommé avec succès, {failed} ignorés en raison de conflits de nommage",
+    "bulkMixedOneConflict": "{successful} fichiers renommés avec succès, 1 ignoré en raison d'un conflit de nommage",
+    "bulkAllConflicts": "Aucun fichier n'a été renommé - les {count} fichiers existent déjà avec les noms cibles",
+    "bulkAllConflictsSingular": "Aucun fichier n'a été renommé - le fichier existe déjà avec le nom cible",
+    "error": "Échec du renommage du fichier",
+    "bulkError": "Échec du renommage des fichiers"
+  },
+
   "projectSettings": {
     "title": "Configuration du projet {projectName}",
     "subtitle": "Personnalisez les paramètres de votre projet",

@@ -56,7 +56,7 @@ const props = defineProps({
   standard: { type: Object, default: null },
   mediaFiles: { type: Array, default: () => [] }
 });
-const emit = defineEmits(['accept', 'close', 'error']);
+const emit = defineEmits(['accept', 'close', 'error', 'conflict']);
 
 const renameValue = ref('');
 const isRenaming = ref(false);
@@ -95,9 +95,35 @@ async function confirmRename() {
   
   isRenaming.value = true;
   try {
-    await gitService.renameFile(props.projectName, props.elanId, renameValue.value.trim());
-    emit('accept', renameValue.value.trim());
-    emit('close');
+    const result = await gitService.renameFile(props.projectName, props.elanId, renameValue.value.trim());
+    
+    // Check if the operation was successful or if there was a conflict
+    if (result.success) {
+      emit('accept', renameValue.value.trim());
+      emit('close');
+    } else if (result.conflict_elan_id) {
+      // Handle conflict case - log the conflicting files for future merge tool
+      console.log('Rename conflict detected:', {
+        currentElanId: props.elanId,
+        conflictElanId: result.conflict_elan_id,
+        targetFilename: renameValue.value.trim(),
+        currentFilename: props.currentFilename
+      });
+      
+      // Emit conflict event with conflict information
+      emit('conflict', {
+        currentElanId: props.elanId,
+        conflictElanId: result.conflict_elan_id,
+        targetFilename: renameValue.value.trim(),
+        currentFilename: props.currentFilename,
+        messageKey: result.message_key || 'rename.conflict'
+      });
+      
+      emit('close');
+    } else {
+      // Other error case
+      emit('error', new Error(result.message || 'Failed to rename file'));
+    }
   } catch (error) {
     console.error('Error renaming file:', error);
     emit('error', error);

@@ -501,6 +501,34 @@
     }
   },
 
+  "fileRenameSuggestion": {
+    "title": "ファイル名の変更",
+    "enterNewName": "新しいファイル名を入力",
+    "confirm": "名前の変更",
+    "renaming": "名前を変更中...",
+    "basedOnMediaFiles": "メディアファイルに基づく",
+    "notCompliant": "このファイル名は命名規則に準拠していません"
+  },
+
+  "rename": {
+    "conflict": "この名前のファイルがプロジェクトに既に存在しています",
+    "conflictMultiple": "{count}個のファイルは、プロジェクト内で同じ名前で既に存在するため、名前を変更できませんでした",
+    "success": "ファイル名が正常に変更されました",
+    "bulkSuccess": "すべてのファイル名が正常に変更されました",
+    "bulkPartial": "一部のファイル名は正常に変更されましたが、{failed}個は失敗しました",
+    "bulkPartialSingular": "1個のファイル名は正常に変更されましたが、1個は失敗しました",
+    "bulkPartialOneSuccess": "1個のファイル名は正常に変更されましたが、{failed}個は失敗しました",
+    "bulkPartialOneFailed": "{successful}個のファイル名は正常に変更されましたが、1個は失敗しました",
+    "bulkMixed": "{successful}個のファイル名が正常に変更されました。{failed}個は名前の競合のためスキップされました",
+    "bulkMixedSingular": "1個のファイル名が正常に変更されました。1個は名前の競合のためスキップされました",
+    "bulkMixedOneSuccess": "1個のファイル名が正常に変更されました。{failed}個は名前の競合のためスキップされました",
+    "bulkMixedOneConflict": "{successful}個のファイル名が正常に変更されました。1個は名前の競合のためスキップされました",
+    "bulkAllConflicts": "ファイル名は変更されませんでした - {count}個すべてのファイルが対象の名前で既に存在しています",
+    "bulkAllConflictsSingular": "ファイル名は変更されませんでした - そのファイルは対象の名前で既に存在しています",
+    "error": "ファイル名の変更に失敗しました",
+    "bulkError": "ファイル名の変更に失敗しました"
+  },
+
   "projectSettings": {
     "title": "{projectName}プロジェクトを設定",
     "subtitle": "プロジェクト設定をカスタマイズ",

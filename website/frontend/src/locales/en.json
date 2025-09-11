@@ -573,6 +573,25 @@
     "notCompliant": "This filename doesn't comply with the naming standard"
   },
 
+  "rename": {
+    "conflict": "A file with this name already exists in the project",
+    "conflictMultiple": "{count} files couldn't be renamed because they already exist under the same name in the project",
+    "success": "File renamed successfully",
+    "bulkSuccess": "All files renamed successfully", 
+    "bulkPartial": "Some files were renamed successfully, but {failed} failed",
+    "bulkPartialSingular": "1 file was renamed successfully, but 1 failed",
+    "bulkPartialOneSuccess": "1 file was renamed successfully, but {failed} failed",
+    "bulkPartialOneFailed": "{successful} files were renamed successfully, but 1 failed",
+    "bulkMixed": "{successful} files renamed successfully, {failed} skipped due to naming conflicts",
+    "bulkMixedSingular": "1 file renamed successfully, 1 skipped due to naming conflict",
+    "bulkMixedOneSuccess": "1 file renamed successfully, {failed} skipped due to naming conflicts",
+    "bulkMixedOneConflict": "{successful} files renamed successfully, 1 skipped due to naming conflict",
+    "bulkAllConflicts": "No files were renamed - all {count} files already exist with the target names",
+    "bulkAllConflictsSingular": "No file was renamed - the file already exists with the target name",
+    "error": "Failed to rename file",
+    "bulkError": "Failed to rename files"
+  },
+
   "projectSettings": {
     "title": "Configure the {projectName} project",
     "subtitle": "Customize your project settings",

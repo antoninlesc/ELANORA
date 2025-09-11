@@ -111,6 +111,8 @@
       @mouseleave="onPopoverMouseLeave"
       @accept="newName => handleRename(filteredFiles.find(f => f.name === hoveredFile), newName)"
       @close="closePopover"
+      @conflict="handleRenameConflict"
+      @error="handleRenameError"
     />
   </div>
 </template>
@@ -119,6 +121,7 @@
 import { ref, computed, onUnmounted } from 'vue';
 import FileRenameSuggestion from '@components/common/FileRenameSuggestion.vue';
 import { extractComponentsFromMedia, generateSuggestedFilename } from '@/utils/filenameFromMediaFile';
+import { useEventMessageStore } from '@/stores/eventMessage';
 
 const props = defineProps({
   files: { type: Array, required: true },
@@ -131,6 +134,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['rename']);
+const eventMessageStore = useEventMessageStore();
 
 const hoveredFile = ref(null);
 const sortKey = ref('name');
@@ -233,6 +237,29 @@ function getRenameSuggestion(file) {
 
 function handleRename(file, newName) {
   emit('rename', { file, newName });
+}
+
+function handleRenameConflict(conflictData) {
+  // Handle individual rename conflicts
+  console.log('Individual rename conflict detected:', conflictData);
+  
+  // Show conflict notification to user
+  eventMessageStore.addMessage('rename.conflict', 'warning', 6000);
+  
+  // TODO: When merge tool is implemented, collect conflicts for resolution
+  // For now, just close the popover since the operation couldn't be completed
+  closePopover();
+}
+
+function handleRenameError(error) {
+  // Handle individual rename errors
+  console.error('Individual rename error:', error);
+  
+  // Show error notification to user
+  eventMessageStore.addMessage('rename.error', 'error', 5000);
+  
+  // Close the popover and could show an error notification
+  closePopover();
 }
 
 function closePopover() {

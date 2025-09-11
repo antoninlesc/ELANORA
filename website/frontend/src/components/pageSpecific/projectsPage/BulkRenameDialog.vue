@@ -111,7 +111,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['close', 'rename']);
+const emit = defineEmits(['close', 'rename', 'conflict']);
 
 const loading = ref(false);
 const loadingSuggestions = ref(false);
@@ -215,8 +215,28 @@ async function applyRenames() {
       }));
 
     if (renames.length > 0) {
-      await gitService.renameFiles(props.projectName, renames);
-      emit('rename', renames);
+      const result = await gitService.renameFiles(props.projectName, renames);
+      
+      // Handle conflicts and other results
+      if (result.conflicts_count > 0) {
+        // Collect conflict files for future merge tool
+        const conflictFiles = result.results.filter(r => r.conflict_elan_id);
+        console.log('Bulk rename conflicts detected:', conflictFiles);
+        
+        // Emit conflict event with conflict information
+        emit('conflict', {
+          conflictFiles: conflictFiles,
+          conflictsCount: result.conflicts_count,
+          messageKey: result.message_key || 'rename.conflictMultiple',
+          totalFiles: result.total_files,
+          successfulRenames: result.successful_renames
+        });
+      }
+      
+      emit('rename', {
+        renames: renames,
+        result: result
+      });
     }
     closeDialog();
   } catch (error) {

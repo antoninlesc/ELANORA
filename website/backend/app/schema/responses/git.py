@@ -256,6 +256,8 @@ class RenameResult(CustomBaseModel):
     new_filename: str
     success: bool
     error: str | None = None
+    conflict_elan_id: int | None = None
+    message_key: str | None = None
 
 
 class FileRenameResponse(CustomBaseModel):
@@ -269,6 +271,8 @@ class FileRenameResponse(CustomBaseModel):
     commit_hash: str | None = None
     renamed_at: str
     message: str | None = None
+    conflict_elan_id: int | None = None
+    message_key: str | None = None
 
 
 class BulkRenameResponse(CustomBaseModel):
@@ -283,3 +287,5 @@ class BulkRenameResponse(CustomBaseModel):
     commit_hash: str | None = None
     renamed_at: str
     message: str | None = None
+    conflicts_count: int = 0
+    message_key: str | None = None

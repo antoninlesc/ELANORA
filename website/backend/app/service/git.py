@@ -19,6 +19,7 @@ from app.crud.project import (
     create_project_db,
     delete_project_db,
     get_project_by_name,
+    get_project_id_by_name,
     list_projects_by_instance,
     list_projects_by_user,
     project_exists_by_name,
@@ -28,6 +29,7 @@ from app.crud.project import (
 from app.crud.elan_file import (
     get_elan_files_by_project, 
     get_elan_file_name_by_id,
+    get_elan_file_by_filename_and_project,
     update_elan_file_name
 )
 from app.service.database_rename_handler import DatabaseRenameHandler
@@ -39,6 +41,15 @@ from app.schema.responses.git import (
     BulkRenameResponse,
     RenameResult,
 )
+
+
+class RenameConflictError(Exception):
+    """Exception raised when a file rename conflicts with an existing file."""
+    
+    def __init__(self, message: str, conflict_elan_id: int | None = None, message_key: str = "rename_conflict"):
+        super().__init__(message)
+        self.conflict_elan_id = conflict_elan_id
+        self.message_key = message_key
 from app.crud.project_naming_standard import get_standard_with_components_full
 from app.core.effective_naming_standard_locations import get_location_id_by_name
 from app.schema.common.git import FileStatus
@@ -1435,8 +1446,23 @@ class GitService:
         if not old_file_path.exists():
             raise FileNotFoundError(f"File '{old_filename}' not found in project filesystem")
 
+        # Check for conflict: if target filename already exists, get its elan_id
         if new_file_path.exists():
-            raise ValueError(f"File '{new_filename}' already exists in project")
+            conflict_elan_id = None
+            # Get project_id to find the conflicting file
+            project_id = await get_project_id_by_name(db, project_name)
+            if project_id:
+                conflicting_file = await get_elan_file_by_filename_and_project(db, new_filename, project_id)
+                if conflicting_file:
+                    conflict_elan_id = conflicting_file.elan_id
+            
+            # Raise custom conflict exception with conflict info
+            logger.warning(f"Rename conflict detected: {new_filename} already exists (conflict_elan_id={conflict_elan_id})")
+            raise RenameConflictError(
+                f"File '{new_filename}' already exists in project",
+                conflict_elan_id=conflict_elan_id,
+                message_key="rename_file_conflict"
+            )
 
         try:
             # 1. Update database first
@@ -1517,6 +1543,18 @@ class GitService:
                 successful_renames, runner, db
             )
 
+            # Count conflicts
+            conflicts_count = sum(1 for result in failed_renames if result.conflict_elan_id is not None)
+            
+            # Determine message key based on results
+            message_key = None
+            if conflicts_count > 0:
+                message_key = "bulk_rename_conflicts" if conflicts_count == len(failed_renames) else "bulk_rename_mixed_errors"
+            elif len(failed_renames) > 0:
+                message_key = "bulk_rename_errors"
+            else:
+                message_key = "bulk_rename_success"
+
             return BulkRenameResponse(
                 project_name=project_name,
                 total_files=len(renames),
@@ -1526,7 +1564,9 @@ class GitService:
                 committed=len(successful_renames) > 0,
                 commit_hash=commit_hash,
                 renamed_at=datetime.now().isoformat(),
-                message=f"Renamed {len(successful_renames)}/{len(renames)} files successfully"
+                message=f"Renamed {len(successful_renames)}/{len(renames)} files successfully",
+                conflicts_count=conflicts_count,
+                message_key=message_key
             )
 
         except Exception as e:
@@ -1556,8 +1596,24 @@ class GitService:
             # Validate file existence and new name availability
             if not old_file_path.exists():
                 raise FileNotFoundError(f"File '{old_filename}' not found in filesystem")
+            
+            # Check for conflict: if target filename already exists, get its elan_id
             if new_file_path.exists():
-                raise ValueError(f"File '{new_filename}' already exists")
+                conflict_elan_id = None
+                # Get project_id to find the conflicting file
+                project_name = project_path.name
+                project_id = await get_project_id_by_name(db, project_name)
+                if project_id:
+                    conflicting_file = await get_elan_file_by_filename_and_project(db, new_filename, project_id)
+                    if conflicting_file:
+                        conflict_elan_id = conflicting_file.elan_id
+                
+                # Raise custom conflict exception with conflict info
+                raise RenameConflictError(
+                    f"File '{new_filename}' already exists in project",
+                    conflict_elan_id=conflict_elan_id,
+                    message_key="rename_file_conflict"
+                )
             
             # Update database
             await update_elan_file_name(db, elan_id, new_filename)
@@ -1573,6 +1629,26 @@ class GitService:
                 new_filename=new_filename,
                 success=True,
                 error=None
+            )
+            
+        except RenameConflictError as e:
+            logger.warning(f"Rename conflict for elan_id {rename_info.get('elan_id')}: {e!s}")
+            
+            # Try to get old filename for error reporting
+            old_filename = ""
+            try:
+                if rename_info.get("elan_id"):
+                    old_filename = await get_elan_file_name_by_id(db, rename_info.get("elan_id")) or ""
+            except Exception:
+                logger.warning(f"Could not get filename for elan_id {rename_info.get('elan_id')}")
+                    
+            return RenameResult(
+                old_filename=old_filename,
+                new_filename=rename_info.get("new_filename", ""),
+                success=False,
+                error=str(e),
+                conflict_elan_id=e.conflict_elan_id,
+                message_key=e.message_key
             )
             
         except Exception as e:
