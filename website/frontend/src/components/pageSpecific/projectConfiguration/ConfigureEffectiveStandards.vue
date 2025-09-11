@@ -6,16 +6,62 @@
     <!-- Location Selection -->
     <div class="configure-effective-standards-section">
       <label for="location-select" class="configure-effective-standards-label">{{ t('configureEffectiveStandards.standardLocation') }}</label>
-      <select
-        id="location-select"
-        v-model="selectedLocationId"
-        class="configure-effective-standards-select"
-        @change="onLocationChange"
-      >
-        <option v-for="loc in locations" :key="loc.id" :value="loc.id">
-          {{ t('configureEffectiveStandards.standardLocations.' + loc.label) }}
-        </option>
-      </select>
+      <div class="configure-effective-standards-custom-dropdown">
+        <div
+          class="configure-effective-standards-dropdown-trigger"
+          tabindex="0"
+          role="combobox"
+          :aria-expanded="isDropdownOpen"
+          :aria-haspopup="true"
+          :aria-controls="'location-dropdown-menu'"
+          @click="toggleDropdown"
+          @keydown="handleKeyDown"
+        >
+          <span class="configure-effective-standards-dropdown-text">
+            {{ getSelectedLocationName() }}
+            <font-awesome-icon
+              v-if="selectedLocationId"
+              icon="fa-solid fa-info-circle"
+              class="configure-effective-standards-trigger-info-icon"
+              :title="getSelectedLocationInfo()"
+            />
+          </span>
+          <font-awesome-icon
+            icon="fa-solid fa-chevron-down"
+            class="configure-effective-standards-dropdown-arrow"
+            :style="{ transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }"
+          />
+        </div>
+
+        <div
+          v-show="isDropdownOpen"
+          id="location-dropdown-menu"
+          ref="dropdownMenu"
+          class="configure-effective-standards-dropdown-menu"
+          role="listbox"
+        >
+          <div
+            v-for="loc in filteredLocations"
+            :key="loc.id"
+            class="configure-effective-standards-dropdown-option"
+            :class="{ 'configure-effective-standards-dropdown-option--selected': selectedLocationId === loc.id }"
+            role="option"
+            :aria-selected="selectedLocationId === loc.id"
+            @click="selectLocation(loc.id)"
+            @mouseenter="hoveredLocation = loc.id"
+            @mouseleave="hoveredLocation = null"
+          >
+            <span class="configure-effective-standards-option-text">
+              {{ t('configureEffectiveStandards.standardLocations.' + loc.label) }}
+              <font-awesome-icon
+                icon="fa-solid fa-info-circle"
+                class="configure-effective-standards-option-info-icon"
+                :title="t('configureEffectiveStandards.standardLocationsInfo.' + loc.label)"
+              />
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- Drag & Drop File Type Association -->
     <div class="configure-effective-standards-dnd-row">
@@ -72,20 +118,57 @@
               {{ fileTypes.find(ft => ft.id === fileTypeId)?.name }}
             </td>
             <td class="configure-effective-standards-td">
-              <select
-                v-model="effectiveStandards[fileTypeId]"
-                :class="['configure-effective-standards-select', { 'configure-effective-standards-select--unassigned': !effectiveStandards[fileTypeId] }]"
-                @change="onEffectiveStandardChange(fileTypeId)"
-              >
-                <option value="">{{ t('configureEffectiveStandards.selectStandard') }}</option>
-                <option
-                  v-for="standard in standardsByFileType[fileTypeId]"
-                  :key="standard.id"
-                  :value="standard.id"
+              <div class="configure-effective-standards-custom-dropdown">
+                <div
+                  class="configure-effective-standards-standard-dropdown-trigger"
+                  tabindex="0"
+                  role="combobox"
+                  :aria-expanded="openStandardDropdowns.has(fileTypeId)"
+                  :aria-haspopup="true"
+                  :aria-controls="'standard-dropdown-menu-' + fileTypeId"
+                  @click="toggleStandardDropdown(fileTypeId)"
+                  @keydown="handleStandardKeyDown(fileTypeId, $event)"
                 >
-                  {{ standard.name }}
-                </option>
-              </select>
+                  <span class="configure-effective-standards-dropdown-text">
+                    {{ getSelectedStandardName(fileTypeId) }}
+                  </span>
+                  <font-awesome-icon
+                    icon="fa-solid fa-chevron-down"
+                    class="configure-effective-standards-dropdown-arrow"
+                    :style="{ transform: openStandardDropdowns.has(fileTypeId) ? 'rotate(180deg)' : 'rotate(0deg)' }"
+                  />
+                </div>
+                <div
+                  v-show="openStandardDropdowns.has(fileTypeId)"
+                  :id="'standard-dropdown-menu-' + fileTypeId"
+                  class="configure-effective-standards-standard-dropdown-menu"
+                  role="listbox"
+                >
+                  <div
+                    class="configure-effective-standards-dropdown-option"
+                    role="option"
+                    :aria-selected="false"
+                    @click="selectStandard(fileTypeId, '')"
+                  >
+                    <span class="configure-effective-standards-option-text">
+                      {{ t('configureEffectiveStandards.selectStandard') }}
+                    </span>
+                  </div>
+                  <div
+                    v-for="standard in filteredStandardsByFileType[fileTypeId]"
+                    :key="standard.id"
+                    class="configure-effective-standards-dropdown-option"
+                    :class="{ 'configure-effective-standards-dropdown-option--selected': effectiveStandards[fileTypeId] === standard.id }"
+                    role="option"
+                    :aria-selected="effectiveStandards[fileTypeId] === standard.id"
+                    @click="selectStandard(fileTypeId, standard.id)"
+                  >
+                    <span class="configure-effective-standards-option-text">
+                      {{ standard.name }}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -97,7 +180,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useNamingStandardStore } from '@stores/namingStandard';
 import { useFileTypeStore } from '@stores/fileType';
@@ -118,8 +201,14 @@ const selectedLocationId = ref(null);
 const errorMessage = ref("");
 const successMessage = ref("");
 const dragZone = ref(null);
+const isDropdownOpen = ref(false);
+const hoveredLocation = ref(null);
+const openStandardDropdowns = ref(new Set());
 
 const locations = computed(() => effectiveStandardStore.locations);
+const filteredLocations = computed(() => 
+  locations.value.filter(loc => loc.id !== selectedLocationId.value)
+);
 const fileTypes = computed(() => fileTypeStore.fileTypes);
 const activeFileTypes = computed(() => {
   if (!selectedLocationId.value) return [];
@@ -140,6 +229,16 @@ const standardsByFileType = computed(() => {
   for (const fileType of fileTypes.value) {
     result[fileType.id] = namingStandardStore.standards.filter(
       s => s.project_file_type_id === fileType.id
+    );
+  }
+  return result;
+});
+const filteredStandardsByFileType = computed(() => {
+  const result = {};
+  for (const fileType of fileTypes.value) {
+    const currentStandardId = effectiveStandards.value[fileType.id];
+    result[fileType.id] = namingStandardStore.standards.filter(
+      s => s.project_file_type_id === fileType.id && s.id !== currentStandardId
     );
   }
   return result;
@@ -225,7 +324,100 @@ async function onEffectiveStandardChange(fileTypeId) {
   await effectiveStandardStore.fetchEffectiveStandards(projectId, selectedLocationId.value, activeFileTypes.value);
 }
 
-onMounted(loadInitialData);
+function getSelectedLocationName() {
+  if (!selectedLocationId.value) return t('configureEffectiveStandards.selectStandard');
+  const currentLocation = locations.value.find(loc => loc.id === selectedLocationId.value);
+  return currentLocation ? t('configureEffectiveStandards.standardLocations.' + currentLocation.label) : t('configureEffectiveStandards.selectStandard');
+}
+
+function getSelectedLocationInfo() {
+  if (!selectedLocationId.value) return '';
+  const currentLocation = locations.value.find(loc => loc.id === selectedLocationId.value);
+  return currentLocation ? t('configureEffectiveStandards.standardLocationsInfo.' + currentLocation.label) : '';
+}
+
+function toggleDropdown() {
+  isDropdownOpen.value = !isDropdownOpen.value;
+  if (isDropdownOpen.value) {
+    // Close all standard dropdowns when opening location dropdown
+    openStandardDropdowns.value.clear();
+  }
+}
+
+function selectLocation(locationId) {
+  selectedLocationId.value = locationId;
+  isDropdownOpen.value = false;
+  onLocationChange();
+}
+
+function handleKeyDown(event) {
+  if (event.key === 'Escape') {
+    isDropdownOpen.value = false;
+  } else if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    toggleDropdown();
+  } else if (event.key === 'ArrowDown' && !isDropdownOpen.value) {
+    event.preventDefault();
+    isDropdownOpen.value = true;
+  }
+}
+
+function handleClickOutside(event) {
+  const trigger = event.target.closest('.configure-effective-standards-dropdown-trigger');
+  const menu = event.target.closest('.configure-effective-standards-dropdown-menu');
+  const standardTrigger = event.target.closest('.configure-effective-standards-standard-dropdown-trigger');
+  const standardMenu = event.target.closest('.configure-effective-standards-standard-dropdown-menu');
+  if (!trigger && !menu && !standardTrigger && !standardMenu) {
+    isDropdownOpen.value = false;
+    openStandardDropdowns.value.clear();
+  }
+}
+
+function toggleStandardDropdown(fileTypeId) {
+  if (openStandardDropdowns.value.has(fileTypeId)) {
+    openStandardDropdowns.value.delete(fileTypeId);
+  } else {
+    // Close main location dropdown and other standard dropdowns
+    isDropdownOpen.value = false;
+    openStandardDropdowns.value.clear();
+    openStandardDropdowns.value.add(fileTypeId);
+  }
+}
+
+function selectStandard(fileTypeId, standardId) {
+  effectiveStandards.value[fileTypeId] = standardId;
+  openStandardDropdowns.value.delete(fileTypeId);
+  onEffectiveStandardChange(fileTypeId);
+}
+
+function getSelectedStandardName(fileTypeId) {
+  if (!effectiveStandards.value[fileTypeId]) {
+    return t('configureEffectiveStandards.selectStandard');
+  }
+  const standard = standardsByFileType.value[fileTypeId]?.find(s => s.id === effectiveStandards.value[fileTypeId]);
+  return standard?.name || t('configureEffectiveStandards.selectStandard');
+}
+
+function handleStandardKeyDown(fileTypeId, event) {
+  if (event.key === 'Escape') {
+    openStandardDropdowns.value.delete(fileTypeId);
+  } else if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    toggleStandardDropdown(fileTypeId);
+  } else if (event.key === 'ArrowDown' && !openStandardDropdowns.value.has(fileTypeId)) {
+    event.preventDefault();
+    openStandardDropdowns.value.add(fileTypeId);
+  }
+}
+
+onMounted(() => {
+  loadInitialData();
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <style scoped>
@@ -313,8 +505,9 @@ onMounted(loadInitialData);
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-  overflow: hidden;
+  overflow: visible; /* Allow dropdowns to be visible outside table boundaries */
   margin-top: 1.5rem;
+  table-layout: fixed; /* Prevent column width changes when dropdown opens */
 }
 .configure-effective-standards-th {
   background: #e2e8f0;
@@ -324,6 +517,12 @@ onMounted(loadInitialData);
   text-align: left;
   border-bottom: 2px solid #cbd5e0;
 }
+.configure-effective-standards-th:first-child {
+  width: 40%; /* File type column */
+}
+.configure-effective-standards-th:last-child {
+  width: 60%; /* Standard selection column */
+}
 .configure-effective-standards-row {
   border-bottom: 1px solid #e2e8f0;
 }
@@ -331,19 +530,148 @@ onMounted(loadInitialData);
   padding: 1rem 1.2rem;
   font-size: 1rem;
   color: #4a5568;
+  position: relative; /* Ensure dropdown positioning is relative to table cell */
 }
-.configure-effective-standards-select {
+
+
+.configure-effective-standards-custom-dropdown {
+  position: relative;
   width: 100%;
-  padding: 0.5rem 0.9rem;
+}
+.configure-effective-standards-dropdown-trigger {
+  width: 100%;
+  padding: 0.5rem 3rem 0.5rem 0.9rem; /* Extra right padding for arrow and info icon */
   border-radius: 6px;
   border: 1px solid #cbd5e0;
   font-size: 1rem;
   background: #f1f5f9;
   margin-bottom: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: border-color 0.2s, background 0.2s;
 }
-.configure-effective-standards-select--unassigned {
-  border: 1px solid #e53e3e;
-  background: #fff5f5;
+.configure-effective-standards-dropdown-trigger:hover {
+  border-color: #2563eb;
+  background: #e2e8f0;
+}
+.configure-effective-standards-dropdown-trigger:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+.configure-effective-standards-dropdown-text {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.configure-effective-standards-trigger-info-icon {
+  color: #2563eb;
+  font-size: 0.75rem;
+  cursor: help;
+  flex-shrink: 0;
+}
+.configure-effective-standards-dropdown-arrow {
+  color: #1d4ed8; /* Darker blue for better visibility */
+  font-size: 1.2rem; /* Larger size for better visibility */
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  transition: transform 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+  flex-shrink: 0;
+  opacity: 1; /* Fully visible by default */
+}
+.configure-effective-standards-dropdown-arrow:hover {
+  color: #1e40af; /* Even darker blue on hover for feedback */
+}
+.configure-effective-standards-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+.configure-effective-standards-standard-dropdown-trigger {
+  width: 100%;
+  padding: 0.5rem 3rem 0.5rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e0;
+  font-size: 1rem;
+  background: #f1f5f9;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: border-color 0.2s, background 0.2s;
+}
+.configure-effective-standards-standard-dropdown-trigger:hover {
+  border-color: #2563eb;
+  background: #e2e8f0;
+}
+.configure-effective-standards-standard-dropdown-trigger:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+.configure-effective-standards-standard-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+.configure-effective-standards-dropdown-option {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  transition: background 0.2s;
+  border-bottom: 1px solid #e2e8f0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.configure-effective-standards-dropdown-option:last-child {
+  border-bottom: none;
+}
+.configure-effective-standards-dropdown-option:hover {
+  background: #f1f5f9;
+}
+.configure-effective-standards-dropdown-option--selected {
+  background: #e2e8f0;
+  font-weight: 500;
+}
+.configure-effective-standards-option-text {
+  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.configure-effective-standards-option-info-icon {
+  color: #2563eb;
+  font-size: 0.75rem;
+  cursor: help;
+  flex-shrink: 0;
+}
+.configure-effective-standards-option-info-icon:hover {
+  color: #1d4ed8;
 }
 .configure-effective-standards-success {
   margin-top: 2rem;
@@ -365,5 +693,7 @@ onMounted(loadInitialData);
 }
 .configure-effective-standards-assign-standards-section {
   margin-bottom: 2rem;
+  position: relative; /* Ensure proper positioning context for dropdowns */
+  overflow: visible; /* Allow dropdowns to be visible outside section boundaries */
 }
 </style>

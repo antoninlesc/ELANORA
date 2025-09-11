@@ -985,6 +985,12 @@
     "elanMedia": "Médias ELAN",
     "uploadPage": "Page d'upload"
   },
+  "standardLocationsInfo": {
+    "projectFiles": "Fichiers stockés dans la structure de répertoires du projet. Il s'agit des principaux fichiers d'annotation ELAN et des fichiers médias associés sur lesquels les utilisateurs travaillent directement.",
+    "tiers": "Tiers d'annotation dans les fichiers ELAN. Ils définissent les différentes couches d'annotation linguistique telles que les informations sur le locuteur, la transcription et les gloses.",
+    "elanMedia": "Fichiers médias (vidéo/audio) liés aux fichiers d'annotation ELAN. Il s'agit des enregistrements source auxquels les annotations se réfèrent.",
+    "uploadPage": "Fichiers en cours de téléchargement via l'interface de téléchargement. Normes appliquées pendant le processus de téléchargement des fichiers avant leur ajout au projet."
+  },
   "eventMessages": {
       "fileTypeAdded": "Type de fichier \"{fileType}\" a été associé avec succès avec \"{location}\".",
       "fileTypeAddFailed": "Échec de l'association du type de fichier.",

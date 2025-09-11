@@ -118,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import FileRenameSuggestion from '@components/common/FileRenameSuggestion.vue';
 import { extractComponentsFromMedia, generateSuggestedFilename } from '@/utils/filenameFromMediaFile';
 import { useEventMessageStore } from '@/stores/eventMessage';
@@ -143,6 +143,7 @@ const filterType = ref('');
 const filterDate = ref('');
 const popoverHovered = ref(false);
 const popoverCloseTimer = ref(null);
+const currentPopoverStyle = ref({});
 
 const filteredFiles = computed(() => {
   let filtered = props.files.filter(file => {
@@ -264,6 +265,7 @@ function handleRenameError(error) {
 
 function closePopover() {
   hoveredFile.value = null;
+  currentPopoverStyle.value = {};
   popoverHovered.value = false;
   // Clear any pending timers
   if (popoverCloseTimer.value) {
@@ -282,6 +284,7 @@ function onFilenameMouseEnter(file) {
   // Only show popover for non-compliant files when compliance checking is enabled
   if (props.showCompliance && file.isCompliant === false) {
     hoveredFile.value = file.name;
+    currentPopoverStyle.value = calculatePopoverStyle();
   }
 }
 
@@ -311,8 +314,9 @@ function onPopoverMouseLeave() {
   }, 100);
 }
 
-const popoverStyle = computed(() => {
+function calculatePopoverStyle() {
   if (!hoveredFile.value) return {};
+  
   const filenameSpan = document.querySelector(`[data-file="${hoveredFile.value}"] .filename-content span`);
   if (!filenameSpan) return { position: 'fixed', top: '100px', left: '100px', zIndex: 10 };
   
@@ -390,13 +394,30 @@ const popoverStyle = computed(() => {
     '--arrow-placement': placement,
     '--arrow-offset': arrowOffset
   };
+}
+
+const popoverStyle = computed(() => {
+  return currentPopoverStyle.value;
 });
+
+function handleScroll() {
+  if (hoveredFile.value) {
+    currentPopoverStyle.value = calculatePopoverStyle();
+  }
+}
 
 // Cleanup timers on component unmount
 onUnmounted(() => {
   if (popoverCloseTimer.value) {
     clearTimeout(popoverCloseTimer.value);
   }
+  // Remove scroll event listener
+  window.removeEventListener('scroll', handleScroll);
+});
+
+onMounted(() => {
+  // Add scroll event listener to update popover position on scroll
+  window.addEventListener('scroll', handleScroll, { passive: true });
 });
 </script>
 

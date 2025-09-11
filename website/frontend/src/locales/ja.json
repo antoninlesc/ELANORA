@@ -920,10 +920,33 @@
     "title": "有効な命名基準を構成する",
     "fileType": "ファイルタイプ",
     "effectiveStandard": "有効な基準",
+    "standardLocation": "基準の場所",
+    "assignStandardsTitle": "ファイルタイプに命名基準を割り当てる",
+    "availableFileTypes": "利用可能なファイルタイプ",
+    "associatedFileTypes": "関連付けられたファイルタイプ",
+    "selectStandard": "基準が選択されていません",
+    "standardLocations": {
+      "projectFiles": "プロジェクトファイル",
+      "tiers": "階層",
+      "elanMedia": "ELANメディア",
+      "uploadPage": "アップロードページ"
+    },
+    "standardLocationsInfo": {
+      "projectFiles": "プロジェクトのディレクトリ構造内に保存されたファイル。これらはユーザーが直接操作するメインのELAN注釈ファイルと関連メディアファイルです。",
+      "tiers": "ELANファイル内の注釈階層。これらは話者情報、転写、グロスなどの異なる言語注釈層を定義します。",
+      "elanMedia": "ELAN注釈ファイルにリンクされたメディアファイル（ビデオ/オーディオ）。これらは注釈が参照するソース録音です。",
+      "uploadPage": "アップロードインターフェースを通じてアップロードされているファイル。ファイルがプロジェクトに追加される前にファイルアップロードプロセス中に適用される基準です。"
+    },
     "eventMessages": {
+      "fileTypeAdded": "ファイルタイプ「{fileType}」が「{location}」に正常に関連付けられました。",
+      "fileTypeAddFailed": "ファイルタイプの関連付けに失敗しました。",
+      "fileTypeRemoved": "ファイルタイプ「{fileType}」が「{location}」との関連付けを解除されました。",
+      "fileTypeRemoveFailed": "ファイルタイプの関連付け解除に失敗しました。",
       "loadFailed": "有効な基準の読み込みに失敗しました。",
       "updateSuccess": "有効な基準が正常に更新されました。",
-      "updateFailed": "有効な基準の更新に失敗しました。"
+      "updateFailed": "有効な基準の更新に失敗しました。",
+      "removeSuccess": "有効な基準が正常に削除されました。",
+      "removeFailed": "有効な基準の削除に失敗しました。"
     }
   },
 
