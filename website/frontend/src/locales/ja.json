@@ -661,7 +661,7 @@
       "importFileType": "ファイル形式をインポート",
       "pattern": "パターン",
       "description": "説明",
-      "exampleFilename": "サンプルファイル名",
+      "exampleFile": "サンプルファイル名",
       "components": "コンポーネント",
       "importSelected": "選択したものをインポート"
     },

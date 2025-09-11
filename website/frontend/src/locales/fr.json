@@ -723,7 +723,7 @@
       "importFileType": "Importer le type de fichier",
       "pattern": "Pattern",
       "description": "Description",
-      "exampleFilename": "Nom de fichier exemple",
+      "exampleFile": "Nom de fichier exemple",
       "components": "Composants",
       "importSelected": "Importer la sélection",
       "importFailed": "Échec de l'importation des normes."

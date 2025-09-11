@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.association import get_project_users, remove_user_from_project
 from app.crud.project import (
     add_user_to_project,
-    get_project_by_name,
+    get_project_by_id,
     list_projects_by_instance,
     list_projects_by_user,
     update_user_project_permission,
@@ -34,16 +34,16 @@ PROJECT_NOT_FOUND = "Project not found"
 USER_NOT_FOUND = "User not found"
 
 
-@router.get("/projects/{project_name}/users", response_model=ProjectUserListResponse)
+@router.get("/projects/{project_id}/users", response_model=ProjectUserListResponse)
 async def list_project_users(
-    project_name: str,
+    project_id: int,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
 ):
     """List all users associated with a specific project (admin only)."""
     try:
         # check if the project exists
-        project = await get_project_by_name(db, project_name)
+        project = await get_project_by_id(db, project_id)
         if not project:
             raise HTTPException(status_code=404, detail=PROJECT_NOT_FOUND)
 
@@ -51,7 +51,7 @@ async def list_project_users(
         users = await get_project_users(db, project.project_id)
 
         return ProjectUserListResponse(
-            project_name=project_name,
+            project_name=project.project_name,
             users=[
                 {
                     "user_id": user_info["user_id"],
@@ -99,10 +99,10 @@ async def list_user_projects_admin(
 
 
 @router.post(
-    "/projects/{project_name}/users", response_model=ProjectAssociationResponse
+    "/projects/{project_id}/users", response_model=ProjectAssociationResponse
 )
 async def add_user_to_project_admin(
-    project_name: str,
+    project_id: int,
     request: AddUserToProjectRequest,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
@@ -110,7 +110,7 @@ async def add_user_to_project_admin(
     """Add a user to a project with specified permissions (admin only)."""
     try:
         # check if the project exists
-        project = await get_project_by_name(db, project_name)
+        project = await get_project_by_id(db, project_id)
         if not project:
             raise HTTPException(status_code=404, detail=PROJECT_NOT_FOUND)
 
@@ -128,11 +128,11 @@ async def add_user_to_project_admin(
         )
 
         return ProjectAssociationResponse(
-            project_name=project_name,
+            project_name=project.project_name,
             user_id=request.user_id,
             username=target_user.username,
             permission=association.permission,
-            message=f"User {target_user.username} added to project {project_name}",
+            message=f"User {target_user.username} added to project {project.project_name}",
         )
 
     except ValueError as e:
@@ -142,11 +142,11 @@ async def add_user_to_project_admin(
 
 
 @router.put(
-    "/projects/{project_name}/users/{user_id}",
+    "/projects/{project_id}/users/{user_id}",
     response_model=ProjectAssociationResponse,
 )
 async def update_user_project_permission_admin(
-    project_name: str,
+    project_id: int,
     user_id: int,
     request: UpdateUserPermissionRequest,
     db: AsyncSession = get_db_dep,
@@ -155,7 +155,7 @@ async def update_user_project_permission_admin(
     """Update a user's permission in a project (admin only)."""
     try:
         # check if the project exists
-        project = await get_project_by_name(db, project_name)
+        project = await get_project_by_id(db, project_id)
         if not project:
             raise HTTPException(status_code=404, detail=PROJECT_NOT_FOUND)
 
@@ -185,7 +185,7 @@ async def update_user_project_permission_admin(
                 user_id=user_id,
                 user_email=target_user.email,
                 username=target_user.username,
-                project_name=project_name,
+                project_name=project.project_name,
                 new_role=str(request.permission.value),
                 project_id=project.project_id,
                 admin_name=admin_name,
@@ -199,11 +199,11 @@ async def update_user_project_permission_admin(
         await db.commit()
 
         return ProjectAssociationResponse(
-            project_name=project_name,
+            project_name=project.project_name,
             user_id=user_id,
             username=target_user.username,
             permission=association.permission,
-            message=f"User {target_user.username} permission updated to {request.permission} in project {project_name}",
+            message=f"User {target_user.username} permission updated to {request.permission} in project {project.project_name}",
         )
 
     except ValueError as e:
@@ -213,11 +213,11 @@ async def update_user_project_permission_admin(
 
 
 @router.delete(
-    "/projects/{project_name}/users/{user_id}",
+    "/projects/{project_id}/users/{user_id}",
     response_model=ProjectAssociationResponse,
 )
 async def remove_user_from_project_admin(
-    project_name: str,
+    project_id: int,
     user_id: int,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
@@ -225,7 +225,7 @@ async def remove_user_from_project_admin(
     """Remove a user from a project (admin only)."""
     try:
         # Vérifier que le projet existe
-        project = await get_project_by_name(db, project_name)
+        project = await get_project_by_id(db, project_id)
         if not project:
             raise HTTPException(status_code=404, detail=PROJECT_NOT_FOUND)
 
@@ -237,11 +237,11 @@ async def remove_user_from_project_admin(
         await remove_user_from_project(db, user_id, project.project_id)
 
         return ProjectAssociationResponse(
-            project_name=project_name,
+            project_name=project.project_name,
             user_id=user_id,
             username=target_user.username,
             permission=None,
-            message=f"User {target_user.username} removed from project {project_name}",
+            message=f"User {target_user.username} removed from project {project.project_name}",
         )
 
     except Exception as e:

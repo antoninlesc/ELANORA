@@ -32,7 +32,9 @@ async def get_orphan_elan_files_by_project(
     """Get ELAN files that belong directly to a project via project_id FK."""
     logger.info("Fetching ELAN files for project_id=%s", project_id)
     filters = {"project_id": project_id}
-    elan_files = await DatabaseUtils.get_by_filter(db, ElanFile, filters)
+    elan_files = await DatabaseUtils.get_by_filter(
+        db, ElanFile, filters, options=[selectinload(ElanFile.file_content)]
+    )
     logger.info("Found %d ELAN files for project_id=%s", len(elan_files), project_id)
     return elan_files
 
@@ -58,19 +60,31 @@ async def delete_elan_file_associations(db: AsyncSession, elan_id: int):
 
 async def get_elan_file_by_id(db: AsyncSession, elan_id: int) -> ElanFile | None:
     """Retrieve an ELAN file by ID."""
-    return await DatabaseUtils.get_by_id(db, ElanFile, "elan_id", elan_id)
+    return await DatabaseUtils.get_by_id(
+        db, ElanFile, "elan_id", elan_id, options=[selectinload(ElanFile.file_content)]
+    )
 
 
 async def get_elan_file_by_filename(db: AsyncSession, filename: str) -> ElanFile | None:
     """Retrieve an ELAN file by filename."""
-    stmt = select(ElanFile).join(FileContent).where(FileContent.filename == filename)
+    stmt = (
+        select(ElanFile)
+        .join(FileContent)
+        .where(FileContent.filename == filename)
+        .options(selectinload(ElanFile.file_content))
+    )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
 
 async def get_elan_files_by_user(db: AsyncSession, user_id: int) -> list[ElanFile]:
     """Get all ELAN files for a specific user."""
-    stmt = select(ElanFile).join(FileContent).where(FileContent.user_id == user_id)
+    stmt = (
+        select(ElanFile)
+        .join(FileContent)
+        .where(FileContent.user_id == user_id)
+        .options(selectinload(ElanFile.file_content))
+    )
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
@@ -88,6 +102,7 @@ async def get_elan_file_by_filename_and_project(db: AsyncSession, filename: str,
         select(ElanFile)
         .join(FileContent)
         .where(FileContent.filename == filename, ElanFile.project_id == project_id)
+        .options(selectinload(ElanFile.file_content))
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
@@ -151,7 +166,7 @@ async def delete_elan_file_by_id(db: AsyncSession, elan_id: int) -> bool:
 
 async def get_all_elan_files(db: AsyncSession) -> list[ElanFile]:
     """Get all ELAN files."""
-    return await DatabaseUtils.get_all(db, ElanFile)
+    return await DatabaseUtils.get_all(db, ElanFile, options=[selectinload(ElanFile.file_content)])
 
 
 # --- ELAN_FILE_TO_TIER ASSOCIATION CRUD ---

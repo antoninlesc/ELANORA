@@ -17,6 +17,7 @@ router = APIRouter()
 @router.get("/{project_name}", response_model=TierTreeResponse)
 async def get_tiers(project_name: str, db: AsyncSession = get_db_dep):
     """Get all tiers for a project, grouped by ELAN file.
+
     Returns a list of tier trees (one per file).
     """
     result = await TierService.get_project_tiers_grouped_by_file(db, project_name)

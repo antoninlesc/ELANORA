@@ -274,7 +274,7 @@
               />
               <button
                 type="button"
-                class="configure-naming-btn primary"
+                class="configure-naming-btn"
                 @click="extractRegexFromExample"
               >
                 {{ t('configureNamingStandards.extractRegex') }}
@@ -382,14 +382,14 @@
           </div>
           <div class="configure-naming-form-actions">
             <button
-              class="configure-naming-btn add"
+              class="configure-naming-btn"
               type="submit"
               :disabled="!!regexExtractionError"
             >
               {{ t('configureNamingStandards.add') }}
             </button>
             <button
-              class="configure-naming-btn"
+              class="configure-naming-btn cancel"
               type="button"
               @click="resetAddForm"
             >
@@ -435,7 +435,7 @@
               </option>
             </select>
             <button
-              class="configure-naming-btn primary"
+              class="configure-naming-btn"
               :disabled="!selectedImportProject"
               style="margin-left: 1em"
               @click="goToImportStep2"
@@ -530,7 +530,7 @@
                         }}
                       </span>
                       <button
-                        class="configure-naming-btn add import-filetype-btn"
+                        class="configure-naming-btn import-filetype-btn"
                         style="
                           margin-left: 1em;
                           font-size: 0.9em;
@@ -643,7 +643,7 @@
         </div>
         <div class="import-modal-footer">
           <button
-            class="configure-naming-btn add"
+            class="configure-naming-btn"
             :disabled="selectedStandardIds.length === 0"
             @click="importSelectedStandards"
           >
@@ -1794,7 +1794,7 @@ function splitPatternBlocks(pattern, sep) {
 }
 
 .configure-naming-add-btn {
-  background: #10b981;
+  background: #1976d2;
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -1807,7 +1807,7 @@ function splitPatternBlocks(pattern, sep) {
 }
 
 .configure-naming-add-btn:hover {
-  background: #059669;
+  background: #1565c0;
 }
 
 .configure-naming-page {
@@ -1996,7 +1996,7 @@ function splitPatternBlocks(pattern, sep) {
 }
 
 .configure-naming-btn {
-  background: #3b82f6;
+  background: #1976d2;
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -2010,16 +2010,16 @@ function splitPatternBlocks(pattern, sep) {
   background: #e74c3c;
 }
 
-.configure-naming-btn.add {
-  background: #10b981;
+.configure-naming-btn.cancel {
+  background: #9ca3af;
 }
 
-.configure-naming-btn.primary {
-  background: #2563eb;
+.configure-naming-btn.cancel:hover {
+  background: #7b838a;
 }
 
 .configure-naming-btn:hover {
-  filter: brightness(1.08);
+  background: #1565c0;
 }
 
 .configure-naming-add-form {

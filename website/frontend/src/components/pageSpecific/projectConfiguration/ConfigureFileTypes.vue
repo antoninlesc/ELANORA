@@ -409,18 +409,18 @@ async function addFileType() {
 }
 
 .configure-filetypes-add-form button {
-  background: #10b981;
+  background: #1976d2;
   color: #fff;
   border: none;
   border-radius: 6px;
-  padding: 7px 18px;
+  padding: 6.5px 18px;
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.18s;
 }
 
 .configure-filetypes-add-form button:hover {
-  background: #059669;
+  background: #1565c0;
 }
 
 .configure-file-types-actions {

@@ -155,6 +155,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
 import { useEventMessageStore } from '@/stores/eventMessage';
@@ -168,12 +169,13 @@ import {
 import { fetchActiveUsers } from '@/api/service/userService';
 
 const { t } = useI18n();
+const route = useRoute();
 const projectStore = useProjectStore();
 const userStore = useUserStore();
 const eventMessageStore = useEventMessageStore();
 const userConfirm = useUserConfirm();
 
-const projectName = computed(() => projectStore.projectName);
+const projectId = computed(() => Number(route.params.projectId));
 
 // Reactive state
 const users = ref([]);
@@ -219,7 +221,7 @@ const canAddUsers = computed(() => {
 
 // Methods
 const loadUsers = async () => {
-  if (!projectName.value) {
+  if (!projectId.value) {
     error.value = t('projectSettings.members.no_project_selected');
     return;
   }
@@ -228,7 +230,7 @@ const loadUsers = async () => {
   error.value = '';
   
   try {
-    const response = await getProjectUsers(projectName.value);
+    const response = await getProjectUsers(projectId.value);
     if (response.data) {
       users.value = response.data.users || [];
     }
@@ -339,7 +341,7 @@ const updateUserPermissionHandler = async (user, newPermission = null) => {
   
   try {
     const response = await updateUserPermission(
-      projectName.value,
+      projectId.value,
       user.user_id,
       { permission }
     );
@@ -380,12 +382,10 @@ const addUser = async () => {
   addingUser.value = true;
   
   try {
-    const response = await addUserToProject(projectName.value, {
-  user_id: parseInt(newUser.user_id, 10),
+    const response = await addUserToProject(projectId.value, {
+      user_id: parseInt(newUser.user_id, 10),
       permission: newUser.permission
-    });
-    
-    if (response.data) {
+    });    if (response.data) {
       eventMessageStore.addMessage('projectSettings.members.user_added', 'success');
       closeAddUserModal();
       await loadUsers(); // Refresh the list
@@ -408,7 +408,7 @@ const removeUser = async (user) => {
   
   try {
     const response = await removeUserFromProject(
-      projectName.value,
+      projectId.value,
       user.user_id
     );
     
@@ -426,8 +426,8 @@ const removeUser = async (user) => {
 
 // Lifecycle
 onMounted(() => {
-  // Only load users if we have a project name
-  if (projectName.value) {
+  // Only load users if we have a project ID
+  if (projectId.value) {
     loadUsers();
   }
   projectStore.initBroadcastChannel();
@@ -441,8 +441,8 @@ watch(showAddUserModal, (open) => {
 });
 
 // Watch for project changes
-watch(projectName, (newProjectName) => {
-  if (newProjectName) {
+watch(projectId, (newProjectId) => {
+  if (newProjectId) {
     loadUsers();
   } else {
     users.value = [];
@@ -482,7 +482,7 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #6366f1;
+  background: #1976d2;
   color: white;
   border: none;
   border-radius: 8px;
@@ -494,7 +494,7 @@ defineExpose({
 }
 
 .btn-add-member:hover {
-  background: #4f46e5;
+  background: #1565c0;
   transform: translateY(-1px);
 }
 

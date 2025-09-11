@@ -733,7 +733,7 @@
       "importFileType": "Import file type",
       "pattern": "Pattern",
       "description": "Description",
-      "exampleFilename": "Example filename",
+      "exampleFile": "Example filename",
       "components": "Components",
       "importSelected": "Import Selected"
     },

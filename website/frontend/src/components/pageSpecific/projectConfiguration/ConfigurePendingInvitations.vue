@@ -266,7 +266,7 @@ watch(
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #10b981;
+  background: #1976d2;
   color: white;
   border: none;
   border-radius: 8px;
@@ -278,7 +278,7 @@ watch(
 }
 
 .btn-send-invitation:hover {
-  background: #059669;
+  background: #1565c0;
   transform: translateY(-1px);
 }
 

@@ -4,14 +4,14 @@
 import axiosInstance from '@/api/apiClient';
 
 /**
- * Get all users associated with a project
- * @param {string} projectName - The project name
+ * Get all users associated with a project by project ID
+ * @param {number} projectId - The project ID
  * @returns {Promise} API response with project users
  */
-export const getProjectUsers = async (projectName) => {
+export const getProjectUsers = async (projectId) => {
   try {
     const response = await axiosInstance.get(
-      `/project-associations/projects/${projectName}/users`
+      `/project-associations/projects/${projectId}/users`
     );
     return response;
   } catch (error) {
@@ -21,15 +21,15 @@ export const getProjectUsers = async (projectName) => {
 };
 
 /**
- * Add a user to a project with specified permission
- * @param {string} projectName - The project name
+ * Add a user to a project with specified permission by project ID
+ * @param {number} projectId - The project ID
  * @param {Object} userData - User data with user_id and permission
  * @returns {Promise} API response
  */
-export const addUserToProject = async (projectName, userData) => {
+export const addUserToProject = async (projectId, userData) => {
   try {
     const response = await axiosInstance.post(
-      `/project-associations/projects/${projectName}/users`,
+      `/project-associations/projects/${projectId}/users`,
       userData
     );
     return response;
@@ -40,20 +40,20 @@ export const addUserToProject = async (projectName, userData) => {
 };
 
 /**
- * Update a user's permission in a project
- * @param {string} projectName - The project name
+ * Update a user's permission in a project by project ID
+ * @param {number} projectId - The project ID
  * @param {number} userId - The user ID
  * @param {Object} permissionData - Object with permission field
  * @returns {Promise} API response
  */
 export const updateUserPermission = async (
-  projectName,
+  projectId,
   userId,
   permissionData
 ) => {
   try {
     const response = await axiosInstance.put(
-      `/project-associations/projects/${projectName}/users/${userId}`,
+      `/project-associations/projects/${projectId}/users/${userId}`,
       permissionData
     );
     return response;
@@ -64,15 +64,15 @@ export const updateUserPermission = async (
 };
 
 /**
- * Remove a user from a project
- * @param {string} projectName - The project name
+ * Remove a user from a project by project ID
+ * @param {number} projectId - The project ID
  * @param {number} userId - The user ID
  * @returns {Promise} API response
  */
-export const removeUserFromProject = async (projectName, userId) => {
+export const removeUserFromProject = async (projectId, userId) => {
   try {
     const response = await axiosInstance.delete(
-      `/project-associations/projects/${projectName}/users/${userId}`
+      `/project-associations/projects/${projectId}/users/${userId}`
     );
     return response;
   } catch (error) {
