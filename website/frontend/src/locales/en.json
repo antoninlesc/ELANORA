@@ -497,6 +497,7 @@
       "added": "Added",
       "modified": "Modified",
       "deleted": "Deleted",
+      "renamed": "Renamed",
       "restoreFromBackup": "Restore from Backup",
       "deleteProject": "Delete Project",
       "deleteConfirm": "Are you sure you want to delete this project? This cannot be undone.",

@@ -488,6 +488,7 @@
       "added": "Ajouté",
       "modified": "Modifié",
       "deleted": "Supprimé",
+      "renamed": "Renommé",
       "restoreFromBackup": "Restaurer depuis une sauvegarde",
       "deleteProject": "Supprimer le projet",
       "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.",

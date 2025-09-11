@@ -7,3 +7,5 @@ class FileStatus(CustomBaseModel):
     filename: str
     status: str
     description: str
+    old_filename: str | None = None
+    new_filename: str | None = None

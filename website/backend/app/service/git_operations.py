@@ -509,6 +509,15 @@ class GitCommandRunner:
     def get_status(self) -> str:
         return self.run(["status", "--porcelain"]).stdout
 
+    def stage_all_changes(self) -> None:
+        """Stage all changes to enable rename detection."""
+        self.run(["add", "-A"], check=True)
+
+    def get_status_with_renames(self) -> str:
+        """Get status after staging changes to detect renames."""
+        self.stage_all_changes()
+        return self.get_status()
+
     def get_log(self, count: int = 5) -> str:
         return self.run(
             ["log", f"-{count}", "--pretty=format:%h|%an|%ad|%s", "--date=iso"]

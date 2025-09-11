@@ -25,7 +25,13 @@ from app.crud.project import (
     get_project_by_id,
     get_project_name_by_id,
 )
-from app.crud.elan_file import get_elan_files_by_project, get_elan_file_name_by_id, update_elan_file_name
+from app.crud.elan_file import (
+    get_elan_files_by_project, 
+    get_elan_file_name_by_id,
+    update_elan_file_name
+)
+from app.service.database_rename_handler import DatabaseRenameHandler
+from app.service.git_status_parser import GitStatusParser, GitFileStatusAnalyzer
 from app.crud import elan_file_media as elan_media_crud
 from app.crud.effective_naming_standard import get_effective_standards_for_project
 from app.schema.responses.git import (
@@ -38,6 +44,7 @@ from app.core.effective_naming_standard_locations import get_location_id_by_name
 from app.schema.common.git import FileStatus
 from app.schema.responses.git import ProjectInfo, ProjectSyncCheckResponse
 from app.service.elan import ElanService
+from app.utils.project_backup import restore_project_backup
 from app.service.git_operations import (
     FileUploadProcessor,
     GitBranchManager,
@@ -1075,33 +1082,99 @@ class GitService:
         # Add all changes to staging area
         runner.add_all()
 
-        # Use the sync check logic to get file statuses
-        sync_check = self.synchronize_project_check(project_name)
-        files_status = sync_check["files_status"]
+        # Get file statuses directly (not via sync check to avoid serialization)
+        elan_files_dir = project_path / "elan_files"
+        
+        # Stage all changes first to enable rename detection for filesystem renames
+        logger.info("Staging all changes to detect filesystem renames...")
+        status_output = runner.get_status_with_renames()
+
+        logger.info(f"Git status output: '{status_output}'")
+
+        # Use GitStatusParser for cleaner parsing
+        parser = GitStatusParser()
+        analyzer = GitFileStatusAnalyzer(parser)
+        
+        # Get all Git-tracked files
+        all_tracked_result = runner.run(["ls-files"], check=True)
+        all_tracked_files = set(all_tracked_result.stdout.strip().splitlines())
+        logger.info(f"All tracked files in Git: {all_tracked_files}")
+
+        # Use the analyzer to process all files
+        files_status, processed_files = analyzer.analyze_project_files(
+            status_output, all_tracked_files, elan_files_dir
+        )
+        logger.info(f"Processed files: {processed_files}")
+        logger.info(f"Files status: {files_status}")
 
         elan_service = ElanService(db)
         updated_files = []
         deleted_files = []
 
-        for file_info in files_status:
-            filename = file_info["filename"]
-            status = file_info["status"]
-            file_path = project_path / filename
-            if status in {"added", "untracked"}:
-                if file_path.exists():
-                    logger.info(f"Adding new file in DB: {file_path}")
-                    await elan_service.process_single_file(str(file_path), user_id, project_name)
-                    updated_files.append(file_path)
-            elif status == "modified":
-                if file_path.exists():
-                    logger.info(f"Updating modified file in DB: {file_path}")
-                    await elan_service.process_single_file_and_update(str(file_path), user_id, project_name)
-                    updated_files.append(file_path)
-            elif status == "deleted":
-                logger.info(f"Removing deleted file from DB: {filename}")
-                await elan_service.delete_elan_files_from_db(filename, project_name)
-                deleted_files.append(filename)
+        logger.info(f"Processing {len(files_status)} file status changes")
 
+        for file_status in files_status:
+            filename = file_status.filename
+            status = file_status.status
+            file_path = project_path / filename
+            
+            logger.info(f"Processing file: {filename} with status: {status}")
+            
+            try:
+                if status in {"added", "untracked"}:
+                    if file_path.exists():
+                        logger.info(f"Adding new file in DB: {file_path}")
+                        await elan_service.process_single_file(str(file_path), user_id, project_name)
+                        updated_files.append(file_path)
+                        logger.info(f"Successfully added file to DB: {file_path}")
+                    else:
+                        logger.warning(f"File marked as {status} but doesn't exist: {file_path}")
+                elif status == "modified":
+                    if file_path.exists():
+                        logger.info(f"Updating modified file in DB: {file_path}")
+                        await elan_service.process_single_file_and_update(str(file_path), user_id, project_name)
+                        updated_files.append(file_path)
+                        logger.info(f"Successfully updated file in DB: {file_path}")
+                    else:
+                        logger.warning(f"File marked as modified but doesn't exist: {file_path}")
+                elif status == "deleted":
+                    logger.info(f"Removing deleted file from DB: {filename}")
+                    await elan_service.delete_elan_files_from_db(filename, project_name)
+                    deleted_files.append(filename)
+                    logger.info(f"Successfully deleted file from DB: {filename}")
+                elif status == "renamed":
+                    # Handle Git-detected renames by updating database filename
+                    old_filename = file_status.old_filename
+                    new_filename = file_status.new_filename
+                    
+                    logger.info(f"Processing rename: {old_filename} -> {new_filename}")
+                    
+                    if old_filename and new_filename:
+                        # Extract just the filename from the full path for database lookup
+                        old_filename_only = Path(old_filename).name
+                        new_filename_only = Path(new_filename).name
+                        
+                        logger.info(f"Database rename: {old_filename_only} -> {new_filename_only}")
+                        rename_handler = DatabaseRenameHandler(db)
+                        success = await rename_handler.process_rename(
+                            old_filename_only, new_filename_only, project_name
+                        )
+                        if success:
+                            updated_files.append(project_path / new_filename)
+                        else:
+                            logger.warning(f"Failed to process rename: {old_filename_only} -> {new_filename_only}")
+                    else:
+                        logger.warning(f"Rename detected but missing old/new filename info: {file_status}")
+                else:
+                    logger.warning(f"Unknown status '{status}' for file: {filename}")
+            except Exception as e:
+                logger.error(f"Failed to process file {filename} with status {status}: {e}")
+                # Continue processing other files instead of failing completely
+        
+        # Commit database changes if any were made
+        await db.commit()
+        logger.info("Database changes committed")
+        
         # Commit changes if any
         status_output = runner.get_status()
         if status_output.strip():
@@ -1226,6 +1299,18 @@ class GitService:
         }
 
     def synchronize_project_check(self, project_name: str) -> dict:
+        """Check for changes in a Git-managed project and analyze file status.
+        
+        Analyzes the Git status to detect file changes in the elan_files directory
+        and compares against tracked files to determine sync status.
+        
+        Args:
+            project_name: Name of the project to check for changes
+            
+        Returns:
+            Dictionary containing project sync status and file change information
+            
+        """
         project_path = self.base_path / project_name
         elan_files_dir = project_path / "elan_files"
         git_dir = project_path / ".git"
@@ -1257,54 +1342,28 @@ class GitService:
             }
 
         runner = GitCommandRunner(project_path)
-        status_output = runner.get_status()
+        
+        # Stage all changes first to enable rename detection for filesystem renames
+        logger.info("Staging all changes to detect filesystem renames...")
+        status_output = runner.get_status_with_renames()
 
         logger.info(f"Git status output: '{status_output}'")
 
-        files_status = []
-        status_map = {"A": "added", "M": "modified", "D": "deleted", "??": "untracked"}
-        files_with_changes = set()
-
-        # Process files with pending changes
-        for entry in self._parse_git_status(status_output):
-            code = entry["status"]
-            filename = entry["filename"]
-            status = status_map.get(code, code)
-            clean_filename = filename.strip('"').strip("'")
-            files_with_changes.add(clean_filename)
-            file_path = Path(clean_filename)
-            # Only consider .eaf files directly in elan_files
-            if (
-                file_path.parent == Path("elan_files")
-                and file_path.suffix.lower() == ".eaf"
-            ):
-                files_status.append(
-                    FileStatus(
-                        filename=file_path.as_posix(),
-                        status=status,
-                        description=f"File {file_path.as_posix()} is {status}",
-                    )
-                )
-
+        # Use GitStatusParser for cleaner parsing
+        parser = GitStatusParser()
+        analyzer = GitFileStatusAnalyzer(parser)
+        
         # Get all Git-tracked files
         all_tracked_result = runner.run(["ls-files"], check=True)
         all_tracked_files = set(all_tracked_result.stdout.strip().splitlines())
         logger.info(f"All tracked files in Git: {all_tracked_files}")
 
-        # Scan elan_files folder for .eaf files
-        for file in elan_files_dir.glob("*.eaf"):
-            rel_path = Path("elan_files") / file.name
-            rel_path_str = rel_path.as_posix()
-            # Only report as untracked if it's actually not tracked by Git
-            if rel_path_str not in all_tracked_files:
-                files_status.append(
-                    FileStatus(
-                        filename=rel_path_str,
-                        status="untracked",
-                        description=f"File {rel_path_str} is untracked (not in Git repository)",
-                    )
-                )
-        logger.info(f"Files with changes: {files_with_changes}")
+        # Use the analyzer to process all files
+        files_status, processed_files = analyzer.analyze_project_files(
+            status_output, all_tracked_files, elan_files_dir
+        )
+
+        logger.info(f"Processed files: {processed_files}")
         logger.info(f"Files status: {files_status}")
 
         in_sync = not bool(files_status)
@@ -1326,8 +1385,6 @@ class GitService:
             runner.reset_hard()
         runner.clean(force=True, directories=True)
         return "Local changes discarded and folder reset to match the latest remote master."
-
-    from app.utils.project_backup import restore_project_backup
 
     async def restore_project_from_backup(
         self, project_name: str, db: AsyncSession, user_id: int
