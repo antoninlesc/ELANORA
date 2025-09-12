@@ -103,6 +103,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { useProjectStore } from '@/stores/project';
 import { useUserConfirm } from '@/composables/useUserConfirm';
@@ -114,11 +115,18 @@ import {
 import ProjectShareModal from '@/components/common/ProjectShareModal.vue';
 
 const { t } = useI18n();
+const route = useRoute();
 const eventMessageStore = useEventMessageStore();
 const projectStore = useProjectStore();
 const userConfirm = useUserConfirm();
 
-const projectName = computed(() => projectStore.projectName);
+const projectId = computed(() => Number(route.params.projectId));
+const projectName = computed(() => {
+  const project = projectStore.projects.find(
+    (p) => p.project_id === projectId.value
+  );
+  return project ? project.project_name : '';
+});
 
 const currentUserRole = ref('admin');
 
@@ -144,13 +152,13 @@ const loadInvitations = async () => {
   error.value = '';
   
   try {
-    if (!projectName.value) {
-      console.warn('No project name available');
+    if (!projectId.value) {
+      console.warn('No project ID available');
       invitations.value = [];
       return;
     }
     
-    const response = await getProjectInvitations(projectName.value);
+    const response = await getProjectInvitations(projectId.value);
     invitations.value = response.data.invitations || [];
     
   } catch (err) {
@@ -233,7 +241,7 @@ const cancelInvitation = async (invitation) => {
 };
 
 watch(
-  projectName,
+  projectId,
   async () => {
     await loadInvitations();
   },

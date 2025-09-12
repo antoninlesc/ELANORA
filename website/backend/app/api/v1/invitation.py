@@ -104,9 +104,9 @@ async def get_received_invitations(
     )
 
 
-@router.get("/project/{project_name}", response_model=InvitationListResponse)
+@router.get("/project/{project_id}", response_model=InvitationListResponse)
 async def get_project_invitations(
-    project_name: str,
+    project_id: int,
     user: User = get_user_dep,
     db: AsyncSession = get_db_dep,
 ) -> InvitationListResponse:
@@ -121,7 +121,7 @@ async def get_project_invitations(
     invitation_service = InvitationService()
     return await invitation_service.get_project_invitations(
         db=db,
-        project_name=project_name,
+        project_id=project_id,
     )
 
 

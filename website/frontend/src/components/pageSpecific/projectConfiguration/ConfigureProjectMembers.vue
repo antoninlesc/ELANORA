@@ -57,7 +57,7 @@
                 :disabled="updatingUsers.has(user.user_id)"
                 class="permission-select"
                 :class="{ updating: updatingUsers.has(user.user_id) }"
-                @change="handlePermissionChange(user, $event.target.value)"
+                @change="handlePermissionChange(user, $event)"
               >
                 <option
                   v-for="permission in getAvailablePermissions(user)"
@@ -299,7 +299,8 @@ const getAvailablePermissions = () => {
   return [];
 };
 
-const handlePermissionChange = async (user, newPermission) => {
+const handlePermissionChange = async (user, changeEvent) => {
+  const newPermission = changeEvent.target.value;
   if (user.permission === newPermission) return;
   
   const oldPermission = user.permission;
@@ -319,16 +320,9 @@ const handlePermissionChange = async (user, newPermission) => {
   } else {
     // Force re-render to reset select value
     nextTick(() => {
-      const selectElement = event.target;
-      if (selectElement) {
-        selectElement.value = oldPermission;
-      }
+      changeEvent.target.value = oldPermission;
     });
   }
-};
-
-const confirmPermissionChange = async (user, newPermission) => {
-  return handlePermissionChange(user, newPermission);
 };
 
 const updateUserPermissionHandler = async (user, newPermission = null) => {

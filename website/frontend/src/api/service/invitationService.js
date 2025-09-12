@@ -40,11 +40,11 @@ export async function getSentInvitations() {
 
 /**
  * Get invitations for a specific project.
- * @param {string} projectName
+ * @param {number} projectId
  * @returns {Promise<import('axios').AxiosResponse>}
  */
-export async function getProjectInvitations(projectName) {
-  return await axiosInstance.get(`/invitation/project/${encodeURIComponent(projectName)}`);
+export async function getProjectInvitations(projectId) {
+  return await axiosInstance.get(`/invitation/project/${projectId}`);
 }
 
 /**

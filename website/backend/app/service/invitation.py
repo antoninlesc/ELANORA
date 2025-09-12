@@ -518,21 +518,21 @@ class InvitationService:
     async def get_project_invitations(
         self,
         db: AsyncSession,
-        project_name: str,
+        project_id: int,
     ) -> InvitationListResponse:
         """Get all invitations for a specific project."""
         try:
-            # Get project by name first
-            project = await get_project_by_name(db, project_name)
+            # Check if project exists
+            project = await get_project_by_id(db, project_id)
             if not project:
                 logger.warning(
                     "Project not found",
-                    extra={"project_name": project_name},
+                    extra={"project_id": project_id},
                 )
                 return InvitationListResponse(invitations=[], total=0)
 
             # Get invitations for this project
-            invitations = await get_invitations_by_project(db, project.project_id)
+            invitations = await get_invitations_by_project(db, project_id)
             invitation_responses = []
 
             for invitation in invitations:
@@ -547,7 +547,7 @@ class InvitationService:
             logger.error(
                 "Failed to get project invitations",
                 extra={
-                    "project_name": project_name,
+                    "project_id": project_id,
                     "error": str(e),
                 },
                 exc_info=True,
