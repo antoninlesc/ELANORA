@@ -10,7 +10,10 @@ from app.service import elan_file_media as elan_media_service
 router = APIRouter()
 
 
-@router.get("/projects/{project_id}/files-with-media", response_model=ProjectFilesWithMediaResponse)
+@router.get(
+    "/projects/{project_id}/files-with-media",
+    response_model=ProjectFilesWithMediaResponse,
+)
 async def get_project_files_with_media(
     project_id: int,
     db: AsyncSession = get_db_dep,

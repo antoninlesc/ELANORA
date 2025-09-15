@@ -204,10 +204,14 @@ def rename_project_backup_folder(old_project_name: str, new_project_name: str):
         raise FileNotFoundError(f"Backup folder '{old_backup_path}' not found.")
     if new_backup_path.exists():
         logger.error(f"Target backup folder '{new_backup_path}' already exists.")
-        raise FileExistsError(f"Target backup folder '{new_backup_path}' already exists.")
+        raise FileExistsError(
+            f"Target backup folder '{new_backup_path}' already exists."
+        )
     try:
         shutil.move(str(old_backup_path), str(new_backup_path))
-        logger.info(f"Renamed backup folder from '{old_backup_path}' to '{new_backup_path}'")
+        logger.info(
+            f"Renamed backup folder from '{old_backup_path}' to '{new_backup_path}'"
+        )
     except Exception as e:
         logger.error(f"Failed to rename backup folder: {e}")
         raise

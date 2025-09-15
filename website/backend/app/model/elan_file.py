@@ -20,7 +20,9 @@ class ElanFile(Base):
 
     elan_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     content_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("FILE_CONTENT.content_id", ondelete="CASCADE"), nullable=False
+        Integer,
+        ForeignKey("FILE_CONTENT.content_id", ondelete="CASCADE"),
+        nullable=False,
     )
     project_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PROJECT.project_id", ondelete="CASCADE"), nullable=False
@@ -30,11 +32,13 @@ class ElanFile(Base):
 
     # Add unique constraint for content within a project (same file can't be in project twice)
     __table_args__ = (
-        UniqueConstraint('content_id', 'project_id', name='uq_content_project'),
+        UniqueConstraint("content_id", "project_id", name="uq_content_project"),
     )
 
     # Relationships
-    file_content: Mapped["FileContent"] = relationship("FileContent", back_populates="elan_files")
+    file_content: Mapped["FileContent"] = relationship(
+        "FileContent", back_populates="elan_files"
+    )
     project: Mapped["Project"] = relationship("Project", back_populates="elan_files")
     media_links: Mapped[list["ElanFileToMedia"]] = relationship(
         "ElanFileToMedia", back_populates="elan_file", cascade="all, delete-orphan"

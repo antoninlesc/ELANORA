@@ -11,8 +11,6 @@ CONFLICT_CONFLICTID_FK = "CONFLICT.conflict_id"
 COMMENT_COMMENTID_FK = "COMMENT.comment_id"
 
 
-
-
 class ElanFileToTier(Base):
     """Association table linking ELAN files to tiers."""
 

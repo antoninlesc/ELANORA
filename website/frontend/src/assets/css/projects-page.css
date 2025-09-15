@@ -2,7 +2,7 @@
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 2px 16px rgb(0 0 0 / 8%);
-  padding: 3rem 3rem;
+  padding: 3rem;
 }
 
 .project-page-title {
@@ -385,6 +385,13 @@
   gap: 16px;
 }
 
+.project-page-files-tree-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 /* --- SECTION CARD --- */
 .project-page-section-card {
   background: #f8fafc;
@@ -601,6 +608,7 @@
   text-decoration: underline;
   transition: color 0.2s;
 }
+
 .info-banner-bulk-rename-link:hover,
 .info-banner-bulk-rename-link:focus-visible {
   color: #b71c1c;

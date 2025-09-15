@@ -68,9 +68,17 @@ class ValidationUtils:
             True if compliant, False otherwise.
 
         """
-        logger.debug(f"is_filename_compliant called with standard: {standard}, filename: {filename}")
-        if not standard or not standard.get("pattern") or not isinstance(standard.get("components"), list):
-            logger.debug("No valid standard found. Could be no standard or missing pattern/components.")
+        logger.debug(
+            f"is_filename_compliant called with standard: {standard}, filename: {filename}"
+        )
+        if (
+            not standard
+            or not standard.get("pattern")
+            or not isinstance(standard.get("components"), list)
+        ):
+            logger.debug(
+                "No valid standard found. Could be no standard or missing pattern/components."
+            )
             return True
 
         name_without_ext = filename.replace(".eaf", "")
@@ -80,6 +88,8 @@ class ValidationUtils:
 
         normalized_components = ValidationUtils._normalize_components(components)
         pattern = ValidationUtils._build_pattern(pattern, normalized_components)
+        if pattern is None:
+            return False
         top_rx = ValidationUtils._compile_regex(pattern)
         if not top_rx:
             return False
@@ -97,7 +107,7 @@ class ValidationUtils:
         normalized = []
         for i, comp in enumerate(components):
             logger.debug(f"Processing component {i}: {comp}")
-            name = comp.get('name')
+            name = comp.get("name")
             if not name:
                 logger.warning(f"Component {i} missing 'name': {comp}. Skipping.")
                 continue
@@ -105,21 +115,34 @@ class ValidationUtils:
             if isinstance(comp.get("accepted_values"), list):
                 accepted_values = comp["accepted_values"]
             elif isinstance(comp.get("accepted_values_str"), str):
-                accepted_values = [v.strip() for v in comp["accepted_values_str"].split(",") if v.strip()]
+                accepted_values = [
+                    v.strip()
+                    for v in comp["accepted_values_str"].split(",")
+                    if v.strip()
+                ]
 
-            normalized.append({
-                "name": comp.get("name"),
-                "regex": comp.get("regex") or comp.get("pattern"),
-                "accepted_values": accepted_values,
-                "fixed_value": comp.get("fixed_value") or comp.get("fixed_value") or comp.get("value"),
-                "numeric_range": comp.get("numeric_range") or comp.get("numericRange") or comp.get("numericRangeValue"),
-            })
+            normalized.append(
+                {
+                    "name": comp.get("name"),
+                    "regex": comp.get("regex") or comp.get("pattern"),
+                    "accepted_values": accepted_values,
+                    "fixed_value": comp.get("fixed_value")
+                    or comp.get("fixed_value")
+                    or comp.get("value"),
+                    "numeric_range": comp.get("numeric_range")
+                    or comp.get("numericRange")
+                    or comp.get("numericRangeValue"),
+                }
+            )
         return normalized
 
     @staticmethod
     def _build_pattern(pattern: str, components: list[dict]) -> str | None:
         """Build the final regex pattern by replacing component placeholders."""
-        logger.debug(f"_build_pattern called with pattern: {pattern}, components: {components}")
+        logger.debug(
+            f"_build_pattern called with pattern: {pattern}, components: {components}"
+        )
+        name = None
         try:
             for i, comp in enumerate(components):
                 logger.debug(f"Processing component {i} for pattern: {comp}")
@@ -134,7 +157,9 @@ class ValidationUtils:
             logger.debug(f"Final pattern: {pattern}")
             return pattern
         except re.error as e:
-            logger.error(f"Error during pattern replacement for '{name}': {e}")
+            logger.error(
+                f"Error during pattern replacement for '{name or 'unknown'}': {e}"
+            )
             return None
 
     @staticmethod
@@ -239,9 +264,9 @@ class ValidationUtils:
         try:
             num = int(value)
             return not (
-                ("width" in numeric_range and len(value) != numeric_range["width"]) or
-                ("min" in numeric_range and num < numeric_range["min"]) or
-                ("max" in numeric_range and num > numeric_range["max"])
+                ("width" in numeric_range and len(value) != numeric_range["width"])
+                or ("min" in numeric_range and num < numeric_range["min"])
+                or ("max" in numeric_range and num > numeric_range["max"])
             )
         except (ValueError, KeyError):
             return False
@@ -269,11 +294,28 @@ class ValidationUtils:
         return False
 
     @staticmethod
+    def _parse_flags(flags_str: str) -> int:
+        """Parse regex flags string into integer flags."""
+        flags = 0
+        if "i" in flags_str:
+            flags |= re.IGNORECASE
+        if "m" in flags_str:
+            flags |= re.MULTILINE
+        if "s" in flags_str:
+            flags |= re.DOTALL
+        return flags
+
+    @staticmethod
     def _check_regex_literal(av_str: str, value: str) -> bool:
         """Check regex literal accepted value."""
         try:
             parts = re.match(r"^/(.*)/([gimsuy]*)$", av_str)
-            rx = re.compile(parts.group(1), parts.group(2))
+            if not parts:
+                return False
+            pattern = parts.group(1)
+            flags_str = parts.group(2)
+            flags = ValidationUtils._parse_flags(flags_str)
+            rx = re.compile(pattern, flags)
             return rx.match(value) is not None
         except re.error:
             return False
@@ -288,5 +330,6 @@ class ValidationUtils:
             return len(value) == width and min_val <= num <= max_val
         except ValueError:
             return False
+
 
 logger.debug(f"Using re module: {re.__name__}")

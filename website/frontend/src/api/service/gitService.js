@@ -75,7 +75,7 @@ const gitService = {
     if (forceRefresh) {
       params.append('force_refresh', 'true');
     }
-    
+
     const { data } = await axiosInstance.get(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads`
     );
@@ -92,11 +92,11 @@ const gitService = {
     const params = new URLSearchParams({
       resolution_strategy: resolutionStrategy,
     });
-    
+
     if (filename) {
       params.append('filename', filename);
     }
-    
+
     const { data } = await axiosInstance.post(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/resolve-conflicts?${params.toString()}`
     );
@@ -122,12 +122,15 @@ const gitService = {
   async initProjectFromFolderUpload({ project_name, description, files }) {
     const formData = new FormData();
     formData.append('project_name', project_name);
-    formData.append('description', !description || description === "undefined" ? "" : description);
-    
+    formData.append(
+      'description',
+      !description || description === 'undefined' ? '' : description
+    );
+
     files.forEach((file) => {
       formData.append('files', file, file.name);
     });
-    
+
     const { data } = await axiosInstance.post(
       `/git/projects/init-from-folder-upload`,
       formData,
@@ -195,7 +198,7 @@ const gitService = {
     );
     return data;
   },
-    // Get detailed conflict information for a file
+  // Get detailed conflict information for a file
   async getConflictDetails(projectName, branchName, filename) {
     const { data } = await axiosInstance.get(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts/${encodeURIComponent(filename)}/details`
@@ -204,10 +207,15 @@ const gitService = {
   },
 
   // Resolve conflict manually with custom content
-  async resolveConflictManually(projectName, branchName, filename, resolvedContent) {
+  async resolveConflictManually(
+    projectName,
+    branchName,
+    filename,
+    resolvedContent
+  ) {
     const formData = new FormData();
     formData.append('resolved_content', resolvedContent);
-    
+
     const { data } = await axiosInstance.post(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts/${encodeURIComponent(filename)}/resolve-manual`,
       formData
@@ -220,21 +228,47 @@ const gitService = {
     const formData = new FormData();
     formData.append('elan_id', elanId);
     formData.append('new_filename', newFilename);
-    
-    const response = await axiosInstance.post(`${GIT_PREFIX}/projects/${projectName}/rename-file`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
+
+    const response = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${projectName}/rename-file`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       }
-    });
+    );
     return response.data;
   },
 
   // Rename multiple files
   async renameFiles(projectName, renames) {
-    const response = await axiosInstance.post(`${GIT_PREFIX}/projects/${projectName}/rename-files`, {
-      renames: renames
-    });
+    const response = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${projectName}/rename-files`,
+      {
+        renames: renames,
+      }
+    );
     return response.data;
+  },
+
+  // Download selected files as a ZIP
+  async downloadFiles(projectName, selectedFiles) {
+    const elanIds = selectedFiles.map((f) => f.elan_id); // Send elan_ids for security
+    const response = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/download`,
+      { elan_ids: elanIds },
+      { responseType: 'blob' } // For downloading files
+    );
+
+    // Trigger download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${projectName}_files.zip`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   },
 };
 

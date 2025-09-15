@@ -46,3 +46,9 @@ class BulkRenameRequest(CustomBaseModel):
     """Schema for bulk file rename request."""
 
     renames: list[FileRename]
+
+
+class DownloadFilesRequest(CustomBaseModel):
+    """Schema for download files request."""
+
+    elan_ids: list[int]

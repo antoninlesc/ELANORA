@@ -230,6 +230,7 @@ class FileInfo(CustomBaseModel):
 
 class FileInfoWithMedia(CustomBaseModel):
     """Extended file info that includes database ID and associated media filenames."""
+
     name: str
     size: int
     lastModified: str

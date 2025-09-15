@@ -11,6 +11,7 @@ from app.schema.requests.git import (
     ProjectCheckoutRequest,
     ProjectCreateRequest,
     ProjectEditRequest,
+    DownloadFilesRequest,
 )
 from app.schema.responses.git import (
     BatchFileUploadResponse,
@@ -78,7 +79,7 @@ async def create_project(
     try:
         result = await git_service.create_project(
             project_data.project_name,
-            project_data.description,
+            project_data.description or "",
             db,
             user.user_id,
         )
@@ -221,7 +222,7 @@ async def init_project_from_folder_upload(
 ):
     """Initialize a project by uploading a folder (only .eaf files and structure are kept)."""
     if files is None:
-        files = File(...)
+        files = []
     try:
         result = await git_service.init_project_from_folder_upload(
             project_name, description, files, db, user.user_id
@@ -369,26 +370,6 @@ async def decline_backup(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/projects/{project_name}/branches/{branch_name}/conflicts")
-async def get_branch_conflicts(
-    project_name: str,
-    branch_name: str,
-    force_refresh: bool = False,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Get conflicts for a specific branch."""
-    try:
-        result = await git_service.get_conflicts(
-            project_name, branch_name, db, force_refresh
-        )
-        return result
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
 @router.get(
     "/projects/{project_name}/admin/pending-uploads",
     response_model=PendingUploadsResponse,
@@ -437,7 +418,7 @@ async def rename_file(
             renamed_at="",
             message=str(e),
             conflict_elan_id=e.conflict_elan_id,
-            message_key=e.message_key
+            message_key=e.message_key,
         )
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -468,6 +449,23 @@ async def rename_files(
         return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/projects/{project_name}/download")
+async def download_files(
+    project_name: str,
+    request: DownloadFilesRequest,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Download selected files as a ZIP archive (admin only)."""
+    try:
+        result = await git_service.download_files(project_name, request.elan_ids, db)
+        return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:

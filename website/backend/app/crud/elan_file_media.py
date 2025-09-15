@@ -9,9 +9,12 @@ from app.model.elan_file_media import ElanFileMedia
 from app.model.file_content import FileContent
 from app.utils.database import DatabaseUtils
 
-async def get_project_files_with_media_simple(db: AsyncSession, project_id: int) -> list[dict]:
+
+async def get_project_files_with_media_simple(
+    db: AsyncSession, project_id: int
+) -> list[dict]:
     """Get all ELAN files for a project with their associated media using simple joins."""
-    
+
     # Use a simpler approach with explicit joins to avoid lazy loading issues
     stmt = (
         select(
@@ -19,48 +22,53 @@ async def get_project_files_with_media_simple(db: AsyncSession, project_id: int)
             ElanFile.file_path,
             FileContent.filename,
             ElanFileMedia.media_url,
-            ElanFileMedia.relative_media_url
+            ElanFileMedia.relative_media_url,
         )
         .join(FileContent, ElanFile.content_id == FileContent.content_id)
         .join(ElanFileToMedia, ElanFile.elan_id == ElanFileToMedia.elan_id)
         .join(ElanFileMedia, ElanFileToMedia.media_id == ElanFileMedia.media_id)
         .where(ElanFile.project_id == project_id)
     )
-    
+
     result = await db.execute(stmt)
     rows = result.fetchall()
-    
+
     # Group by elan_id to collect all media for each file
     files_dict = {}
     for row in rows:
         elan_id = row.elan_id
         if elan_id not in files_dict:
             files_dict[elan_id] = {
-                'elan_id': row.elan_id,
-                'filename': row.filename,
-                'file_path': row.file_path,
-                'media_filenames': []
+                "elan_id": row.elan_id,
+                "filename": row.filename,
+                "file_path": row.file_path,
+                "media_filenames": [],
             }
-        
+
         # Extract media filename
         if row.relative_media_url:
             media_filename = os.path.basename(row.relative_media_url)
         elif row.media_url:
-            if row.media_url.startswith('file:///'):
+            if row.media_url.startswith("file:///"):
                 path_part = row.media_url[8:]  # Remove 'file:///'
                 media_filename = os.path.basename(path_part)
             else:
                 media_filename = os.path.basename(row.media_url)
         else:
             continue
-            
-        if media_filename and media_filename not in files_dict[elan_id]['media_filenames']:
-            files_dict[elan_id]['media_filenames'].append(media_filename)
-    
+
+        if (
+            media_filename
+            and media_filename not in files_dict[elan_id]["media_filenames"]
+        ):
+            files_dict[elan_id]["media_filenames"].append(media_filename)
+
     return list(files_dict.values())
 
 
-async def get_project_files_with_media(db: AsyncSession, project_id: int) -> list[ElanFile]:
+async def get_project_files_with_media(
+    db: AsyncSession, project_id: int
+) -> list[ElanFile]:
     """Get all ELAN files in a project with their associated media."""
     stmt = (
         select(ElanFile)

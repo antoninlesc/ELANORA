@@ -33,7 +33,7 @@ def get_elanora_projects_base_path() -> str:
         else:
             # It's already an absolute path
             return configured_path
-            
+
     except ImportError:
         # Fallback to calculated path
         current_dir = Path(__file__).resolve()
@@ -56,12 +56,16 @@ def make_path_relative_to_projects(absolute_path: str) -> str:
 
     try:
         relative_path = abs_path.relative_to(base)
-        result = str(relative_path).replace("\\", "/")  # Use forward slashes for consistency
+        result = str(relative_path).replace(
+            "\\", "/"
+        )  # Use forward slashes for consistency
         logger.info(f"Path conversion: {absolute_path} -> {result}")
         return result
     except ValueError as e:
         # Path is not under elanora_projects, return as-is but log warning
-        logger.warning(f"Path {absolute_path} is not under elanora_projects directory: {e}")
+        logger.warning(
+            f"Path {absolute_path} is not under elanora_projects directory: {e}"
+        )
         return absolute_path
 
 

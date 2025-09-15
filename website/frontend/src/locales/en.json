@@ -467,6 +467,7 @@
     "filesInProject": "Files in {projectName}",
     "synchronizing": "Synchronizing...",
     "synchronize": "Synchronize",
+    "downloadFiles": "Download Files",
     "loadingFiles": "Loading files...",
     "noFilesFound": "No files found.",
     "deleteTitle": "Delete Project",
@@ -546,6 +547,22 @@
     }
   },
 
+  "downloadDialog": {
+    "title": "Download files from {projectName}",
+    "noFiles": "No files available for download",
+    "selectedFiles": "Selected files ({count}/{total})",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "totalSelected": "{count} file(s) selected",
+    "cancel": "Cancel",
+    "download": "Download",
+    "unknownSize": "Unknown size",
+    "bytes": "Bytes",
+    "kb": "KB",
+    "mb": "MB",
+    "gb": "GB"
+  },
+
   "bulkRenameDialog": {
     "title": "Bulk Rename Files",
     "loading": "Loading files...",
@@ -577,7 +594,7 @@
     "conflict": "A file with this name already exists in the project",
     "conflictMultiple": "{count} files couldn't be renamed because they already exist under the same name in the project",
     "success": "File renamed successfully",
-    "bulkSuccess": "All files renamed successfully", 
+    "bulkSuccess": "All files renamed successfully",
     "bulkPartial": "Some files were renamed successfully, but {failed} failed",
     "bulkPartialSingular": "1 file was renamed successfully, but 1 failed",
     "bulkPartialOneSuccess": "1 file was renamed successfully, but {failed} failed",

@@ -430,6 +430,7 @@
     "noDescription": "説明なし",
     "filesInProject": "{projectName}のファイル",
     "synchronizing": "同期中...",
+    "downloadFiles": "ファイルをダウンロード",
     "synchronize": "同期",
     "loadingFiles": "ファイルを読み込み中...",
     "noFilesFound": "ファイルが見つかりません。",
@@ -498,7 +499,31 @@
         "folderDropNotSupported": "お使いのブラウザはフォルダーのドラッグ＆ドロップをサポートしていません。「参照」ボタンを使用してください。",
         "createFailed": "プロジェクトの作成に失敗しました。"
       }
+    },
+    "infoBanner": {
+      "nonCompliant": "{count}個のファイルが命名基準に準拠していません。",
+      "allCompliant": "すべてのファイルが命名基準に準拠しています。",
+      "noEffectiveStandard1": "現在適用されている命名基準がありません。",
+      "noEffectiveStandard2": "プロジェクト設定",
+      "noEffectiveStandard3": "で作成してください。",
+      "bulkRename": "ファイルを一括で名前変更"
     }
+  },
+
+  "downloadDialog": {
+    "title": "{projectName}からファイルをダウンロード",
+    "noFiles": "ダウンロード可能なファイルがありません",
+    "selectedFiles": "選択されたファイル ({count}/{total})",
+    "selectAll": "すべて選択",
+    "deselectAll": "すべて選択解除",
+    "totalSelected": "{count}個のファイルが選択されました",
+    "cancel": "キャンセル",
+    "download": "ダウンロード",
+    "unknownSize": "不明なサイズ",
+    "bytes": "バイト",
+    "kb": "KB",
+    "mb": "MB",
+    "gb": "GB"
   },
 
   "fileRenameSuggestion": {
@@ -650,7 +675,7 @@
     "deleteTitle": "ファイル形式を削除",
     "deleteMessage": "このファイル形式を削除してもよろしいですか？この操作は取り消せません。"
   },
-  
+
   "configureNamingStandards": {
     "title": "プロジェクトの命名規則を設定",
     "loading": "命名規則を読み込み中...",
