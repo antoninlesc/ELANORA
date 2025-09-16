@@ -30,9 +30,18 @@ export async function deleteSection(sectionId) {
   return axiosInstance.post('/tier/sections/delete', { section_id: sectionId });
 }
 
-export async function moveTierGroup(tierGroupId, sectionId) {
+export async function moveTierGroup(
+  tierGroupId,
+  sectionId,
+  projectId,
+  tierId,
+  tierName
+) {
   return axiosInstance.post('/tier/tier_group/move', {
     tier_group_id: tierGroupId,
     section_id: sectionId,
+    project_id: projectId,
+    tier_id: tierId,
+    tier_name: tierName,
   });
 }

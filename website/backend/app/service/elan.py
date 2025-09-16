@@ -42,10 +42,11 @@ from app.crud.tier import (
     get_all_tier_names_with_annotations,
     get_tier_by_name,
     get_tier_statistics,
+    get_tiers_by_elan_id,
     get_tiers_with_annotations_for_content,
     update_parent_tier,
 )
-from app.crud.tier_group import delete_tier_groups_for_project_and_elan
+from app.crud.tier_group import delete_tier_groups_for_project_and_tier
 from app.model.tier import Tier
 from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
 
@@ -639,9 +640,12 @@ class ElanService:
             await remove_elan_file_from_project(
                 self.db, elan_file_obj.elan_id, project.project_id
             )
-            await delete_tier_groups_for_project_and_elan(
-                self.db, project.project_id, elan_file_obj.elan_id
-            )
+            # Remove tier groups for all tiers associated with this ELAN file in this project
+            tiers = await get_tiers_by_elan_id(self.db, elan_file_obj.elan_id)
+            for tier in tiers:
+                await delete_tier_groups_for_project_and_tier(
+                    self.db, project.project_id, tier.tier_id
+                )
             logger.info(
                 f"[ELAN-DELETE] Removed associations for ELAN file '{base_filename}' and project '{project_name}'."
             )

@@ -57,6 +57,44 @@
   min-height: 1rem;
 }
 
-.tier-group-draggable[aria-grabbed='true'] * {
-  pointer-events: none !important;
+.tier-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%);
+  transition: all 0.2s ease;
+}
+
+.tier-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px 0 rgb(0 0 0 / 15%);
+}
+
+.tier-name {
+  font-weight: 500;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.tier-tree-item {
+  margin-bottom: 0.5rem;
+}
+
+.tier-parent {
+  background: #e0f2fe !important;
+  border-color: #0ea5e9 !important;
+  font-weight: 600 !important;
+}
+
+.tier-child {
+  background: #f0f9ff !important;
+  border-color: #bae6fd !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
 }

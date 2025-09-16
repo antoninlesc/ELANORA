@@ -9,6 +9,7 @@ from app.crud.tier_group import (
     create_tier_group,
     get_tier_groups_by_project,
     get_tier_groups_by_section,
+    get_tier_groups_by_tier_ids,
     update_tier_group_section,
 )
 from app.crud.tier_section import (
@@ -118,45 +119,126 @@ class TierSectionService:
         project = await get_project_by_id(db, project_id)
         if not project:
             return {"sections": [], "tier_groups": []}
-        tiers_by_file = await TierService.get_project_tiers_grouped_by_file(
-            db, project.project_name
-        )
-        tiers_dict = tiers_by_file.get("tiers", {})
+
+        # Get all tiers available in this project (from all ELAN files)
+        from app.crud.association import get_elan_ids_for_project
+        from app.crud.tier import get_tiers_by_elan_id
+
+        elan_ids = await get_elan_ids_for_project(db, project_id)
+        all_project_tiers = []
+        for elan_id in elan_ids:
+            tiers = await get_tiers_by_elan_id(db, elan_id)
+            all_project_tiers.extend(tiers)
+
+        # Remove duplicates (same tier might appear in multiple files)
+        seen_tier_ids = set()
+        unique_tiers = []
+        for tier in all_project_tiers:
+            if tier.tier_id not in seen_tier_ids:
+                seen_tier_ids.add(tier.tier_id)
+                unique_tiers.append(tier)
+
+        # Get existing tier groups with their tier info
+        tier_group_info = []
+        assigned_tier_ids = set()
+        for group in tier_groups:
+            from app.crud.tier import get_tier_by_id
+
+            tier = await get_tier_by_id(db, group.tier_id)
+            if tier:
+                tier_group_info.append(
+                    TierGroupInfo(
+                        tier_group_id=group.tier_group_id,
+                        tier_name=group.tier_name,
+                        section_id=group.section_id,
+                        tier_id=group.tier_id,
+                        parent_tier_id=tier.parent_tier_id,
+                    )
+                )
+                assigned_tier_ids.add(group.tier_id)
+
+        # Add unassigned tiers as tier groups with section_id = None
+        for tier in unique_tiers:
+            if tier.tier_id not in assigned_tier_ids:
+                # Create a temporary tier group entry for unassigned tiers
+                tier_group_info.append(
+                    TierGroupInfo(
+                        tier_group_id=None,  # No actual tier group exists yet
+                        tier_name=tier.tier_name,
+                        section_id=None,  # Unassigned
+                        tier_id=tier.tier_id,
+                        parent_tier_id=tier.parent_tier_id,
+                    )
+                )
 
         return {
             "sections": [
                 SectionInfo(section_id=s.tier_section_id, name=s.section_name)
                 for s in sections
             ],
-            "tier_groups": [
-                TierGroupInfo(
-                    tier_group_id=g.tier_group_id,
-                    elan_file_name=g.elan_file_name,
-                    section_id=g.section_id,
-                    tiers=tiers_dict.get(g.elan_file_name, []),
-                )
-                for g in tier_groups
-            ],
+            "tier_groups": tier_group_info,
         }
 
 
 class TierGroupService:
     @staticmethod
-    async def assign_group_to_section(db, tier_group_id: int, section_id: int | None):
+    async def assign_group_to_section(
+        db,
+        tier_group_id: int | None,
+        section_id: int | None,
+        project_id: int,
+        tier_id: int,
+        tier_name: str,
+    ):
         try:
-            result = await update_tier_group_section(db, tier_group_id, section_id)
+            # Get the tier hierarchy (parent + all children)
+            from app.crud.tier_group import get_tier_hierarchy
+
+            tier_hierarchy = await get_tier_hierarchy(db, tier_id)
+
+            created_or_updated_ids = []
+
+            for tier_id_in_hierarchy in tier_hierarchy:
+                # Get tier info
+                from app.crud.tier import get_tier_by_id
+
+                tier = await get_tier_by_id(db, tier_id_in_hierarchy)
+                if not tier:
+                    continue
+
+                # Check if tier group already exists
+                existing_groups = await get_tier_groups_by_tier_ids(
+                    db, project_id, [tier_id_in_hierarchy]
+                )
+                existing_group = existing_groups[0] if existing_groups else None
+
+                if existing_group:
+                    # Update existing tier group
+                    await update_tier_group_section(
+                        db, existing_group.tier_group_id, section_id
+                    )
+                    created_or_updated_ids.append(existing_group.tier_group_id)
+                else:
+                    # Create new tier group
+                    group = await create_tier_group(
+                        db, section_id, project_id, tier_id_in_hierarchy, tier.tier_name
+                    )
+                    created_or_updated_ids.append(group.tier_group_id)
+
             await db.commit()
-            return result
+            return created_or_updated_ids[0] if created_or_updated_ids else None
         except Exception:
             await db.rollback()
             raise
 
     @staticmethod
     async def create_group(
-        db, section_id: int | None, project_id: int, elan_file_name: str
+        db, section_id: int | None, project_id: int, tier_id: int, tier_name: str
     ):
         try:
-            group = await create_tier_group(db, section_id, project_id, elan_file_name)
+            group = await create_tier_group(
+                db, section_id, project_id, tier_id, tier_name
+            )
             await db.commit()
             return group
         except Exception:

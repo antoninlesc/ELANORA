@@ -23,10 +23,11 @@ class SectionInfo(CustomBaseModel):
 
 
 class TierGroupInfo(CustomBaseModel):
-    tier_group_id: int
-    elan_file_name: str
+    tier_group_id: int | None
+    tier_name: str
     section_id: int | None
-    tiers: list[TierNode] = []
+    tier_id: int
+    parent_tier_id: int | None = None
 
 
 class SectionsAndGroupsResponse(CustomBaseModel):

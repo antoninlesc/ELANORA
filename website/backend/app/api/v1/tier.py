@@ -59,5 +59,10 @@ async def delete_section(request: DeleteSectionRequest, db: AsyncSession = get_d
 @router.post("/tier_group/move")
 async def move_tier_group(request: MoveTierGroupRequest, db: AsyncSession = get_db_dep):
     return await TierGroupService.assign_group_to_section(
-        db, request.tier_group_id, request.section_id
+        db,
+        request.tier_group_id,
+        request.section_id,
+        request.project_id,
+        request.tier_id,
+        request.tier_name,
     )

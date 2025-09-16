@@ -45,12 +45,10 @@
             </button>
           </h2>
           <draggable
-            :list="
-              tierGroups.filter((g) => g.section_id === section.section_id)
-            "
+            :list="getTierTreesForSection(section.section_id)"
             group="tier-groups"
             :move="onMove"
-            item-key="tier_group_id"
+            item-key="tier_id"
             class="tier-group-draggable"
             :scroll="true"
             :force-fallback="true"
@@ -60,12 +58,25 @@
             @start="onDragStart"
             @end="onDragEnd"
           >
-            <template #item="{ element, index }">
-              <TierTree
-                :tiers="element.tiers"
-                :group-label="element.elan_file_name"
-                :group-index="index"
-              />
+            <template #item="{ element }">
+              <div class="tier-tree-item">
+                <div
+                  class="tier-item tier-parent"
+                  :style="{ marginLeft: element.level * 20 + 'px' }"
+                >
+                  <span class="tier-name">{{ element.tier_name }}</span>
+                  <span class="tier-id">(ID: {{ element.tier_id }})</span>
+                </div>
+                <div
+                  v-for="child in element.children"
+                  :key="child.tier_id"
+                  class="tier-item tier-child"
+                  :style="{ marginLeft: (element.level + 1) * 20 + 'px' }"
+                >
+                  <span class="tier-name">{{ child.tier_name }}</span>
+                  <span class="tier-id">(ID: {{ child.tier_id }})</span>
+                </div>
+              </div>
             </template>
           </draggable>
         </div>
@@ -73,10 +84,10 @@
         <div style="margin-top: 2rem">
           <h2>Unsectioned</h2>
           <draggable
-            :list="unsectionedTierGroups"
+            :list="getTierTreesForSection(null)"
             group="tier-groups"
             :move="onMove"
-            item-key="tier_group_id"
+            item-key="tier_id"
             class="tier-group-draggable unsectioned"
             :scroll="true"
             :force-fallback="true"
@@ -86,16 +97,29 @@
             @start="onDragStart"
             @end="onDragEnd"
           >
-            <template #item="{ element, index }">
-              <TierTree
-                :tiers="element.tiers"
-                :group-label="element.elan_file_name"
-                :group-index="index"
-              />
+            <template #item="{ element }">
+              <div class="tier-tree-item">
+                <div
+                  class="tier-item tier-parent"
+                  :style="{ marginLeft: element.level * 20 + 'px' }"
+                >
+                  <span class="tier-name">{{ element.tier_name }}</span>
+                  <span class="tier-id">(ID: {{ element.tier_id }})</span>
+                </div>
+                <div
+                  v-for="child in element.children"
+                  :key="child.tier_id"
+                  class="tier-item tier-child"
+                  :style="{ marginLeft: (element.level + 1) * 20 + 'px' }"
+                >
+                  <span class="tier-name">{{ child.tier_name }}</span>
+                  <span class="tier-id">(ID: {{ child.tier_id }})</span>
+                </div>
+              </div>
             </template>
             <template #footer>
               <div
-                v-if="unsectionedTierGroups.length === 0"
+                v-if="getTierTreesForSection(null).length === 0"
                 style="color: #888; text-align: center; padding: 1rem"
               >
                 No unsectioned tier groups.
@@ -121,7 +145,6 @@ import {
   deleteSection,
   moveTierGroup,
 } from '@/api/service/tierService';
-import TierTree from '@/components/common/TierTree.vue';
 import draggable from 'vuedraggable';
 
 const projectStore = useProjectStore();
@@ -129,9 +152,7 @@ const { t } = useI18n();
 
 useHead({
   title: t('tiersPage.pageTitle'),
-  meta: [
-    { name: 'description', content: t('tiersPage.pageDescription') },
-  ],
+  meta: [{ name: 'description', content: t('tiersPage.pageDescription') }],
 });
 
 const currentProject = computed(() => projectStore.currentProject);
@@ -145,9 +166,56 @@ const renameSectionName = ref('');
 const editingSectionId = ref(null);
 const isDragging = ref(false);
 
-const unsectionedTierGroups = computed(() =>
-  tierGroups.value.filter((g) => g.section_id === null)
-);
+function getTierTreesForSection(sectionId) {
+  const sectionTiers = tierGroups.value.filter(
+    (g) => g.section_id === sectionId
+  );
+  return buildTierTrees(sectionTiers);
+}
+
+function buildTierTrees(tiers) {
+  // Build a map of tier_id to tier
+  const tierMap = {};
+  tiers.forEach((tier) => {
+    tierMap[tier.tier_id] = { ...tier, children: [], level: 0 };
+  });
+
+  const roots = [];
+  const processed = new Set();
+
+  // First pass: identify roots (tiers without parents or whose parents aren't in our list)
+  tiers.forEach((tier) => {
+    if (!tier.parent_tier_id || !tierMap[tier.parent_tier_id]) {
+      roots.push(tierMap[tier.tier_id]);
+      processed.add(tier.tier_id);
+    }
+  });
+
+  // Second pass: build hierarchy by assigning children to parents
+  tiers.forEach((tier) => {
+    if (
+      tier.parent_tier_id &&
+      tierMap[tier.parent_tier_id] &&
+      !processed.has(tier.tier_id)
+    ) {
+      tierMap[tier.parent_tier_id].children.push(tierMap[tier.tier_id]);
+      processed.add(tier.tier_id);
+    }
+  });
+
+  // Set levels for proper indentation
+  function setLevels(nodes, level) {
+    nodes.forEach((node) => {
+      node.level = level;
+      if (node.children && node.children.length > 0) {
+        setLevels(node.children, level + 1);
+      }
+    });
+  }
+  setLevels(roots, 0);
+
+  return roots;
+}
 
 async function loadData({ silent = false } = {}) {
   if (!silent) loading.value = true;
@@ -204,7 +272,13 @@ async function onDrop(newSectionId, evt) {
   if (!evt || !evt.added) return;
   const movedGroup = evt.added.element;
   if (!movedGroup) return;
-  await moveTierGroup(movedGroup.tier_group_id, newSectionId);
+  await moveTierGroup(
+    movedGroup.tier_group_id,
+    newSectionId,
+    currentProject.value.project_id,
+    movedGroup.tier_id,
+    movedGroup.tier_name
+  );
   await loadData({ silent: true });
 }
 

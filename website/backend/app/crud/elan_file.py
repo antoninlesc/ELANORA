@@ -17,7 +17,6 @@ from app.crud.file_content import get_or_create_file_content
 from app.model.association import ElanFileToMedia, ElanFileToTier
 from app.model.elan_file import ElanFile
 from app.model.file_content import FileContent
-from app.model.tier_group import TierGroup
 from app.model.user import User
 from app.utils.database import DatabaseUtils
 from app.utils.validation import ValidationUtils
@@ -56,7 +55,8 @@ async def delete_elan_file_associations(db: AsyncSession, elan_id: int):
         await DatabaseUtils.delete_by_conditions(
             db, ElanFileToMedia, conditions=conditions
         )
-        await DatabaseUtils.delete_by_filter(db, TierGroup, elan_id=elan_id)
+        # Note: TierGroup cleanup is now handled separately when tiers are removed from projects
+        # We don't delete tier groups here since they belong to projects, not files
         logger.info("Deleted ELAN file associations for elan_id=%s", elan_id)
     except Exception as e:
         logger.error(
@@ -393,13 +393,10 @@ async def store_elan_file_data_in_db(
         await add_elan_file_to_media(db, elan_file_obj.elan_id, media_obj.media_id)
 
     # Create TierGroup entry for this ELAN file and project
-    tier_group = TierGroup(
-        project_id=project_id,
-        elan_file_name=file_info["filename"],
-        section_id=None,
-        elan_id=elan_file_obj.elan_id,
-    )
-    await DatabaseUtils.create(db, tier_group)
+    # Note: In the new tier-based system, we don't automatically create tier groups
+    # when uploading files. Tier groups are created when users explicitly assign
+    # tiers to sections through the UI/API.
+    pass
 
     return elan_file_obj.elan_id
 
