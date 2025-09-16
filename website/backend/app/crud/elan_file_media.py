@@ -76,13 +76,14 @@ async def get_project_files_with_media(
         .where(ElanFile.project_id == project_id)
     )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    return list(result.scalars().all())
 
 
 async def get_media_by_url(db: AsyncSession, media_url: str) -> ElanFileMedia | None:
     """Retrieve a media file by its URL."""
     filters = {"media_url": media_url}
-    return await DatabaseUtils.get_one_by_filter(db, ElanFileMedia, filters)
+    results = await DatabaseUtils.get_by_filter(db, ElanFileMedia, filters, limit=1)
+    return results[0] if results else None
 
 
 async def create_media_in_db(
@@ -130,6 +131,10 @@ async def delete_orphaned_media(db: AsyncSession) -> int:
 
     Returns the number of deleted rows.
     """
-    return await DatabaseUtils.delete_fully_orphaned(
-        db, ElanFileMedia, ElanFileToMedia, "media_id", "media_id"
+    from sqlalchemy import select as sql_select
+
+    subquery = sql_select(ElanFileToMedia.media_id)
+    conditions = [~ElanFileMedia.media_id.in_(subquery)]
+    return await DatabaseUtils.delete_by_conditions(
+        db, ElanFileMedia, conditions=conditions
     )

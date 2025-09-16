@@ -22,8 +22,8 @@ logger = get_logger()
 async def delete_project_invitations(db: AsyncSession, project_id: int):
     logger.info(f"Deleting invitations for project_id={project_id}")
     try:
-        count = await DatabaseUtils.bulk_delete(
-            db, Invitation, Invitation.project_id == project_id
+        count = await DatabaseUtils.delete_by_conditions(
+            db, Invitation, [Invitation.project_id == project_id]
         )
         logger.info(f"Deleted {count} invitations for project_id={project_id}")
     except Exception as e:
@@ -149,21 +149,17 @@ async def get_invitations_by_project(
 
 async def expire_old_invitations(db: AsyncSession) -> int:
     """Mark expired invitations as expired and return count."""
-    result = await db.execute(
-        select(Invitation)
-        .filter(Invitation.status == InvitationStatus.PENDING)
-        .filter(Invitation.expires_at <= datetime.now())
-    )
-    expired_invitations = list(result.scalars().all())
-    if not expired_invitations:
-        return 0
+    from sqlalchemy import update
 
-    updates = [
-        {"invitation_id": inv.invitation_id, "status": InvitationStatus.EXPIRED}
-        for inv in expired_invitations
-    ]
-    await DatabaseUtils.bulk_update(db, Invitation, updates, pk_field="invitation_id")
-    return len(updates)
+    # Update all expired pending invitations in one query
+    query = (
+        update(Invitation)
+        .where(Invitation.status == InvitationStatus.PENDING)
+        .where(Invitation.expires_at <= datetime.now())
+        .values(status=InvitationStatus.EXPIRED)
+    )
+    result = await db.execute(query)
+    return result.rowcount
 
 
 async def verify_invitation_code(

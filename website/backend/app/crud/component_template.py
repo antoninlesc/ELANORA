@@ -15,9 +15,9 @@ async def get_or_create_component_template(
         "regex": regex,
         "description": description,
     }
-    template = await DatabaseUtils.get_one_by_filter(db, ComponentTemplate, filters)
-    if template:
-        return template
+    results = await DatabaseUtils.get_by_filter(db, ComponentTemplate, filters, limit=1)
+    if results:
+        return results[0]
     template = ComponentTemplate(
         file_type_id=file_type_id, name=name, regex=regex, description=description
     )
@@ -33,29 +33,36 @@ async def get_component_templates_by_file_type(db: AsyncSession, file_type_id: i
 
 
 async def get_unique_component_names_by_project(db: AsyncSession, project_id: int):
-    file_type_ids_stmt = select(ProjectFileType.file_type_id).where(
+    from sqlalchemy import select as sql_select
+
+    file_type_ids_stmt = sql_select(ProjectFileType.file_type_id).where(
         ProjectFileType.project_id == project_id
     )
     file_type_ids_result = await db.execute(file_type_ids_stmt)
     file_type_ids = [row[0] for row in file_type_ids_result.all()]
     if not file_type_ids:
         return []
-    return await DatabaseUtils.get_distinct_column_values(
-        db,
-        ComponentTemplate,
-        ComponentTemplate.name,
-        in_filter=(ComponentTemplate.file_type_id, file_type_ids),
-        order_by=ComponentTemplate.name,
+    from sqlalchemy import distinct
+
+    query = (
+        sql_select(distinct(ComponentTemplate.name))
+        .where(ComponentTemplate.file_type_id.in_(file_type_ids))
+        .order_by(ComponentTemplate.name)
     )
+    result = await db.execute(query)
+    return [row[0] for row in result.all()]
 
 
 async def delete_orphaned_component_templates(db: AsyncSession):
     from app.model.standard_component import StandardComponent
+    from sqlalchemy import select as sql_select
 
     try:
         # Delete ComponentTemplates not referenced by any StandardComponent
-        result = await DatabaseUtils.delete_fully_orphaned(
-            db, ComponentTemplate, StandardComponent, "id", "component_template_id"
+        subquery = sql_select(StandardComponent.component_template_id)
+        conditions = [~ComponentTemplate.id.in_(subquery)]
+        result = await DatabaseUtils.delete_by_conditions(
+            db, ComponentTemplate, conditions=conditions
         )
         await db.flush()
         return result

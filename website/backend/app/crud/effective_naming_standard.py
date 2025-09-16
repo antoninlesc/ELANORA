@@ -16,9 +16,10 @@ async def set_effective_standard(
         "project_file_type_id": project_file_type_id,
         "location_id": location_id,
     }
-    existing = await DatabaseUtils.get_one_by_filter(
-        db, EffectiveNamingStandard, filters
+    existing = await DatabaseUtils.get_by_filter(
+        db, EffectiveNamingStandard, filters, limit=1
     )
+    existing = existing[0] if existing else None
     if existing:
         existing.naming_standard_id = naming_standard_id
         await db.flush()
@@ -53,7 +54,7 @@ async def remove_effective_standard(
 async def get_effective_standards_for_project(
     db: AsyncSession, project_id: int, location_id: int
 ):
-    return await DatabaseUtils.get_all_by_filter(
+    return await DatabaseUtils.get_by_filter(
         db,
         EffectiveNamingStandard,
         {"project_id": project_id, "location_id": location_id},

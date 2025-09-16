@@ -13,7 +13,8 @@ async def link_standard_to_component(
         "naming_standard_id": naming_standard_id,
         "component_template_id": component_template_id,
     }
-    link = await DatabaseUtils.get_one_by_filter(db, StandardComponent, filters)
+    results = await DatabaseUtils.get_by_filter(db, StandardComponent, filters, limit=1)
+    link = results[0] if results else None
     if not link:
         link = StandardComponent(
             naming_standard_id=naming_standard_id,

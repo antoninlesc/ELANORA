@@ -17,9 +17,12 @@ logger = get_logger()
 async def delete_unused_annotation_values(db: AsyncSession) -> int:
     """Delete annotation values not referenced by any annotation."""
     try:
+        from sqlalchemy import and_
+
         subquery = select(Annotation.value_id)
-        count = await DatabaseUtils.bulk_delete(
-            db, AnnotationValue, ~AnnotationValue.value_id.in_(subquery)
+        conditions = [~AnnotationValue.value_id.in_(subquery)]
+        count = await DatabaseUtils.delete_by_conditions(
+            db, AnnotationValue, conditions=conditions
         )
         logger.info(f"Deleted {count} unused AnnotationValue rows")
         return count
@@ -29,11 +32,12 @@ async def delete_unused_annotation_values(db: AsyncSession) -> int:
 
 
 async def get_annotation_by_id(
-    db: AsyncSession, annotation_id: str, elan_id: int
+    db: AsyncSession, annotation_id: str, content_id: int
 ) -> Annotation | None:
     """Retrieve an annotation by ID."""
-    filters = {"annotation_id": annotation_id, "elan_id": elan_id}
-    return await DatabaseUtils.get_one_by_filter(db, Annotation, filters)
+    filters = {"annotation_id": annotation_id, "content_id": content_id}
+    results = await DatabaseUtils.get_by_filter(db, Annotation, filters, limit=1)
+    return results[0] if results else None
 
 
 async def get_annotations_by_tier(db: AsyncSession, tier_id: int) -> list[Annotation]:
@@ -54,38 +58,54 @@ async def get_annotations_with_value_by_tier(db: AsyncSession, tier_id: int):
         List of annotations with their values for the tier, ordered by start time.
 
     """
-    result = await db.execute(
-        select(Annotation)
-        .options(selectinload(Annotation.annotation_value))
-        .filter(Annotation.tier_id == tier_id)
-        .order_by(Annotation.start_time)
+    conditions = [Annotation.tier_id == tier_id]
+    order_by = [Annotation.start_time]
+    options = [selectinload(Annotation.annotation_value)]
+
+    return await DatabaseUtils.get_by_conditions(
+        db, Annotation, conditions=conditions, order_by=order_by, options=options
     )
-    annotations = result.scalars().all()
-    return annotations
 
 
 async def get_annotations_by_time_range(
     db: AsyncSession, tier_id: int, start_time: Decimal, end_time: Decimal
 ) -> list[Annotation]:
     """Get annotations within a time range for a specific tier."""
-    result = await db.execute(
-        select(Annotation)
-        .filter(
-            and_(
-                Annotation.tier_id == tier_id,
-                Annotation.start_time >= start_time,
-                Annotation.end_time <= end_time,
-            )
-        )
-        .order_by(Annotation.start_time)
+    from sqlalchemy import and_
+
+    conditions = [
+        Annotation.tier_id == tier_id,
+        Annotation.start_time >= start_time,
+        Annotation.end_time <= end_time,
+    ]
+    order_by = [Annotation.start_time]
+
+    return await DatabaseUtils.get_by_conditions(
+        db, Annotation, conditions=conditions, order_by=order_by
     )
-    return list(result.scalars().all())
+
+
+async def get_annotations_by_tier_and_content(
+    db: AsyncSession, tier_id: int, content_id: int
+) -> list[Annotation]:
+    """Get all annotations for a specific tier and content."""
+    from sqlalchemy import and_
+
+    conditions = [
+        and_(Annotation.tier_id == tier_id, Annotation.content_id == content_id)
+    ]
+    order_by = [Annotation.start_time]
+    options = [selectinload(Annotation.annotation_value)]
+
+    return await DatabaseUtils.get_by_conditions(
+        db, Annotation, conditions=conditions, order_by=order_by, options=options
+    )
 
 
 async def create_annotation_in_db(
     db: AsyncSession,
     annotation_id: str,
-    elan_id: int,
+    content_id: int,
     value_id: int,
     start_time: Decimal,
     end_time: Decimal,
@@ -94,7 +114,7 @@ async def create_annotation_in_db(
     """Create a new annotation in the database."""
     annotation = Annotation(
         annotation_id=annotation_id,
-        elan_id=elan_id,
+        content_id=content_id,
         value_id=value_id,
         start_time=start_time,
         end_time=end_time,
@@ -104,19 +124,22 @@ async def create_annotation_in_db(
 
 
 async def check_annotation_exists(
-    db: AsyncSession, annotation_id: str, elan_id: int
+    db: AsyncSession, annotation_id: str, content_id: int
 ) -> bool:
-    filters = {"annotation_id": annotation_id, "elan_id": elan_id}
+    filters = {"annotation_id": annotation_id, "content_id": content_id}
     return await DatabaseUtils.exists(
         db, Annotation, "annotation_id", annotation_id
-    ) and await DatabaseUtils.exists(db, Annotation, "elan_id", elan_id)
+    ) and await DatabaseUtils.exists(db, Annotation, "content_id", content_id)
 
 
 async def delete_annotations_by_tier(db: AsyncSession, tier_id: int) -> int:
     """Delete all annotations for a tier."""
     try:
-        count = await DatabaseUtils.bulk_delete(
-            db, Annotation, Annotation.tier_id == tier_id
+        from sqlalchemy import and_
+
+        conditions = [Annotation.tier_id == tier_id]
+        count = await DatabaseUtils.delete_by_conditions(
+            db, Annotation, conditions=conditions
         )
         await delete_unused_annotation_values(db)
         return count
@@ -126,9 +149,20 @@ async def delete_annotations_by_tier(db: AsyncSession, tier_id: int) -> int:
 
 
 async def bulk_create_annotations(
-    db: AsyncSession, tiers_data: list[dict], elan_id: int, value_map: dict[str, int]
+    db: AsyncSession, tiers_data: list[dict], content_id: int, value_map: dict[str, int]
 ) -> None:
-    """Bulk create annotations for multiple tiers."""
+    """Bulk create annotations for multiple tiers, checking for existing annotations first."""
+    # Check if annotations already exist for this content_id
+    existing_count = await DatabaseUtils.get_by_filter(
+        db, Annotation, {"content_id": content_id}, limit=1
+    )
+
+    if existing_count:
+        logger.info(
+            f"Annotations already exist for content_id {content_id}, skipping bulk insert"
+        )
+        return
+
     all_annotations = []
     for tier_data in tiers_data:
         tier_id = tier_data["tier_id"]
@@ -136,7 +170,7 @@ async def bulk_create_annotations(
             all_annotations.append(
                 {
                     "annotation_id": ann["annotation_id"],
-                    "elan_id": elan_id,
+                    "content_id": content_id,
                     "value_id": value_map[ann["annotation_value"]],
                     "start_time": ann["start_time"],
                     "end_time": ann["end_time"],
@@ -147,14 +181,18 @@ async def bulk_create_annotations(
         await DatabaseUtils.bulk_insert(db, Annotation, all_annotations)
 
 
-async def delete_annotations_by_file(db: AsyncSession, elan_id: int) -> int:
-    """Delete all annotations for a given ELAN file."""
+async def delete_annotations_by_file(db: AsyncSession, content_id: int) -> int:
+    """Delete all annotations for a given content."""
     try:
-        count = await DatabaseUtils.bulk_delete(
-            db, Annotation, Annotation.elan_id == elan_id
+        from sqlalchemy import and_
+
+        conditions = [Annotation.content_id == content_id]
+        count = await DatabaseUtils.delete_by_conditions(
+            db, Annotation, conditions=conditions
         )
         await delete_unused_annotation_values(db)
         await db.flush()
         return count
     except Exception as e:
         logger.exception("Failed to delete annotations by file", exc_info=e)
+        return 0

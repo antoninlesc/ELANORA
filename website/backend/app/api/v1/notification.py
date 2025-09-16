@@ -61,8 +61,6 @@ async def create_notification(
     current_user: User = get_user_dep,
 ):
     """Create a new notification. This endpoint is typically used by system processes."""
-    # Note: In a production system, you might want to restrict this endpoint
-    # to certain roles or services only
     return await NotificationService.create_notification(db, notification_data)
 
 

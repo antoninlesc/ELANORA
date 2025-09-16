@@ -24,7 +24,7 @@ logger = get_logger()
 async def create_project_db(
     db: AsyncSession,
     project_name: str,
-    description: str,
+    description: str | None,
     project_path: str,
     instance_id: int,
     creator_user_id: int,
@@ -58,7 +58,8 @@ async def get_project_name_by_id(db: AsyncSession, project_id: int) -> str | Non
 
 async def get_project_by_name(db: AsyncSession, project_name: str) -> Project | None:
     filters = {"project_name": project_name}
-    return await DatabaseUtils.get_one_by_filter(db, Project, filters)
+    results = await DatabaseUtils.get_by_filter(db, Project, filters, limit=1)
+    return results[0] if results else None
 
 
 async def get_project_by_id(db: AsyncSession, project_id: int) -> Project | None:
@@ -83,12 +84,12 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
             await delete_tiers_for_elan_file(db, orphan_elan_file.elan_id)
             await delete_elan_file_full(db, orphan_elan_file.elan_id)
         # Delete all TierGroups and TierSections for this project
-        await DatabaseUtils.bulk_delete(
-            db, TierGroup, TierGroup.project_id == project.project_id
-        )
-        await DatabaseUtils.bulk_delete(
-            db, TierSection, TierSection.project_id == project.project_id
-        )
+        from sqlalchemy import and_
+
+        conditions = [TierGroup.project_id == project.project_id]
+        await DatabaseUtils.delete_by_conditions(db, TierGroup, conditions=conditions)
+        conditions = [TierSection.project_id == project.project_id]
+        await DatabaseUtils.delete_by_conditions(db, TierSection, conditions=conditions)
         # Delete all standards for this project
         await ProjectNamingStandardService.delete_all_standards_by_project(
             db, project.project_id
@@ -123,7 +124,8 @@ async def user_in_project(
 ) -> UserToProject | None:
     """Check if a user is already in a project."""
     filters = {"user_id": user_id, "project_id": project_id}
-    return await DatabaseUtils.get_one_by_filter(db, UserToProject, filters)
+    results = await DatabaseUtils.get_by_filter(db, UserToProject, filters, limit=1)
+    return results[0] if results else None
 
 
 async def add_user_to_project(

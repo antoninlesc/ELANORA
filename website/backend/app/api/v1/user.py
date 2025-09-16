@@ -123,7 +123,7 @@ async def update_current_user_profile(
             return ProfileUpdateResponse(
                 message=result["message"],
                 updated_fields=result["updated_fields"],
-                address_updated=False,  # TODO: Handle address updates separately
+                address_updated=False,
             )
         else:
             raise HTTPException(

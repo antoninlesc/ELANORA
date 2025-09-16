@@ -32,9 +32,9 @@ async def get_file_content_by_hash(
     db: AsyncSession, content_hash: str
 ) -> FileContent | None:
     """Get file content by hash."""
-    stmt = select(FileContent).where(FileContent.content_hash == content_hash)
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none()
+    filters = {"content_hash": content_hash}
+    results = await DatabaseUtils.get_by_filter(db, FileContent, filters, limit=1)
+    return results[0] if results else None
 
 
 async def get_file_content_by_id(
@@ -110,12 +110,12 @@ async def get_or_create_file_content(
 async def delete_file_content(db: AsyncSession, content_id: int) -> bool:
     """Delete file content by ID."""
     try:
-        result = await DatabaseUtils.delete_by_id(
-            db, FileContent, "content_id", content_id
+        count = await DatabaseUtils.delete_by_filter(
+            db, FileContent, content_id=content_id
         )
-        if result:
+        if count > 0:
             logger.info(f"Deleted file content with ID: {content_id}")
-        return result
+        return count > 0
     except Exception as e:
         logger.error(f"Failed to delete file content {content_id}: {e}")
         return False
@@ -131,11 +131,14 @@ async def get_file_contents_by_user(
 
 async def get_orphaned_file_contents(db: AsyncSession) -> list[FileContent]:
     """Get file contents that are not referenced by any ELAN files."""
+    # Use DatabaseUtils with complex query for orphaned records
+    from sqlalchemy import select
+
     stmt = select(FileContent).where(
         ~FileContent.content_id.in_(select(ElanFile.content_id).distinct())
     )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    return list(result.scalars().all())
 
 
 async def cleanup_orphaned_file_contents(db: AsyncSession) -> int:

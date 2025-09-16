@@ -8,7 +8,7 @@ from app.db.database import Base
 
 if TYPE_CHECKING:
     from .annotation_value import AnnotationValue
-    from .elan_file import ElanFile
+    from .file_content import FileContent
     from .tier import Tier
 
 
@@ -18,8 +18,10 @@ class Annotation(Base):
     __tablename__ = "ANNOTATION"
 
     annotation_id: Mapped[str] = mapped_column(String(50), primary_key=True)
-    elan_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("ELAN_FILE.elan_id", ondelete="CASCADE"), primary_key=True
+    content_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("FILE_CONTENT.content_id", ondelete="CASCADE"),
+        primary_key=True,
     )
 
     value_id: Mapped[int] = mapped_column(
@@ -36,8 +38,8 @@ class Annotation(Base):
     # Relationships
     tier: Mapped["Tier"] = relationship("Tier", back_populates="annotations")
     annotation_value: Mapped["AnnotationValue"] = relationship("AnnotationValue")
-    elan_file: Mapped["ElanFile"] = relationship("ElanFile")
+    file_content: Mapped["FileContent"] = relationship("FileContent")
 
     def __repr__(self) -> str:
         """Return a string representation of the Annotation."""
-        return f"<Annotation(annotation_id='{self.annotation_id}', value_id={self.value_id}, start_time={self.start_time}, end_time={self.end_time}, tier_id={self.tier_id})>"
+        return f"<Annotation(annotation_id='{self.annotation_id}', content_id={self.content_id}, value_id={self.value_id}, start_time={self.start_time}, end_time={self.end_time}, tier_id={self.tier_id})>"

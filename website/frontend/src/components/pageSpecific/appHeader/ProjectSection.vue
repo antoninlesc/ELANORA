@@ -85,7 +85,10 @@ const currentProjectName = computed(() => {
     return t('appHeader.projectSection.selectProject');
   }
   if (typeof currentProject.value === 'object') {
-    return currentProject.value.project_name || t('appHeader.projectSection.selectProject');
+    return (
+      currentProject.value.project_name ||
+      t('appHeader.projectSection.selectProject')
+    );
   }
   return currentProject.value || t('appHeader.projectSection.selectProject');
 });
@@ -171,7 +174,7 @@ onBeforeUnmount(() => {
 
 .project-section-current-name {
   display: inline-block;
-  max-width: 11vw;
+  max-width: 6vw;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

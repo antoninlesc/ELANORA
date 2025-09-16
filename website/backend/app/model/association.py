@@ -16,8 +16,8 @@ class ElanFileToTier(Base):
 
     __tablename__ = "ELAN_FILE_TO_TIER"
 
-    elan_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey(ELAN_FILE_ELANID_FK), primary_key=True
+    content_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("FILE_CONTENT.content_id"), primary_key=True
     )
     tier_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("TIER.tier_id"), primary_key=True

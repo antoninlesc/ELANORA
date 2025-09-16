@@ -431,8 +431,6 @@ class InvitationService:
                         },
                         exc_info=True,
                     )
-                    # Note: invitation status is already updated,
-                    # but user was not added to project
                     return False
 
                 logger.info(

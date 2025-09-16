@@ -435,9 +435,10 @@ class UserService:
 
         """
         # Get user with this username (if any)
-        existing_user = await DatabaseUtils.get_one_by_filter(
-            db, User, {"username": username}
+        results = await DatabaseUtils.get_by_filter(
+            db, User, {"username": username}, limit=1
         )
+        existing_user = results[0] if results else None
 
         # If no user exists with this username, it's available
         if not existing_user:
@@ -644,6 +645,5 @@ class UserService:
             reset_code (str): Password reset code.
 
         """
-        # TODO: Implement password reset email logic
         logger.info(f"Password reset email queued for {email} (user: {username})")
         logger.debug(f"Reset code for {email}: {reset_code}")

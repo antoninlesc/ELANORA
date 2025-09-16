@@ -139,7 +139,10 @@ async def get_notification_preference_by_user_id(
 ) -> NotificationPreference | None:
     """Retrieve notification preferences for a specific user."""
     filters = {"user_id": user_id}
-    return await DatabaseUtils.get_one_by_filter(db, NotificationPreference, filters)
+    result = await DatabaseUtils.get_by_filter(
+        db, NotificationPreference, filters, limit=1
+    )
+    return result[0] if result else None
 
 
 async def create_notification_preference(

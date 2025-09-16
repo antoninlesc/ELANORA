@@ -39,7 +39,7 @@ class DatabaseUtils:
 
     @staticmethod
     async def get_all(
-        db: AsyncSession, model: type[ModelType], options: list = None
+        db: AsyncSession, model: type[ModelType], options: list | None = None
     ) -> list[ModelType]:
         logger.info(f"get_all: model={model.__name__}")
         query = select(model)
@@ -86,6 +86,27 @@ class DatabaseUtils:
         return count
 
     @staticmethod
+    async def delete_by_conditions(
+        db: AsyncSession, model: type[ModelType], conditions: list[Any] | None = None
+    ) -> int:
+        """Delete records matching SQLAlchemy conditions (AND/OR expressions)."""
+        logger.info(
+            f"delete_by_conditions: model={model.__name__} conditions={conditions}"
+        )
+        query = select(model)
+        if conditions:
+            from sqlalchemy import and_
+
+            query = query.where(and_(*conditions))
+        result = await db.execute(query)
+        instances = list(result.scalars().all())
+        count = len(instances)
+        for instance in instances:
+            await db.delete(instance)
+        logger.info(f"delete_by_conditions: deleted count={count}")
+        return count
+
+    @staticmethod
     async def bulk_insert(
         db: AsyncSession,
         model: type[ModelType],
@@ -125,8 +146,10 @@ class DatabaseUtils:
         filters: dict,
         order_by: list | None = None,
         options: list | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> list[ModelType]:
-        """Get records matching filters, optionally ordered."""
+        """Get records matching filters with optional ordering and pagination."""
         query = select(model)
         for field, value in filters.items():
             if isinstance(value, list):
@@ -138,291 +161,212 @@ class DatabaseUtils:
         if options:
             for opt in options:
                 query = query.options(opt)
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
         result = await db.execute(query)
         return list(result.scalars().all())
 
     @staticmethod
-    async def get_one_by_filter(
+    async def get_by_conditions(
         db: AsyncSession,
         model: type[ModelType],
-        filters: dict,
+        conditions: list[Any] | None = None,
         order_by: list | None = None,
         options: list | None = None,
-    ) -> ModelType | None:
-        """Get a single record matching filters, optionally ordered."""
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[ModelType]:
+        """Get records matching SQLAlchemy conditions (AND/OR expressions)."""
         query = select(model)
-        for field, value in filters.items():
-            if isinstance(value, list):
-                query = query.where(getattr(model, field).in_(tuple(value)))
-            else:
-                query = query.where(getattr(model, field) == value)
+        if conditions:
+            from sqlalchemy import and_
+
+            query = query.where(and_(*conditions))
         if order_by:
             query = query.order_by(*order_by)
         if options:
             for opt in options:
                 query = query.options(opt)
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
         result = await db.execute(query)
-        return result.scalar_one_or_none()
+        return list(result.scalars().all())
 
     @staticmethod
-    async def paginate(
+    async def get_with_relationships(
         db: AsyncSession,
         model: type[ModelType],
-        page: int,
-        page_size: int,
-        filters: dict | None,
+        relationships: list[tuple[str, Any]] | None = None,
+        filters: dict | None = None,
+        conditions: list[Any] | None = None,
+        order_by: list | None = None,
         options: list | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> list[ModelType]:
-        """Paginate records with optional filters."""
+        """Get records with relationship joins and filtering."""
         query = select(model)
-        filters = filters or {}
-        for field, value in filters.items():
-            if isinstance(value, list):
-                query = query.where(getattr(model, field).in_(tuple(value)))
-            else:
-                query = query.where(getattr(model, field) == value)
+
+        # Apply joins for relationships
+        if relationships:
+            for relationship_name, join_condition in relationships:
+                if hasattr(model, relationship_name):
+                    # Use relationship-based join if available
+                    query = query.join(getattr(model, relationship_name))
+                else:
+                    # Use explicit join condition
+                    query = query.join(join_condition)
+
+        # Apply filters
+        if filters:
+            for field, value in filters.items():
+                if isinstance(value, list):
+                    query = query.where(getattr(model, field).in_(tuple(value)))
+                else:
+                    query = query.where(getattr(model, field) == value)
+
+        # Apply conditions
+        if conditions:
+            from sqlalchemy import and_
+
+            query = query.where(and_(*conditions))
+
+        if order_by:
+            query = query.order_by(*order_by)
         if options:
             for opt in options:
                 query = query.options(opt)
-        query = query.offset((page - 1) * page_size).limit(page_size)
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+
         result = await db.execute(query)
         return list(result.scalars().all())
 
     @staticmethod
-    async def count(
-        db: AsyncSession, model: type[ModelType], filters: dict | None
-    ) -> int:
-        """Count records matching optional filters."""
-        query = select(func.count()).select_from(model)
-        filters = filters or {}
-        for field, value in filters.items():
-            if isinstance(value, list):
-                query = query.where(getattr(model, field).in_(tuple(value)))
-            else:
-                query = query.where(getattr(model, field) == value)
-        result = await db.execute(query)
-        return result.scalar_one()
-
-    @staticmethod
-    async def bulk_delete(
-        db: AsyncSession, model: type[ModelType], where_clause
-    ) -> int:
-        """Bulk delete records matching the given where_clause.
-        Returns the number of deleted rows.
-        """
-        logger.info(f"bulk_delete: model={model.__name__} where_clause={where_clause}")
-        result = await db.execute(delete(model).where(where_clause))
-        logger.info(f"bulk_delete: model={model.__name__} deleted={result.rowcount}")
-        return result.rowcount if result.rowcount is not None else 0
-
-    @staticmethod
-    async def bulk_update(
+    async def get_aggregated_data(
         db: AsyncSession,
         model: type[ModelType],
-        data: list[dict],
-        pk_field: str,
-    ) -> int:
-        """Bulk update records for the given model.
-        Each dict in data must include the primary key field.
-        Returns the number of updated rows.
-        """
-        if not data:
-            return 0
-        total = 0
-        for row in data:
-            pk_value = row[pk_field]
-            update_data = {k: v for k, v in row.items() if k != pk_field}
-            result = await db.execute(
-                update(model)
-                .where(getattr(model, pk_field) == pk_value)
-                .values(**update_data)
-            )
-            total += result.rowcount if result.rowcount else 0
-        logger.info(f"bulk_update: model={model.__name__} updated={total}")
-        return total
+        aggregates: dict[str, Any],
+        group_by: list | None = None,
+        filters: dict | None = None,
+        conditions: list[Any] | None = None,
+        having_conditions: list[Any] | None = None,
+    ) -> list[dict]:
+        """Get aggregated data with optional grouping and filtering."""
+        # Build select clause with aggregates
+        select_items = []
+        if group_by:
+            select_items.extend(group_by)
 
-    @staticmethod
-    async def get_orphaned_by_association(
-        db: AsyncSession,
-        main_model: type[ModelType],
-        assoc_model: type[ModelType],
-        main_id_field: str,
-        assoc_main_id_field: str,
-        assoc_parent_field: str,
-        parent_id: int,
-    ) -> list[ModelType]:
-        """Fetch instances from main_model that are linked in assoc_model
-        only to the given parent_id (via assoc_parent_field), and to no other parent.
-        """
-        main_id_col = getattr(main_model, main_id_field)
-        assoc_main_id_col = getattr(assoc_model, assoc_main_id_field)
-        assoc_parent_col = getattr(assoc_model, assoc_parent_field)
+        for alias, agg_func in aggregates.items():
+            select_items.append(agg_func.label(alias))
 
-        stmt = (
-            select(main_model)
-            .join(assoc_model, assoc_main_id_col == main_id_col)
-            .group_by(main_id_col)
-            .having(
-                func.count(assoc_parent_col) == 1,
-                func.max(assoc_parent_col) == parent_id,
-            )
-        )
-        result = await db.execute(stmt)
-        return list(result.scalars().all())
+        query = select(*select_items).select_from(model)
 
-    @staticmethod
-    async def get_fully_orphaned(
-        db,
-        main_model,
-        assoc_model,
-        main_id_field: str,
-        assoc_ref_field: str,
-    ):
-        """Return all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
-        Logs orphans and non-orphans with references.
-        """
-        main_id_col = getattr(main_model, main_id_field)
-        assoc_ref_col = getattr(assoc_model, assoc_ref_field)
-
-        # Get all main IDs
-        all_main_ids_result = await db.execute(select(main_id_col))
-        all_main_ids = {row[0] for row in all_main_ids_result}
-
-        # Get all referenced IDs
-        referenced_ids_result = await db.execute(select(assoc_ref_col))
-        referenced_ids = {row[0] for row in referenced_ids_result if row[0] is not None}
-
-        # Find orphans and non-orphans
-        orphan_ids = all_main_ids - referenced_ids
-        non_orphan_ids = all_main_ids & referenced_ids
-
-        # Log orphans
-        logger.info(
-            f"get_fully_orphaned: {main_model.__name__} orphans (not in {assoc_model.__name__}.{assoc_ref_field}): {sorted(orphan_ids)}"
-        )
-
-        # Log non-orphans and where they are referenced
-        if non_orphan_ids:
-            pk_fields = [key.name for key in assoc_model.__table__.primary_key.columns]
-            for oid in sorted(non_orphan_ids):
-                refs = await db.execute(select(assoc_model).where(assoc_ref_col == oid))
-                ref_rows = refs.scalars().all()
-                logger.info(
-                    f"{main_model.__name__} id={oid} is still referenced in {assoc_model.__name__} rows: "
-                    f"{[{k: getattr(r, k, None) for k in pk_fields} for r in ref_rows]}"
-                )
-
-        # Return orphan objects
-        if orphan_ids:
-            query = select(main_model).where(main_id_col.in_(orphan_ids))
-            result = await db.execute(query)
-            orphans = list(result.scalars().all())
-        else:
-            orphans = []
-        return orphans
-
-    @staticmethod
-    async def delete_fully_orphaned(
-        db,
-        main_model,
-        assoc_model,
-        main_id_field: str,
-        assoc_ref_field: str,
-    ) -> int:
-        """Delete all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
-
-        Logs what is deleted.
-        """
-        orphans = await DatabaseUtils.get_fully_orphaned(
-            db, main_model, assoc_model, main_id_field, assoc_ref_field
-        )
-        count = len(orphans)
-        logger.info(
-            f"delete_fully_orphaned: Deleting {count} orphaned {main_model.__name__} records: {[getattr(o, main_id_field) for o in orphans]}"
-        )
-        for orphan in orphans:
-            await db.delete(orphan)
-        return count
-
-    @staticmethod
-    async def get_distinct_column_values(
-        db: AsyncSession,
-        model,
-        column,
-        filters: dict[str, Any] = None,
-        in_filter: tuple = None,
-        order_by=None,
-    ) -> Sequence[Any]:
-        """Utility to get distinct values for a column, with optional filters and IN clause.
-        - model: SQLAlchemy model class
-        - column: model.column to select
-        - filters: dict of {column_name: value}
-        - in_filter: tuple of (column, list_of_values)
-        - order_by: model.column or list of columns
-        """
-        stmt = select(column).distinct()
+        # Apply filters
         if filters:
-            for k, v in filters.items():
-                stmt = stmt.where(getattr(model, k) == v)
-        if in_filter:
-            col, values = in_filter
-            stmt = stmt.where(col.in_(values))
-        if order_by is not None:
-            if isinstance(order_by, list):
-                stmt = stmt.order_by(*order_by)
-            else:
-                stmt = stmt.order_by(order_by)
-        result = await db.execute(stmt)
-        return [row[0] for row in result.all()]
+            for field, value in filters.items():
+                if isinstance(value, list):
+                    query = query.where(getattr(model, field).in_(tuple(value)))
+                else:
+                    query = query.where(getattr(model, field) == value)
+
+        # Apply conditions
+        if conditions:
+            from sqlalchemy import and_
+
+            query = query.where(and_(*conditions))
+
+        # Group by
+        if group_by:
+            query = query.group_by(*group_by)
+
+        # Having conditions
+        if having_conditions:
+            from sqlalchemy import and_
+
+            query = query.having(and_(*having_conditions))
+
+        result = await db.execute(query)
+        return [dict(row) for row in result.all()]
 
     @staticmethod
-    async def get_all_with_related_exists(
+    async def get_with_exists_conditions(
         db: AsyncSession,
         model: type[ModelType],
-        related_model: type[ModelType],
-        related_field: str,
-        model_field: str,
+        exists_conditions: list[tuple[type[ModelType], dict]] | None = None,
+        not_exists_conditions: list[tuple[type[ModelType], dict]] | None = None,
+        filters: dict | None = None,
+        conditions: list[Any] | None = None,
+        order_by: list | None = None,
+        options: list | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> list[ModelType]:
-        """Returns all instances of `model` where at least one `related_model` exists
-        such that related_model.<related_field> == model.<model_field>
-        """
-        from sqlalchemy import exists, select
+        """Get records with EXISTS/NOT EXISTS subquery conditions."""
+        from sqlalchemy import exists
 
-        stmt = select(model).where(
-            exists().where(
-                getattr(related_model, related_field) == getattr(model, model_field)
-            )
-        )
-        result = await db.execute(stmt)
+        query = select(model)
+
+        # Apply EXISTS conditions
+        if exists_conditions:
+            for related_model, subquery_filters in exists_conditions:
+                subquery = select(related_model)
+                for field, value in subquery_filters.items():
+                    if isinstance(value, list):
+                        subquery = subquery.where(
+                            getattr(related_model, field).in_(tuple(value))
+                        )
+                    else:
+                        subquery = subquery.where(
+                            getattr(related_model, field) == value
+                        )
+                query = query.where(exists(subquery))
+
+        # Apply NOT EXISTS conditions
+        if not_exists_conditions:
+            for related_model, subquery_filters in not_exists_conditions:
+                subquery = select(related_model)
+                for field, value in subquery_filters.items():
+                    if isinstance(value, list):
+                        subquery = subquery.where(
+                            getattr(related_model, field).in_(tuple(value))
+                        )
+                    else:
+                        subquery = subquery.where(
+                            getattr(related_model, field) == value
+                        )
+                query = query.where(~exists(subquery))
+
+        # Apply filters
+        if filters:
+            for field, value in filters.items():
+                if isinstance(value, list):
+                    query = query.where(getattr(model, field).in_(tuple(value)))
+                else:
+                    query = query.where(getattr(model, field) == value)
+
+        # Apply conditions
+        if conditions:
+            from sqlalchemy import and_
+
+            query = query.where(and_(*conditions))
+
+        if order_by:
+            query = query.order_by(*order_by)
+        if options:
+            for opt in options:
+                query = query.options(opt)
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+
+        result = await db.execute(query)
         return list(result.scalars().all())
-
-    @staticmethod
-    async def get_all_by_filter(db: AsyncSession, model, filters: dict):
-        stmt = select(model).filter_by(**filters)
-        result = await db.execute(stmt)
-        return result.scalars().all()
-
-    @staticmethod
-    async def get_with_join(
-        db: AsyncSession,
-        stmt: select,  # Pre-built SQLAlchemy select statement with joins
-        as_dict: bool = False,  # Optional: return as dict if needed
-    ) -> list[Any]:
-        """Execute a select statement with joins and return results.
-
-        Args:
-            db: AsyncSession instance.
-            stmt: SQLAlchemy select statement (e.g., with joins).
-            as_dict: If True, return results as dicts (for non-ORM queries).
-
-        Returns:
-            List of results (ORM objects or dicts).
-        """
-        try:
-            result = await db.execute(stmt)
-            if as_dict:
-                return [dict(row) for row in result.all()]
-            return result.all()
-        except Exception as e:
-            logger.error(f"Error executing join query: {e}")
-            raise

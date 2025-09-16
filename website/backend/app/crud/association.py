@@ -22,7 +22,8 @@ logger = get_logger()
 
 async def add_elan_file_to_media(db: AsyncSession, elan_id: int, media_id: int):
     filters = {"elan_id": elan_id, "media_id": media_id}
-    exists = await DatabaseUtils.get_one_by_filter(db, ElanFileToMedia, filters)
+    results = await DatabaseUtils.get_by_filter(db, ElanFileToMedia, filters, limit=1)
+    exists = results[0] if results else None
     if not exists:
         assoc = ElanFileToMedia(elan_id=elan_id, media_id=media_id)
         await DatabaseUtils.create(db, assoc)
@@ -92,7 +93,8 @@ async def has_any_project_for_elan_file(db: AsyncSession, elan_id: int) -> bool:
 
 async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: int):
     filters = {"elan_id": elan_id, "tier_id": tier_id}
-    exists = await DatabaseUtils.get_one_by_filter(db, ElanFileToTier, filters)
+    results = await DatabaseUtils.get_by_filter(db, ElanFileToTier, filters, limit=1)
+    exists = results[0] if results else None
     if not exists:
         assoc = ElanFileToTier(elan_id=elan_id, tier_id=tier_id)
         await DatabaseUtils.create(db, assoc)
@@ -122,7 +124,10 @@ async def add_project_annot_standard(
     db: AsyncSession, project_id: int, annot_standard_id: int
 ):
     filters = {"project_id": project_id, "annot_standard_id": annot_standard_id}
-    exists = await DatabaseUtils.get_one_by_filter(db, ProjectAnnotStandard, filters)
+    results = await DatabaseUtils.get_by_filter(
+        db, ProjectAnnotStandard, filters, limit=1
+    )
+    exists = results[0] if results else None
     if not exists:
         assoc = ProjectAnnotStandard(
             project_id=project_id, annot_standard_id=annot_standard_id
@@ -160,7 +165,8 @@ async def update_project_annot_standard(
 
 async def add_user_to_project(db: AsyncSession, user_id: int, project_id: int):
     filters = {"user_id": user_id, "project_id": project_id}
-    exists = await DatabaseUtils.get_one_by_filter(db, UserToProject, filters)
+    results = await DatabaseUtils.get_by_filter(db, UserToProject, filters, limit=1)
+    exists = results[0] if results else None
     if not exists:
         assoc = UserToProject(user_id=user_id, project_id=project_id)
         await DatabaseUtils.create(db, assoc)
@@ -200,7 +206,8 @@ async def add_project_file_type(
     file_type_id: int,
 ):
     filters = {"project_id": project_id, "name": name}
-    exists = await DatabaseUtils.get_one_by_filter(db, ProjectFileType, filters)
+    results = await DatabaseUtils.get_by_filter(db, ProjectFileType, filters, limit=1)
+    exists = results[0] if results else None
     if not exists:
         assoc = ProjectFileType(
             project_id=project_id,
@@ -247,20 +254,23 @@ async def update_project_file_type(
 
 
 async def get_project_file_type_by_id(db: AsyncSession, project_file_type_id: int):
-    return await DatabaseUtils.get_one_by_filter(
+    results = await DatabaseUtils.get_by_filter(
         db,
         ProjectFileType,
         {"id": project_file_type_id},
         options=[selectinload(ProjectFileType.file_type)],
+        limit=1,
     )
+    return results[0] if results else None
 
 
 async def count_project_file_types_by_file_type_id(
     db: AsyncSession, file_type_id: int
 ) -> int:
-    return await DatabaseUtils.count(
+    results = await DatabaseUtils.get_by_filter(
         db, ProjectFileType, {"file_type_id": file_type_id}
     )
+    return len(results)
 
 
 async def update_project_file_type_name(
@@ -288,9 +298,13 @@ async def get_project_file_type_by_project_and_file_type(
     """Get the ProjectFileType for a given project and file_type_id."""
     from app.model.project_file_type import ProjectFileType
 
-    return await DatabaseUtils.get_one_by_filter(
-        db, ProjectFileType, {"project_id": project_id, "file_type_id": file_type_id}
+    results = await DatabaseUtils.get_by_filter(
+        db,
+        ProjectFileType,
+        {"project_id": project_id, "file_type_id": file_type_id},
+        limit=1,
     )
+    return results[0] if results else None
 
 
 async def get_project_file_type_with_file_type(db, project_file_type_id: int):
@@ -308,15 +322,18 @@ async def get_project_file_type_with_file_type(db, project_file_type_id: int):
 async def delete_project_associations(db: AsyncSession, project_id: int):
     logger.info("Bulk deleting project associations for project_id=%s", project_id)
     try:
-        await DatabaseUtils.bulk_delete(
-            db, ProjectFileType, ProjectFileType.project_id == project_id
+        conditions = [ProjectFileType.project_id == project_id]
+        await DatabaseUtils.delete_by_conditions(
+            db, ProjectFileType, conditions=conditions
         )
         # ElanFileToProject removed - files are now deleted via cascade from project_id FK
-        await DatabaseUtils.bulk_delete(
-            db, ProjectAnnotStandard, ProjectAnnotStandard.project_id == project_id
+        conditions = [ProjectAnnotStandard.project_id == project_id]
+        await DatabaseUtils.delete_by_conditions(
+            db, ProjectAnnotStandard, conditions=conditions
         )
-        await DatabaseUtils.bulk_delete(
-            db, UserToProject, UserToProject.project_id == project_id
+        conditions = [UserToProject.project_id == project_id]
+        await DatabaseUtils.delete_by_conditions(
+            db, UserToProject, conditions=conditions
         )
         logger.info("Bulk deleted project associations successfully")
         await db.flush()
@@ -368,16 +385,17 @@ async def get_project_users(db: AsyncSession, project_id: int) -> list[dict]:
     ]
 
 
-async def remove_user_from_project(
+async def remove_user_from_project_v2(
     db: AsyncSession, user_id: int, project_id: int
 ) -> bool:
     """Remove a user from a project."""
     try:
-        result = await DatabaseUtils.bulk_delete(
-            db,
-            UserToProject,
+        conditions = [
             (UserToProject.user_id == user_id)
-            & (UserToProject.project_id == project_id),
+            & (UserToProject.project_id == project_id)
+        ]
+        result = await DatabaseUtils.delete_by_conditions(
+            db, UserToProject, conditions=conditions
         )
         await db.commit()
         return result > 0

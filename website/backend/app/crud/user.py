@@ -20,11 +20,13 @@ async def get_user_by_username_or_email(
 ) -> User | None:
     """Retrieve a user by their username or email."""
     filters = {"username": login_or_email}
-    user = await DatabaseUtils.get_one_by_filter(db, User, filters)
+    result = await DatabaseUtils.get_by_filter(db, User, filters, limit=1)
+    user = result[0] if result else None
     if user:
         return user
     filters = {"email": login_or_email}
-    return await DatabaseUtils.get_one_by_filter(db, User, filters)
+    result = await DatabaseUtils.get_by_filter(db, User, filters, limit=1)
+    return result[0] if result else None
 
 
 async def create_user_in_db(
@@ -81,7 +83,8 @@ async def update_user_profile(db: AsyncSession, user: User, **update_fields) -> 
 async def validate_user_exists_and_active(db: AsyncSession, user_id: int) -> bool:
     """Validate that a user exists and has an active account."""
     filters = {"user_id": user_id, "is_active": True}
-    user = await DatabaseUtils.get_one_by_filter(db, User, filters)
+    result = await DatabaseUtils.get_by_filter(db, User, filters, limit=1)
+    user = result[0] if result else None
     return user is not None
 
 

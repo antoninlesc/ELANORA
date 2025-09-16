@@ -17,7 +17,10 @@ async def link_component_to_accepted_value(
         "component_template_id": component_template_id,
         "accepted_value_id": accepted_value_id,
     }
-    link = await DatabaseUtils.get_one_by_filter(db, ComponentAcceptedValue, filters)
+    results = await DatabaseUtils.get_by_filter(
+        db, ComponentAcceptedValue, filters, limit=1
+    )
+    link = results[0] if results else None
     if not link:
         link = ComponentAcceptedValue(
             component_template_id=component_template_id,
@@ -56,10 +59,11 @@ async def delete_for_orphaned_templates(db: AsyncSession):
         orphaned_template_ids = [row[0] for row in orphaned_templates_result]
         logger.info(f"Orphaned template IDs: {orphaned_template_ids}")
         if orphaned_template_ids:
-            deleted = await DatabaseUtils.bulk_delete(
-                db,
-                ComponentAcceptedValue,
-                ComponentAcceptedValue.component_template_id.in_(orphaned_template_ids),
+            conditions = [
+                ComponentAcceptedValue.component_template_id.in_(orphaned_template_ids)
+            ]
+            deleted = await DatabaseUtils.delete_by_conditions(
+                db, ComponentAcceptedValue, conditions=conditions
             )
             logger.info(
                 f"Deleted {deleted} ComponentAcceptedValue rows for orphaned templates."

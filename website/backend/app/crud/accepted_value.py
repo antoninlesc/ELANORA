@@ -10,7 +10,8 @@ logger = get_logger(__name__)
 
 async def get_or_create_accepted_value(db: AsyncSession, value: str) -> AcceptedValue:
     filters = {"value": value}
-    obj = await DatabaseUtils.get_one_by_filter(db, AcceptedValue, filters)
+    results = await DatabaseUtils.get_by_filter(db, AcceptedValue, filters, limit=1)
+    obj = results[0] if results else None
     if obj:
         return obj
     obj = AcceptedValue(value=value)
@@ -21,21 +22,24 @@ async def get_or_create_accepted_value(db: AsyncSession, value: str) -> Accepted
 
 async def delete_orphaned_accepted_values(db: AsyncSession):
     from app.model.component_accepted_value import ComponentAcceptedValue
+    from sqlalchemy import select as sql_select
 
     try:
         logger.info("Starting orphaned AcceptedValue cleanup...")
         # Count before
         before = (
-            await db.execute(select(func.count()).select_from(AcceptedValue))
+            await db.execute(sql_select(func.count()).select_from(AcceptedValue))
         ).scalar()
         logger.info(f"AcceptedValue rows before cleanup: {before}")
         # Delete orphans
-        result = await DatabaseUtils.delete_fully_orphaned(
-            db, AcceptedValue, ComponentAcceptedValue, "id", "accepted_value_id"
+        subquery = sql_select(ComponentAcceptedValue.accepted_value_id)
+        conditions = [~AcceptedValue.id.in_(subquery)]
+        result = await DatabaseUtils.delete_by_conditions(
+            db, AcceptedValue, conditions=conditions
         )
         # Count after
         after = (
-            await db.execute(select(func.count()).select_from(AcceptedValue))
+            await db.execute(sql_select(func.count()).select_from(AcceptedValue))
         ).scalar()
         logger.info(f"AcceptedValue rows after cleanup: {after}")
         await db.flush()

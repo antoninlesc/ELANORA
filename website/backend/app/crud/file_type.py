@@ -10,11 +10,15 @@ async def get_file_type_by_id(db: AsyncSession, file_type_id: int) -> FileType |
 
 
 async def get_file_type_by_name(db: AsyncSession, name: str) -> FileType | None:
-    return await DatabaseUtils.get_one_by_filter(db, FileType, {"name": name})
+    result = await DatabaseUtils.get_by_filter(db, FileType, {"name": name}, limit=1)
+    return result[0] if result else None
 
 
 async def get_file_type_by_extension(db: AsyncSession, extension: str):
-    return await DatabaseUtils.get_one_by_filter(db, FileType, {"extension": extension})
+    result = await DatabaseUtils.get_by_filter(
+        db, FileType, {"extension": extension}, limit=1
+    )
+    return result[0] if result else None
 
 
 async def create_file_type(db: AsyncSession, extension: str) -> FileType:
@@ -38,10 +42,17 @@ async def delete_file_type(db: AsyncSession, file_type_id: int) -> int:
 
 async def delete_orphaned_file_types(db: AsyncSession) -> int:
     """Delete FileType records not referenced by any ProjectFileType."""
-    return await DatabaseUtils.delete_fully_orphaned(
+    # Find orphaned FileType records using NOT EXISTS condition
+    orphaned_file_types = await DatabaseUtils.get_with_exists_conditions(
         db,
         FileType,
-        ProjectFileType,
-        main_id_field="id",
-        assoc_ref_field="file_type_id",
+        not_exists_conditions=[(ProjectFileType, {"file_type_id": "id"})],
     )
+
+    # Delete the orphaned records
+    count = 0
+    for file_type in orphaned_file_types:
+        await db.delete(file_type)
+        count += 1
+
+    return count

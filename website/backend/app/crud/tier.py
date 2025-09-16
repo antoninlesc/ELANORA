@@ -15,22 +15,35 @@ logger = get_logger()
 async def delete_tiers_for_elan_file(db: AsyncSession, elan_id: int):
     logger.info(f"Bulk deleting tiers and annotations for elan_id={elan_id}")
     try:
+        # Get content_id from elan_id
+        from app.crud.elan_file import get_elan_file_by_id
+
+        elan_file = await get_elan_file_by_id(db, elan_id)
+        if not elan_file:
+            return
+
         tier_ids = [
             row[0]
             for row in await db.execute(
-                select(ElanFileToTier.tier_id).where(ElanFileToTier.elan_id == elan_id)
+                select(ElanFileToTier.tier_id).where(
+                    ElanFileToTier.content_id == elan_file.content_id
+                )
             )
         ]
         logger.info(f"tier_ids to delete for elan_id={elan_id}: {tier_ids}")
         if tier_ids:
-            await DatabaseUtils.bulk_delete(
-                db, Annotation, Annotation.tier_id.in_(tier_ids)
+            from sqlalchemy import and_
+
+            conditions = [Annotation.tier_id.in_(tier_ids)]
+            await DatabaseUtils.delete_by_conditions(
+                db, Annotation, conditions=conditions
             )
-            await DatabaseUtils.bulk_delete(
-                db,
-                ElanFileToTier,
-                (ElanFileToTier.elan_id == elan_id)
-                & ElanFileToTier.tier_id.in_(tier_ids),
+            conditions = [
+                (ElanFileToTier.content_id == elan_file.content_id)
+                & ElanFileToTier.tier_id.in_(tier_ids)
+            ]
+            await DatabaseUtils.delete_by_conditions(
+                db, ElanFileToTier, conditions=conditions
             )
             orphaned_tiers = [
                 row[0]
@@ -42,8 +55,9 @@ async def delete_tiers_for_elan_file(db: AsyncSession, elan_id: int):
                 )
             ]
             if orphaned_tiers:
-                await DatabaseUtils.bulk_delete(
-                    db, Tier, Tier.tier_id.in_(orphaned_tiers)
+                conditions = [Tier.tier_id.in_(orphaned_tiers)]
+                await DatabaseUtils.delete_by_conditions(
+                    db, Tier, conditions=conditions
                 )
         logger.info(f"Bulk deleted tiers and annotations for elan_id={elan_id}")
     except Exception as e:
@@ -74,13 +88,14 @@ async def get_root_tiers(db: AsyncSession) -> list[Tier]:
 
 async def get_tier_id_by_name(db: AsyncSession, tier_name: str) -> int | None:
     filters = {"tier_name": tier_name}
-    tier = await DatabaseUtils.get_one_by_filter(db, Tier, filters)
-    return tier.tier_id if tier else None
+    results = await DatabaseUtils.get_by_filter(db, Tier, filters, limit=1)
+    return results[0].tier_id if results else None
 
 
 async def get_tier_by_name(db: AsyncSession, tier_name: str) -> Tier | None:
     filters = {"tier_name": tier_name}
-    return await DatabaseUtils.get_one_by_filter(db, Tier, filters)
+    results = await DatabaseUtils.get_by_filter(db, Tier, filters, limit=1)
+    return results[0] if results else None
 
 
 async def create_tier_in_db(
@@ -100,12 +115,25 @@ async def create_tier_in_db(
 
 async def get_tiers_by_elan_id(db: AsyncSession, elan_id: int) -> list[Tier]:
     """Get all tiers for a given ELAN file using tier_id association."""
-    result = await db.execute(
-        select(Tier)
-        .join(ElanFileToTier, Tier.tier_id == ElanFileToTier.tier_id)
-        .filter(ElanFileToTier.elan_id == elan_id)
-    )
-    return list(result.scalars().all())
+    # Get content_id from elan_id using DatabaseUtils
+    from app.crud.elan_file import get_elan_file_by_id
+
+    elan_file = await get_elan_file_by_id(db, elan_id)
+    if not elan_file:
+        return []
+
+    # Use DatabaseUtils with subquery approach for now
+    in_filters = {"tier_id": []}
+    # Get tier_ids associated with this content_id
+    assoc_filters = {"content_id": elan_file.content_id}
+    associations = await DatabaseUtils.get_by_filter(db, ElanFileToTier, assoc_filters)
+    tier_ids = [assoc.tier_id for assoc in associations]
+
+    if not tier_ids:
+        return []
+
+    filters = {"tier_id": tier_ids}
+    return await DatabaseUtils.get_by_filter(db, Tier, filters=filters)
 
 
 async def check_tier_exists(db: AsyncSession, tier_id: int) -> bool:
@@ -125,28 +153,59 @@ async def update_parent_tier(
 
 async def get_all_tier_names_with_annotations(db: AsyncSession) -> list[str]:
     """Get all unique tier names that have annotations."""
-    result = await db.execute(select(Tier.tier_name).join(Annotation).distinct())
-    return [row[0] for row in result]
+    # Use distinct query to get tier names that have annotations
+    from app.model.annotation import Annotation
+    from sqlalchemy import distinct, select
+
+    query = (
+        select(distinct(Tier.tier_name))
+        .select_from(Tier)
+        .join(Annotation, Tier.tier_id == Annotation.tier_id)
+    )
+    result = await db.execute(query)
+    tier_names = [row[0] for row in result.all() if row[0] is not None]
+    return [str(name) for name in tier_names]
 
 
-async def get_tiers_with_annotations(db: AsyncSession) -> list[Tier]:
-    """Get all tiers that have at least one annotation."""
-    result = await db.execute(select(Tier).join(Annotation).distinct())
-    return list(result.scalars().all())
+async def get_tiers_with_annotations_for_content(
+    db: AsyncSession, content_id: int
+) -> list[Tier]:
+    """Get all tiers that have at least one annotation for a specific content."""
+    # Use DatabaseUtils with join to get distinct tiers
+    from app.model.annotation import Annotation
+    from sqlalchemy import distinct
+
+    # Get distinct tier_ids that have annotations for this content
+    subquery = select(distinct(Annotation.tier_id)).where(
+        Annotation.content_id == content_id
+    )
+    conditions = [Tier.tier_id.in_(subquery)]
+
+    return await DatabaseUtils.get_by_conditions(db, Tier, conditions=conditions)
 
 
 async def get_tier_statistics(db: AsyncSession) -> list[tuple[str, int]]:
     """Get statistics about tiers across all files."""
-    result = await db.execute(
-        select(
-            Tier.tier_name,
-            func.count(Annotation.annotation_id).label("annotation_count"),
-        )
-        .join(Annotation)
-        .group_by(Tier.tier_name)
-        .order_by(func.count(Annotation.annotation_id).desc())
+    # Use DatabaseUtils aggregate query support
+    from sqlalchemy import func
+    from app.model.annotation import Annotation
+
+    aggregates = {
+        "tier_name": Tier.tier_name,
+        "annotation_count": func.count(Annotation.annotation_id),
+    }
+    group_by = [Tier.tier_name]
+
+    # Join with annotations
+    relationships = [("annotations", None)]
+
+    result = await DatabaseUtils.get_aggregated_data(
+        db, Tier, aggregates, group_by=group_by
     )
-    return [tuple(row) for row in result]
+
+    # Sort by annotation count descending
+    result.sort(key=lambda x: x["annotation_count"], reverse=True)
+    return [(row["tier_name"], row["annotation_count"]) for row in result]
 
 
 async def get_tiers_by_ids(db, tier_ids: list[int]) -> list[Tier]:

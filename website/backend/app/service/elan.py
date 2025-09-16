@@ -13,6 +13,7 @@ from app.crud.annotation import (
     delete_annotations_by_file,
     delete_annotations_by_tier,
     get_annotations_by_tier,
+    get_annotations_by_tier_and_content,
     get_annotations_by_time_range,
 )
 from app.crud.annotation_value import bulk_get_or_create_annotation_values
@@ -22,13 +23,18 @@ from app.crud.association import (
     remove_elan_file_from_project,
 )
 from app.crud.elan_file import (
+    check_elan_file_exists_by_filename_and_project,
+    create_elan_file_in_db,
     delete_elan_file_full,
     get_all_elan_files,
     get_elan_file_by_filename,
+    get_elan_file_by_filename_and_project,
+    get_elan_file_by_id,
     get_elan_files_by_user,
     store_elan_file_data_in_db,
     sync_elan_file_to_tiers,
 )
+from app.crud.file_content import get_file_content_by_hash, calculate_file_hash
 from app.crud.project import get_project_by_name
 from app.crud.tier import (
     create_tier_in_db,
@@ -36,7 +42,7 @@ from app.crud.tier import (
     get_all_tier_names_with_annotations,
     get_tier_by_name,
     get_tier_statistics,
-    get_tiers_with_annotations,
+    get_tiers_with_annotations_for_content,
     update_parent_tier,
 )
 from app.crud.tier_group import delete_tier_groups_for_project_and_elan
@@ -143,7 +149,7 @@ class ElanService:
     # ==================== STORAGE METHODS ====================
 
     async def _store_tiers_and_annotations(
-        self, tiers_data: list[dict], elan_id: int
+        self, tiers_data: list[dict], content_id: int
     ) -> None:
         logger.debug(f"Storing {len(tiers_data)} tiers with annotations")
         t0 = time.perf_counter()
@@ -187,7 +193,7 @@ class ElanService:
 
         # Bulk create all annotations for all tiers
         t_ann_start = time.perf_counter()
-        await bulk_create_annotations(self.db, tiers_data, elan_id, value_map)
+        await bulk_create_annotations(self.db, tiers_data, content_id, value_map)
         t_ann_end = time.perf_counter()
         logger.info(
             f"Annotation creation (all tiers) took {t_ann_end - t_ann_start:.3f}s"
@@ -198,26 +204,6 @@ class ElanService:
         )
         total_time = time.perf_counter() - t0
         logger.info(f"Total _store_tiers_and_annotations time: {total_time:.3f}s")
-
-    async def _get_or_create_tier(self, tier_data: dict) -> Tier:
-        """Get existing tier or create new one using CRUD."""
-        tier_obj = await get_tier_by_name(self.db, tier_data["tier_name"])
-
-        if not tier_obj:
-            tier_obj = await create_tier_in_db(
-                db=self.db,
-                tier_name=tier_data["tier_name"],
-                parent_tier_id=tier_data.get("parent_tier_id"),
-            )
-            logger.debug(
-                f"Created new tier: {tier_data['tier_name']} (ID: {tier_obj.tier_id})"
-            )
-        else:
-            logger.debug(
-                f"Using existing tier: {tier_data['tier_name']} (ID: {tier_data['tier_id']})"
-            )
-
-        return tier_obj
 
     async def store_elan_file_data(
         self, file_info: dict, user_id: int, project_id: int
@@ -232,7 +218,15 @@ class ElanService:
             )
 
             # Store tiers and annotations (this sets tier["tier_id"])
-            await self._store_tiers_and_annotations(file_info["tiers"], elan_id)
+            # Get content_id from the created elan_file
+            elan_file_obj = await get_elan_file_by_id(self.db, elan_id)
+            if elan_file_obj:
+                await self._store_tiers_and_annotations(
+                    file_info["tiers"], elan_file_obj.content_id
+                )
+            else:
+                logger.error(f"Failed to get elan_file_obj for elan_id {elan_id}")
+                raise ValueError(f"Could not retrieve elan file after creation")
 
             # Now that tiers have IDs, sync associations
             tier_ids = [tier["tier_id"] for tier in file_info["tiers"]]
@@ -253,39 +247,89 @@ class ElanService:
         self, file_info: dict, user_id: int, project_id: int
     ) -> int:
         """Store parsed ELAN file data in the database and sync associations."""
-        logger.info(f"Storing ELAN file data: {file_info['filename']}")
+        logger.info(f"Updating ELAN file data: {file_info['filename']}")
         try:
+            # Check if content already exists by hash
+            content_hash = calculate_file_hash(file_info["file_path"])
+            existing_content = await get_file_content_by_hash(self.db, content_hash)
+
+            if existing_content:
+                logger.info(
+                    f"Content already exists for {file_info['filename']}, reusing existing content"
+                )
+                # Check if this project already has this content
+                if await check_elan_file_exists_by_filename_and_project(
+                    self.db, file_info["filename"], project_id
+                ):
+                    # File already exists in this project, return existing elan_id
+                    existing_file = await get_elan_file_by_filename_and_project(
+                        self.db, file_info["filename"], project_id
+                    )
+                    if existing_file:
+                        return existing_file.elan_id
+
+                # Content exists but not in this project, create new ElanFile linking to existing content
+                elan_file = await create_elan_file_in_db(
+                    db=self.db,
+                    filename=file_info["filename"],
+                    file_path=file_info["file_path"],
+                    file_size=file_info["file_size"],
+                    user_id=user_id,
+                    project_id=project_id,
+                    last_modified=file_info["last_modified"],
+                )
+                # Since content exists, no need to parse annotations/tiers
+                await self.db.commit()
+                logger.info(
+                    f"Successfully linked existing content to project: {file_info['filename']} (ID: {elan_file.elan_id})"
+                )
+                return elan_file.elan_id
+
+            # Content doesn't exist, proceed with normal parsing and storage
+            # Check if file exists globally and needs updating
             existing_file = await get_elan_file_by_filename(
                 self.db, file_info["filename"]
             )
             if existing_file:
                 logger.info(f"Updating existing ELAN file: {existing_file.elan_id}")
                 await delete_elan_file_full(self.db, existing_file.elan_id)
-            else:
-                logger.info(f"No existing ELAN file found for {file_info['filename']}")
+
             # Store all ELAN file data and associations using CRUD
             elan_id = await store_elan_file_data_in_db(
                 self.db, file_info, user_id, project_id
             )
+
             # Delete all existing annotations for this file before inserting new ones
-            await delete_annotations_by_file(self.db, elan_id)
-            logger.info(f"Deleted existing annotations for ELAN file ID: {elan_id}")
+            elan_file_obj = await get_elan_file_by_id(self.db, elan_id)
+            if elan_file_obj:
+                await delete_annotations_by_file(self.db, elan_file_obj.content_id)
+                logger.info(f"Deleted existing annotations for ELAN file ID: {elan_id}")
 
             # Store tiers and annotations (this sets tier["tier_id"])
-            await self._store_tiers_and_annotations(file_info["tiers"], elan_id)
+            # Get content_id from the created elan_file
+            elan_file_obj = await get_elan_file_by_id(self.db, elan_id)
+            if elan_file_obj:
+                await self._store_tiers_and_annotations(
+                    file_info["tiers"], elan_file_obj.content_id
+                )
+            else:
+                logger.error(f"Failed to get elan_file_obj for elan_id {elan_id}")
+                raise ValueError(f"Could not retrieve elan file after creation")
 
             # Now that tiers have IDs, sync associations
             tier_ids = [tier["tier_id"] for tier in file_info["tiers"]]
             await sync_elan_file_to_tiers(self.db, elan_id, tier_ids)
 
             await self.db.commit()
-            logger.info(f"Successfully stored: {file_info['filename']} (ID: {elan_id})")
+            logger.info(
+                f"Successfully updated: {file_info['filename']} (ID: {elan_id})"
+            )
             return elan_id
 
         except Exception as e:
             await self.db.rollback()
             logger.error(
-                f"Failed to store ELAN file data for {file_info['filename']}: {e}"
+                f"Failed to update ELAN file data for {file_info['filename']}: {e}"
             )
             raise
 
@@ -433,8 +477,10 @@ class ElanService:
             logger.warning(f"File not found in database: {filename}")
             return None
 
-        # Get all tiers with annotations
-        tiers_with_annotations = await self._get_tiers_with_annotations()
+        # Get all tiers with annotations for this file's content
+        tiers_with_annotations = await self._get_tiers_with_annotations_for_content(
+            elan_file_obj.content_id
+        )
 
         file_structure = {
             "elan_id": elan_file_obj.elan_id,
@@ -446,8 +492,10 @@ class ElanService:
 
         total_annotations = 0
         for tier_obj in tiers_with_annotations:
-            # Get annotations using CRUD
-            annotations_list = await get_annotations_by_tier(self.db, tier_obj.tier_id)
+            # Get annotations using CRUD, filtered by content_id
+            annotations_list = await get_annotations_by_tier_and_content(
+                self.db, tier_obj.tier_id, elan_file_obj.content_id
+            )
             tier_data = {
                 "tier_id": tier_obj.tier_id,
                 "tier_name": tier_obj.tier_name,
@@ -471,10 +519,14 @@ class ElanService:
         )
         return file_structure
 
-    async def _get_tiers_with_annotations(self) -> list[Tier]:
-        """Get all tiers that have at least one annotation."""
-        tiers = await get_tiers_with_annotations(self.db)
-        logger.debug(f"Found {len(tiers)} tiers with annotations")
+    async def _get_tiers_with_annotations_for_content(
+        self, content_id: int
+    ) -> list[Tier]:
+        """Get all tiers that have at least one annotation for a specific content."""
+        tiers = await get_tiers_with_annotations_for_content(self.db, content_id)
+        logger.debug(
+            f"Found {len(tiers)} tiers with annotations for content {content_id}"
+        )
         return tiers
 
     async def get_tier_statistics(self) -> dict:
