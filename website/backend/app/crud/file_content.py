@@ -28,14 +28,18 @@ def calculate_file_hash(file_path: str) -> str:
     return hash_sha256.hexdigest()
 
 
-async def get_file_content_by_hash(db: AsyncSession, content_hash: str) -> FileContent | None:
+async def get_file_content_by_hash(
+    db: AsyncSession, content_hash: str
+) -> FileContent | None:
     """Get file content by hash."""
     stmt = select(FileContent).where(FileContent.content_hash == content_hash)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
 
-async def get_file_content_by_id(db: AsyncSession, content_id: int) -> FileContent | None:
+async def get_file_content_by_id(
+    db: AsyncSession, content_id: int
+) -> FileContent | None:
     """Get file content by ID."""
     return await DatabaseUtils.get_by_id(db, FileContent, "content_id", content_id)
 
@@ -80,7 +84,9 @@ async def get_or_create_file_content(
     # Convert relative path to absolute if needed for file operations
     if not Path(file_path).is_absolute():
         absolute_path = make_path_absolute_from_projects(file_path)
-        logger.debug(f"Converted relative path to absolute: {file_path} -> {absolute_path}")
+        logger.debug(
+            f"Converted relative path to absolute: {file_path} -> {absolute_path}"
+        )
     else:
         absolute_path = file_path
         logger.debug(f"Using provided absolute path: {absolute_path}")
@@ -104,7 +110,9 @@ async def get_or_create_file_content(
 async def delete_file_content(db: AsyncSession, content_id: int) -> bool:
     """Delete file content by ID."""
     try:
-        result = await DatabaseUtils.delete_by_id(db, FileContent, "content_id", content_id)
+        result = await DatabaseUtils.delete_by_id(
+            db, FileContent, "content_id", content_id
+        )
         if result:
             logger.info(f"Deleted file content with ID: {content_id}")
         return result
@@ -113,7 +121,9 @@ async def delete_file_content(db: AsyncSession, content_id: int) -> bool:
         return False
 
 
-async def get_file_contents_by_user(db: AsyncSession, user_id: int) -> list[FileContent]:
+async def get_file_contents_by_user(
+    db: AsyncSession, user_id: int
+) -> list[FileContent]:
     """Get all file contents created by a specific user."""
     filters = {"user_id": user_id}
     return await DatabaseUtils.get_by_filter(db, FileContent, filters)
@@ -122,9 +132,7 @@ async def get_file_contents_by_user(db: AsyncSession, user_id: int) -> list[File
 async def get_orphaned_file_contents(db: AsyncSession) -> list[FileContent]:
     """Get file contents that are not referenced by any ELAN files."""
     stmt = select(FileContent).where(
-        ~FileContent.content_id.in_(
-            select(ElanFile.content_id).distinct()
-        )
+        ~FileContent.content_id.in_(select(ElanFile.content_id).distinct())
     )
     result = await db.execute(stmt)
     return result.scalars().all()

@@ -307,10 +307,21 @@ class ElanService:
         existing_file = await get_elan_file_by_filename(self.db, filename)
         if existing_file:
             # Check if it's associated with this project
-            project_elan_ids = await get_elan_ids_for_project(self.db, project.project_id)
+            project_elan_ids = await get_elan_ids_for_project(
+                self.db, project.project_id
+            )
             if existing_file.elan_id in project_elan_ids:
-                logger.info("File %s already processed for project %s, skipping", filename, project_name)
-                return {"status": "skipped", "reason": "already_processed", "filename": filename, "elan_id": existing_file.elan_id}
+                logger.info(
+                    "File %s already processed for project %s, skipping",
+                    filename,
+                    project_name,
+                )
+                return {
+                    "status": "skipped",
+                    "reason": "already_processed",
+                    "filename": filename,
+                    "elan_id": existing_file.elan_id,
+                }
 
         logger.debug("Processing new file: %s for project: %s", filename, project_name)
         file_info = self.parse_elan_file(file_path)
@@ -372,14 +383,26 @@ class ElanService:
 
             except Exception as e:
                 logger.error("Failed to process %s: %s", eaf_file.name, e)
-                results[eaf_file.name] = {"status": "failed", "filename": eaf_file.name, "error": str(e)}
+                results[eaf_file.name] = {
+                    "status": "failed",
+                    "filename": eaf_file.name,
+                    "error": str(e),
+                }
                 failed_count += 1
 
-        logger.info("Directory processing completed. Processed: %d, Skipped: %d, Failed: %d",
-                    processed_count, skipped_count, failed_count)
+        logger.info(
+            "Directory processing completed. Processed: %d, Skipped: %d, Failed: %d",
+            processed_count,
+            skipped_count,
+            failed_count,
+        )
 
         if skipped_count > 0:
-            skipped_files = [result["filename"] for result in results.values() if result["status"] == "skipped"]
+            skipped_files = [
+                result["filename"]
+                for result in results.values()
+                if result["status"] == "skipped"
+            ]
             logger.info("Skipped files (already in database): %s", skipped_files)
 
         return results

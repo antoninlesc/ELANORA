@@ -437,7 +437,7 @@ async def rename_file(
             renamed_at="",
             message=str(e),
             conflict_elan_id=e.conflict_elan_id,
-            message_key=e.message_key
+            message_key=e.message_key,
         )
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e

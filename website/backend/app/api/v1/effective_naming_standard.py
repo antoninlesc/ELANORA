@@ -16,9 +16,12 @@ from app.schema.responses.effective_naming_standard import (
     UnassignEffectiveNamingStandardResponse,
     GetEffectiveStandardsResponse,
 )
-from app.core.effective_naming_standard_locations import EFFECTIVE_NAMING_STANDARD_LOCATIONS
+from app.core.effective_naming_standard_locations import (
+    EFFECTIVE_NAMING_STANDARD_LOCATIONS,
+)
 
 router = APIRouter()
+
 
 @router.get("/locations")
 async def get_effective_naming_standard_locations():
@@ -37,7 +40,11 @@ async def assign_standard(
     admin_user=get_admin_dep,
 ):
     result = await assign_effective_standard(
-        db, project_id, project_file_type_id, payload.naming_standard_id, payload.location_id
+        db,
+        project_id,
+        project_file_type_id,
+        payload.naming_standard_id,
+        payload.location_id,
     )
     return {"success": True, "effective_standard": result}
 

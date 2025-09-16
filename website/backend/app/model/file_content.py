@@ -16,14 +16,18 @@ class FileContent(Base):
 
     __tablename__ = "FILE_CONTENT"
 
-    content_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    content_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     user_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("USER.user_id", ondelete="SET NULL"), nullable=True
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.now
+    )
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="file_contents")

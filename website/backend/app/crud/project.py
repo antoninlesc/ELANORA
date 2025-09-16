@@ -20,6 +20,7 @@ from app.utils.database import DatabaseUtils
 
 logger = get_logger()
 
+
 async def create_project_db(
     db: AsyncSession,
     project_name: str,

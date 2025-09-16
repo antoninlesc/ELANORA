@@ -49,25 +49,41 @@ async def update_elan_file_media(
 # --- ElanFileToProject REMOVED ---
 # These operations are no longer needed as files belong directly to projects via project_id foreign key
 
+
 # Legacy functions kept for backward compatibility during migration
 async def add_elan_file_to_project(db: AsyncSession, elan_id: int, project_id: int):
     """DEPRECATED: Files now belong directly to projects via project_id FK."""
-    logger.warning("add_elan_file_to_project is deprecated - use project_id in ElanFile directly")
+    logger.warning(
+        "add_elan_file_to_project is deprecated - use project_id in ElanFile directly"
+    )
     pass  # No-op since project_id is set during file creation
 
-async def remove_elan_file_from_project(db: AsyncSession, elan_id: int, project_id: int):
+
+async def remove_elan_file_from_project(
+    db: AsyncSession, elan_id: int, project_id: int
+):
     """DEPRECATED: Files now belong directly to projects via project_id FK."""
-    logger.warning("remove_elan_file_from_project is deprecated - delete the ElanFile instead")
+    logger.warning(
+        "remove_elan_file_from_project is deprecated - delete the ElanFile instead"
+    )
     pass  # No-op since cascade delete handles this
 
-async def update_elan_file_project(db: AsyncSession, elan_id: int, old_project_id: int, new_project_id: int):
+
+async def update_elan_file_project(
+    db: AsyncSession, elan_id: int, old_project_id: int, new_project_id: int
+):
     """DEPRECATED: Files now belong directly to projects via project_id FK."""
-    logger.warning("update_elan_file_project is deprecated - update project_id in ElanFile directly")
+    logger.warning(
+        "update_elan_file_project is deprecated - update project_id in ElanFile directly"
+    )
     pass  # No-op
+
 
 async def has_any_project_for_elan_file(db: AsyncSession, elan_id: int) -> bool:
     """DEPRECATED: Files now belong directly to projects via project_id FK."""
-    logger.warning("has_any_project_for_elan_file is deprecated - check project_id in ElanFile directly")
+    logger.warning(
+        "has_any_project_for_elan_file is deprecated - check project_id in ElanFile directly"
+    )
     return True  # Always true now since project_id is required
 
 
@@ -178,13 +194,18 @@ async def remove_file_type_from_project(
 
 
 async def add_project_file_type(
-    db: AsyncSession, project_id: int, name: str, file_type_id: int,
+    db: AsyncSession,
+    project_id: int,
+    name: str,
+    file_type_id: int,
 ):
     filters = {"project_id": project_id, "name": name}
     exists = await DatabaseUtils.get_one_by_filter(db, ProjectFileType, filters)
     if not exists:
         assoc = ProjectFileType(
-            project_id=project_id, name=name, file_type_id=file_type_id,
+            project_id=project_id,
+            name=name,
+            file_type_id=file_type_id,
         )
         await DatabaseUtils.create(db, assoc)
         await db.flush()
@@ -302,7 +323,9 @@ async def delete_project_associations(db: AsyncSession, project_id: int):
     except Exception as e:
         await db.rollback()
         logger.error(
-            "Failed to bulk delete project associations for project_id=%s: %s", project_id, e
+            "Failed to bulk delete project associations for project_id=%s: %s",
+            project_id,
+            e,
         )
 
 

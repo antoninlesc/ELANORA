@@ -1,4 +1,3 @@
-
 from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -96,7 +95,9 @@ async def check_elan_file_exists_by_filename(db: AsyncSession, filename: str) ->
     return result.scalar_one_or_none() is not None
 
 
-async def get_elan_file_by_filename_and_project(db: AsyncSession, filename: str, project_id: int) -> ElanFile | None:
+async def get_elan_file_by_filename_and_project(
+    db: AsyncSession, filename: str, project_id: int
+) -> ElanFile | None:
     """Retrieve an ELAN file by filename and project ID."""
     stmt = (
         select(ElanFile)
@@ -108,7 +109,9 @@ async def get_elan_file_by_filename_and_project(db: AsyncSession, filename: str,
     return result.scalar_one_or_none()
 
 
-async def check_elan_file_exists_by_filename_and_project(db: AsyncSession, filename: str, project_id: int) -> bool:
+async def check_elan_file_exists_by_filename_and_project(
+    db: AsyncSession, filename: str, project_id: int
+) -> bool:
     """Check if an ELAN file with the given filename exists in a specific project."""
     stmt = (
         select(ElanFile)
@@ -166,7 +169,9 @@ async def delete_elan_file_by_id(db: AsyncSession, elan_id: int) -> bool:
 
 async def get_all_elan_files(db: AsyncSession) -> list[ElanFile]:
     """Get all ELAN files."""
-    return await DatabaseUtils.get_all(db, ElanFile, options=[selectinload(ElanFile.file_content)])
+    return await DatabaseUtils.get_all(
+        db, ElanFile, options=[selectinload(ElanFile.file_content)]
+    )
 
 
 # --- ELAN_FILE_TO_TIER ASSOCIATION CRUD ---
@@ -203,7 +208,7 @@ async def sync_elan_file_to_tiers(
     db: AsyncSession, elan_id: int, new_tier_ids: list[int]
 ) -> None:
     """Synchronize ELAN file associations with tiers.
-    
+
     Args:
         db: Database session
         elan_id: ID of the ELAN file
@@ -285,8 +290,12 @@ async def store_elan_file_data_in_db(
     Returns the elan_id.
     """
     # Check if file already exists in this project
-    if await check_elan_file_exists_by_filename_and_project(db, file_info["filename"], project_id):
-        existing_file = await get_elan_file_by_filename_and_project(db, file_info["filename"], project_id)
+    if await check_elan_file_exists_by_filename_and_project(
+        db, file_info["filename"], project_id
+    ):
+        existing_file = await get_elan_file_by_filename_and_project(
+            db, file_info["filename"], project_id
+        )
         if existing_file:
             # File already exists in this project, no need to add association
             # Sync media associations for existing file
@@ -336,7 +345,10 @@ async def store_elan_file_data_in_db(
 
     return elan_file_obj.elan_id
 
-async def get_elan_files_by_project(db: AsyncSession, project_id: int) -> list[tuple[ElanFile, str]]:
+
+async def get_elan_files_by_project(
+    db: AsyncSession, project_id: int
+) -> list[tuple[ElanFile, str]]:
     """Get all ELAN files for a specific project, with user info joined."""
     stmt = (
         select(ElanFile, User.username)
@@ -348,10 +360,14 @@ async def get_elan_files_by_project(db: AsyncSession, project_id: int) -> list[t
     return await DatabaseUtils.get_with_join(db, stmt)
 
 
-async def update_elan_file_name(db: AsyncSession, elan_id: int, new_filename: str) -> ElanFile | None:
+async def update_elan_file_name(
+    db: AsyncSession, elan_id: int, new_filename: str
+) -> ElanFile | None:
     """Update the filename of an ELAN file by updating its FileContent record."""
-    logger.info("Updating filename for elan_id=%s to new_filename=%s", elan_id, new_filename)
-    
+    logger.info(
+        "Updating filename for elan_id=%s to new_filename=%s", elan_id, new_filename
+    )
+
     # Get the ELAN file with its content
     stmt = (
         select(ElanFile)
@@ -360,34 +376,46 @@ async def update_elan_file_name(db: AsyncSession, elan_id: int, new_filename: st
     )
     result = await db.execute(stmt)
     elan_file = result.scalar_one_or_none()
-    
+
     if not elan_file:
         logger.warning("ELAN file not found for elan_id=%s", elan_id)
         return None
-    
+
     old_filename = elan_file.file_content.filename
-    logger.info("Changing filename from %s to %s for elan_id=%s", old_filename, new_filename, elan_id)
-    
+    logger.info(
+        "Changing filename from %s to %s for elan_id=%s",
+        old_filename,
+        new_filename,
+        elan_id,
+    )
+
     # Update the filename in the FileContent record
     elan_file.file_content.filename = ValidationUtils.sanitize_filename(new_filename)
-    
+
     # Update the file_path in the ElanFile record to reflect the new filename
     # Assuming file_path format is like "project/elan_files/filename.eaf"
     old_file_path = elan_file.file_path
     # Replace the old filename in the path with the new one
     if "/" in old_file_path:
         path_parts = old_file_path.split("/")
-        path_parts[-1] = ValidationUtils.sanitize_filename(new_filename)  # Replace the last part (filename)
+        path_parts[-1] = ValidationUtils.sanitize_filename(
+            new_filename
+        )  # Replace the last part (filename)
         new_file_path = "/".join(path_parts)
     else:
         # If no path separators, just use the new filename
         new_file_path = ValidationUtils.sanitize_filename(new_filename)
-    
+
     elan_file.file_path = new_file_path
-    logger.info("Updated file_path from %s to %s for elan_id=%s", old_file_path, new_file_path, elan_id)
-    
+    logger.info(
+        "Updated file_path from %s to %s for elan_id=%s",
+        old_file_path,
+        new_file_path,
+        elan_id,
+    )
+
     await db.flush()
-    
+
     logger.info("Successfully updated filename for elan_id=%s", elan_id)
     return elan_file
 

@@ -7,7 +7,9 @@ from app.utils.database import DatabaseUtils
 logger = get_logger()
 
 
-async def get_or_create_annotation_value(db: AsyncSession, value: str) -> AnnotationValue:
+async def get_or_create_annotation_value(
+    db: AsyncSession, value: str
+) -> AnnotationValue:
     """Get the annotation value object, or create it if it doesn't exist."""
     filters = {"annotation_value": value}
     annotation_value = await DatabaseUtils.get_one_by_filter(

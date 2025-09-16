@@ -98,9 +98,7 @@ async def list_user_projects_admin(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post(
-    "/projects/{project_id}/users", response_model=ProjectAssociationResponse
-)
+@router.post("/projects/{project_id}/users", response_model=ProjectAssociationResponse)
 async def add_user_to_project_admin(
     project_id: int,
     request: AddUserToProjectRequest,
