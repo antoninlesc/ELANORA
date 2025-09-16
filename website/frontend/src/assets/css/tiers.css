@@ -48,11 +48,6 @@
   pointer-events: none !important;
 }
 
-.tiers-section-block h2 button {
-  margin-left: 0.5rem;
-  font-size: 0.9rem;
-}
-
 .tier-group-draggable {
   min-height: 1rem;
 }
@@ -60,41 +55,237 @@
 .tier-item {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
+  display: flex;
   border-radius: 8px;
   padding: 0.75rem 1rem;
   margin-bottom: 0.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%);
   transition: all 0.2s ease;
+  cursor: grab;
+}
+
+.tier-tree-item {
+  margin-bottom: 0.25rem;
 }
 
 .tier-item:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  box-shadow: 0 2px 8px 0 rgb(0 0 0 / 15%);
+  background: #f9fafb;
+  border-color: #d1d5db;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -1px rgb(0 0 0 / 6%);
+  transform: translateY(-1px);
+}
+
+.tier-item:active {
+  cursor: grabbing;
+  transform: translateY(0);
+}
+
+.tier-parent {
+  background: #fff;
+  border-left: 3px solid #eab308;
+  font-weight: 500;
+  position: relative;
+  cursor: pointer;
+}
+
+.tier-parent:hover {
+  background: #fefce8;
+  border-left-color: #ca8a04;
+  box-shadow: 0 2px 4px 0 rgb(234 179 8 / 10%);
+}
+
+.tier-child {
+  background: #fff;
+  border-left: none;
+  margin-left: 2rem;
+  position: relative;
+  opacity: 1;
+}
+
+.tier-child:hover {
+  background: #f9fafb;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 5%);
+}
+
+.tier-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.collapse-button {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  margin-right: 0.25rem;
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.collapse-button:hover {
+  background: #fef3c7;
+  color: #eab308;
+}
+
+.collapse-button:focus {
+  outline: none;
+}
+
+.collapse-button:active {
+  background: none;
 }
 
 .tier-name {
   font-weight: 500;
-  color: #334155;
-  font-size: 0.95rem;
+  color: #374151;
+  font-size: 0.875rem;
+  flex: 1;
+  line-height: 1.4;
+  position: relative;
+  z-index: 2;
 }
 
-.tier-tree-item {
-  margin-bottom: 0.5rem;
+.tier-parent .tier-name {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.9rem;
 }
 
-.tier-parent {
-  background: #e0f2fe !important;
-  border-color: #0ea5e9 !important;
-  font-weight: 600 !important;
+.tier-child .tier-name {
+  color: #4b5563;
+  font-weight: 500;
 }
 
-.tier-child {
-  background: #f0f9ff !important;
-  border-color: #bae6fd !important;
-  margin-top: 0.25rem !important;
-  margin-bottom: 0.25rem !important;
+/* Section styling - more like data organization panels */
+.tiers-section-block {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%), 0 1px 2px 0 rgb(0 0 0 / 6%);
+  transition: all 0.2s ease;
+}
+
+.tiers-section-block:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -1px rgb(0 0 0 / 6%);
+  border-color: #d1d5db;
+}
+
+.tiers-section-block h2 {
+  color: #111827;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tiers-section-block h2::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 2px;
+}
+
+.tiers-section-block h2 button {
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  transition: all 0.15s ease;
+  margin-left: auto;
+}
+
+.tiers-section-block h2 button:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+/* Unsectioned styling - more like a drop zone */
+.tier-group-draggable.unsectioned {
+  background: linear-gradient(135deg, #fefefe 0%, #fafbfc 100%);
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-height: 80px;
+  position: relative;
+}
+
+.tier-group-draggable.unsectioned::before {
+  content: 'Drop tiers here to unassign';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #9ca3af;
+  font-size: 0.875rem;
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.tier-group-draggable.unsectioned:not(:empty)::before {
+  display: none;
+}
+
+/* Drag states */
+.tier-item.dragging {
+  opacity: 0.7;
+  transform: rotate(1deg) scale(1.02);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -2px rgb(0 0 0 / 5%);
+  z-index: 1000;
+}
+
+/* Connection lines for hierarchy */
+.tier-child::before {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  top: 50%;
+  width: 1rem;
+  height: 1px;
+  background: #d1d5db;
+  transform: translateY(-50%);
+}
+
+.tier-child::after {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  top: 0;
+  bottom: 50%;
+  width: 1px;
+  background: #d1d5db;
+}
+
+/* Responsive adjustments */
+@media (width <= 768px) {
+  .tier-item {
+    padding: 0.625rem 0.875rem;
+  }
+
+  .tier-child {
+    margin-left: 1.5rem;
+  }
+
+  .tiers-section-block {
+    padding: 1.25rem;
+  }
 }

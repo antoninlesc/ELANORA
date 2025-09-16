@@ -61,21 +61,42 @@
             <template #item="{ element }">
               <div class="tier-tree-item">
                 <div
-                  class="tier-item tier-parent"
+                  class="tier-item"
+                  :class="{ 'tier-parent': element.children.length > 0 }"
                   :style="{ marginLeft: element.level * 20 + 'px' }"
+                  @click="
+                    element.children.length > 0
+                      ? toggleCollapsed(element)
+                      : null
+                  "
                 >
-                  <span class="tier-name">{{ element.tier_name }}</span>
-                  <span class="tier-id">(ID: {{ element.tier_id }})</span>
+                  <div class="tier-content">
+                    <button
+                      v-if="element.children.length > 0"
+                      class="collapse-button"
+                    >
+                      <font-awesome-icon
+                        :icon="
+                          element.collapsed
+                            ? 'fa-solid fa-chevron-right'
+                            : 'fa-solid fa-chevron-down'
+                        "
+                        size="sm"
+                      />
+                    </button>
+                    <span class="tier-name">{{ element.tier_name }}</span>
+                  </div>
                 </div>
-                <div
-                  v-for="child in element.children"
-                  :key="child.tier_id"
-                  class="tier-item tier-child"
-                  :style="{ marginLeft: (element.level + 1) * 20 + 'px' }"
-                >
-                  <span class="tier-name">{{ child.tier_name }}</span>
-                  <span class="tier-id">(ID: {{ child.tier_id }})</span>
-                </div>
+                <template v-if="!element.collapsed">
+                  <div
+                    v-for="child in element.children"
+                    :key="child.tier_id"
+                    class="tier-item tier-child"
+                    :style="{ marginLeft: (element.level + 1) * 20 + 'px' }"
+                  >
+                    <span class="tier-name">{{ child.tier_name }}</span>
+                  </div>
+                </template>
               </div>
             </template>
           </draggable>
@@ -100,21 +121,42 @@
             <template #item="{ element }">
               <div class="tier-tree-item">
                 <div
-                  class="tier-item tier-parent"
+                  class="tier-item"
+                  :class="{ 'tier-parent': element.children.length > 0 }"
                   :style="{ marginLeft: element.level * 20 + 'px' }"
+                  @click="
+                    element.children.length > 0
+                      ? toggleCollapsed(element)
+                      : null
+                  "
                 >
-                  <span class="tier-name">{{ element.tier_name }}</span>
-                  <span class="tier-id">(ID: {{ element.tier_id }})</span>
+                  <div class="tier-content">
+                    <button
+                      v-if="element.children.length > 0"
+                      class="collapse-button"
+                    >
+                      <font-awesome-icon
+                        :icon="
+                          element.collapsed
+                            ? 'fa-solid fa-chevron-right'
+                            : 'fa-solid fa-chevron-down'
+                        "
+                        size="sm"
+                      />
+                    </button>
+                    <span class="tier-name">{{ element.tier_name }}</span>
+                  </div>
                 </div>
-                <div
-                  v-for="child in element.children"
-                  :key="child.tier_id"
-                  class="tier-item tier-child"
-                  :style="{ marginLeft: (element.level + 1) * 20 + 'px' }"
-                >
-                  <span class="tier-name">{{ child.tier_name }}</span>
-                  <span class="tier-id">(ID: {{ child.tier_id }})</span>
-                </div>
+                <template v-if="!element.collapsed">
+                  <div
+                    v-for="child in element.children"
+                    :key="child.tier_id"
+                    class="tier-item tier-child"
+                    :style="{ marginLeft: (element.level + 1) * 20 + 'px' }"
+                  >
+                    <span class="tier-name">{{ child.tier_name }}</span>
+                  </div>
+                </template>
               </div>
             </template>
             <template #footer>
@@ -165,6 +207,7 @@ const newSectionName = ref('');
 const renameSectionName = ref('');
 const editingSectionId = ref(null);
 const isDragging = ref(false);
+const collapsedStates = ref(new Map());
 
 function getTierTreesForSection(sectionId) {
   const sectionTiers = tierGroups.value.filter(
@@ -177,7 +220,12 @@ function buildTierTrees(tiers) {
   // Build a map of tier_id to tier
   const tierMap = {};
   tiers.forEach((tier) => {
-    tierMap[tier.tier_id] = { ...tier, children: [], level: 0 };
+    tierMap[tier.tier_id] = {
+      ...tier,
+      children: [],
+      level: 0,
+      collapsed: collapsedStates.value.get(tier.tier_id) ?? true,
+    };
   });
 
   const roots = [];
@@ -214,7 +262,23 @@ function buildTierTrees(tiers) {
   }
   setLevels(roots, 0);
 
+  // Sort roots and children alphabetically
+  function sortAlphabetically(nodes) {
+    nodes.sort((a, b) => a.tier_name.localeCompare(b.tier_name));
+    nodes.forEach((node) => {
+      if (node.children && node.children.length > 0) {
+        sortAlphabetically(node.children);
+      }
+    });
+  }
+  sortAlphabetically(roots);
+
   return roots;
+}
+
+function toggleCollapsed(element) {
+  const currentState = collapsedStates.value.get(element.tier_id) ?? true;
+  collapsedStates.value.set(element.tier_id, !currentState);
 }
 
 async function loadData({ silent = false } = {}) {
@@ -230,6 +294,13 @@ async function loadData({ silent = false } = {}) {
     );
     sections.value = custom.sections;
     tierGroups.value = custom.tier_groups;
+    // Clear collapsed states for tiers that no longer exist
+    const currentTierIds = new Set(tierGroups.value.map((tg) => tg.tier_id));
+    for (const [tierId] of collapsedStates.value) {
+      if (!currentTierIds.has(tierId)) {
+        collapsedStates.value.delete(tierId);
+      }
+    }
   } catch {
     error.value = 'Failed to load tiers.';
   } finally {
@@ -293,4 +364,14 @@ onMounted(() => {
   loadData();
   projectStore.initBroadcastChannel();
 });
+</script>
+
+<script>
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+
+export default {
+  components: {
+    FontAwesomeIcon,
+  },
+};
 </script>
