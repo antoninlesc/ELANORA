@@ -64,11 +64,7 @@
                   class="tier-item"
                   :class="{ 'tier-parent': element.children.length > 0 }"
                   :style="{ marginLeft: element.level * 20 + 'px' }"
-                  @click="
-                    element.children.length > 0
-                      ? toggleCollapsed(element)
-                      : null
-                  "
+                  @click="handleTierClick(element)"
                 >
                   <div class="tier-content">
                     <button
@@ -124,11 +120,7 @@
                   class="tier-item"
                   :class="{ 'tier-parent': element.children.length > 0 }"
                   :style="{ marginLeft: element.level * 20 + 'px' }"
-                  @click="
-                    element.children.length > 0
-                      ? toggleCollapsed(element)
-                      : null
-                  "
+                  @click="handleTierClick(element)"
                 >
                   <div class="tier-content">
                     <button
@@ -207,6 +199,7 @@ const newSectionName = ref('');
 const renameSectionName = ref('');
 const editingSectionId = ref(null);
 const isDragging = ref(false);
+const dragInProgress = ref(false);
 const collapsedStates = ref(new Map());
 
 function getTierTreesForSection(sectionId) {
@@ -279,6 +272,13 @@ function buildTierTrees(tiers) {
 function toggleCollapsed(element) {
   const currentState = collapsedStates.value.get(element.tier_id) ?? true;
   collapsedStates.value.set(element.tier_id, !currentState);
+}
+
+function handleTierClick(element) {
+  if (dragInProgress.value) return;
+  if (element.children.length > 0) {
+    toggleCollapsed(element);
+  }
 }
 
 async function loadData({ silent = false } = {}) {
@@ -355,9 +355,11 @@ async function onDrop(newSectionId, evt) {
 
 function onDragStart() {
   isDragging.value = true;
+  dragInProgress.value = true;
 }
 function onDragEnd() {
   isDragging.value = false;
+  setTimeout(() => (dragInProgress.value = false), 10);
 }
 
 onMounted(() => {
