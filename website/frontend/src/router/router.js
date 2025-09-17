@@ -15,7 +15,6 @@ import ContactPage from '@views/ContactPage.vue';
 import HTTPStatusPage from '@views/HTTPStatusPage.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import UploadPage from '@views/UploadPage.vue';
-import PendingUploadPage from '@views/PendingUploadPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import InvitationResponsePage from '@views/InvitationResponsePage.vue';
 import InvitationDecisionPage from '@views/InvitationDecisionPage.vue';
@@ -104,8 +103,8 @@ const routes = [
       },
       {
         path: 'contribution',
-        name: 'PendingUpload',
-        component: PendingUploadPage,
+        name: 'Contribution',
+        component: UploadPage,
         meta: { requiresAuth: true },
       },
       {
