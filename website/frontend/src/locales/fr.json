@@ -1023,6 +1023,7 @@
 
   "tiersPage": {
     "pageTitle": "Tiers",
+    "pageTitleWithProject": "Tiers de {projectName}",
     "pageDescription": "Gérer et organiser les niveaux d'annotation pour votre projet linguistique",
     "loading": "Chargement des tiers...",
     "error": "Erreur lors du chargement des tiers",

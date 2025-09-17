@@ -1031,6 +1031,7 @@
 
   "tiersPage": {
     "pageTitle": "Tiers",
+    "pageTitleWithProject": "{projectName}'s tiers",
     "pageDescription": "Manage and organize annotation tiers for your linguistic project",
     "title": "Tier Hierarchy",
     "loading": "Loading tiers...",

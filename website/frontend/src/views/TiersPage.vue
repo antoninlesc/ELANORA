@@ -11,7 +11,7 @@
     </div>
     <div v-else>
       <div class="tiers-tree-main-block">
-        <h1 class="tiers-page-title">{{ $t('tiersPage.pageTitle') }}</h1>
+        <h1 class="tiers-page-title">{{ pageTitle }}</h1>
         <div
           v-for="section in sections"
           :key="section.section_id"
@@ -195,7 +195,7 @@
 
 <script setup>
 import '@/assets/css/tiers.css';
-import { ref, onMounted, computed, nextTick } from 'vue';
+import { ref, onMounted, computed, nextTick, watch } from 'vue';
 import { useProjectStore } from '@/stores/project';
 import { useHead } from '@unhead/vue';
 import { useI18n } from 'vue-i18n';
@@ -215,12 +215,22 @@ const { t } = useI18n();
 const userConfirm = useUserConfirm();
 const eventMessageStore = useEventMessageStore();
 
+const currentProject = computed(() => projectStore.currentProject);
+
+const pageTitle = computed(() => {
+  if (currentProject.value?.project_name) {
+    return t('tiersPage.pageTitleWithProject', {
+      projectName: currentProject.value.project_name,
+    });
+  } else {
+    return t('tiersPage.pageTitle');
+  }
+});
+
 useHead({
   title: t('tiersPage.pageTitle'),
   meta: [{ name: 'description', content: t('tiersPage.pageDescription') }],
 });
-
-const currentProject = computed(() => projectStore.currentProject);
 
 const sections = ref([]);
 const tierGroups = ref([]);
@@ -232,6 +242,22 @@ const isDragging = ref(false);
 const dragInProgress = ref(false);
 const collapsedStates = ref(new Map());
 const newSectionId = ref(null);
+
+// Watcher to reload data when current project changes
+watch(currentProject, (newProject, oldProject) => {
+  if (
+    newProject &&
+    newProject.project_id !== (oldProject?.project_id || null)
+  ) {
+    // Reload data silently when the project changes
+    loadData({ silent: true });
+  } else if (!newProject) {
+    // Handle case where no project is selected
+    error.value = t('tiersPage.noSections');
+    sections.value = [];
+    tierGroups.value = [];
+  }
+});
 
 function getTierTreesForSection(sectionId) {
   const sectionTiers = tierGroups.value.filter(
