@@ -70,67 +70,6 @@ class GitBranchManager:
         logger.info(f"Deleted branch: {branch_name}")
 
 
-class GitDiffAnalyzer:
-    """Analyzes Git differences between branches."""
-
-    def __init__(self, project_path: Path):
-        """Initialize with the project path."""
-        self.project_path = project_path
-
-    def analyze_merge_differences(self, branch_name: str) -> MergeAnalysis:
-        """Analyze differences and return structured data with parsed diffs."""
-        logger.info(
-            f"Analyzing merge differences for branch '{branch_name}' using Git diff"
-        )
-        diff_parser = GitDiffParser()
-
-        diff_name_status_result = subprocess.run(
-            ["git", "diff", f"master...{branch_name}", "--name-status"],
-            cwd=self.project_path,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        logger.debug(f"Git diff output: {diff_name_status_result.stdout}")
-
-        new_files, modified_files, deleted_files = diff_parser.parse_name_status_output(
-            diff_name_status_result.stdout
-        )
-
-        has_conflicts = len(modified_files) > 0 or len(deleted_files) > 0
-
-        logger.info(
-            f"Git diff analysis - New: {len(new_files)}, Modified: {len(modified_files)}, Deleted: {len(deleted_files)}"
-        )
-
-        file_diffs = {}
-
-        # For each modified file, parse the diff ONCE
-        for filename in modified_files:
-            file_diff_result = subprocess.run(
-                ["git", "diff", f"master...{branch_name}", "--", filename],
-                cwd=self.project_path,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-
-            if file_diff_result.stdout:
-                parsed_diff = diff_parser.parse_single_file_diff(
-                    file_diff_result.stdout
-                )
-                file_diffs[filename] = parsed_diff  # STORE PARSED DATA
-
-        return MergeAnalysis(
-            new_files=new_files,
-            modified_files=modified_files,
-            deleted_files=deleted_files,
-            has_conflicts=has_conflicts,
-            file_diffs=file_diffs,
-        )
-
-
 class GitMerger:
     """Handles Git merge operations."""
 
