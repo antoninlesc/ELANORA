@@ -11,9 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
-from app.crud.pending_upload import (
-    get_pending_uploads,
-)
 from app.crud.project import (
     create_project_db,
     delete_project_db,
@@ -598,115 +595,6 @@ class GitService:
             if filename and dest_path.exists():
                 existing_files.append(filename)
         return existing_files
-
-    async def get_pending_uploads_with_status(
-        self, project_name: str, db: AsyncSession
-    ) -> dict[str, Any]:
-        """Get pending uploads and compute their merge readiness in real-time."""
-        project_path = self.base_path / project_name
-        runner = GitCommandRunner(project_path)
-
-        # Get pending uploads from DB
-        project = await get_project_by_name(db, project_name)
-        pending_uploads = await get_pending_uploads(db, project.project_id)
-
-        upload_status = []
-        ready_count = 0
-        conflicts_count = 0
-
-        for upload in pending_uploads:
-            branch_name = upload.branch_name
-
-            # Test merge in real-time to check status
-            try:
-                runner.checkout("master")
-                merge_test = runner.run(
-                    ["merge", "--no-commit", "--no-ff", branch_name], check=False
-                )
-
-                if merge_test.returncode == 0:
-                    # Clean merge - ready to go
-                    runner.run(["merge", "--abort"], check=False)
-                    status = "ready_to_merge"
-                    conflicts = []
-                    ready_count += 1
-                else:
-                    # Has conflicts - get details
-                    conflicted_files = runner.get_conflicted_files()
-                    runner.run(["merge", "--abort"], check=False)
-                    status = "needs_resolution"
-                    conflicts = conflicted_files
-                    conflicts_count += 1
-
-                upload_data = upload.git_details.get("upload_data")
-
-                upload_status.append(
-                    {
-                        "upload_id": upload.upload_id
-                        if hasattr(upload, "upload_id")
-                        else upload.get("upload_id"),
-                        "branch_name": branch_name,
-                        "original_branch": upload_data.get(
-                            "original_branch",
-                            branch_name.replace("_pending_approval", ""),
-                        ),
-                        "upload_type": upload.upload_type.value
-                        if hasattr(upload, "upload_type")
-                        else upload.get("upload_type", "pending_upload"),
-                        "description": upload.upload_description
-                        if hasattr(upload, "upload_description")
-                        else upload.get("description", ""),
-                        "status": upload.status.value
-                        if hasattr(upload, "status")
-                        else upload.get("status", "pending_admin_approval"),
-                        "uploaded_at": upload.detected_at.isoformat()
-                        if hasattr(upload, "detected_at") and upload.detected_at
-                        else upload.get("uploaded_at"),
-                        "uploaded_by": upload_data.get("uploaded_by"),
-                        "merge_status": status,
-                        "conflicted_files": conflicts,
-                        "conflicted_files_count": len(conflicts),
-                        "tested_at": datetime.now().isoformat(),
-                    }
-                )
-
-            except Exception as e:
-                upload_status.append(
-                    {
-                        "upload_id": upload.upload_id
-                        if hasattr(upload, "upload_id")
-                        else upload.get("upload_id"),
-                        "branch_name": branch_name,
-                        "original_branch": upload_data.get(
-                            "original_branch",
-                            branch_name.replace("_pending_approval", ""),
-                        ),
-                        "upload_type": upload.upload_type.value
-                        if hasattr(upload, "upload_type")
-                        else upload.get("upload_type", "pending_upload"),
-                        "description": upload.upload_description
-                        if hasattr(upload, "upload_description")
-                        else upload.get("description", ""),
-                        "status": upload.status.value
-                        if hasattr(upload, "status")
-                        else upload.get("status", "pending_admin_approval"),
-                        "uploaded_at": upload.detected_at.isoformat()
-                        if hasattr(upload, "detected_at") and upload.detected_at
-                        else upload.get("uploaded_at"),
-                        "uploaded_by": None,
-                        "merge_status": "error",
-                        "error": str(e),
-                        "can_auto_merge": False,
-                    }
-                )
-
-        return {
-            "project_name": project_name,
-            "pending_uploads": upload_status,
-            "total_pending": len(upload_status),
-            "ready_count": ready_count,
-            "conflicts_count": conflicts_count,
-        }
 
     def _build_upload_response(
         self,

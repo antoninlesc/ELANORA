@@ -23,7 +23,6 @@ from app.schema.responses.git import (
     ProjectEditResponse,
     ProjectListResponse,
     ProjectSyncCheckResponse,
-    PendingUploadsResponse,
 )
 from app.service.git import GitService, RenameConflictError
 
