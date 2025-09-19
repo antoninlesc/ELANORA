@@ -699,44 +699,6 @@ class GitService:
         runner = GitCommandRunner(project_path)
         runner.configure_user(instance_name)
 
-    def _create_readme(self, project_name: str) -> str:
-        """Generate README content for a new project."""
-        return f"# {project_name}\n\nThis is the ELAN project '{project_name}'.\n"
-
-    def _parse_git_status(self, status_output: str) -> list[dict[str, str]]:
-        """Parse the output of 'git status --porcelain'."""
-        files = []
-        pattern = re.compile(r"^([ MADRCU\?]{1,2})\s+(.*)$")
-        for line in status_output.strip().splitlines():
-            if not line:
-                continue
-            match = pattern.match(line)
-            if match:
-                status = match.group(1).strip()
-                filename = match.group(2).strip()
-                files.append({"filename": filename, "status": status})
-        return files
-
-    def _get_recent_commits(
-        self, project_path: Path, count: int = 5
-    ) -> list[dict[str, str]]:
-        """Get recent commits for the project."""
-        runner = GitCommandRunner(project_path)
-        result = runner.get_log(count)
-        commits = []
-        for line in result.strip().splitlines():
-            parts = line.split("|", 3)
-            if len(parts) == 4:
-                commits.append(
-                    {
-                        "hash": parts[0],
-                        "author": parts[1],
-                        "date": parts[2],
-                        "message": parts[3],
-                    }
-                )
-        return commits
-
     def checkout_branch(self, project_name: str, branch_name: str) -> dict[str, str]:
         """Switch to a different branch in the given project."""
         project_path = self.base_path / project_name
