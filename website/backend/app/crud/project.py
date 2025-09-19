@@ -96,7 +96,6 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
         )
         # Now delete project associations (users, standards, file links)
         await delete_project_associations(db, project.project_id)
-        await delete_orphaned_file_types(db)
         await delete_project_invitations(db, project.project_id)
         await delete_project_comments(db, project.project_id)
         await db.flush()
@@ -104,6 +103,8 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
         await delete_unused_annotation_values(db)
         # Clean up orphaned media files
         await delete_orphaned_media(db)
+        # Clean up orphaned file types (must be done after all associations are deleted)
+        await delete_orphaned_file_types(db)
         # Finally, delete the project itself
         await db.delete(project)
 
