@@ -369,45 +369,6 @@ async def decline_backup(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/projects/{project_name}/branches/{branch_name}/conflicts")
-async def get_branch_conflicts(
-    project_name: str,
-    branch_name: str,
-    force_refresh: bool = False,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Get conflicts for a specific branch."""
-    try:
-        result = await git_service.get_conflicts(
-            project_name, branch_name, db, force_refresh
-        )
-        return result
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get(
-    "/projects/{project_name}/admin/pending-uploads",
-    response_model=PendingUploadsResponse,
-)
-async def get_pending_uploads(
-    project_name: str,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Get all uploads pending admin approval."""
-    try:
-        result = await git_service.get_pending_uploads_with_status(project_name, db)
-        return PendingUploadsResponse(**result)
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
 @router.post("/projects/{project_name}/rename-file", response_model=FileRenameResponse)
 async def rename_file(
     project_name: str,
