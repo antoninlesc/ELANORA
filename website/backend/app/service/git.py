@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
 from app.crud.pending_upload import (
-    save_pending_upload,
     get_pending_uploads,
 )
 from app.crud.project import (
@@ -24,7 +23,6 @@ from app.crud.project import (
     list_projects_by_user,
     project_exists_by_name,
     get_project_by_id,
-    get_project_name_by_id,
 )
 from app.crud.elan_file import (
     get_elan_files_by_project,
@@ -54,14 +52,11 @@ from app.service.git_operations import (
     FileUploadProcessor,
     GitBranchManager,
     GitCommandRunner,
-    GitDiffAnalyzer,
     delete_project_folder,
 )
-from app.utils.file_processing import list_untracked_contents
 from app.utils.project_backup import (
     create_project_backup_structure,
     remove_project_backup,
-    restore_project_backup,
     rename_project_backup_folder,
 )
 from app.utils.project_setup_utils import (
@@ -333,10 +328,9 @@ class GitService:
             # Initialize managers
             branch_manager = GitBranchManager(project_path)
             file_processor = FileUploadProcessor(project_path)
-            diff_analyzer = GitDiffAnalyzer(project_path)
 
             # Create branch and process files
-            branch_name = branch_manager.create_upload_branch(user_name, len(files))
+            branch_manager.create_upload_branch(user_name, len(files))
             uploaded_files, failed_files = await file_processor.process_files(
                 files, existing_files
             )
@@ -346,14 +340,6 @@ class GitService:
 
             # Commit
             file_processor.commit_files(uploaded_files, user_name)
-            upload_info = await self._save_upload_for_admin_approval(
-                branch_manager,
-                diff_analyzer,
-                branch_name,
-                db=db,
-                username=user_name,
-                project_path=project_path,
-            )
 
             # Build response
             logger.info(
@@ -364,7 +350,6 @@ class GitService:
                 uploaded_files,
                 failed_files,
                 existing_files,
-                upload_info,
             )
 
         except subprocess.CalledProcessError as e:
@@ -372,120 +357,6 @@ class GitService:
         except Exception as e:
             logger.error(f"Batch file operation failed: {e}")
             raise RuntimeError(f"Failed to add ELAN files: {e}") from e
-
-    async def _save_upload_for_admin_approval(
-        self,
-        branch_manager: GitBranchManager,
-        diff_analyzer: GitDiffAnalyzer,
-        branch_name: str,
-        db: AsyncSession,
-        username: str,
-        project_path: Path,
-    ) -> dict[str, Any]:
-        """Save upload for admin approval instead of attempting immediate merge."""
-        logger.info(f"Saving upload branch '{branch_name}' for admin approval")
-
-        # Analyze what was uploaded
-        branch_manager.switch_to_master()
-        analysis = diff_analyzer.analyze_merge_differences(branch_name)
-        logger.info(
-            f"Upload analysis - New: {len(analysis.new_files)}, Modified: {len(analysis.modified_files)}, Deleted: {len(analysis.deleted_files)}"
-        )
-
-        # Always save for admin approval (no immediate merging)
-        approval_branch_name = f"{branch_name}_pending_approval"
-        runner = GitCommandRunner(project_path)
-
-        try:
-            # Rename upload branch to indicate it's pending approval
-            runner.run(["branch", "-m", branch_name, approval_branch_name], check=True)
-            logger.info(
-                f"Branch renamed to '{approval_branch_name}' for admin approval"
-            )
-
-            # Store basic upload info in database for admin review
-            upload_info = {
-                "status": "pending_admin_approval",
-                "has_conflicts": False,  # Unknown until admin tests merge
-                "has_differences": len(analysis.modified_files) > 0
-                or len(analysis.deleted_files) > 0,
-                "requires_approval": True,
-                "branch_name": approval_branch_name,
-                "original_branch": branch_name,
-                "new_files": analysis.new_files,
-                "modified_files": analysis.modified_files,
-                "deleted_files": analysis.deleted_files,
-                "analysis": analysis,
-                "message": f"Upload saved for admin approval. {len(analysis.new_files)} new files, {len(analysis.modified_files)} modified files.",
-                "pending_approval_since": datetime.now().isoformat(),
-                "uploaded_by": username,
-            }
-
-            # Save upload info to database for admin dashboard
-            await self._save_pending_upload_to_db(
-                upload_info, project_path, db, username
-            )
-
-            return upload_info
-
-        except Exception as e:
-            logger.error(f"Failed to save upload for approval: {e}")
-            # Cleanup on error
-            try:
-                runner.run(["branch", "-D", approval_branch_name], check=False)
-            except:
-                pass
-            raise RuntimeError(f"Failed to save upload for approval: {e}") from e
-
-    async def _save_pending_upload_to_db(
-        self, upload_info: dict, project_path: Path, db: AsyncSession, username: str
-    ):
-        """Save pending upload info to database for admin review."""
-        try:
-            project = await get_project_by_name(db, project_path.name)
-            if project:
-                # Create a pending upload record using the existing conflicts table
-                # We'll use this as a "pending upload" entry
-                upload_record = {
-                    "type": "PENDING_UPLOAD",
-                    "status": "PENDING_ADMIN_APPROVAL",
-                    "upload_data": {
-                        "branch_name": upload_info["branch_name"],
-                        "original_branch": upload_info["original_branch"],
-                        "uploaded_by": username,
-                        "new_files_count": len(upload_info["new_files"]),
-                        "modified_files_count": len(upload_info["modified_files"]),
-                        "deleted_files_count": len(upload_info["deleted_files"]),
-                        "new_files": upload_info["new_files"],
-                        "modified_files": upload_info["modified_files"],
-                        "deleted_files": upload_info["deleted_files"],
-                        "pending_since": upload_info["pending_approval_since"],
-                        "has_differences": upload_info["has_differences"],
-                        "has_conflicts": upload_info["has_conflicts"],
-                    },
-                    "resolution_info": {
-                        "can_auto_resolve": False,
-                        "requires_admin_approval": True,
-                        "suggested_action": "admin_test_merge",
-                        "available_strategies": ["test_merge"],
-                    },
-                    "detected_at": upload_info["pending_approval_since"],
-                }
-
-                # Save to conflicts table as "pending upload"
-                await save_pending_upload(
-                    db,
-                    project.project_id,
-                    upload_info["branch_name"],
-                    upload_record,
-                )
-
-                logger.info(
-                    f"Saved pending upload info for admin review: {upload_info['branch_name']}"
-                )
-
-        except Exception as e:
-            logger.error(f"Failed to save pending upload to DB: {e}")
 
     async def list_projects(
         self, db: AsyncSession, instance_id: int
@@ -843,40 +714,58 @@ class GitService:
         uploaded_files,
         failed_files,
         existing_files: list[str],
-        upload_info: dict[str, Any],
+        upload_info: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Build the upload response for the admin approval workflow."""
-        return {
-            "project_name": project_name,
-            "branch_name": upload_info.get("branch_name"),  # Use approval branch name
-            "uploaded_files": [self._convert_upload_result(f) for f in uploaded_files],
-            "failed_files": [self._convert_upload_result(f) for f in failed_files],
-            "total_uploaded": len(uploaded_files),
-            "total_failed": len(failed_files),
-            "existing_files_updated": len(existing_files),
-            "new_files_added": len(uploaded_files) - len(existing_files),
-            # Workflow status
-            "status": upload_info["status"],  # "pending_admin_approval"
-            "requires_approval": upload_info.get("requires_approval", True),
-            "has_differences": upload_info.get("has_differences", False),
-            # Upload summary
-            "upload_summary": {
-                "new_files": upload_info.get("new_files", []),
-                "modified_files": upload_info.get("modified_files", []),
-                "deleted_files": upload_info.get("deleted_files", []),
-            },
-            # Admin workflow info
-            "admin_info": {
-                "pending_approval_since": upload_info.get("pending_approval_since"),
-                "approval_branch": upload_info.get("branch_name"),
-                "original_branch": upload_info.get("original_branch"),
-                "next_steps": "Upload saved for admin approval. Admin needs to test merge and resolve any conflicts.",
-            },
-            "uploaded_at": datetime.now().isoformat(),
-            "message": upload_info.get(
-                "message", "Upload completed and saved for admin approval"
-            ),
-        }
+        """Build the upload response."""
+        if upload_info is None:
+            # Simple response for direct upload
+            return {
+                "project_name": project_name,
+                "uploaded_files": [
+                    self._convert_upload_result(f) for f in uploaded_files
+                ],
+                "failed_files": [self._convert_upload_result(f) for f in failed_files],
+                "total_uploaded": len(uploaded_files),
+                "total_failed": len(failed_files),
+                "existing_files_updated": len(existing_files),
+                "new_files_added": len(uploaded_files) - len(existing_files),
+                "status": "completed",
+                "requires_approval": False,
+                "uploaded_at": datetime.now().isoformat(),
+                "message": "Upload completed successfully",
+            }
+        else:
+            # Legacy response for approval workflow
+            return {
+                "project_name": project_name,
+                "branch_name": upload_info.get("branch_name"),
+                "uploaded_files": [
+                    self._convert_upload_result(f) for f in uploaded_files
+                ],
+                "failed_files": [self._convert_upload_result(f) for f in failed_files],
+                "total_uploaded": len(uploaded_files),
+                "total_failed": len(failed_files),
+                "existing_files_updated": len(existing_files),
+                "new_files_added": len(uploaded_files) - len(existing_files),
+                "status": upload_info["status"],
+                "requires_approval": upload_info.get("requires_approval", True),
+                "has_differences": upload_info.get("has_differences", False),
+                "upload_summary": {
+                    "new_files": upload_info.get("new_files", []),
+                    "modified_files": upload_info.get("modified_files", []),
+                    "deleted_files": upload_info.get("deleted_files", []),
+                },
+                "admin_info": {
+                    "pending_approval_since": upload_info.get("pending_approval_since"),
+                    "approval_branch": upload_info.get("branch_name"),
+                    "original_branch": upload_info.get("original_branch"),
+                    "next_steps": "Upload saved for admin approval. Admin needs to test merge and resolve any conflicts.",
+                },
+                "uploaded_at": datetime.now().isoformat(),
+                "message": upload_info.get(
+                    "message", "Upload completed and saved for admin approval"
+                ),
+            }
 
     def _convert_upload_result(self, result) -> dict:
         """Convert FileUploadResult to dict for response."""
