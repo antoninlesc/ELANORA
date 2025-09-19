@@ -7,7 +7,6 @@ from typing import Any
 
 from app.core.centralized_logging import get_logger
 from app.utils.project_backup import create_hidden_folder_in_root, update_backup
-from app.service.git_diff_parser import GitDiffParser
 
 logger = get_logger()
 
@@ -553,32 +552,6 @@ class GitCommandRunner:
         self.delete_branch_localy(branch_name)
         self.delete_branch_on_remote(branch_name)
         update_backup(self.project_path.name, self.project_path.parent)
-
-    def resolve_conflicts(
-        self, branch_name: str, resolution_strategy: str
-    ) -> dict[str, Any]:
-        self.checkout("master")
-        self.run(["merge", branch_name, "--no-ff"], check=False)
-        if resolution_strategy == "accept_incoming":
-            self.run(["checkout", "--theirs", "."], check=True)
-        elif resolution_strategy == "accept_current":
-            self.run(["checkout", "--ours", "."], check=True)
-        self.run(["add", "."], check=True)
-        self.run(
-            [
-                "commit",
-                "-m",
-                f"Resolve conflicts from {branch_name} using {resolution_strategy}",
-            ],
-            check=True,
-        )
-        self.run(["branch", "-d", branch_name], check=False)
-        update_backup(self.project_path.name, self.project_path.parent)
-        return {
-            "branch_name": branch_name,
-            "resolution_strategy": resolution_strategy,
-            "status": "resolved",
-        }
 
     def cleanup_on_error(self, branch_name: str | None = None):
         """Cleanup on error: optionally delete a branch, then checkout master."""

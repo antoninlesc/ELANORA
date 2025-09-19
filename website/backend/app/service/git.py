@@ -695,98 +695,9 @@ class GitService:
         except Exception as e:
             raise RuntimeError(f"Failed to get branches: {e}") from e
 
-    async def resolve_conflicts(
-        self,
-        project_name: str,
-        branch_name: str,
-        resolution_strategy: str,
-        db: AsyncSession,
-        user_id: int,
-    ) -> dict[str, Any]:
-        """Resolve conflicts and merge a branch, then sync ELAN files with DB."""
-        project_path = self.base_path / project_name
-
-        if not project_path.exists():
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-
-        try:
-            runner = GitCommandRunner(project_path)
-            result = runner.resolve_conflicts(branch_name, resolution_strategy)
-
-            # --- Sync DB with merged ELAN files ---
-            await self._sync_elan_files_with_db(project_path, db, user_id, project_name)
-
-            return {
-                "project_name": project_name,
-                **result,
-                "resolved_at": datetime.now().isoformat(),
-            }
-
-        except Exception as e:
-            raise RuntimeError(f"Failed to resolve conflicts: {e}") from e
-
     def _configure_git_user(self, project_path: Path, instance_name: str) -> None:
         runner = GitCommandRunner(project_path)
         runner.configure_user(instance_name)
-
-    def _detect_merge_conflicts(self, project_path: Path) -> list[dict[str, str]]:
-        """Detect and parse merge conflicts."""
-        try:
-            # Get files with conflicts
-            result = subprocess.run(
-                ["git", "diff", "--name-only", "--diff-filter=U"],
-                cwd=project_path,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-
-            conflicts = []
-            if result.stdout:
-                for filename in result.stdout.strip().split("\n"):
-                    if filename.strip():
-                        # Get conflict details for each file
-                        conflict_details = self._get_conflict_details(
-                            project_path, filename.strip()
-                        )
-                        conflicts.append(
-                            {
-                                "filename": filename.strip(),
-                                "type": "content_conflict",
-                                "details": conflict_details,
-                            }
-                        )
-
-            return conflicts
-
-        except subprocess.CalledProcessError:
-            return []
-
-    def _get_conflict_details(
-        self, project_path: Path, filename: str
-    ) -> dict[str, Any]:
-        """Get detailed information about a specific conflict."""
-        try:
-            # Get the conflict markers and content
-            file_path = project_path / filename
-            if file_path.exists():
-                with open(file_path, encoding="utf-8", errors="ignore") as f:
-                    content = f.read()
-
-                # Count conflict markers
-                conflict_markers = content.count("<<<<<<< HEAD")
-
-                return {
-                    "conflict_markers_count": conflict_markers,
-                    "file_size": len(content),
-                    "has_binary_conflict": "<<<<<<< HEAD"
-                    not in content,  # Binary files won't have text markers
-                }
-
-            return {"error": "File not found"}
-
-        except Exception as e:
-            return {"error": str(e)}
 
     def _create_readme(self, project_name: str) -> str:
         """Generate README content for a new project."""
@@ -825,10 +736,6 @@ class GitService:
                     }
                 )
         return commits
-
-    def _check_for_conflicts(self, project_path: Path) -> list[dict[str, str]]:
-        """Check for merge conflicts in the project."""
-        return self._detect_merge_conflicts(project_path)
 
     def checkout_branch(self, project_name: str, branch_name: str) -> dict[str, str]:
         """Switch to a different branch in the given project."""
