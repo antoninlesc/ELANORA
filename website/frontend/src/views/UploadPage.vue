@@ -5,14 +5,18 @@
 
       <!-- Project Selection -->
       <div class="project-selection">
-        <label for="projectSelect" class="project-label">{{ $t('uploadPage.projectSelection.label') }}</label>
+        <label for="projectSelect" class="project-label">{{
+          $t('uploadPage.projectSelection.label')
+        }}</label>
         <select
           id="projectSelect"
           v-model="selectedProject"
           class="project-select"
           :disabled="loading"
         >
-          <option value="">{{ $t('uploadPage.projectSelection.placeholder') }}</option>
+          <option value="">
+            {{ $t('uploadPage.projectSelection.placeholder') }}
+          </option>
           <option
             v-for="project in projects"
             :key="project.project_id"
@@ -30,6 +34,10 @@
           :title="$t('uploadPage.uploadZone.title')"
           :subtitle="$t('uploadPage.uploadZone.subtitle')"
           :files-with-compliance="filesWithCompliance"
+          :standard="standard"
+          :media-standard="mediaStandard"
+          :enable-media-extraction="true"
+          @rename-file="handleFileRename"
         />
 
         <!-- Upload Actions -->
@@ -40,7 +48,13 @@
             @click="uploadFiles"
           >
             <span v-if="uploading" class="spinner"></span>
-            {{ uploading ? $t('uploadPage.uploadingFiles', { count: selectedFiles.length }) : $t('uploadPage.uploadButton') }}
+            {{
+              uploading
+                ? $t('uploadPage.uploadingFiles', {
+                    count: selectedFiles.length,
+                  })
+                : $t('uploadPage.uploadButton')
+            }}
           </button>
         </div>
       </div>
@@ -57,9 +71,15 @@
           >
             <span class="result-filename">{{ result.filename }}</span>
             <span class="result-status">
-              {{ result.success ? $t('uploadPage.resultSuccess') : $t('uploadPage.resultFailed') }}
+              {{
+                result.success
+                  ? $t('uploadPage.resultSuccess')
+                  : $t('uploadPage.resultFailed')
+              }}
             </span>
-            <span v-if="result.error" class="result-error">{{ result.error }}</span>
+            <span v-if="result.error" class="result-error">{{
+              result.error
+            }}</span>
           </div>
         </div>
       </div>
@@ -77,12 +97,15 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UploadFolder from '@/components/common/UploadFolder.vue';
 import gitService from '@/api/service/gitService';
-import "@/assets/css/upload-page.css";
+import '@/assets/css/upload-page.css';
 import { useUserStore } from '@/stores/user';
 import { useProjectStore } from '@/stores/project';
 import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
 import { useNamingStandardStore } from '@/stores/namingStandard';
-import { isFilenameCompliant } from '@/utils/filenameCompliance';
+import {
+  isFilenameCompliant,
+  clearComplianceCache,
+} from '@/utils/filenameCompliance';
 import { useEventMessageStore } from '@/stores/eventMessage';
 
 const { t } = useI18n();
@@ -103,6 +126,10 @@ const eventMessageStore = useEventMessageStore();
 // State for Standards
 const hasEffectiveStandard = ref(false);
 const standard = ref(null);
+const mediaStandard = ref(null);
+
+// Compliance cache to avoid re-computing for the same filenames
+const complianceCache = new Map();
 
 // Flag to prevent duplicate fetch on initial load
 const isInitialLoad = ref(true);
@@ -116,18 +143,18 @@ const projects = computed(() => projectStore.projects || []);
 onMounted(async () => {
   // Ensure store is initialized (loads from localStorage if needed)
   projectStore.initializeFromStorage();
-  
+
   // Set default selected project to current active project's ID
   selectedProject.value = projectStore.currentProject?.project_id || '';
-  
+
   // Initial fetch if a project is selected
   if (selectedProject.value) {
     await fetchStandards();
   }
-  
+
   // Mark initial load as complete to allow watcher fetches
   isInitialLoad.value = false;
-  
+
   // Set loading to false after standards are fetched
   loading.value = false;
   // Initialize Broadcast Channel for project updates
@@ -142,6 +169,7 @@ watch(selectedProject, async (newProjectId, oldProjectId) => {
     // Reset if no project selected
     hasEffectiveStandard.value = false;
     standard.value = null;
+    mediaStandard.value = null;
   }
 });
 
@@ -149,29 +177,85 @@ async function fetchStandards() {
   const UPLOAD_PAGE_LOCATION_ID = 4;
 
   if (!selectedProject.value) {
-    console.warn('No project selected, skipping standards fetch');
+    console.warn('UploadPage: No project selected, skipping standards fetch');
     hasEffectiveStandard.value = false;
     return;
   }
 
+  console.log(
+    'UploadPage: Fetching standards for project:',
+    selectedProject.value
+  );
+
   try {
-    await effectiveStandardStore.fetchEffectiveStandards(selectedProject.value, UPLOAD_PAGE_LOCATION_ID);
-    await namingStandardStore.fetchStandardsAndComponentNames(selectedProject.value);
+    await effectiveStandardStore.fetchEffectiveStandards(
+      selectedProject.value,
+      UPLOAD_PAGE_LOCATION_ID
+    );
+    await namingStandardStore.fetchStandardsAndComponentNames(
+      selectedProject.value
+    );
 
     // Get the standard ID
     let standardId;
-    const standardsObj = effectiveStandardStore.effectiveStandards[UPLOAD_PAGE_LOCATION_ID];
+    const standardsObj =
+      effectiveStandardStore.effectiveStandards[UPLOAD_PAGE_LOCATION_ID];
+    console.log(
+      'UploadPage: Effective standards for location 4:',
+      standardsObj
+    );
+
     if (standardsObj && typeof standardsObj === 'object') {
-      const ids = Object.values(standardsObj).filter(id => !!id);
+      const ids = Object.values(standardsObj).filter((id) => !!id);
       standardId = ids.length > 0 ? ids[0] : undefined;
-    } else if (typeof standardsObj === 'string' || typeof standardsObj === 'number') {
+    } else if (
+      typeof standardsObj === 'string' ||
+      typeof standardsObj === 'number'
+    ) {
       standardId = standardsObj;
     }
 
     hasEffectiveStandard.value = !!standardId;
-    standard.value = namingStandardStore.standards.find(std => std.id === standardId);
+    standard.value = namingStandardStore.standards.find(
+      (std) => std.id === standardId
+    );
+    console.log('UploadPage: Found standard:', standard.value);
+
+    // Clear compliance cache when standard changes
+    complianceCache.clear();
+    clearComplianceCache();
+
+    // Fetch media standard (location 3 = elanMedia)
+    const MEDIA_LOCATION_ID = 3;
+    console.log('UploadPage: Fetching media standards for location 3');
+    await effectiveStandardStore.fetchEffectiveStandards(
+      selectedProject.value,
+      MEDIA_LOCATION_ID
+    );
+    const mediaStandardsObj =
+      effectiveStandardStore.effectiveStandards[MEDIA_LOCATION_ID];
+    console.log(
+      'UploadPage: Effective standards for location 3:',
+      mediaStandardsObj
+    );
+
+    let mediaStandardId;
+    if (mediaStandardsObj && typeof mediaStandardsObj === 'object') {
+      const ids = Object.values(mediaStandardsObj).filter((id) => !!id);
+      mediaStandardId = ids.length > 0 ? ids[0] : undefined;
+    } else if (
+      typeof mediaStandardsObj === 'string' ||
+      typeof mediaStandardsObj === 'number'
+    ) {
+      mediaStandardId = mediaStandardsObj;
+    }
+
+    mediaStandard.value = namingStandardStore.standards.find(
+      (std) => std.id === mediaStandardId
+    );
+    console.log('UploadPage: Found media standard:', mediaStandard.value);
   } catch (e) {
-    console.error('Error fetching standards:', e);
+    console.error('UploadPage: Error fetching standards:', e);
     hasEffectiveStandard.value = false;
   }
 }
@@ -179,12 +263,21 @@ async function fetchStandards() {
 // Computed for Files with Compliance
 const filesWithCompliance = computed(() => {
   if (!hasEffectiveStandard.value || !standard.value) {
-    return selectedFiles.value.map(file => ({ ...file, isCompliant: true }));
+    return selectedFiles.value.map((file) => ({ ...file, isCompliant: true }));
   }
-  return selectedFiles.value.map(file => ({
-    ...file,
-    isCompliant: isFilenameCompliant(standard.value, file.name),
-  }));
+
+  // Use cached compliance results if available
+  return selectedFiles.value.map((file) => {
+    const cached = complianceCache.get(file.name);
+    if (cached !== undefined) {
+      return { ...file, isCompliant: cached };
+    }
+
+    // Compute compliance and cache it
+    const isCompliant = isFilenameCompliant(standard.value, file.name);
+    complianceCache.set(file.name, isCompliant);
+    return { ...file, isCompliant };
+  });
 });
 
 // UploadFiles to show event message and prevent upload for non-compliant files
@@ -195,8 +288,10 @@ async function uploadFiles() {
   }
 
   // Check for non-compliant files and show event message
-    const nonCompliantFiles = filesWithCompliance.value.filter(f => !f.isCompliant);
-    if (nonCompliantFiles.length > 0) {
+  const nonCompliantFiles = filesWithCompliance.value.filter(
+    (f) => !f.isCompliant
+  );
+  if (nonCompliantFiles.length > 0) {
     eventMessageStore.addMessage('uploadPage.complianceWarning', 'warning');
     return;
   }
@@ -215,10 +310,42 @@ async function uploadFiles() {
     uploadResults.value = response.files || [];
     selectedFiles.value = [];
   } catch (e) {
-    error.value = e?.response?.data?.detail || t('uploadPage.errors.uploadFailed');
+    error.value =
+      e?.response?.data?.detail || t('uploadPage.errors.uploadFailed');
     console.error('Upload error:', e);
   } finally {
     uploading.value = false;
+  }
+}
+
+function handleFileRename({ file, index, newName }) {
+  // Update the filename in the selectedFiles array
+  if (selectedFiles.value[index]) {
+    // Create a new File object with the updated name
+    const updatedFile = new File([file], newName, {
+      type: file.type,
+      lastModified: file.lastModified,
+    });
+
+    // Preserve webkitRelativePath if it exists
+    if (file.webkitRelativePath) {
+      Object.defineProperty(updatedFile, 'webkitRelativePath', {
+        value: file.webkitRelativePath.replace(file.name, newName),
+        writable: false,
+      });
+    }
+
+    selectedFiles.value[index] = updatedFile;
+
+    // Clear cache for the old filename and add cache for new filename
+    complianceCache.delete(file.name);
+    complianceCache.set(newName, isFilenameCompliant(standard.value, newName));
+
+    // Show success message
+    eventMessageStore.addMessage('uploadPage.fileRenamed', 'success', 3000, {
+      oldName: file.name,
+      newName: newName,
+    });
   }
 }
 </script>
@@ -246,27 +373,30 @@ async function uploadFiles() {
   gap: 8px;
 }
 
-.upload-btn:hover:not(:disabled) {
-  background: #1565c0;
-}
-
 .upload-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #1565c0;
 }
 
 .spinner {
   width: 16px;
   height: 16px;
   border: 2px solid #ffffff40;
-  border-top: 2px solid #ffffff;
+  border-top: 2px solid #fff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
-
 </style>

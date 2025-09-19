@@ -526,13 +526,16 @@
     "gb": "GB"
   },
 
-  "fileRenameSuggestion": {
+  "renameSuggestionPopover": {
     "title": "ファイル名の変更",
-    "enterNewName": "新しいファイル名を入力",
+    "enterNewName": "新しいファイル名を入力してください",
     "confirm": "名前の変更",
     "renaming": "名前を変更中...",
-    "basedOnMediaFiles": "メディアファイルに基づく",
-    "notCompliant": "このファイル名は命名規則に準拠していません"
+    "processing": "処理中...",
+    "basedOnMediaFile": "メディアファイルに基づく：",
+    "notCompliant": "このファイル名は命名規則に準拠していません",
+    "placeholder": "新しいファイル名を入力してください",
+    "rename": "名前の変更"
   },
 
   "rename": {

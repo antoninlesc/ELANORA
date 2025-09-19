@@ -572,13 +572,16 @@
     "complianceRequired": "Tous les renommages doivent respecter le standard de nommage"
   },
 
-  "fileRenameSuggestion": {
+  "renameSuggestionPopover": {
     "title": "Renommer le fichier",
-    "enterNewName": "Entrez le nouveau nom",
+    "enterNewName": "Entrez le nouveau nom de fichier",
     "confirm": "Renommer",
     "renaming": "Renommage...",
-    "basedOnMediaFiles": "Basé sur les fichiers média",
-    "notCompliant": "Ce nom de fichier ne respecte pas le standard de nommage"
+    "processing": "Traitement en cours...",
+    "basedOnMediaFile": "Basé sur le fichier média :",
+    "notCompliant": "Ce nom de fichier ne respecte pas le standard de nommage",
+    "placeholder": "Entrez le nouveau nom de fichier",
+    "rename": "Renommer"
   },
 
   "rename": {

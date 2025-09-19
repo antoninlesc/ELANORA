@@ -99,12 +99,10 @@
                 showCompliance && file.isCompliant === false,
             },
           ]"
+          @mouseenter="onFilenameMouseEnter(file)"
+          @mouseleave="onFilenameMouseLeave"
         >
-          <td
-            class="filename-cell"
-            @mouseenter="onFilenameMouseEnter(file)"
-            @mouseleave="onFilenameMouseLeave"
-          >
+          <td class="filename-cell">
             <div class="filename-content">
               <img
                 v-if="isEafFile(file.name)"
@@ -131,8 +129,13 @@
     </table>
 
     <!-- Compliance popover as context bubble -->
-    <FileRenameSuggestion
-      v-if="showCompliance && hoveredFile"
+    <RenameSuggestionPopover
+      v-if="
+        showCompliance &&
+        hoveredFile &&
+        filteredFiles.find((f) => f.name === hoveredFile)?.isCompliant === false
+      "
+      ref="renamePopoverRef"
       :key="hoveredFile"
       :suggestion="
         getRenameSuggestion(filteredFiles.find((f) => f.name === hoveredFile))
@@ -144,7 +147,10 @@
       :media-files="
         filteredFiles.find((f) => f.name === hoveredFile)?.media_filenames || []
       "
-      :style="popoverStyle"
+      :is-upload-context="false"
+      :style="currentPopoverStyle"
+      :trigger-selector="'.filetree-row.filetree-noncompliant'"
+      :attachment-selector="'.filename-noncompliant'"
       @mouseenter="onPopoverMouseEnter"
       @mouseleave="onPopoverMouseLeave"
       @accept="
@@ -163,7 +169,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import FileRenameSuggestion from '@components/common/FileRenameSuggestion.vue';
+import RenameSuggestionPopover from '@components/common/RenameSuggestionPopover.vue';
 import {
   extractComponentsFromMedia,
   generateSuggestedFilename,
@@ -191,6 +197,7 @@ const filterDate = ref('');
 const popoverHovered = ref(false);
 const popoverCloseTimer = ref(null);
 const currentPopoverStyle = ref({});
+const renamePopoverRef = ref(null);
 
 const filteredFiles = computed(() => {
   let filtered = props.files.filter((file) => {
@@ -276,12 +283,12 @@ function formatDate(dateStr) {
 }
 
 function getRenameSuggestion(file) {
-  // If file already has a suggestion, use it
+  // For project files, use the backend-provided suggestion if available
   if (file?.suggestedName) {
     return file.suggestedName;
   }
 
-  // Try to generate media-based suggestion if we have the required data
+  // If no backend suggestion, try to generate one using available data
   if (
     file?.media_filenames &&
     file.media_filenames.length > 0 &&
@@ -304,7 +311,8 @@ function getRenameSuggestion(file) {
   }
 
   // Fallback suggestion
-  return 'suggested_filename.eaf';
+  const baseName = file?.name?.replace('.eaf', '') || 'suggested_filename';
+  return `${baseName}_suggested.eaf`;
 }
 
 function handleRename(file, newName) {
@@ -352,10 +360,49 @@ function onFilenameMouseEnter(file) {
     popoverCloseTimer.value = null;
   }
 
-  // Only show popover for non-compliant files when compliance checking is enabled
+  // Only show popover for non-compliant files
   if (props.showCompliance && file.isCompliant === false) {
+    console.log(
+      'FileTree: onFilenameMouseEnter called for non-compliant file:',
+      file.name
+    );
+    console.log('FileTree: File properties:', file);
     hoveredFile.value = file.name;
-    currentPopoverStyle.value = calculatePopoverStyle();
+
+    // Use the popover component's calculatePopoverStyle method
+    if (renamePopoverRef.value) {
+      console.log(
+        'FileTree: Calling calculatePopoverStyle with selector .filename-noncompliant'
+      );
+      currentPopoverStyle.value = renamePopoverRef.value.calculatePopoverStyle(
+        file.name,
+        '.filename-noncompliant'
+      );
+      console.log('FileTree: Style calculated:', currentPopoverStyle.value);
+    } else {
+      console.log(
+        'FileTree: renamePopoverRef is not available, scheduling retry'
+      );
+      // Schedule a retry after a short delay to allow component to mount
+      setTimeout(() => {
+        if (renamePopoverRef.value) {
+          console.log('FileTree: Retrying calculatePopoverStyle call');
+          currentPopoverStyle.value =
+            renamePopoverRef.value.calculatePopoverStyle(
+              file.name,
+              '.filename-noncompliant'
+            );
+          console.log(
+            'FileTree: Style calculated on retry:',
+            currentPopoverStyle.value
+          );
+        } else {
+          console.log(
+            'FileTree: renamePopoverRef still not available after retry'
+          );
+        }
+      }, 50);
+    }
   }
 }
 
@@ -385,98 +432,12 @@ function onPopoverMouseLeave() {
   }, 100);
 }
 
-function calculatePopoverStyle() {
-  if (!hoveredFile.value) return {};
-
-  const filenameSpan = document.querySelector(
-    `[data-file="${hoveredFile.value}"] .filename-content span`
-  );
-  if (!filenameSpan)
-    return { position: 'fixed', top: '100px', left: '100px', zIndex: 10 };
-
-  const rect = filenameSpan.getBoundingClientRect();
-  const popoverWidth = 280; // Estimated popover width
-  const popoverHeight = 140; // Estimated popover height
-  const arrowSize = 10; // Size of the arrow
-  const gap = 8; // Gap between filename and popover for breathing room
-
-  // Calculate viewport dimensions
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-
-  // Default position: right of the filename span, vertically centered
-  let left = rect.right + gap + arrowSize;
-  let top = rect.top + rect.height / 2 - popoverHeight / 2;
-  let placement = 'right';
-
-  // Check if popover would go off-screen to the right
-  if (left + popoverWidth > viewportWidth - 20) {
-    // Position to the left of the filename span
-    left = rect.left - popoverWidth - gap - arrowSize;
-    placement = 'left';
-  }
-
-  // Check if popover would go off-screen to the left
-  if (left < 20) {
-    // Position above the filename span, centered horizontally
-    left = rect.left + rect.width / 2 - popoverWidth / 2;
-    top = rect.top - popoverHeight - gap - arrowSize;
-    placement = 'top';
-  }
-
-  // Check if popover would go off-screen at the top
-  if (top < 20) {
-    // Position below the filename span, centered horizontally
-    left = rect.left + rect.width / 2 - popoverWidth / 2;
-    top = rect.bottom + gap + arrowSize;
-    placement = 'bottom';
-  }
-
-  // Ensure popover doesn't go off-screen vertically when positioned left/right
-  if (placement === 'left' || placement === 'right') {
-    if (top < 20) {
-      top = 20;
-    } else if (top + popoverHeight > viewportHeight - 20) {
-      top = viewportHeight - popoverHeight - 20;
-    }
-  }
-
-  // Ensure popover doesn't go off-screen horizontally when positioned top/bottom
-  if (placement === 'top' || placement === 'bottom') {
-    if (left < 20) {
-      left = 20;
-    } else if (left + popoverWidth > viewportWidth - 20) {
-      left = viewportWidth - popoverWidth - 20;
-    }
-  }
-
-  // Calculate arrow offset for proper pointing - use span position for precision
-  let arrowOffset;
-  if (placement === 'top' || placement === 'bottom') {
-    // For top/bottom placement, arrow should point to center of filename span
-    arrowOffset = `${rect.left + rect.width / 2 - left}px`;
-  } else {
-    // For left/right placement, arrow should point to vertical center of filename span
-    arrowOffset = `${rect.top + rect.height / 2 - top}px`;
-  }
-
-  return {
-    position: 'fixed',
-    top: `${top}px`,
-    left: `${left}px`,
-    zIndex: 1000,
-    '--arrow-placement': placement,
-    '--arrow-offset': arrowOffset,
-  };
-}
-
-const popoverStyle = computed(() => {
-  return currentPopoverStyle.value;
-});
-
 function handleScroll() {
-  if (hoveredFile.value) {
-    currentPopoverStyle.value = calculatePopoverStyle();
+  if (hoveredFile.value && renamePopoverRef.value) {
+    currentPopoverStyle.value = renamePopoverRef.value.calculatePopoverStyle(
+      hoveredFile.value,
+      '.filename-noncompliant'
+    );
   }
 }
 

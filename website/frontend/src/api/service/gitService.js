@@ -225,9 +225,17 @@ const gitService = {
 
   // Rename a single file
   async renameFile(projectName, elanId, newFilename) {
+    console.log('GitService renameFile called with:', {
+      projectName,
+      elanId,
+      newFilename,
+    });
+
     const formData = new FormData();
     formData.append('elan_id', elanId);
     formData.append('new_filename', newFilename);
+
+    console.log('FormData entries:', Array.from(formData.entries()));
 
     const response = await axiosInstance.post(
       `${GIT_PREFIX}/projects/${projectName}/rename-file`,
@@ -238,6 +246,8 @@ const gitService = {
         },
       }
     );
+
+    console.log('Rename response:', response.data);
     return response.data;
   },
 

@@ -581,13 +581,16 @@
     "complianceRequired": "All renames must comply with the naming standard"
   },
 
-  "fileRenameSuggestion": {
+  "renameSuggestionPopover": {
     "title": "Rename File",
     "enterNewName": "Enter new filename",
     "confirm": "Rename",
     "renaming": "Renaming...",
-    "basedOnMediaFiles": "Based on media files",
-    "notCompliant": "This filename doesn't comply with the naming standard"
+    "processing": "Processing...",
+    "basedOnMediaFile": "Based on media file:",
+    "notCompliant": "This filename doesn't comply with the naming standard",
+    "placeholder": "Enter new filename",
+    "rename": "Rename"
   },
 
   "rename": {
@@ -1183,6 +1186,7 @@
       "selectProjectAndFiles": "Please select a project and files",
       "uploadFailed": "Upload failed"
     },
-    "complianceWarning": "Some files don't comply with the naming standard. Please verify the file names and try again."
+    "complianceWarning": "Some files don't comply with the naming standard. Please verify the file names and try again.",
+    "fileRenamed": "File renamed from '{oldName}' to '{newName}'"
   }
 }

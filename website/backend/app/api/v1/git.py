@@ -5,6 +5,7 @@ from app.dependency.database import get_db_dep
 from app.dependency.elan_validation import validate_multiple_elan_files
 from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.user import User
+from app.crud.elan_file import get_elan_file_name_by_id
 from app.schema.requests.git import (
     BulkRenameRequest,
     CommitRequest,
@@ -407,10 +408,13 @@ async def rename_file(
         )
         return result
     except RenameConflictError as e:
+        # Get the old filename from database for conflict response
+        old_filename = await get_elan_file_name_by_id(db, elan_id) or ""
+
         # Return conflict info with 409 status code
         return FileRenameResponse(
             project_name=project_name,
-            old_filename="",  # Will be filled by service if needed
+            old_filename=old_filename,
             new_filename=new_filename,
             success=False,
             committed=False,
