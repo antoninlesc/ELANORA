@@ -79,7 +79,7 @@ export const useUploadStore = defineStore('upload', () => {
       case 3:
         return Object.keys(tierAssignments.value).length > 0;
       case 4:
-        return description.value.trim().length > 0;
+        return true; // Description is optional
       default:
         return false;
     }

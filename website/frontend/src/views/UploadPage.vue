@@ -239,20 +239,61 @@
 
         <!-- Step 4: Confirm -->
         <div v-if="uploadStore.currentStep === 4">
-          <textarea
-            v-model="uploadStore.description"
-            :placeholder="$t('uploadPage.step4.placeholder')"
-            class="description-textarea"
-          ></textarea>
+          <div class="confirmation-section">
+            <h3>{{ $t('uploadPage.step4.title') }}</h3>
+            <p class="confirmation-description">
+              {{ $t('uploadPage.step4.description') }}
+            </p>
+
+            <div class="upload-summary">
+              <h4>{{ $t('uploadPage.step4.summary') }}</h4>
+              <div class="summary-details">
+                <div class="summary-item">
+                  <span class="summary-label"
+                    >{{ $t('uploadPage.projectSelection.label') }}:</span
+                  >
+                  <span class="summary-value">{{
+                    getProjectName(uploadStore.selectedProject)
+                  }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label"
+                    >{{ $t('uploadPage.step2.completed') }}:</span
+                  >
+                  <span class="summary-value"
+                    >{{ uploadStore.extractedTiers.length }}
+                    {{ $t('uploadPage.step3.extractedTiers') }}</span
+                  >
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label"
+                    >{{ $t('uploadPage.step3.assignedTiersCount') }}:</span
+                  >
+                  <span class="summary-value">{{ assignedTiersCount }}</span>
+                </div>
+                <div v-if="uniqueNewSections.length > 0" class="summary-item">
+                  <span class="summary-label"
+                    >{{ $t('uploadPage.step3.newSectionsCount') }}:</span
+                  >
+                  <span class="summary-value">{{
+                    uniqueNewSections.length
+                  }}</span>
+                </div>
+              </div>
+            </div>
+
+            <textarea
+              v-model="uploadStore.description"
+              :placeholder="$t('uploadPage.step4.placeholder')"
+              class="description-textarea"
+            ></textarea>
+          </div>
+
           <div class="upload-actions">
             <button class="clear-btn" @click="uploadStore.prevStep">
               {{ $t('uploadPage.back') }}
             </button>
-            <button
-              class="upload-btn"
-              :disabled="!uploadStore.isStepValid"
-              @click="confirmUpload"
-            >
+            <button class="upload-btn" @click="confirmUpload">
               {{ $t('uploadPage.step4.confirm') }}
             </button>
           </div>
@@ -535,6 +576,15 @@ const getTiersForNewSection = (sectionName) => {
   });
 };
 
+// Helper function to get project name
+const getProjectName = (projectId) => {
+  if (!projectId) return '';
+  const project = projects.value.find(
+    (p) => p.project_id === parseInt(projectId)
+  );
+  return project ? project.project_name : projectId;
+};
+
 function handleFileRename({ file, index, newName }) {
   // Update the filename in the selectedFiles array
   if (uploadStore.selectedFiles[index]) {
@@ -667,8 +717,46 @@ async function proceedToStep4() {
 }
 
 async function confirmUpload() {
-  // Implement confirmation logic (e.g., send to backend, reset store)
-  uploadStore.reset();
+  try {
+    // Prepare form data for the API call
+    const formData = new FormData();
+    formData.append('session_id', uploadStore.sessionId);
+    formData.append(
+      'tier_assignments',
+      JSON.stringify(uploadStore.tierAssignments)
+    );
+    formData.append(
+      'new_section_names',
+      JSON.stringify(uploadStore.newSectionNames)
+    );
+    formData.append('description', uploadStore.description);
+
+    // Call the confirmation API
+    const response = await fetch('/api/v1/upload/confirm', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to confirm upload');
+    }
+
+    // Parse response (not used currently but good practice)
+    await response.json();
+
+    // Show success message
+    eventMessageStore.addMessage('uploadPage.step4.success', 'success', 5000);
+
+    // Reset the upload store to clear all data
+    uploadStore.reset();
+
+    // Optionally redirect to a success page or contributions page
+    // router.push('/contributions');
+  } catch (err) {
+    console.error('Error confirming upload:', err);
+    eventMessageStore.addMessage('uploadPage.step4.error', 'error');
+  }
 }
 </script>
 
@@ -860,5 +948,71 @@ async function confirmUpload() {
 .stat-value {
   font-weight: 700;
   color: #1976d2;
+}
+
+/* Step 4: Confirmation Styles */
+.confirmation-section {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.confirmation-description {
+  color: #666;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.upload-summary {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.upload-summary h4 {
+  color: #333;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+}
+
+.summary-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.summary-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.summary-value {
+  color: #333;
+}
+
+.description-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.description-textarea:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgb(25 118 210 / 20%);
 }
 </style>

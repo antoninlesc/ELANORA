@@ -1202,8 +1202,12 @@
     },
     "step4": {
       "label": "Confirm Upload",
-      "placeholder": "Add a description for your upload",
-      "confirm": "Confirm Upload"
+      "title": "Confirm Your Upload",
+      "description": "Review your upload details and add an optional description before submitting for administrator approval.",
+      "summary": "Upload Summary",
+      "confirm": "Confirm Upload",
+      "success": "Upload confirmed successfully! Your contribution is now pending administrator approval.",
+      "error": "Failed to confirm upload. Please try again."
     },
     "projectSelection": {
       "label": "Select Project:",
