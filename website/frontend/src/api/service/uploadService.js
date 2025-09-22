@@ -35,19 +35,69 @@ export const processUploadFiles = async (files, projectId) => {
 /**
  * Confirm and finalize the upload.
  * @param {string} sessionId - Upload session ID
- * @param {Object} tierAssignments - Tier assignments
+ * @param {Object} tierAssignments - Tier assignments (tierKey -> assignment)
+ * @param {Object} newSectionNames - New section names (sectionName -> displayName)
  * @param {string} description - Upload description
  * @returns {Promise<Object>} - Confirmation response
  */
 export const confirmUpload = async (
   sessionId,
   tierAssignments,
+  newSectionNames,
   description
 ) => {
-  const response = await apiClient.post('/upload/confirm', {
-    session_id: sessionId,
-    tier_assignments: tierAssignments,
-    description: description,
+  // Transform tierAssignments object into array format expected by backend
+  const assignmentsArray = Object.entries(tierAssignments).map(
+    ([tierKey, assignment]) => {
+      let section_name = null;
+      if (assignment === 'new') {
+        // For new sections, use the display name from newSectionNames
+        section_name = newSectionNames[tierKey] || tierKey;
+      } else if (assignment && assignment !== '') {
+        // For existing sections, assignment is the section ID, but backend expects section name
+        // For now, we'll pass the section ID and let backend handle it
+        section_name = assignment;
+      }
+
+      return {
+        tier_id: tierKey,
+        tier_name: tierKey,
+        section_name: section_name,
+      };
+    }
+  );
+
+  const formData = new FormData();
+  formData.append('session_id', sessionId);
+  formData.append('tier_assignments', JSON.stringify(assignmentsArray));
+  formData.append(
+    'new_section_names',
+    JSON.stringify(Object.values(newSectionNames))
+  );
+  formData.append('description', description);
+
+  const response = await apiClient.post('/upload/confirm', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data;
+};
+
+/**
+ * Cancel an upload session.
+ * @param {string} sessionId - Upload session ID
+ * @returns {Promise<Object>} - Cancellation response
+ */
+export const cancelUpload = async (sessionId) => {
+  const formData = new FormData();
+  formData.append('session_id', sessionId);
+
+  const response = await apiClient.post('/upload/cancel', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
   });
 
   return response.data;

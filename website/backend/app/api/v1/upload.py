@@ -19,7 +19,7 @@ from app.core.centralized_logging import get_logger
 
 logger = get_logger()
 
-router = APIRouter(prefix="/upload", tags=["upload"])
+router = APIRouter()
 
 
 @router.post("/process")

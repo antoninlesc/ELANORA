@@ -352,13 +352,17 @@ import '@/assets/css/upload-page.css';
 import { useProjectStore } from '@/stores/project';
 import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
 import { useNamingStandardStore } from '@/stores/namingStandard';
+import { useUploadStore } from '@/stores/upload';
+import { useEventMessageStore } from '@/stores/eventMessage';
 import {
   isFilenameCompliant,
   clearComplianceCache,
 } from '@/utils/filenameCompliance';
-import { useEventMessageStore } from '@/stores/eventMessage';
-import { useUploadStore } from '@/stores/upload';
-import { processUploadFiles } from '@/api/service/uploadService';
+import {
+  processUploadFiles,
+  confirmUpload as confirmUploadApi,
+  cancelUpload as cancelUploadApi,
+} from '@/api/service/uploadService';
 
 const loading = ref(true);
 const uploadResults = ref([]);
@@ -730,32 +734,13 @@ async function proceedToStep4() {
 
 async function confirmUpload() {
   try {
-    // Prepare form data for the API call
-    const formData = new FormData();
-    formData.append('session_id', uploadStore.sessionId);
-    formData.append(
-      'tier_assignments',
-      JSON.stringify(uploadStore.tierAssignments)
+    // Call the confirmation API using the service
+    await confirmUploadApi(
+      uploadStore.sessionId,
+      uploadStore.tierAssignments,
+      uploadStore.newSectionNames,
+      uploadStore.description
     );
-    formData.append(
-      'new_section_names',
-      JSON.stringify(uploadStore.newSectionNames)
-    );
-    formData.append('description', uploadStore.description);
-
-    // Call the confirmation API
-    const response = await fetch('/api/v1/upload/confirm', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Failed to confirm upload');
-    }
-
-    // Parse response (not used currently but good practice)
-    await response.json();
 
     // Show success message
     eventMessageStore.addMessage('uploadPage.step4.success', 'success', 5000);
@@ -780,20 +765,8 @@ async function cancelUpload() {
   }
 
   try {
-    // Prepare form data for the cancel API call
-    const formData = new FormData();
-    formData.append('session_id', uploadStore.sessionId);
-
-    // Call the cancel API
-    const response = await fetch('/api/v1/upload/cancel', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Failed to cancel upload');
-    }
+    // Call the cancel API using the service
+    await cancelUploadApi(uploadStore.sessionId);
 
     // Show success message
     eventMessageStore.addMessage('uploadPage.cancel.success', 'info', 3000);
