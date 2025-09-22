@@ -1158,6 +1158,27 @@
   },
   "uploadPage": {
     "title": "Upload des fichiers ELAN",
+    "back": "Retour",
+    "step1": {
+      "label": "Télécharger les fichiers",
+      "next": "Procéder au traitement"
+    },
+    "step2": {
+      "label": "Traiter les tiers",
+      "processing": "Traitement des fichiers...",
+      "completed": "Tiers extraits avec succès",
+      "next": "Procéder à l'assignation"
+    },
+    "step3": {
+      "label": "Assigner les tiers",
+      "placeholder": "L'interface d'assignation des tiers sera implémentée ici",
+      "next": "Procéder à la confirmation"
+    },
+    "step4": {
+      "label": "Confirmer l'upload",
+      "placeholder": "Ajouter une description pour votre upload",
+      "confirm": "Confirmer l'upload"
+    },
     "projectSelection": {
       "label": "Sélectionner un projet :",
       "placeholder": "Choisir un projet..."

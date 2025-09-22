@@ -3,63 +3,150 @@
     <div class="upload-page-root">
       <h1 class="upload-title">{{ $t('uploadPage.title') }}</h1>
 
-      <!-- Project Selection -->
-      <div class="project-selection">
-        <label for="projectSelect" class="project-label">{{
-          $t('uploadPage.projectSelection.label')
-        }}</label>
-        <select
-          id="projectSelect"
-          v-model="selectedProject"
-          class="project-select"
-          :disabled="loading"
-        >
-          <option value="">
-            {{ $t('uploadPage.projectSelection.placeholder') }}
-          </option>
-          <option
-            v-for="project in projects"
-            :key="project.project_id"
-            :value="project.project_id"
+      <!-- Custom Stepper -->
+      <div class="stepper">
+        <div class="stepper-header">
+          <div
+            v-for="step in 4"
+            :key="step"
+            class="step"
+            :class="{
+              active: uploadStore.currentStep === step,
+              completed: uploadStore.currentStep > step,
+            }"
           >
-            {{ project.project_name }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Upload Component -->
-      <div v-if="selectedProject">
-        <UploadFolder
-          v-model="selectedFiles"
-          :title="$t('uploadPage.uploadZone.title')"
-          :subtitle="$t('uploadPage.uploadZone.subtitle')"
-          :files-with-compliance="filesWithCompliance"
-          :standard="standard"
-          :media-standard="mediaStandard"
-          :enable-media-extraction="true"
-          @rename-file="handleFileRename"
-        />
-
-        <!-- Upload Actions -->
-        <div v-if="selectedFiles.length > 0" class="upload-actions">
-          <button
-            class="upload-btn"
-            :disabled="uploading || selectedFiles.length === 0"
-            @click="uploadFiles"
-          >
-            <span v-if="uploading" class="spinner"></span>
-            {{
-              uploading
-                ? $t('uploadPage.uploadingFiles', {
-                    count: selectedFiles.length,
-                  })
-                : $t('uploadPage.uploadButton')
-            }}
-          </button>
+            <div class="step-circle">{{ step }}</div>
+            <div class="step-label">
+              {{ $t(`uploadPage.step${step}.label`) }}
+            </div>
+          </div>
+        </div>
+        <div class="stepper-progress">
+          <div
+            class="progress-bar"
+            :style="{ width: `${((uploadStore.currentStep - 1) / 3) * 100}%` }"
+          ></div>
         </div>
       </div>
 
-      <!-- Upload Results -->
+      <!-- Step Content -->
+      <div class="step-content">
+        <!-- Step 1: Project Selection and Upload -->
+        <div v-if="uploadStore.currentStep === 1">
+          <!-- Project Selection -->
+          <div class="project-selection">
+            <label for="projectSelect" class="project-label">{{
+              $t('uploadPage.projectSelection.label')
+            }}</label>
+            <select
+              id="projectSelect"
+              v-model="uploadStore.selectedProject"
+              class="project-select"
+              :disabled="loading"
+            >
+              <option value="">
+                {{ $t('uploadPage.projectSelection.placeholder') }}
+              </option>
+              <option
+                v-for="project in projects"
+                :key="project.project_id"
+                :value="project.project_id"
+              >
+                {{ project.project_name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Upload Component -->
+          <div v-if="uploadStore.selectedProject">
+            <UploadFolder
+              v-model="uploadStore.selectedFiles"
+              :title="$t('uploadPage.uploadZone.title')"
+              :subtitle="$t('uploadPage.uploadZone.subtitle')"
+              :files-with-compliance="filesWithCompliance"
+              :standard="standard"
+              :media-standard="mediaStandard"
+              :enable-media-extraction="true"
+              @rename-file="handleFileRename"
+            />
+
+            <!-- Upload Actions -->
+            <div
+              v-if="uploadStore.selectedFiles.length > 0"
+              class="upload-actions"
+            >
+              <button
+                class="upload-btn"
+                :disabled="!uploadStore.isStepValid"
+                @click="proceedToStep2"
+              >
+                {{ $t('uploadPage.step1.next') }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Processing -->
+        <div v-if="uploadStore.currentStep === 2">
+          <div v-if="uploadStore.isProcessing" class="upload-progress">
+            <div class="spinner"></div>
+            <p>{{ $t('uploadPage.step2.processing') }}</p>
+          </div>
+          <div v-else>
+            <!-- Display extracted tiers (add logic later) -->
+            <p>{{ $t('uploadPage.step2.completed') }}</p>
+            <div class="upload-actions">
+              <button class="clear-btn" @click="uploadStore.prevStep">
+                {{ $t('uploadPage.back') }}
+              </button>
+              <button class="upload-btn" @click="uploadStore.nextStep">
+                {{ $t('uploadPage.step2.next') }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Assignment -->
+        <div v-if="uploadStore.currentStep === 3">
+          <!-- Placeholder for tier assignment UI -->
+          <p>{{ $t('uploadPage.step3.placeholder') }}</p>
+          <div class="upload-actions">
+            <button class="clear-btn" @click="uploadStore.prevStep">
+              {{ $t('uploadPage.back') }}
+            </button>
+            <button
+              class="upload-btn"
+              :disabled="!uploadStore.isStepValid"
+              @click="uploadStore.nextStep"
+            >
+              {{ $t('uploadPage.step3.next') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 4: Confirm -->
+        <div v-if="uploadStore.currentStep === 4">
+          <textarea
+            v-model="uploadStore.description"
+            :placeholder="$t('uploadPage.step4.placeholder')"
+            class="description-textarea"
+          ></textarea>
+          <div class="upload-actions">
+            <button class="clear-btn" @click="uploadStore.prevStep">
+              {{ $t('uploadPage.back') }}
+            </button>
+            <button
+              class="upload-btn"
+              :disabled="!uploadStore.isStepValid"
+              @click="confirmUpload"
+            >
+              {{ $t('uploadPage.step4.confirm') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Results (if needed in later steps) -->
       <div v-if="uploadResults.length > 0" class="upload-results">
         <h3>{{ $t('uploadPage.uploadResults') }}</h3>
         <div class="results-list">
@@ -94,11 +181,8 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
 import UploadFolder from '@/components/common/UploadFolder.vue';
-import gitService from '@/api/service/gitService';
 import '@/assets/css/upload-page.css';
-import { useUserStore } from '@/stores/user';
 import { useProjectStore } from '@/stores/project';
 import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
 import { useNamingStandardStore } from '@/stores/namingStandard';
@@ -107,16 +191,14 @@ import {
   clearComplianceCache,
 } from '@/utils/filenameCompliance';
 import { useEventMessageStore } from '@/stores/eventMessage';
+import { useUploadStore } from '@/stores/upload';
+import { processUploadFiles } from '@/api/service/uploadService';
 
-const { t } = useI18n();
-const selectedProject = ref('');
-const selectedFiles = ref([]);
-const uploading = ref(false);
 const loading = ref(true);
 const uploadResults = ref([]);
 const error = ref('');
-const userStore = useUserStore();
 const projectStore = useProjectStore();
+const uploadStore = useUploadStore();
 
 // Stores and Composables
 const effectiveStandardStore = useEffectiveStandardStore();
@@ -134,9 +216,6 @@ const complianceCache = new Map();
 // Flag to prevent duplicate fetch on initial load
 const isInitialLoad = ref(true);
 
-// Computed for Username from User Store
-const username = computed(() => userStore.user?.username || '');
-
 // Computed for Projects from Store
 const projects = computed(() => projectStore.projects || []);
 
@@ -144,11 +223,14 @@ onMounted(async () => {
   // Ensure store is initialized (loads from localStorage if needed)
   projectStore.initializeFromStorage();
 
-  // Set default selected project to current active project's ID
-  selectedProject.value = projectStore.currentProject?.project_id || '';
+  // Sync initial project selection
+  if (projectStore.currentProject) {
+    uploadStore.selectedProject =
+      projectStore.currentProject.project_id.toString();
+  }
 
   // Initial fetch if a project is selected
-  if (selectedProject.value) {
+  if (uploadStore.selectedProject) {
     await fetchStandards();
   }
 
@@ -162,21 +244,45 @@ onMounted(async () => {
 });
 
 // Updated: Watcher to fetch standards only after initial load
-watch(selectedProject, async (newProjectId, oldProjectId) => {
-  if (!isInitialLoad.value && newProjectId && newProjectId !== oldProjectId) {
-    await fetchStandards();
-  } else if (!newProjectId) {
-    // Reset if no project selected
-    hasEffectiveStandard.value = false;
-    standard.value = null;
-    mediaStandard.value = null;
+watch(
+  () => uploadStore.selectedProject,
+  async (newProjectId, oldProjectId) => {
+    if (!isInitialLoad.value && newProjectId && newProjectId !== oldProjectId) {
+      // Update project store when upload store project changes
+      const project = projectStore.projects.find(
+        (p) => p.project_id === parseInt(newProjectId)
+      );
+      if (project) {
+        projectStore.setCurrentProject(project);
+      }
+      await fetchStandards();
+    } else if (!newProjectId) {
+      // Reset if no project selected
+      hasEffectiveStandard.value = false;
+      standard.value = null;
+      mediaStandard.value = null;
+    }
   }
-});
+);
+
+// Watch for project store changes and sync to upload store
+watch(
+  () => projectStore.currentProject,
+  (newProject) => {
+    if (
+      !isInitialLoad.value &&
+      newProject &&
+      newProject.project_id !== parseInt(uploadStore.selectedProject)
+    ) {
+      uploadStore.selectedProject = newProject.project_id.toString();
+    }
+  }
+);
 
 async function fetchStandards() {
   const UPLOAD_PAGE_LOCATION_ID = 4;
 
-  if (!selectedProject.value) {
+  if (!uploadStore.selectedProject) {
     console.warn('UploadPage: No project selected, skipping standards fetch');
     hasEffectiveStandard.value = false;
     return;
@@ -184,16 +290,16 @@ async function fetchStandards() {
 
   console.log(
     'UploadPage: Fetching standards for project:',
-    selectedProject.value
+    uploadStore.selectedProject
   );
 
   try {
     await effectiveStandardStore.fetchEffectiveStandards(
-      selectedProject.value,
+      uploadStore.selectedProject,
       UPLOAD_PAGE_LOCATION_ID
     );
     await namingStandardStore.fetchStandardsAndComponentNames(
-      selectedProject.value
+      uploadStore.selectedProject
     );
 
     // Get the standard ID
@@ -229,7 +335,7 @@ async function fetchStandards() {
     const MEDIA_LOCATION_ID = 3;
     console.log('UploadPage: Fetching media standards for location 3');
     await effectiveStandardStore.fetchEffectiveStandards(
-      selectedProject.value,
+      uploadStore.selectedProject,
       MEDIA_LOCATION_ID
     );
     const mediaStandardsObj =
@@ -263,11 +369,14 @@ async function fetchStandards() {
 // Computed for Files with Compliance
 const filesWithCompliance = computed(() => {
   if (!hasEffectiveStandard.value || !standard.value) {
-    return selectedFiles.value.map((file) => ({ ...file, isCompliant: true }));
+    return uploadStore.selectedFiles.map((file) => ({
+      ...file,
+      isCompliant: true,
+    }));
   }
 
   // Use cached compliance results if available
-  return selectedFiles.value.map((file) => {
+  return uploadStore.selectedFiles.map((file) => {
     const cached = complianceCache.get(file.name);
     if (cached !== undefined) {
       return { ...file, isCompliant: cached };
@@ -280,47 +389,9 @@ const filesWithCompliance = computed(() => {
   });
 });
 
-// UploadFiles to show event message and prevent upload for non-compliant files
-async function uploadFiles() {
-  if (!selectedProject.value || selectedFiles.value.length === 0) {
-    error.value = t('uploadPage.errors.selectProjectAndFiles');
-    return;
-  }
-
-  // Check for non-compliant files and show event message
-  const nonCompliantFiles = filesWithCompliance.value.filter(
-    (f) => !f.isCompliant
-  );
-  if (nonCompliantFiles.length > 0) {
-    eventMessageStore.addMessage('uploadPage.complianceWarning', 'warning');
-    return;
-  }
-
-  uploading.value = true;
-  uploadResults.value = [];
-  error.value = '';
-
-  try {
-    const response = await gitService.uploadElanFiles(
-      selectedProject.value,
-      selectedFiles.value,
-      username.value
-    );
-
-    uploadResults.value = response.files || [];
-    selectedFiles.value = [];
-  } catch (e) {
-    error.value =
-      e?.response?.data?.detail || t('uploadPage.errors.uploadFailed');
-    console.error('Upload error:', e);
-  } finally {
-    uploading.value = false;
-  }
-}
-
 function handleFileRename({ file, index, newName }) {
   // Update the filename in the selectedFiles array
-  if (selectedFiles.value[index]) {
+  if (uploadStore.selectedFiles[index]) {
     // Create a new File object with the updated name
     const updatedFile = new File([file], newName, {
       type: file.type,
@@ -335,7 +406,7 @@ function handleFileRename({ file, index, newName }) {
       });
     }
 
-    selectedFiles.value[index] = updatedFile;
+    uploadStore.selectedFiles[index] = updatedFile;
 
     // Clear cache for the old filename and add cache for new filename
     complianceCache.delete(file.name);
@@ -347,6 +418,45 @@ function handleFileRename({ file, index, newName }) {
       newName: newName,
     });
   }
+}
+
+async function proceedToStep2() {
+  // Check for non-compliant files and show event message
+  const nonCompliantFiles = filesWithCompliance.value.filter(
+    (f) => !f.isCompliant
+  );
+  if (nonCompliantFiles.length > 0) {
+    eventMessageStore.addMessage('uploadPage.complianceWarning', 'warning');
+    return;
+  }
+
+  try {
+    // Show processing state
+    uploadStore.isProcessing = true;
+
+    // Call the API to process files
+    const response = await processUploadFiles(
+      uploadStore.selectedFiles,
+      uploadStore.selectedProject
+    );
+
+    // Store the results
+    uploadStore.extractedTiers = response.extracted_tiers;
+    uploadStore.sessionId = response.session_id;
+
+    // Move to step 3
+    uploadStore.nextStep();
+  } catch (err) {
+    console.error('Error processing upload files:', err);
+    eventMessageStore.addMessage('uploadPage.processingError', 'error');
+  } finally {
+    uploadStore.isProcessing = false;
+  }
+}
+
+async function confirmUpload() {
+  // Implement confirmation logic (e.g., send to backend, reset store)
+  uploadStore.reset();
 }
 </script>
 
@@ -395,6 +505,7 @@ function handleFileRename({ file, index, newName }) {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

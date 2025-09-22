@@ -1,0 +1,118 @@
+import { defineStore } from 'pinia';
+import { ref, watch, computed } from 'vue';
+
+const STORAGE_KEY = 'uploadState';
+
+function loadFromLocalStorage() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (error) {
+    console.error('Failed to load upload state from localStorage:', error);
+    return {};
+  }
+}
+
+function saveToLocalStorage(state) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.error('Failed to save upload state to localStorage:', error);
+  }
+}
+
+export const useUploadStore = defineStore('upload', () => {
+  const currentStep = ref(1); // 1: Upload, 2: Processing, 3: Assignment, 4: Confirm
+  const selectedProject = ref(''); // Project ID as string
+  const selectedFiles = ref([]);
+  const extractedTiers = ref([]); // From backend
+  const tierAssignments = ref({}); // e.g., { tierId: sectionId or 'new' }
+  const sessionId = ref(null); // From backend
+  const description = ref('');
+  const isProcessing = ref(false);
+
+  // Load initial state
+  const initialState = loadFromLocalStorage();
+  if (initialState.currentStep) currentStep.value = initialState.currentStep;
+  if (initialState.selectedProject)
+    selectedProject.value = initialState.selectedProject;
+  if (initialState.extractedTiers)
+    extractedTiers.value = initialState.extractedTiers;
+  if (initialState.tierAssignments)
+    tierAssignments.value = initialState.tierAssignments;
+  if (initialState.sessionId) sessionId.value = initialState.sessionId;
+  if (initialState.description) description.value = initialState.description;
+
+  // Watch for changes and save
+  watch(
+    [
+      currentStep,
+      selectedProject,
+      extractedTiers,
+      tierAssignments,
+      sessionId,
+      description,
+    ],
+    () => {
+      saveToLocalStorage({
+        currentStep: currentStep.value,
+        selectedProject: selectedProject.value,
+        extractedTiers: extractedTiers.value,
+        tierAssignments: tierAssignments.value,
+        sessionId: sessionId.value,
+        description: description.value,
+      });
+    },
+    { deep: true }
+  );
+
+  const isStepValid = computed(() => {
+    switch (currentStep.value) {
+      case 1:
+        return selectedFiles.value.length > 0 && selectedProject.value;
+      case 2:
+        return extractedTiers.value.length > 0;
+      case 3:
+        return Object.keys(tierAssignments.value).length > 0;
+      case 4:
+        return description.value.trim().length > 0;
+      default:
+        return false;
+    }
+  });
+
+  function nextStep() {
+    if (isStepValid.value) currentStep.value++;
+  }
+
+  function prevStep() {
+    if (currentStep.value > 1) currentStep.value--;
+  }
+
+  function reset() {
+    currentStep.value = 1;
+    selectedProject.value = '';
+    selectedFiles.value = [];
+    extractedTiers.value = [];
+    tierAssignments.value = {};
+    sessionId.value = null;
+    description.value = '';
+    isProcessing.value = false;
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
+  return {
+    currentStep,
+    selectedProject,
+    selectedFiles,
+    extractedTiers,
+    tierAssignments,
+    sessionId,
+    description,
+    isProcessing,
+    isStepValid,
+    nextStep,
+    prevStep,
+    reset,
+  };
+});

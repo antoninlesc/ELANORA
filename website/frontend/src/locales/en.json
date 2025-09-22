@@ -1168,6 +1168,27 @@
   },
   "uploadPage": {
     "title": "Upload ELAN Files",
+    "back": "Back",
+    "step1": {
+      "label": "Upload Files",
+      "next": "Proceed to Processing"
+    },
+    "step2": {
+      "label": "Process Tiers",
+      "processing": "Processing files...",
+      "completed": "Tiers extracted successfully",
+      "next": "Proceed to Assignment"
+    },
+    "step3": {
+      "label": "Assign Tiers",
+      "placeholder": "Tier assignment UI will be implemented here",
+      "next": "Proceed to Confirm"
+    },
+    "step4": {
+      "label": "Confirm Upload",
+      "placeholder": "Add a description for your upload",
+      "confirm": "Confirm Upload"
+    },
     "projectSelection": {
       "label": "Select Project:",
       "placeholder": "Choose a project..."

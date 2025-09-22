@@ -978,6 +978,51 @@
     }
   },
 
+  "uploadPage": {
+    "title": "ELANファイルをアップロード",
+    "back": "戻る",
+    "step1": {
+      "label": "ファイルをアップロード",
+      "next": "処理に進む"
+    },
+    "step2": {
+      "label": "階層を処理",
+      "processing": "ファイルを処理中...",
+      "completed": "階層が正常に抽出されました",
+      "next": "割り当てに進む"
+    },
+    "step3": {
+      "label": "階層を割り当て",
+      "placeholder": "階層割り当てUIがここに実装されます",
+      "next": "確認に進む"
+    },
+    "step4": {
+      "label": "アップロードを確認",
+      "placeholder": "アップロードの説明を追加",
+      "confirm": "アップロードを確認"
+    },
+    "projectSelection": {
+      "label": "プロジェクトを選択：",
+      "placeholder": "プロジェクトを選択..."
+    },
+    "uploadZone": {
+      "title": "ELANファイルをここにドロップするかクリックして参照",
+      "subtitle": ".eafファイルのみが受け入れられます（ファイルあたり最大50MB）"
+    },
+    "uploadButton": "ファイルをアップロード",
+    "uploadingFiles": "{count}個のファイルをアップロード中...",
+    "uploadResults": "アップロード結果",
+    "resultSuccess": "✓ 成功",
+    "resultFailed": "✗ 失敗",
+    "errors": {
+      "failedToLoadProjects": "プロジェクトの読み込みに失敗しました",
+      "selectProjectAndFiles": "プロジェクトとファイルを選択してください",
+      "uploadFailed": "アップロードに失敗しました"
+    },
+    "complianceWarning": "一部のファイルが命名基準に準拠していません。ファイル名を確認してもう一度お試しください。",
+    "fileRenamed": "ファイル名が「{oldName}」から「{newName}」に変更されました"
+  },
+
   "tiersPage": {
     "pageTitle": "階層",
     "pageTitleWithProject": "{projectName}の階層",

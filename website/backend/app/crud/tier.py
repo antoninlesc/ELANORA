@@ -69,32 +69,53 @@ async def get_tier_by_id(db: AsyncSession, tier_id: int) -> Tier | None:
     return await DatabaseUtils.get_by_id(db, Tier, "tier_id", tier_id)
 
 
-async def get_all_tiers(db: AsyncSession) -> list[Tier]:
+async def get_all_tiers(db: AsyncSession, include_staged: bool = False) -> list[Tier]:
     """Get all tiers."""
-    return await DatabaseUtils.get_all(db, Tier)
+    filters = {}
+    if not include_staged:
+        filters["is_staged"] = False
+    return await DatabaseUtils.get_by_filter(db, Tier, filters)
 
 
-async def get_child_tiers(db: AsyncSession, parent_tier_id: int) -> list[Tier]:
+async def get_child_tiers(
+    db: AsyncSession, parent_tier_id: int, include_staged: bool = False
+) -> list[Tier]:
     """Get all child tiers of a parent tier."""
     filters = {"parent_tier_id": parent_tier_id}
+    if not include_staged:
+        filters["is_staged"] = False
     return await DatabaseUtils.get_by_filter(db, Tier, filters)
 
 
-async def get_root_tiers(db: AsyncSession) -> list[Tier]:
+async def get_root_tiers(db: AsyncSession, include_staged: bool = False) -> list[Tier]:
     """Get all root tiers (no parent)."""
-    filters = {"parent_tier_id": None}
-    return await DatabaseUtils.get_by_filter(db, Tier, filters)
+    conditions = [Tier.parent_tier_id.is_(None)]
+    if not include_staged:
+        conditions.append(Tier.is_staged.is_(False))
+    return await DatabaseUtils.get_by_conditions(db, Tier, conditions=conditions)
 
 
-async def get_tier_id_by_name(db: AsyncSession, tier_name: str) -> int | None:
-    filters = {"tier_name": tier_name}
-    results = await DatabaseUtils.get_by_filter(db, Tier, filters, limit=1)
+async def get_tier_id_by_name(
+    db: AsyncSession, tier_name: str, include_staged: bool = False
+) -> int | None:
+    conditions = [Tier.tier_name == tier_name]
+    if not include_staged:
+        conditions.append(Tier.is_staged.is_(False))
+    results = await DatabaseUtils.get_by_conditions(
+        db, Tier, conditions=conditions, limit=1
+    )
     return results[0].tier_id if results else None
 
 
-async def get_tier_by_name(db: AsyncSession, tier_name: str) -> Tier | None:
-    filters = {"tier_name": tier_name}
-    results = await DatabaseUtils.get_by_filter(db, Tier, filters, limit=1)
+async def get_tier_by_name(
+    db: AsyncSession, tier_name: str, include_staged: bool = False
+) -> Tier | None:
+    conditions = [Tier.tier_name == tier_name]
+    if not include_staged:
+        conditions.append(Tier.is_staged.is_(False))
+    results = await DatabaseUtils.get_by_conditions(
+        db, Tier, conditions=conditions, limit=1
+    )
     return results[0] if results else None
 
 
@@ -102,18 +123,22 @@ async def create_tier_in_db(
     db: AsyncSession,
     tier_name: str,
     parent_tier_id: int | None = None,
+    is_staged: bool = False,
 ) -> Tier:
     """Create a new tier in the database."""
     tier = Tier(
         tier_name=tier_name,
         parent_tier_id=parent_tier_id,
+        is_staged=is_staged,
     )
     await DatabaseUtils.create(db, tier)
     await db.flush()
     return tier
 
 
-async def get_tiers_by_elan_id(db: AsyncSession, elan_id: int) -> list[Tier]:
+async def get_tiers_by_elan_id(
+    db: AsyncSession, elan_id: int, include_staged: bool = False
+) -> list[Tier]:
     """Get all tiers for a given ELAN file using tier_id association."""
     # Get content_id from elan_id using DatabaseUtils
     from app.crud.elan_file import get_elan_file_by_id
@@ -132,8 +157,10 @@ async def get_tiers_by_elan_id(db: AsyncSession, elan_id: int) -> list[Tier]:
     if not tier_ids:
         return []
 
-    filters = {"tier_id": tier_ids}
-    return await DatabaseUtils.get_by_filter(db, Tier, filters=filters)
+    conditions = [Tier.tier_id.in_(tier_ids)]
+    if not include_staged:
+        conditions.append(Tier.is_staged.is_(False))
+    return await DatabaseUtils.get_by_conditions(db, Tier, conditions=conditions)
 
 
 async def check_tier_exists(db: AsyncSession, tier_id: int) -> bool:
@@ -168,7 +195,7 @@ async def get_all_tier_names_with_annotations(db: AsyncSession) -> list[str]:
 
 
 async def get_tiers_with_annotations_for_content(
-    db: AsyncSession, content_id: int
+    db: AsyncSession, content_id: int, include_staged: bool = False
 ) -> list[Tier]:
     """Get all tiers that have at least one annotation for a specific content."""
     # Use DatabaseUtils with join to get distinct tiers
@@ -180,6 +207,8 @@ async def get_tiers_with_annotations_for_content(
         Annotation.content_id == content_id
     )
     conditions = [Tier.tier_id.in_(subquery)]
+    if not include_staged:
+        conditions.append(Tier.is_staged.is_(False))
 
     return await DatabaseUtils.get_by_conditions(db, Tier, conditions=conditions)
 
@@ -208,8 +237,13 @@ async def get_tier_statistics(db: AsyncSession) -> list[tuple[str, int]]:
     return [(row["tier_name"], row["annotation_count"]) for row in result]
 
 
-async def get_tiers_by_ids(db, tier_ids: list[int]) -> list[Tier]:
+async def get_tiers_by_ids(
+    db, tier_ids: list[int], include_staged: bool = False
+) -> list[Tier]:
     """Get all tiers for a list of tier_ids."""
     if not tier_ids:
         return []
-    return await DatabaseUtils.get_by_filter(db, Tier, {"tier_id": tier_ids})
+    conditions = [Tier.tier_id.in_(tier_ids)]
+    if not include_staged:
+        conditions.append(Tier.is_staged.is_(False))
+    return await DatabaseUtils.get_by_conditions(db, Tier, conditions=conditions)

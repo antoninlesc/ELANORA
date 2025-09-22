@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -20,6 +20,7 @@ class TierGroup(Base):
         Integer, ForeignKey("TIER.tier_id", ondelete="CASCADE"), nullable=False
     )
     tier_name: Mapped[str] = mapped_column(String, nullable=False)
+    is_staged: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Relationships
     section = relationship("TierSection", back_populates="tier_groups")

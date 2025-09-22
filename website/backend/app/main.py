@@ -22,6 +22,7 @@ from app.api.v1.notification import router as notification_router
 from app.api.v1.project_associations import router as project_associations_router
 from app.api.v1.project_naming_standard import router as project_naming_standard_router
 from app.api.v1.tier import router as tier_router
+from app.api.v1.upload import router as upload_router
 from app.api.v1.user import router as user_router
 from app.core.centralized_logging import get_logger
 from app.core.config import BACKEND_HOST, ENVIRONMENT, FRONTEND_HOST
@@ -139,6 +140,8 @@ app.include_router(
 app.include_router(
     notification_router, prefix=f"{API_V1_PREFIX}/notifications", tags=["NOTIFICATION"]
 )
+
+app.include_router(upload_router, prefix=f"{API_V1_PREFIX}/upload", tags=["UPLOAD"])
 
 
 # Root endpoint

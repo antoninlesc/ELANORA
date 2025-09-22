@@ -27,12 +27,14 @@ async def create_tier_group(
     project_id: int,
     tier_id: int,
     tier_name: str,
+    is_staged: bool = False,
 ) -> TierGroup:
     group = TierGroup(
         section_id=section_id,
         project_id=project_id,
         tier_id=tier_id,
         tier_name=tier_name,
+        is_staged=is_staged,
     )
     return await DatabaseUtils.create(db, group)
 
@@ -44,15 +46,21 @@ async def get_tier_group_by_id(
 
 
 async def get_tier_groups_by_section(
-    db: AsyncSession, section_id: int
+    db: AsyncSession, section_id: int, include_staged: bool = False
 ) -> list[TierGroup]:
-    return await DatabaseUtils.get_by_filter(db, TierGroup, {"section_id": section_id})
+    conditions = [TierGroup.section_id == section_id]
+    if not include_staged:
+        conditions.append(TierGroup.is_staged.is_(False))
+    return await DatabaseUtils.get_by_conditions(db, TierGroup, conditions=conditions)
 
 
 async def get_tier_groups_by_project(
-    db: AsyncSession, project_id: int
+    db: AsyncSession, project_id: int, include_staged: bool = False
 ) -> list[TierGroup]:
-    return await DatabaseUtils.get_by_filter(db, TierGroup, {"project_id": project_id})
+    conditions = [TierGroup.project_id == project_id]
+    if not include_staged:
+        conditions.append(TierGroup.is_staged.is_(False))
+    return await DatabaseUtils.get_by_conditions(db, TierGroup, conditions=conditions)
 
 
 async def update_tier_group_section(
@@ -117,11 +125,12 @@ async def assign_tier_hierarchy_to_section(
 
 
 async def get_tier_groups_by_tier_ids(
-    db: AsyncSession, project_id: int, tier_ids: list[int]
+    db: AsyncSession, project_id: int, tier_ids: list[int], include_staged: bool = False
 ) -> list[TierGroup]:
     """Get tier groups for specific tier IDs in a project."""
     if not tier_ids:
         return []
-    return await DatabaseUtils.get_by_filter(
-        db, TierGroup, {"project_id": project_id, "tier_id": tier_ids}
-    )
+    conditions = [TierGroup.project_id == project_id, TierGroup.tier_id.in_(tier_ids)]
+    if not include_staged:
+        conditions.append(TierGroup.is_staged.is_(False))
+    return await DatabaseUtils.get_by_conditions(db, TierGroup, conditions=conditions)

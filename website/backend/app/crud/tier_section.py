@@ -6,9 +6,9 @@ from app.utils.database import DatabaseUtils
 
 
 async def create_tier_section(
-    db: AsyncSession, project_id: int, name: str
+    db: AsyncSession, project_id: int, name: str, is_staged: bool = False
 ) -> TierSection:
-    section = TierSection(project_id=project_id, section_name=name)
+    section = TierSection(project_id=project_id, section_name=name, is_staged=is_staged)
     return await DatabaseUtils.create(db, section)
 
 
@@ -21,11 +21,12 @@ async def get_tier_section_by_id(
 
 
 async def get_tier_sections_by_project(
-    db: AsyncSession, project_id: int
+    db: AsyncSession, project_id: int, include_staged: bool = False
 ) -> list[TierSection]:
-    return await DatabaseUtils.get_by_filter(
-        db, TierSection, {"project_id": project_id}
-    )
+    conditions = [TierSection.project_id == project_id]
+    if not include_staged:
+        conditions.append(TierSection.is_staged.is_(False))
+    return await DatabaseUtils.get_by_conditions(db, TierSection, conditions=conditions)
 
 
 async def update_tier_section_name(

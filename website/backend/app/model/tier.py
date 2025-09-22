@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -19,6 +19,7 @@ class Tier(Base):
     parent_tier_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("TIER.tier_id", ondelete="CASCADE"), nullable=True
     )
+    is_staged: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Relationships
     parent_tier: Mapped[Optional["Tier"]] = relationship(
