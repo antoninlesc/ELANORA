@@ -27,6 +27,7 @@ export const useUploadStore = defineStore('upload', () => {
   const selectedFiles = ref([]);
   const extractedTiers = ref([]); // From backend
   const tierAssignments = ref({}); // e.g., { tierId: sectionId or 'new' }
+  const newSectionNames = ref({}); // e.g., { 'tierName': 'Section Name' }
   const sessionId = ref(null); // From backend
   const description = ref('');
   const isProcessing = ref(false);
@@ -41,7 +42,8 @@ export const useUploadStore = defineStore('upload', () => {
   if (initialState.tierAssignments)
     tierAssignments.value = initialState.tierAssignments;
   if (initialState.sessionId) sessionId.value = initialState.sessionId;
-  if (initialState.description) description.value = initialState.description;
+  if (initialState.newSectionNames)
+    newSectionNames.value = initialState.newSectionNames;
 
   // Watch for changes and save
   watch(
@@ -50,6 +52,7 @@ export const useUploadStore = defineStore('upload', () => {
       selectedProject,
       extractedTiers,
       tierAssignments,
+      newSectionNames,
       sessionId,
       description,
     ],
@@ -59,6 +62,7 @@ export const useUploadStore = defineStore('upload', () => {
         selectedProject: selectedProject.value,
         extractedTiers: extractedTiers.value,
         tierAssignments: tierAssignments.value,
+        newSectionNames: newSectionNames.value,
         sessionId: sessionId.value,
         description: description.value,
       });
@@ -95,6 +99,7 @@ export const useUploadStore = defineStore('upload', () => {
     selectedFiles.value = [];
     extractedTiers.value = [];
     tierAssignments.value = {};
+    newSectionNames.value = {};
     sessionId.value = null;
     description.value = '';
     isProcessing.value = false;
@@ -107,6 +112,7 @@ export const useUploadStore = defineStore('upload', () => {
     selectedFiles,
     extractedTiers,
     tierAssignments,
+    newSectionNames,
     sessionId,
     description,
     isProcessing,

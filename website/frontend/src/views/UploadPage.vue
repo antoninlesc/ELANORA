@@ -108,8 +108,121 @@
 
         <!-- Step 3: Assignment -->
         <div v-if="uploadStore.currentStep === 3">
-          <!-- Placeholder for tier assignment UI -->
-          <p>{{ $t('uploadPage.step3.placeholder') }}</p>
+          <div class="assignment-section">
+            <h3>{{ $t('uploadPage.step3.title') }}</h3>
+            <p class="assignment-description">
+              {{ $t('uploadPage.step3.description') }}
+            </p>
+
+            <!-- Extracted Tiers List -->
+            <div class="tiers-section">
+              <h4>{{ $t('uploadPage.step3.extractedTiers') }}</h4>
+              <div class="tiers-list">
+                <div
+                  v-for="tier in uploadStore.extractedTiers"
+                  :key="tier.tier_id || tier.tier_name"
+                  class="tier-item"
+                >
+                  <div class="tier-info">
+                    <span class="tier-name">{{ tier.tier_name }}</span>
+                    <span v-if="tier.parent_tier_name" class="tier-parent">
+                      ({{ $t('uploadPage.step3.parentTier') }}:
+                      {{ tier.parent_tier_name }})
+                    </span>
+                    <span class="tier-file">{{ tier.file_name }}</span>
+                  </div>
+
+                  <!-- Assignment Dropdown -->
+                  <select
+                    v-model="
+                      uploadStore.tierAssignments[
+                        tier.tier_id || tier.tier_name
+                      ]
+                    "
+                    class="tier-assignment-select"
+                  >
+                    <option value="">
+                      {{ $t('uploadPage.step3.selectSection') }}
+                    </option>
+                    <option
+                      v-for="section in existingSections"
+                      :key="section.section_id"
+                      :value="section.section_id"
+                    >
+                      {{ section.name }}
+                    </option>
+                    <option value="new">
+                      {{ $t('uploadPage.step3.createNewSection') }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- New Section Creation -->
+            <div v-if="hasNewSectionAssignments" class="new-section-section">
+              <h4>{{ $t('uploadPage.step3.newSections') }}</h4>
+              <div class="new-sections-list">
+                <div
+                  v-for="sectionName in uniqueNewSections"
+                  :key="sectionName"
+                  class="new-section-item"
+                >
+                  <label class="new-section-label">
+                    {{ $t('uploadPage.step3.sectionName') }}:
+                    <input
+                      v-model="newSectionNames[sectionName]"
+                      :placeholder="
+                        $t('uploadPage.step3.sectionNamePlaceholder')
+                      "
+                      class="new-section-input"
+                      type="text"
+                    />
+                  </label>
+                  <div class="assigned-tiers">
+                    <span class="assigned-tiers-label">
+                      {{ $t('uploadPage.step3.assignedTiersLabel') }}:
+                    </span>
+                    <span class="assigned-tiers-list">
+                      {{
+                        getTiersForNewSection(sectionName)
+                          .map((t) => t.tier_name)
+                          .join(', ')
+                      }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Assignment Summary -->
+            <div class="assignment-summary">
+              <h4>{{ $t('uploadPage.step3.summary') }}</h4>
+              <div class="summary-stats">
+                <div class="stat-item">
+                  <span class="stat-label"
+                    >{{ $t('uploadPage.step3.totalTiers') }}:</span
+                  >
+                  <span class="stat-value">{{
+                    uploadStore.extractedTiers.length
+                  }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label"
+                    >{{ $t('uploadPage.step3.assignedTiersCount') }}:</span
+                  >
+                  <span class="stat-value">{{ assignedTiersCount }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label"
+                    >{{ $t('uploadPage.step3.newSectionsCount') }}:</span
+                  >
+                  <span class="stat-value">{{ uniqueNewSections.length }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="upload-actions">
             <button class="clear-btn" @click="uploadStore.prevStep">
               {{ $t('uploadPage.back') }}
@@ -117,7 +230,7 @@
             <button
               class="upload-btn"
               :disabled="!uploadStore.isStepValid"
-              @click="uploadStore.nextStep"
+              @click="proceedToStep4"
             >
               {{ $t('uploadPage.step3.next') }}
             </button>
@@ -199,6 +312,10 @@ const uploadResults = ref([]);
 const error = ref('');
 const projectStore = useProjectStore();
 const uploadStore = useUploadStore();
+
+// Step 3: Tier Assignment
+const existingSections = ref([]);
+const newSectionNames = ref({});
 
 // Stores and Composables
 const effectiveStandardStore = useEffectiveStandardStore();
@@ -389,6 +506,35 @@ const filesWithCompliance = computed(() => {
   });
 });
 
+// Step 3: Computed properties for tier assignment
+const hasNewSectionAssignments = computed(() => {
+  return Object.values(uploadStore.tierAssignments).some(
+    (assignment) => assignment === 'new'
+  );
+});
+
+const uniqueNewSections = computed(() => {
+  const newAssignments = Object.entries(uploadStore.tierAssignments)
+    .filter(([, assignment]) => assignment === 'new')
+    .map(([tierKey]) => tierKey);
+  return [...new Set(newAssignments)];
+});
+
+const assignedTiersCount = computed(() => {
+  return Object.values(uploadStore.tierAssignments).filter(
+    (assignment) => assignment && assignment !== ''
+  ).length;
+});
+
+const getTiersForNewSection = (sectionName) => {
+  return uploadStore.extractedTiers.filter((tier) => {
+    const tierKey = tier.tier_id || tier.tier_name;
+    return (
+      uploadStore.tierAssignments[tierKey] === 'new' && tierKey === sectionName
+    );
+  });
+};
+
 function handleFileRename({ file, index, newName }) {
   // Update the filename in the selectedFiles array
   if (uploadStore.selectedFiles[index]) {
@@ -444,6 +590,9 @@ async function proceedToStep2() {
     uploadStore.extractedTiers = response.extracted_tiers;
     uploadStore.sessionId = response.session_id;
 
+    // Fetch existing sections for Step 3
+    await fetchExistingSections();
+
     // Move to step 3
     uploadStore.nextStep();
   } catch (err) {
@@ -452,6 +601,69 @@ async function proceedToStep2() {
   } finally {
     uploadStore.isProcessing = false;
   }
+}
+
+// Step 3: Fetch existing tier sections
+async function fetchExistingSections() {
+  try {
+    const response = await fetch(
+      `/api/v1/tier/${uploadStore.selectedProject}/sections`
+    );
+    if (!response.ok) {
+      throw new Error('Failed to fetch sections');
+    }
+    const data = await response.json();
+    existingSections.value = data.sections || [];
+  } catch (err) {
+    console.error('Error fetching existing sections:', err);
+    eventMessageStore.addMessage(
+      'uploadPage.step3.fetchSectionsError',
+      'error'
+    );
+    existingSections.value = [];
+  }
+}
+
+// Step 3: Proceed to Step 4
+async function proceedToStep4() {
+  // Validate that all tiers are assigned
+  const unassignedTiers = uploadStore.extractedTiers.filter((tier) => {
+    const tierKey = tier.tier_id || tier.tier_name;
+    return (
+      !uploadStore.tierAssignments[tierKey] ||
+      uploadStore.tierAssignments[tierKey] === ''
+    );
+  });
+
+  if (unassignedTiers.length > 0) {
+    eventMessageStore.addMessage(
+      'uploadPage.step3.unassignedTiersWarning',
+      'warning'
+    );
+    return;
+  }
+
+  // Validate that new sections have names
+  const unnamedSections = uniqueNewSections.value.filter((sectionName) => {
+    return (
+      !newSectionNames.value[sectionName] ||
+      newSectionNames.value[sectionName].trim() === ''
+    );
+  });
+
+  if (unnamedSections.length > 0) {
+    eventMessageStore.addMessage(
+      'uploadPage.step3.unnamedSectionsWarning',
+      'warning'
+    );
+    return;
+  }
+
+  // Store the new section names in the assignments
+  uploadStore.newSectionNames = { ...newSectionNames.value };
+
+  // Proceed to step 4
+  uploadStore.nextStep();
 }
 
 async function confirmUpload() {
@@ -509,5 +721,144 @@ async function confirmUpload() {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* Step 3: Assignment Styles */
+.assignment-section {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.assignment-description {
+  color: #666;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.tiers-section h4,
+.new-section-section h4,
+.assignment-summary h4 {
+  color: #333;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+}
+
+.tiers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.tier-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.tier-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tier-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.tier-parent {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.tier-file {
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.tier-assignment-select {
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+}
+
+.new-sections-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.new-section-item {
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f9f9f9;
+}
+
+.new-section-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.new-section-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.assigned-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.assigned-tiers-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.assigned-tiers-list {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.assignment-summary {
+  margin-top: 24px;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.stat-value {
+  font-weight: 700;
+  color: #1976d2;
 }
 </style>
