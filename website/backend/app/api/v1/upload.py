@@ -26,7 +26,7 @@ router = APIRouter(prefix="/upload", tags=["upload"])
 async def process_upload_files(
     files: List[UploadFile] = File(...),
     project_id: str = Form(...),
-    db: AsyncSession = Depends(get_db_dep),
+    db: AsyncSession = get_db_dep,
 ):
     """
     Process uploaded files for tier extraction.
@@ -66,7 +66,7 @@ async def confirm_upload(
     tier_assignments: str = Form(...),  # JSON string
     new_section_names: str = Form(...),  # JSON string
     description: str = Form(...),
-    db: AsyncSession = Depends(get_db_dep),
+    db: AsyncSession = get_db_dep,
 ):
     """
     Confirm and finalize the upload by marking it as pending approval.
@@ -155,7 +155,7 @@ async def confirm_upload(
 @router.post("/cancel")
 async def cancel_upload(
     session_id: str = Form(...),
-    db: AsyncSession = Depends(get_db_dep),
+    db: AsyncSession = get_db_dep,
 ):
     """
     Cancel an upload session and clean up all staged data.
@@ -208,7 +208,7 @@ async def cancel_upload(
 
 @router.delete("/cleanup-expired")
 async def cleanup_expired_sessions(
-    db: AsyncSession = Depends(get_db_dep),
+    db: AsyncSession = get_db_dep,
 ):
     """
     Clean up expired upload sessions and their associated staged data and temp files.
