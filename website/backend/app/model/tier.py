@@ -20,6 +20,7 @@ class Tier(Base):
         Integer, ForeignKey("TIER.tier_id", ondelete="CASCADE"), nullable=True
     )
     is_staged: Mapped[bool] = mapped_column(Boolean, default=False)
+    session_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Relationships
     parent_tier: Mapped[Optional["Tier"]] = relationship(

@@ -65,6 +65,7 @@ async def extract_tiers_from_files(
                             tier_name=tier_data["tier_name"],
                             parent_tier_id=None,  # Will be set later in assignment step
                             is_staged=True,
+                            session_id=session_id,
                         )
                     else:
                         tier = existing_tier

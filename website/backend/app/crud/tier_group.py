@@ -28,6 +28,7 @@ async def create_tier_group(
     tier_id: int,
     tier_name: str,
     is_staged: bool = False,
+    session_id: str | None = None,
 ) -> TierGroup:
     group = TierGroup(
         section_id=section_id,
@@ -35,6 +36,7 @@ async def create_tier_group(
         tier_id=tier_id,
         tier_name=tier_name,
         is_staged=is_staged,
+        session_id=session_id,
     )
     return await DatabaseUtils.create(db, group)
 

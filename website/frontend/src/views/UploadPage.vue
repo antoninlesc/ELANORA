@@ -75,6 +75,9 @@
               v-if="uploadStore.selectedFiles.length > 0"
               class="upload-actions"
             >
+              <button class="clear-btn" @click="cancelUpload">
+                {{ $t('uploadPage.cancel') }}
+              </button>
               <button
                 class="upload-btn"
                 :disabled="!uploadStore.isStepValid"
@@ -96,6 +99,9 @@
             <!-- Display extracted tiers (add logic later) -->
             <p>{{ $t('uploadPage.step2.completed') }}</p>
             <div class="upload-actions">
+              <button class="clear-btn" @click="cancelUpload">
+                {{ $t('uploadPage.cancel') }}
+              </button>
               <button class="clear-btn" @click="uploadStore.prevStep">
                 {{ $t('uploadPage.back') }}
               </button>
@@ -224,6 +230,9 @@
           </div>
 
           <div class="upload-actions">
+            <button class="clear-btn" @click="cancelUpload">
+              {{ $t('uploadPage.cancel') }}
+            </button>
             <button class="clear-btn" @click="uploadStore.prevStep">
               {{ $t('uploadPage.back') }}
             </button>
@@ -290,6 +299,9 @@
           </div>
 
           <div class="upload-actions">
+            <button class="clear-btn" @click="cancelUpload">
+              {{ $t('uploadPage.cancel') }}
+            </button>
             <button class="clear-btn" @click="uploadStore.prevStep">
               {{ $t('uploadPage.back') }}
             </button>
@@ -756,6 +768,41 @@ async function confirmUpload() {
   } catch (err) {
     console.error('Error confirming upload:', err);
     eventMessageStore.addMessage('uploadPage.step4.error', 'error');
+  }
+}
+
+async function cancelUpload() {
+  if (!uploadStore.sessionId) {
+    // If no session, just reset the store
+    uploadStore.reset();
+    eventMessageStore.addMessage('uploadPage.cancel.success', 'info', 3000);
+    return;
+  }
+
+  try {
+    // Prepare form data for the cancel API call
+    const formData = new FormData();
+    formData.append('session_id', uploadStore.sessionId);
+
+    // Call the cancel API
+    const response = await fetch('/api/v1/upload/cancel', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to cancel upload');
+    }
+
+    // Show success message
+    eventMessageStore.addMessage('uploadPage.cancel.success', 'info', 3000);
+
+    // Reset the upload store to clear all data
+    uploadStore.reset();
+  } catch (err) {
+    console.error('Error cancelling upload:', err);
+    eventMessageStore.addMessage('uploadPage.cancel.error', 'error');
   }
 }
 </script>

@@ -6,9 +6,18 @@ from app.utils.database import DatabaseUtils
 
 
 async def create_tier_section(
-    db: AsyncSession, project_id: int, name: str, is_staged: bool = False
+    db: AsyncSession,
+    project_id: int,
+    name: str,
+    is_staged: bool = False,
+    session_id: str | None = None,
 ) -> TierSection:
-    section = TierSection(project_id=project_id, section_name=name, is_staged=is_staged)
+    section = TierSection(
+        project_id=project_id,
+        section_name=name,
+        is_staged=is_staged,
+        session_id=session_id,
+    )
     return await DatabaseUtils.create(db, section)
 
 

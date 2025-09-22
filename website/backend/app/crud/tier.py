@@ -124,12 +124,14 @@ async def create_tier_in_db(
     tier_name: str,
     parent_tier_id: int | None = None,
     is_staged: bool = False,
+    session_id: str | None = None,
 ) -> Tier:
     """Create a new tier in the database."""
     tier = Tier(
         tier_name=tier_name,
         parent_tier_id=parent_tier_id,
         is_staged=is_staged,
+        session_id=session_id,
     )
     await DatabaseUtils.create(db, tier)
     await db.flush()

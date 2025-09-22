@@ -21,6 +21,7 @@ class TierGroup(Base):
     )
     tier_name: Mapped[str] = mapped_column(String, nullable=False)
     is_staged: Mapped[bool] = mapped_column(Boolean, default=False)
+    session_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Relationships
     section = relationship("TierSection", back_populates="tier_groups")
