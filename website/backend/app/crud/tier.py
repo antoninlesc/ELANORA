@@ -249,3 +249,10 @@ async def get_tiers_by_ids(
     if not include_staged:
         conditions.append(Tier.is_staged.is_(False))
     return await DatabaseUtils.get_by_conditions(db, Tier, conditions=conditions)
+
+
+async def delete_tiers_for_session(db: AsyncSession, session_id: str) -> int:
+    """Delete all staged tiers for a given session_id."""
+    return await DatabaseUtils.delete_by_filter(
+        db, Tier, session_id=session_id, is_staged=True
+    )

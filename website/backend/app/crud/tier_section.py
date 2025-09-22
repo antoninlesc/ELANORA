@@ -58,3 +58,10 @@ async def delete_tier_section(db: AsyncSession, tier_section_id: int) -> int:
     return await DatabaseUtils.delete_by_filter(
         db, TierSection, tier_section_id=tier_section_id, auto_commit=True
     )
+
+
+async def delete_tier_sections_for_session(db: AsyncSession, session_id: str) -> int:
+    """Delete all staged tier sections for a given session_id."""
+    return await DatabaseUtils.delete_by_filter(
+        db, TierSection, session_id=session_id, is_staged=True
+    )
