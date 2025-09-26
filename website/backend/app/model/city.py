@@ -21,7 +21,6 @@ class City(Base):
     country_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("COUNTRY.country_id"), nullable=False
     )
-    region_state: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.current_timestamp()
     )

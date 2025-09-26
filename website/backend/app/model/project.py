@@ -6,7 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
 
 if TYPE_CHECKING:
-    from .pending_upload import PendingUpload
     from .instance import Instance
     from .invitation import Invitation
     from .elan_file import ElanFile
@@ -30,9 +29,6 @@ class Project(Base):
     # Relationships - use string references
     elan_files: Mapped[list["ElanFile"]] = relationship(
         "ElanFile", back_populates="project", cascade="all, delete-orphan"
-    )
-    pending_uploads: Mapped[list["PendingUpload"]] = relationship(
-        "PendingUpload", back_populates="project", cascade="all, delete-orphan"
     )
     instance: Mapped["Instance"] = relationship("Instance", back_populates="projects")
     invitations: Mapped[list["Invitation"]] = relationship(

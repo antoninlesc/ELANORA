@@ -1,9 +1,8 @@
 """Database utility functions for common operations."""
 
-from collections.abc import Sequence
 from typing import Any, TypeVar
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 

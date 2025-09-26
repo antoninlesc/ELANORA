@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel
 
-from app.model.enums import ProjectPermission
+from app.model.user_to_project import ProjectPermission
 
 
 class ProjectUserInfo(BaseModel):

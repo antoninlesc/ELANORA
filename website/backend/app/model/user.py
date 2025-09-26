@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Enum,
     ForeignKey,
     Integer,
     String,
@@ -13,19 +14,23 @@ from sqlalchemy import (
     Enum as SQLEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from enum import Enum as PyEnum
 
 from app.db.database import Base
 
-from .enums import UserRole
-
 if TYPE_CHECKING:
     from .address import Address
-    from .comment import Comment
     from .file_content import FileContent
     from .invitation import Invitation
     from .notification import Notification
     from .notification_preference import NotificationPreference
-    from .pending_upload import PendingUpload
+
+
+class UserRole(str, PyEnum):
+    """Enum for user roles."""
+
+    ADMIN = "admin"
+    PUBLIC = "public"
 
 
 class User(Base):
@@ -82,12 +87,6 @@ class User(Base):
     )
     received_invitations: Mapped[list["Invitation"]] = relationship(
         "Invitation", foreign_keys="Invitation.receiver", back_populates="receiver_user"
-    )
-    comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="user")
-    resolved_uploads: Mapped[list["PendingUpload"]] = relationship(
-        "PendingUpload",
-        foreign_keys="PendingUpload.resolved_by",
-        back_populates="resolver",
     )
     notifications: Mapped[list["Notification"]] = relationship(
         "Notification", back_populates="user"

@@ -4,12 +4,9 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
-from app.model.association import (
-    ElanFileToMedia,
-    ElanFileToTier,
-    ProjectAnnotStandard,
-    UserToProject,
-)
+from app.model.elan_file_to_media import ElanFileToMedia
+from app.model.elan_file_to_tier import ElanFileToTier
+from app.model.user_to_project import UserToProject
 from app.model.elan_file import ElanFile
 from app.model.project_file_type import ProjectFileType
 from app.model.user import User
@@ -114,49 +111,6 @@ async def update_elan_file_tier(
         ElanFileToTier,
         {"elan_id": elan_id, "tier_id": old_tier_id},
         {"tier_id": new_tier_id},
-    )
-
-
-# --- ProjectAnnotStandard ---
-
-
-async def add_project_annot_standard(
-    db: AsyncSession, project_id: int, annot_standard_id: int
-):
-    filters = {"project_id": project_id, "annot_standard_id": annot_standard_id}
-    results = await DatabaseUtils.get_by_filter(
-        db, ProjectAnnotStandard, filters, limit=1
-    )
-    exists = results[0] if results else None
-    if not exists:
-        assoc = ProjectAnnotStandard(
-            project_id=project_id, annot_standard_id=annot_standard_id
-        )
-        await DatabaseUtils.create(db, assoc)
-
-
-async def remove_project_annot_standard(
-    db: AsyncSession, project_id: int, annot_standard_id: int
-):
-    await DatabaseUtils.delete_by_filter(
-        db,
-        ProjectAnnotStandard,
-        project_id=project_id,
-        annot_standard_id=annot_standard_id,
-    )
-
-
-async def update_project_annot_standard(
-    db: AsyncSession,
-    project_id: int,
-    old_annot_standard_id: int,
-    new_annot_standard_id: int,
-):
-    await DatabaseUtils.update_by_filter(
-        db,
-        ProjectAnnotStandard,
-        {"project_id": project_id, "annot_standard_id": old_annot_standard_id},
-        {"annot_standard_id": new_annot_standard_id},
     )
 
 
@@ -325,11 +279,6 @@ async def delete_project_associations(db: AsyncSession, project_id: int):
         conditions = [ProjectFileType.project_id == project_id]
         await DatabaseUtils.delete_by_conditions(
             db, ProjectFileType, conditions=conditions
-        )
-        # ElanFileToProject removed - files are now deleted via cascade from project_id FK
-        conditions = [ProjectAnnotStandard.project_id == project_id]
-        await DatabaseUtils.delete_by_conditions(
-            db, ProjectAnnotStandard, conditions=conditions
         )
         conditions = [UserToProject.project_id == project_id]
         await DatabaseUtils.delete_by_conditions(

@@ -14,7 +14,8 @@ from app.crud.elan_file_media import (
     delete_orphaned_media,
 )
 from app.crud.file_content import get_or_create_file_content
-from app.model.association import ElanFileToMedia, ElanFileToTier
+from app.model.elan_file_to_media import ElanFileToMedia
+from app.model.elan_file_to_tier import ElanFileToTier
 from app.model.elan_file import ElanFile
 from app.model.file_content import FileContent
 from app.model.user import User

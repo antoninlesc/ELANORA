@@ -3,7 +3,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 import os
 
-from app.model.association import ElanFileToMedia
+from app.model.elan_file_to_media import ElanFileToMedia
 from app.model.elan_file import ElanFile
 from app.model.elan_file_media import ElanFileMedia
 from app.model.file_content import FileContent

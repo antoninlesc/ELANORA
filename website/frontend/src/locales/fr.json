@@ -1171,8 +1171,13 @@
     },
     "step3": {
       "label": "Assigner les tiers",
-      "placeholder": "L'interface d'assignation des tiers sera implémentée ici",
-      "next": "Procéder à la confirmation"
+      "title": "Assigner les tiers aux sections",
+      "description": "Assignez les tiers extraits aux sections existantes ou suggérez de nouvelles sections pour approbation par l'administrateur.",
+      "existingSections": "Sections existantes",
+      "stagedSections": "Sections temporaires",
+      "productionBadge": "Production",
+      "stagedBadge": "Temporaire",
+      "extractedTiers": "Tiers extraits"
     },
     "step4": {
       "label": "Confirmer l'upload",

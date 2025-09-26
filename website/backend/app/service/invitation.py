@@ -27,7 +27,7 @@ from app.crud.project import (
     user_in_project,
 )
 from app.crud.user import get_user_by_id, get_user_by_username_or_email
-from app.model.enums import InvitationStatus
+from app.model.invitation import InvitationStatus
 from app.model.invitation import Invitation
 from app.schema.requests.notification import NotificationCreateRequest
 from app.schema.requests.invitation import InvitationSendRequest

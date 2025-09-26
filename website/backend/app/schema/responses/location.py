@@ -20,7 +20,6 @@ class CityResponse(BaseModel):
     city_id: int
     city_name: str
     country_id: int
-    region_state: str | None = None
     country: CountryResponse | None = None
 
     class Config:

@@ -4,81 +4,57 @@ This module imports all models in the correct order to avoid circular imports.
 Models are imported based on their dependencies, with base models first.
 """
 
-# Import enums first
-from .address import Address
-from .annotation import Annotation
+# Import enums first (from their respective files)
+from .invitation import InvitationStatus
+from .user_to_project import ProjectPermission
+from .user import UserRole
 
 # Base models with no dependencies
-from .annotation_standard import AnnotationStandard
+from .accepted_value import AcceptedValue
 from .annotation_value import AnnotationValue
-
-# Association tables (import last)
-from .association import (
-    CommentConflict,
-    CommentElanFile,
-    CommentProject,
-    ConflictOfElanFile,
-    ElanFileToMedia,
-    ElanFileToTier,
-    ProjectAnnotStandard,
-    UserToProject,
-    UserWorkOnConflict,
-)
+from .component_accepted_value import ComponentAcceptedValue
+from .component_template import ComponentTemplate
+from .country import Country
+from .effective_naming_standard import EffectiveNamingStandard
+from .file_type import FileType
+from .standard_component import StandardComponent
 
 # Models with single dependencies
+from .address import Address
+from .annotation import Annotation
 from .city import City
-from .comment import Comment
-from .pending_upload import PendingUpload
-from .country import Country
 from .file_content import FileContent
-
-# Models with dependencies on user/project
-from .elan_file import ElanFile
-from .elan_file_media import ElanFileMedia
-from .enums import (
-    CommentTargetType,
-    Severity,
-    Status,
-    Type,
-    InvitationStatus,
-    ProjectPermission,
-    UserRole,
-)
-from .file_type import FileType
 from .instance import Instance
-from .invitation import Invitation
 from .notification import Notification
 from .notification_preference import NotificationPreference
-
-# Project model (depends on instance)
-from .project import Project
+from .project_file_type import ProjectFileType
+from .project_location_file_type import ProjectLocationFileType
 from .project_naming_standard import ProjectNamingStandard
-
-# Tier and annotation models
 from .tier import Tier
 from .tier_group import TierGroup
 from .tier_section import TierSection
-
-# User model (depends on address)
+from .upload_session import UploadSession
 from .user import User
 
+# Models with multiple dependencies
+from .elan_file import ElanFile
+from .elan_file_media import ElanFileMedia
+from .elan_file_to_media import ElanFileToMedia
+from .elan_file_to_tier import ElanFileToTier
+from .invitation import Invitation
+from .project import Project
+from .user_to_project import UserToProject
+
 __all__ = [
+    "AcceptedValue",
     "Address",
     "Annotation",
-    "AnnotationStandard",
     "AnnotationValue",
     "City",
-    "Comment",
-    "CommentConflict",
-    "CommentElanFile",
-    "CommentProject",
-    "CommentTargetType",
-    "PendingUpload",
-    "ConflictOfElanFile",
-    "Severity",
-    "Status",
-    "Type",
+    "ComponentAcceptedValue",
+    "ComponentTemplate",
     "Country",
+    "EffectiveNamingStandard",
     "ElanFile",
     "ElanFileMedia",
     "ElanFileToMedia",
@@ -91,14 +67,16 @@ __all__ = [
     "Notification",
     "NotificationPreference",
     "Project",
-    "ProjectAnnotStandard",
+    "ProjectFileType",
+    "ProjectLocationFileType",
     "ProjectNamingStandard",
     "ProjectPermission",
+    "StandardComponent",
     "Tier",
     "TierGroup",
     "TierSection",
+    "UploadSession",
     "User",
     "UserRole",
     "UserToProject",
-    "UserWorkOnConflict",
 ]

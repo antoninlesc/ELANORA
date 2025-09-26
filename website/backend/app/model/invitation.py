@@ -1,17 +1,26 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from app.model.user_to_project import ProjectPermission
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from enum import Enum as PyEnum
 
 from app.db.database import Base
-
-from .enums import InvitationStatus, ProjectPermission
 
 if TYPE_CHECKING:
     from .project import Project
     from .user import User
+
+
+class InvitationStatus(str, PyEnum):
+    """Enumeration for invitation status."""
+
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    EXPIRED = "expired"
 
 
 class Invitation(Base):
@@ -23,7 +32,7 @@ class Invitation(Base):
         Integer, primary_key=True, autoincrement=True
     )
     project_permission: Mapped[ProjectPermission] = mapped_column(
-        String(20), nullable=False, default=ProjectPermission.READ
+        Enum(ProjectPermission), nullable=False, default=ProjectPermission.READ
     )
     hashed_code: Mapped[str] = mapped_column(String(60), nullable=False)
     status: Mapped[InvitationStatus] = mapped_column(

@@ -35,25 +35,33 @@ async def get_tiers(project_name: str, db: AsyncSession = get_db_dep):
 
 
 @router.get("/{project_id}/sections", response_model=SectionsAndGroupsResponse)
-async def get_sections_and_groups(project_id: int, db: AsyncSession = get_db_dep):
-    return await TierSectionService.get_sections_and_groups(db, project_id)
+async def get_sections_and_groups(
+    project_id: int, include_staged: bool = False, db: AsyncSession = get_db_dep
+):
+    return await TierSectionService.get_sections_and_groups(
+        db, project_id, include_staged
+    )
 
 
 @router.post("/sections/create")
 async def create_section(request: CreateSectionRequest, db: AsyncSession = get_db_dep):
-    return await TierSectionService.create_section(db, request.project_id, request.name)
+    return await TierSectionService.create_section(
+        db, request.project_id, request.name, request.is_staged, request.session_id
+    )
 
 
 @router.post("/sections/rename")
 async def rename_section(request: RenameSectionRequest, db: AsyncSession = get_db_dep):
     return await TierSectionService.rename_section(
-        db, request.section_id, request.new_name
+        db, request.section_id, request.new_name, request.is_staged
     )
 
 
 @router.post("/sections/delete")
 async def delete_section(request: DeleteSectionRequest, db: AsyncSession = get_db_dep):
-    return await TierSectionService.delete_section(db, request.section_id)
+    return await TierSectionService.delete_section(
+        db, request.section_id, request.is_staged
+    )
 
 
 @router.post("/tier_group/move")
@@ -65,4 +73,5 @@ async def move_tier_group(request: MoveTierGroupRequest, db: AsyncSession = get_
         request.project_id,
         request.tier_id,
         request.tier_name,
+        request.is_staged,
     )

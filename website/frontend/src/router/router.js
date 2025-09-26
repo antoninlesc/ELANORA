@@ -15,7 +15,6 @@ import ContactPage from '@views/ContactPage.vue';
 import HTTPStatusPage from '@views/HTTPStatusPage.vue';
 import ProjectsPage from '@views/ProjectsPage.vue';
 import UploadPage from '@views/UploadPage.vue';
-import PendingUploadPage from '@views/PendingUploadPage.vue';
 import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import InvitationResponsePage from '@views/InvitationResponsePage.vue';
 import InvitationDecisionPage from '@views/InvitationDecisionPage.vue';
@@ -23,6 +22,7 @@ import TiersPage from '@views/TiersPage.vue';
 import TestProjectUsersPage from '@views/TestProjectUsersPage.vue';
 import ProjectConfigurationPage from '@views/ProjectConfigurationPage.vue';
 import ProfilePage from '@views/ProfilePage.vue';
+import ContributionPage from '@views/ContributionPage.vue';
 
 // Define routes
 const routes = [
@@ -104,8 +104,8 @@ const routes = [
       },
       {
         path: 'contribution',
-        name: 'PendingUpload',
-        component: PendingUploadPage,
+        name: 'ContributionPage',
+        component: ContributionPage,
         meta: { requiresAuth: true },
       },
       {
@@ -229,7 +229,8 @@ router.beforeEach(async (to, from, next) => {
               projectStore.clearCurrentProject();
             } else {
               // Load saved currentProject from localStorage if it exists
-              const savedCurrentProject = localStorage.getItem('currentProject');
+              const savedCurrentProject =
+                localStorage.getItem('currentProject');
               if (savedCurrentProject) {
                 projectStore.currentProject = JSON.parse(savedCurrentProject);
               } else if (!projectStore.currentProject) {

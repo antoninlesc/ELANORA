@@ -2,7 +2,7 @@
 
 from pydantic import EmailStr
 
-from app.model.enums import ProjectPermission
+from app.model.user_to_project import ProjectPermission
 from app.schema.common.base import CustomBaseModel
 
 

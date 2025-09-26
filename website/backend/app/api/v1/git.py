@@ -15,7 +15,6 @@ from app.schema.requests.git import (
     DownloadFilesRequest,
 )
 from app.schema.responses.git import (
-    BatchFileUploadResponse,
     BulkRenameResponse,
     CommitResponse,
     FileRenameResponse,
@@ -25,7 +24,6 @@ from app.schema.responses.git import (
     ProjectEditResponse,
     ProjectListResponse,
     ProjectSyncCheckResponse,
-    PendingUploadsResponse,
 )
 from app.service.git import GitService, RenameConflictError
 
@@ -113,46 +111,6 @@ async def commit_changes(
             project_name, commit_data.commit_message, commit_data.user_name
         )
         return CommitResponse(**result)
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post("/projects/{project_id}/upload", response_model=BatchFileUploadResponse)
-async def upload_elan_files(
-    project_id: int,
-    user_name: str = Form(...),
-    files: list[UploadFile] = validate_elan_files_dep,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-) -> BatchFileUploadResponse:
-    """Upload an ELAN file to a project.
-
-    Args:
-        project_id: Name of the project to upload file to.
-        file: ELAN file (.eaf) to upload. File is validated for format and size.
-        user_name: Name of the user uploading the file.
-
-    Returns:
-        FileUploadResponse: Details of the uploaded file including filename and timestamp.
-
-    Raises:
-        HTTPException: 404 if project not found, 400 if file validation fails, 500 if upload fails.
-        HTTPException: 400 if file validation fails.
-
-    Note:
-        File validation includes checking for .eaf extension, file size limits,
-        valid ELAN XML structure, and filename compliance with the project's naming standard.
-
-    """
-    try:
-        result = await git_service.add_elan_files(
-            project_id, files, db, user.user_id, user_name
-        )
-        return BatchFileUploadResponse(**result)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
@@ -367,25 +325,6 @@ async def decline_backup(
     """Decline restoration of the most recent backup for the project, delete it and erase all related data from the database."""
     try:
         await git_service.decline_project_backup(db, project_name)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get(
-    "/projects/{project_name}/admin/pending-uploads",
-    response_model=PendingUploadsResponse,
-)
-async def get_pending_uploads(
-    project_name: str,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Get all uploads pending admin approval."""
-    try:
-        result = await git_service.get_pending_uploads_with_status(project_name, db)
-        return PendingUploadsResponse(**result)
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 

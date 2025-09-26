@@ -993,8 +993,13 @@
     },
     "step3": {
       "label": "階層を割り当て",
-      "placeholder": "階層割り当てUIがここに実装されます",
-      "next": "確認に進む"
+      "title": "階層をセクションに割り当て",
+      "description": "抽出された階層を既存のセクションに割り当てるか、管理者の承認のために新しいセクションを提案します。",
+      "existingSections": "既存のセクション",
+      "stagedSections": "一時セクション",
+      "productionBadge": "本番",
+      "stagedBadge": "一時",
+      "extractedTiers": "抽出された階層"
     },
     "step4": {
       "label": "アップロードを確認",

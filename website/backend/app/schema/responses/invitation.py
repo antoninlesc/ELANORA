@@ -2,7 +2,8 @@
 
 from datetime import datetime
 
-from app.model.enums import InvitationStatus, ProjectPermission
+from app.model.user_to_project import ProjectPermission
+from app.model.invitation import InvitationStatus
 from app.schema.common.base import CustomBaseModel
 
 

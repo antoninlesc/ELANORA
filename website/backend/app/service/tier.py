@@ -78,9 +78,17 @@ class TierService:
 
 class TierSectionService:
     @staticmethod
-    async def create_section(db, project_id: int, name: str):
+    async def create_section(
+        db,
+        project_id: int,
+        name: str,
+        is_staged: bool = False,
+        session_id: str | None = None,
+    ):
         try:
-            section = await create_tier_section(db, project_id, name)
+            section = await create_tier_section(
+                db, project_id, name, is_staged, session_id
+            )
             await db.commit()
             return section
         except Exception:
@@ -88,7 +96,9 @@ class TierSectionService:
             raise
 
     @staticmethod
-    async def rename_section(db, tier_section_id: int, new_name: str):
+    async def rename_section(
+        db, tier_section_id: int, new_name: str, is_staged: bool = False
+    ):
         try:
             section = await update_tier_section_name(db, tier_section_id, new_name)
             await db.commit()
@@ -98,7 +108,7 @@ class TierSectionService:
             raise
 
     @staticmethod
-    async def delete_section(db, tier_section_id: int):
+    async def delete_section(db, tier_section_id: int, is_staged: bool = False):
         try:
             result = await delete_tier_section(db, tier_section_id)
             await db.commit()
@@ -112,9 +122,11 @@ class TierSectionService:
         return await get_tier_sections_by_project(db, project_id)
 
     @staticmethod
-    async def get_sections_and_groups(db, project_id: int):
-        sections = await get_tier_sections_by_project(db, project_id)
-        tier_groups = await get_tier_groups_by_project(db, project_id)
+    async def get_sections_and_groups(
+        db, project_id: int, include_staged: bool = False
+    ):
+        sections = await get_tier_sections_by_project(db, project_id, include_staged)
+        tier_groups = await get_tier_groups_by_project(db, project_id, include_staged)
 
         project = await get_project_by_id(db, project_id)
         if not project:
@@ -189,6 +201,7 @@ class TierGroupService:
         project_id: int,
         tier_id: int,
         tier_name: str,
+        is_staged: bool = False,
     ):
         try:
             # Get the tier hierarchy (parent + all children)
@@ -221,7 +234,12 @@ class TierGroupService:
                 else:
                     # Create new tier group
                     group = await create_tier_group(
-                        db, section_id, project_id, tier_id_in_hierarchy, tier.tier_name
+                        db,
+                        section_id,
+                        project_id,
+                        tier_id_in_hierarchy,
+                        tier.tier_name,
+                        is_staged,
                     )
                     created_or_updated_ids.append(group.tier_group_id)
 

@@ -7,6 +7,7 @@ const gitService = {
     const { data } = await axiosInstance.get(`${GIT_PREFIX}/check`);
     return data;
   },
+
   // List all projects for the instance
   async listProjects() {
     const { data } = await axiosInstance.get(`${GIT_PREFIX}/projects`);
@@ -41,71 +42,12 @@ const gitService = {
     return data;
   },
 
-  // Upload ELAN files to a project
-  async uploadElanFiles(projectId, files, userName) {
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('files', file);
-    });
-    formData.append('user_name', userName);
-
-    const { data } = await axiosInstance.post(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectId)}/upload`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
-    return data;
-  },
-
   // Get all branches for a project
   async getBranches(projectName) {
     const { data } = await axiosInstance.get(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches`
     );
     return data;
-  },
-
-  // Resolve conflicts and merge a branch
-  async getPendingUploadsWithStatus(projectName, forceRefresh = false) {
-    const params = new URLSearchParams();
-    if (forceRefresh) {
-      params.append('force_refresh', 'true');
-    }
-
-    const { data } = await axiosInstance.get(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads`
-    );
-    return data;
-  },
-
-  // Resolve conflicts (all or specific file)
-  async resolveConflicts(
-    projectName,
-    branchName,
-    resolutionStrategy = 'accept_incoming',
-    filename = null
-  ) {
-    const params = new URLSearchParams({
-      resolution_strategy: resolutionStrategy,
-    });
-
-    if (filename) {
-      params.append('filename', filename);
-    }
-
-    const { data } = await axiosInstance.post(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/resolve-conflicts?${params.toString()}`
-    );
-    return data;
-  },
-
-  // Force refresh conflicts from git
-  async refreshConflicts(projectName, branchName) {
-    return this.getConflicts(projectName, branchName, true);
   },
 
   // List files in a project (recursive structure)
@@ -206,23 +148,6 @@ const gitService = {
     return data;
   },
 
-  // Resolve conflict manually with custom content
-  async resolveConflictManually(
-    projectName,
-    branchName,
-    filename,
-    resolvedContent
-  ) {
-    const formData = new FormData();
-    formData.append('resolved_content', resolvedContent);
-
-    const { data } = await axiosInstance.post(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts/${encodeURIComponent(filename)}/resolve-manual`,
-      formData
-    );
-    return data;
-  },
-
   // Rename a single file
   async renameFile(projectName, elanId, newFilename) {
     console.log('GitService renameFile called with:', {
@@ -264,11 +189,11 @@ const gitService = {
 
   // Download selected files as a ZIP
   async downloadFiles(projectName, selectedFiles) {
-    const elanIds = selectedFiles.map((f) => f.elan_id); // Send elan_ids for security
+    const elanIds = selectedFiles.map((f) => f.elan_id);
     const response = await axiosInstance.post(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/download`,
       { elan_ids: elanIds },
-      { responseType: 'blob' } // For downloading files
+      { responseType: 'blob' }
     );
 
     // Trigger download

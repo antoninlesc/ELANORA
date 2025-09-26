@@ -1183,6 +1183,10 @@
       "label": "Assign Tiers",
       "title": "Assign Tiers to Sections",
       "description": "Assign the extracted tiers to existing sections or suggest new sections for administrator approval.",
+      "existingSections": "Existing Sections",
+      "stagedSections": "Staged Sections",
+      "productionBadge": "Production",
+      "stagedBadge": "Staged",
       "extractedTiers": "Extracted Tiers",
       "selectSection": "Select section...",
       "createNewSection": "Create new section",
@@ -1198,7 +1202,10 @@
       "next": "Proceed to Confirm",
       "unassignedTiersWarning": "All tiers must be assigned to a section before proceeding.",
       "unnamedSectionsWarning": "All new sections must have a name before proceeding.",
-      "fetchSectionsError": "Failed to load existing sections"
+      "fetchSectionsError": "Failed to load existing sections",
+      "dropTiersHere": "Drop tiers here",
+      "unassignedTiers": "Unassigned Tiers",
+      "allTiersAssigned": "All tiers have been assigned!"
     },
     "step4": {
       "label": "Confirm Upload",

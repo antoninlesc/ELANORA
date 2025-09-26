@@ -114,120 +114,19 @@
 
         <!-- Step 3: Assignment -->
         <div v-if="uploadStore.currentStep === 3">
-          <div class="assignment-section">
-            <h3>{{ $t('uploadPage.step3.title') }}</h3>
-            <p class="assignment-description">
-              {{ $t('uploadPage.step3.description') }}
-            </p>
-
-            <!-- Extracted Tiers List -->
-            <div class="tiers-section">
-              <h4>{{ $t('uploadPage.step3.extractedTiers') }}</h4>
-              <div class="tiers-list">
-                <div
-                  v-for="tier in uploadStore.extractedTiers"
-                  :key="tier.tier_id || tier.tier_name"
-                  class="tier-item"
-                >
-                  <div class="tier-info">
-                    <span class="tier-name">{{ tier.tier_name }}</span>
-                    <span v-if="tier.parent_tier_name" class="tier-parent">
-                      ({{ $t('uploadPage.step3.parentTier') }}:
-                      {{ tier.parent_tier_name }})
-                    </span>
-                    <span class="tier-file">{{ tier.file_name }}</span>
-                  </div>
-
-                  <!-- Assignment Dropdown -->
-                  <select
-                    v-model="
-                      uploadStore.tierAssignments[
-                        tier.tier_id || tier.tier_name
-                      ]
-                    "
-                    class="tier-assignment-select"
-                  >
-                    <option value="">
-                      {{ $t('uploadPage.step3.selectSection') }}
-                    </option>
-                    <option
-                      v-for="section in existingSections"
-                      :key="section.section_id"
-                      :value="section.section_id"
-                    >
-                      {{ section.name }}
-                    </option>
-                    <option value="new">
-                      {{ $t('uploadPage.step3.createNewSection') }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <!-- New Section Creation -->
-            <div v-if="hasNewSectionAssignments" class="new-section-section">
-              <h4>{{ $t('uploadPage.step3.newSections') }}</h4>
-              <div class="new-sections-list">
-                <div
-                  v-for="sectionName in uniqueNewSections"
-                  :key="sectionName"
-                  class="new-section-item"
-                >
-                  <label class="new-section-label">
-                    {{ $t('uploadPage.step3.sectionName') }}:
-                    <input
-                      v-model="newSectionNames[sectionName]"
-                      :placeholder="
-                        $t('uploadPage.step3.sectionNamePlaceholder')
-                      "
-                      class="new-section-input"
-                      type="text"
-                    />
-                  </label>
-                  <div class="assigned-tiers">
-                    <span class="assigned-tiers-label">
-                      {{ $t('uploadPage.step3.assignedTiersLabel') }}:
-                    </span>
-                    <span class="assigned-tiers-list">
-                      {{
-                        getTiersForNewSection(sectionName)
-                          .map((t) => t.tier_name)
-                          .join(', ')
-                      }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Assignment Summary -->
-            <div class="assignment-summary">
-              <h4>{{ $t('uploadPage.step3.summary') }}</h4>
-              <div class="summary-stats">
-                <div class="stat-item">
-                  <span class="stat-label"
-                    >{{ $t('uploadPage.step3.totalTiers') }}:</span
-                  >
-                  <span class="stat-value">{{
-                    uploadStore.extractedTiers.length
-                  }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label"
-                    >{{ $t('uploadPage.step3.assignedTiersCount') }}:</span
-                  >
-                  <span class="stat-value">{{ assignedTiersCount }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label"
-                    >{{ $t('uploadPage.step3.newSectionsCount') }}:</span
-                  >
-                  <span class="stat-value">{{ uniqueNewSections.length }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <TierAssignmentTree
+            mode="assignment"
+            :extracted-tiers="uploadStore.extractedTiers"
+            :existing-sections="existingSections"
+            :tier-assignments="uploadStore.tierAssignments"
+            :new-section-names="newSectionNames"
+            :session-id="uploadStore.sessionId"
+            @tier-assigned="handleTierAssignment"
+            @new-section-name-updated="handleNewSectionNameUpdate"
+            @section-created="handleSectionCreated"
+            @section-renamed="handleSectionRenamed"
+            @section-deleted="handleSectionDeleted"
+          />
 
           <div class="upload-actions">
             <button class="clear-btn" @click="cancelUpload">
@@ -238,7 +137,7 @@
             </button>
             <button
               class="upload-btn"
-              :disabled="!uploadStore.isStepValid"
+              :disabled="!isStep3Valid"
               @click="proceedToStep4"
             >
               {{ $t('uploadPage.step3.next') }}
@@ -348,6 +247,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import UploadFolder from '@/components/common/UploadFolder.vue';
+import TierAssignmentTree from '@/components/common/TierAssignmentTree.vue';
 import '@/assets/css/upload-page.css';
 import { useProjectStore } from '@/stores/project';
 import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
@@ -408,6 +308,15 @@ onMounted(async () => {
     await fetchStandards();
   }
 
+  // If we're already on step 3 and have extracted tiers, fetch sections
+  if (
+    uploadStore.currentStep === 3 &&
+    uploadStore.extractedTiers.length > 0 &&
+    uploadStore.selectedProject
+  ) {
+    await fetchExistingSections();
+  }
+
   // Mark initial load as complete to allow watcher fetches
   isInitialLoad.value = false;
 
@@ -449,6 +358,20 @@ watch(
       newProject.project_id !== parseInt(uploadStore.selectedProject)
     ) {
       uploadStore.selectedProject = newProject.project_id.toString();
+    }
+  }
+);
+
+// Watch for step changes to fetch sections when entering step 3
+watch(
+  () => uploadStore.currentStep,
+  async (newStep) => {
+    if (
+      newStep === 3 &&
+      uploadStore.selectedProject &&
+      uploadStore.extractedTiers.length > 0
+    ) {
+      await fetchExistingSections();
     }
   }
 );
@@ -564,10 +487,10 @@ const filesWithCompliance = computed(() => {
 });
 
 // Step 3: Computed properties for tier assignment
-const hasNewSectionAssignments = computed(() => {
-  return Object.values(uploadStore.tierAssignments).some(
-    (assignment) => assignment === 'new'
-  );
+const assignedTiersCount = computed(() => {
+  return Object.values(uploadStore.tierAssignments).filter(
+    (assignment) => assignment && assignment !== ''
+  ).length;
 });
 
 const uniqueNewSections = computed(() => {
@@ -577,20 +500,27 @@ const uniqueNewSections = computed(() => {
   return [...new Set(newAssignments)];
 });
 
-const assignedTiersCount = computed(() => {
-  return Object.values(uploadStore.tierAssignments).filter(
-    (assignment) => assignment && assignment !== ''
-  ).length;
-});
-
-const getTiersForNewSection = (sectionName) => {
-  return uploadStore.extractedTiers.filter((tier) => {
+// Step 3: Validation for proceeding to step 4
+const isStep3Valid = computed(() => {
+  // Check that all tiers are assigned
+  const allTiersAssigned = uploadStore.extractedTiers.every((tier) => {
     const tierKey = tier.tier_id || tier.tier_name;
     return (
-      uploadStore.tierAssignments[tierKey] === 'new' && tierKey === sectionName
+      uploadStore.tierAssignments[tierKey] &&
+      uploadStore.tierAssignments[tierKey] !== ''
     );
   });
-};
+
+  // Check that all new sections have names
+  const allNewSectionsNamed = uniqueNewSections.value.every((sectionName) => {
+    return (
+      newSectionNames.value[sectionName] &&
+      newSectionNames.value[sectionName].trim() !== ''
+    );
+  });
+
+  return allTiersAssigned && allNewSectionsNamed;
+});
 
 // Helper function to get project name
 const getProjectName = (projectId) => {
@@ -673,13 +603,52 @@ async function proceedToStep2() {
 async function fetchExistingSections() {
   try {
     const response = await fetch(
-      `/api/v1/tier/${uploadStore.selectedProject}/sections`
+      `/api/v1/tier/${uploadStore.selectedProject}/sections?include_staged=true`
     );
     if (!response.ok) {
       throw new Error('Failed to fetch sections');
     }
     const data = await response.json();
-    existingSections.value = data.sections || [];
+    const newSections = data.sections || [];
+
+    // Ensure is_staged is boolean and set name property
+    newSections.forEach((section) => {
+      console.log(
+        'Raw is_staged for section',
+        section.section_id,
+        ':',
+        section.is_staged,
+        'type:',
+        typeof section.is_staged
+      );
+      section.is_staged =
+        section.is_staged === true ||
+        section.is_staged === 'true' ||
+        section.is_staged === 1 ||
+        section.is_staged === '1';
+      console.log(
+        'Converted is_staged for section',
+        section.section_id,
+        ':',
+        section.is_staged
+      );
+      section.name = section.section_name || section.name;
+    });
+
+    // Clear assignments to sections that no longer exist or are not staged
+    const validSectionIds = new Set(newSections.map((s) => s.section_id));
+    Object.keys(uploadStore.tierAssignments).forEach((tierKey) => {
+      const assignment = uploadStore.tierAssignments[tierKey];
+      if (
+        assignment &&
+        assignment !== 'new' &&
+        !validSectionIds.has(assignment)
+      ) {
+        uploadStore.tierAssignments[tierKey] = '';
+      }
+    });
+
+    existingSections.value = newSections;
   } catch (err) {
     console.error('Error fetching existing sections:', err);
     eventMessageStore.addMessage(
@@ -687,6 +656,57 @@ async function fetchExistingSections() {
       'error'
     );
     existingSections.value = [];
+  }
+}
+
+// Step 3: Handle tier assignment events
+function handleTierAssignment({ tierKey, assignment }) {
+  uploadStore.tierAssignments[tierKey] = assignment;
+}
+
+function handleNewSectionNameUpdate({ sectionName, newName }) {
+  newSectionNames.value[sectionName] = newName;
+}
+
+function handleSectionCreated({ section }) {
+  console.log('UploadPage: handleSectionCreated called with section:', section);
+  console.log(
+    'UploadPage: Current tierAssignments before:',
+    uploadStore.tierAssignments
+  );
+  const sectionId = section.section_id;
+  // Clear any existing assignments to this section ID to prevent conflicts from reused IDs
+  Object.keys(uploadStore.tierAssignments).forEach((tierKey) => {
+    if (uploadStore.tierAssignments[tierKey] === sectionId) {
+      uploadStore.tierAssignments[tierKey] = '';
+    }
+  });
+  // Add the new section to existing sections
+  existingSections.value.push(section);
+  console.log(
+    'UploadPage: Current tierAssignments after:',
+    uploadStore.tierAssignments
+  );
+  console.log('UploadPage: existingSections after:', existingSections.value);
+}
+
+function handleSectionRenamed({ sectionId, newName }) {
+  // Update the section name in existing sections
+  const section = existingSections.value.find(
+    (s) => s.section_id === sectionId
+  );
+  if (section) {
+    section.name = newName;
+  }
+}
+
+function handleSectionDeleted({ sectionId }) {
+  // Remove the section from existing sections
+  const index = existingSections.value.findIndex(
+    (s) => s.section_id === sectionId
+  );
+  if (index !== -1) {
+    existingSections.value.splice(index, 1);
   }
 }
 
@@ -710,12 +730,11 @@ async function proceedToStep4() {
   }
 
   // Validate that new sections have names
-  const unnamedSections = uniqueNewSections.value.filter((sectionName) => {
-    return (
-      !newSectionNames.value[sectionName] ||
-      newSectionNames.value[sectionName].trim() === ''
-    );
-  });
+  const unnamedSections = Object.entries(newSectionNames.value).filter(
+    ([, name]) => {
+      return !name || name.trim() === '';
+    }
+  );
 
   if (unnamedSections.length > 0) {
     eventMessageStore.addMessage(
@@ -765,6 +784,25 @@ async function cancelUpload() {
   }
 
   try {
+    // Delete any staged sections created during this upload session
+    const stagedSections = existingSections.value.filter(
+      (section) => section.is_staged
+    );
+    for (const section of stagedSections) {
+      try {
+        await fetch(`/api/v1/tier/section/${section.section_id}`, {
+          method: 'DELETE',
+        });
+      } catch (deleteErr) {
+        console.error(
+          'Error deleting staged section:',
+          section.section_id,
+          deleteErr
+        );
+        // Continue with other deletions
+      }
+    }
+
     // Call the cancel API using the service
     await cancelUploadApi(uploadStore.sessionId);
 

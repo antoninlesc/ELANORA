@@ -171,20 +171,39 @@ async def cancel_upload(
         from app.model.tier import Tier
         from app.model.tier_group import TierGroup
         from app.model.tier_section import TierSection
+        from sqlalchemy import or_
 
         # Delete staged tier groups
-        await DatabaseUtils.delete_by_filter(
-            db, TierGroup, session_id=session_id, is_staged=True
+        await DatabaseUtils.delete_by_conditions(
+            db,
+            TierGroup,
+            [
+                or_(TierGroup.session_id == session_id, TierGroup.session_id.is_(None)),
+                TierGroup.is_staged == True,
+            ],
         )
 
         # Delete staged tier sections
-        await DatabaseUtils.delete_by_filter(
-            db, TierSection, session_id=session_id, is_staged=True
+        await DatabaseUtils.delete_by_conditions(
+            db,
+            TierSection,
+            [
+                or_(
+                    TierSection.session_id == session_id,
+                    TierSection.session_id.is_(None),
+                ),
+                TierSection.is_staged == True,
+            ],
         )
 
         # Delete staged tiers
-        await DatabaseUtils.delete_by_filter(
-            db, Tier, session_id=session_id, is_staged=True
+        await DatabaseUtils.delete_by_conditions(
+            db,
+            Tier,
+            [
+                or_(Tier.session_id == session_id, Tier.session_id.is_(None)),
+                Tier.is_staged == True,
+            ],
         )
 
         # Delete the upload session
