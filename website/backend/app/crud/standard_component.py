@@ -8,13 +8,13 @@ from app.utils.database import DatabaseUtils
 
 async def link_standard_to_component(
     db: AsyncSession, naming_standard_id: int, component_template_id: int, order: int
-):
+) -> StandardComponent:
+    """Link a naming standard to a component template if not already linked."""
     filters = {
         "naming_standard_id": naming_standard_id,
         "component_template_id": component_template_id,
     }
-    results = await DatabaseUtils.get_by_filter(db, StandardComponent, filters, limit=1)
-    link = results[0] if results else None
+    link = await DatabaseUtils.get_one_or_none(db, StandardComponent, filters)
     if not link:
         link = StandardComponent(
             naming_standard_id=naming_standard_id,

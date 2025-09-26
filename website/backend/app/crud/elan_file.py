@@ -30,8 +30,9 @@ async def get_orphan_elan_files_by_project(
     """Get ELAN files that belong directly to a project via project_id FK."""
     logger.info("Fetching ELAN files for project_id=%s", project_id)
     filters = {"project_id": project_id}
+    options = [selectinload(ElanFile.file_content)]
     elan_files = await DatabaseUtils.get_by_filter(
-        db, ElanFile, filters, options=[selectinload(ElanFile.file_content)]
+        db, ElanFile, filters, options=options
     )
     logger.info("Found %d ELAN files for project_id=%s", len(elan_files), project_id)
     return elan_files
@@ -230,8 +231,8 @@ async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: int) ->
         return
 
     filters = {"content_id": elan_file.content_id, "tier_id": tier_id}
-    results = await DatabaseUtils.get_by_filter(db, ElanFileToTier, filters, limit=1)
-    if not results:
+    exists = await DatabaseUtils.get_one_or_none(db, ElanFileToTier, filters)
+    if not exists:
         assoc = ElanFileToTier(content_id=elan_file.content_id, tier_id=tier_id)
         await DatabaseUtils.create(db, assoc)
 
@@ -511,8 +512,12 @@ async def get_elan_files_by_ids_and_project(
     db: AsyncSession, elan_ids: list[int], project_id: int
 ) -> list[ElanFile]:
     """Fetch ElanFile records by elan_ids, ensuring they belong to the project."""
-    # Use DatabaseUtils with complex filters
-    filters = {"elan_id": elan_ids, "project_id": project_id}
-    return await DatabaseUtils.get_by_filter(
-        db, ElanFile, filters, options=[selectinload(ElanFile.file_content)]
+    from sqlalchemy import select
+
+    stmt = (
+        select(ElanFile)
+        .where(ElanFile.elan_id.in_(elan_ids), ElanFile.project_id == project_id)
+        .options(selectinload(ElanFile.file_content))
     )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())

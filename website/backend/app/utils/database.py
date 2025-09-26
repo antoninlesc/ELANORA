@@ -1,8 +1,10 @@
 """Database utility functions for common operations."""
 
+from datetime import datetime, timezone
 from typing import Any, TypeVar
 
-from sqlalchemy import select, update
+from sqlalchemy import and_, delete, exists, func, select, update
+from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
@@ -24,10 +26,11 @@ class DatabaseUtils:
         id_value: Any,
         options: list | None = None,
     ) -> ModelType | None:
+        """Get a single record by ID field."""
         logger.info(
             f"get_by_id: model={model.__name__} id_field={id_field} id_value={id_value}"
         )
-        query = select(model).filter(getattr(model, id_field) == id_value)
+        query = select(model).where(getattr(model, id_field) == id_value)
         if options:
             for opt in options:
                 query = query.options(opt)
@@ -40,6 +43,7 @@ class DatabaseUtils:
     async def get_all(
         db: AsyncSession, model: type[ModelType], options: list | None = None
     ) -> list[ModelType]:
+        """Get all records of the model."""
         logger.info(f"get_all: model={model.__name__}")
         query = select(model)
         if options:
@@ -54,9 +58,10 @@ class DatabaseUtils:
     async def exists(
         db: AsyncSession, model: type[ModelType], field: str, value: Any
     ) -> bool:
+        """Check if a record exists with the given field value."""
         logger.info(f"exists: model={model.__name__} field={field} value={value}")
         result = await db.execute(
-            select(getattr(model, field)).filter(getattr(model, field) == value)
+            select(1).where(getattr(model, field) == value).limit(1)
         )
         exists = result.scalar_one_or_none() is not None
         logger.debug(f"exists: result={exists}")
@@ -64,23 +69,118 @@ class DatabaseUtils:
 
     @staticmethod
     async def create(db: AsyncSession, instance: ModelType) -> ModelType:
+        """Add a new instance to the session."""
         logger.info(f"create: instance={instance}")
         db.add(instance)
         return instance
 
     @staticmethod
+    async def get_one_or_none(
+        db: AsyncSession,
+        model: type[ModelType],
+        filters: dict | None = None,
+        conditions: list[Any] | None = None,
+        options: list | None = None,
+    ) -> ModelType | None:
+        """Get exactly one record or None if not found."""
+        query = select(model)
+
+        if filters:
+            for field, value in filters.items():
+                if isinstance(value, list):
+                    query = query.where(getattr(model, field).in_(tuple(value)))
+                else:
+                    query = query.where(getattr(model, field) == value)
+
+        if conditions:
+            query = query.where(and_(*conditions))
+
+        if options:
+            for opt in options:
+                query = query.options(opt)
+
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_scalar_subquery(
+        db: AsyncSession,
+        model: type[ModelType],
+        field: str,
+        filters: dict | None = None,
+        conditions: list[Any] | None = None,
+    ) -> Any:
+        """Get a scalar value from a subquery (useful for EXISTS checks, counts, etc.)."""
+        query = select(getattr(model, field))
+
+        if filters:
+            for f, value in filters.items():
+                query = query.where(getattr(model, f) == value)
+
+        if conditions:
+            query = query.where(and_(*conditions))
+
+        result = await db.execute(query)
+        return result.scalars().all()
+
+    @staticmethod
+    async def count_records(
+        db: AsyncSession,
+        model: type[ModelType],
+        filters: dict | None = None,
+        conditions: list[Any] | None = None,
+    ) -> int:
+        """Count records matching filters or conditions."""
+        query = select(func.count()).select_from(model)
+
+        if filters:
+            for field, value in filters.items():
+                if isinstance(value, list):
+                    query = query.where(getattr(model, field).in_(tuple(value)))
+                else:
+                    query = query.where(getattr(model, field) == value)
+
+        if conditions:
+            query = query.where(and_(*conditions))
+
+        result = await db.execute(query)
+        return result.scalar() or 0
+
+    @staticmethod
+    async def upsert(
+        db: AsyncSession,
+        model: type[ModelType],
+        defaults: dict,
+        **lookup_fields,
+    ) -> tuple[ModelType, bool]:
+        """Get or create a record. Returns (instance, created)."""
+        # Try to get existing record
+        existing = await DatabaseUtils.get_one_or_none(db, model, filters=lookup_fields)
+
+        if existing:
+            # Update with defaults if provided
+            if defaults:
+                for key, value in defaults.items():
+                    setattr(existing, key, value)
+            return existing, False
+
+        # Create new record
+        all_fields = {**lookup_fields, **defaults}
+        new_instance = model(**all_fields)
+        await DatabaseUtils.create(db, new_instance)
+        return new_instance, True
+
+    @staticmethod
     async def delete_by_filter(
         db: AsyncSession, model: type[ModelType], auto_commit: bool = False, **filters
     ) -> int:
+        """Delete records matching the filters."""
         logger.info(f"delete_by_filter: model={model.__name__} filters={filters}")
-        query = select(model)
+        stmt = delete(model)
         for field, value in filters.items():
-            query = query.filter(getattr(model, field) == value)
-        result = await db.execute(query)
-        instances = list(result.scalars().all())
-        count = len(instances)
-        for instance in instances:
-            await db.delete(instance)
+            stmt = stmt.where(getattr(model, field) == value)
+        result = await db.execute(stmt)
+        count = result.rowcount
         logger.info(f"delete_by_filter: deleted count={count}")
         return count
 
@@ -92,16 +192,11 @@ class DatabaseUtils:
         logger.info(
             f"delete_by_conditions: model={model.__name__} conditions={conditions}"
         )
-        query = select(model)
+        stmt = delete(model)
         if conditions:
-            from sqlalchemy import and_
-
-            query = query.where(and_(*conditions))
-        result = await db.execute(query)
-        instances = list(result.scalars().all())
-        count = len(instances)
-        for instance in instances:
-            await db.delete(instance)
+            stmt = stmt.where(and_(*conditions))
+        result = await db.execute(stmt)
+        count = result.rowcount
         logger.info(f"delete_by_conditions: deleted count={count}")
         return count
 
@@ -113,8 +208,6 @@ class DatabaseUtils:
         ignore_duplicates: bool = False,
     ) -> None:
         """Bulk insert records. If ignore_duplicates is True, uses MySQL ON DUPLICATE KEY UPDATE."""
-        from sqlalchemy.dialects.mysql import insert as mysql_insert
-
         stmt = mysql_insert(model).values(values)
         if ignore_duplicates:
             pk_names = [key.name for key in model.__table__.primary_key]
@@ -180,8 +273,6 @@ class DatabaseUtils:
         """Get records matching SQLAlchemy conditions (AND/OR expressions)."""
         query = select(model)
         if conditions:
-            from sqlalchemy import and_
-
             query = query.where(and_(*conditions))
         if order_by:
             query = query.order_by(*order_by)
@@ -230,8 +321,6 @@ class DatabaseUtils:
 
         # Apply conditions
         if conditions:
-            from sqlalchemy import and_
-
             query = query.where(and_(*conditions))
 
         if order_by:
@@ -278,8 +367,6 @@ class DatabaseUtils:
 
         # Apply conditions
         if conditions:
-            from sqlalchemy import and_
-
             query = query.where(and_(*conditions))
 
         # Group by
@@ -288,8 +375,6 @@ class DatabaseUtils:
 
         # Having conditions
         if having_conditions:
-            from sqlalchemy import and_
-
             query = query.having(and_(*having_conditions))
 
         result = await db.execute(query)
@@ -309,8 +394,6 @@ class DatabaseUtils:
         offset: int | None = None,
     ) -> list[ModelType]:
         """Get records with EXISTS/NOT EXISTS subquery conditions."""
-        from sqlalchemy import exists
-
         query = select(model)
 
         # Apply EXISTS conditions
@@ -353,8 +436,6 @@ class DatabaseUtils:
 
         # Apply conditions
         if conditions:
-            from sqlalchemy import and_
-
             query = query.where(and_(*conditions))
 
         if order_by:

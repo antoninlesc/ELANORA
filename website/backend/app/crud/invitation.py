@@ -70,31 +70,25 @@ async def get_invitation_by_id(
     db: AsyncSession, invitation_id: int
 ) -> Invitation | None:
     """Retrieve an invitation by ID."""
-    result = await db.execute(
-        select(Invitation).filter(Invitation.invitation_id == invitation_id)
-    )
-    return result.scalar_one_or_none()
+    return await DatabaseUtils.get_by_id(db, Invitation, "invitation_id", invitation_id)
 
 
 async def get_invitations_by_email(db: AsyncSession, email: str) -> list[Invitation]:
     """Get all invitations for a specific email."""
-    result = await db.execute(
-        select(Invitation).filter(Invitation.receiver_email == email)
-    )
-    return list(result.scalars().all())
+    filters = {"receiver_email": email}
+    return await DatabaseUtils.get_by_filter(db, Invitation, filters)
 
 
 async def get_pending_invitations_by_email(
     db: AsyncSession, email: str
 ) -> list[Invitation]:
     """Get pending invitations for a specific email."""
-    result = await db.execute(
-        select(Invitation)
-        .filter(Invitation.receiver_email == email)
-        .filter(Invitation.status == InvitationStatus.PENDING)
-        .filter(Invitation.expires_at > datetime.now())
-    )
-    return list(result.scalars().all())
+    conditions = [
+        Invitation.receiver_email == email,
+        Invitation.status == InvitationStatus.PENDING,
+        Invitation.expires_at > datetime.now(),
+    ]
+    return await DatabaseUtils.get_by_conditions(db, Invitation, conditions=conditions)
 
 
 async def update_invitation_status(
@@ -104,17 +98,18 @@ async def update_invitation_status(
     receiver_id: int | None = None,
 ) -> bool:
     """Update invitation status and optionally set receiver_id."""
-    invitation = await get_invitation_by_id(db, invitation_id)
-    if not invitation:
-        return False
-
-    invitation.status = status
-    invitation.responded_at = datetime.now()
+    filters = {"invitation_id": invitation_id}
+    update_fields = {
+        "status": status,
+        "responded_at": datetime.now(),
+    }
     if receiver_id:
-        invitation.receiver = receiver_id
+        update_fields["receiver"] = receiver_id
 
-    await db.commit()
-    return True
+    updated_count = await DatabaseUtils.update_by_filter(
+        db, Invitation, filters, update_fields
+    )
+    return updated_count > 0
 
 
 async def check_invitation_exists_and_valid(
@@ -133,32 +128,29 @@ async def get_invitations_by_sender(
     db: AsyncSession, sender_id: int
 ) -> list[Invitation]:
     """Get all invitations sent by a specific user."""
-    result = await db.execute(select(Invitation).filter(Invitation.sender == sender_id))
-    return list(result.scalars().all())
+    filters = {"sender": sender_id}
+    return await DatabaseUtils.get_by_filter(db, Invitation, filters)
 
 
 async def get_invitations_by_project(
     db: AsyncSession, project_id: int
 ) -> list[Invitation]:
     """Get all invitations for a specific project."""
-    result = await db.execute(
-        select(Invitation).filter(Invitation.project_id == project_id)
-    )
-    return list(result.scalars().all())
+    filters = {"project_id": project_id}
+    return await DatabaseUtils.get_by_filter(db, Invitation, filters)
 
 
 async def expire_old_invitations(db: AsyncSession) -> int:
     """Mark expired invitations as expired and return count."""
     from sqlalchemy import update
 
-    # Update all expired pending invitations in one query
-    query = (
+    stmt = (
         update(Invitation)
         .where(Invitation.status == InvitationStatus.PENDING)
         .where(Invitation.expires_at <= datetime.now())
         .values(status=InvitationStatus.EXPIRED)
     )
-    result = await db.execute(query)
+    result = await db.execute(stmt)
     return result.rowcount
 
 
@@ -175,12 +167,13 @@ async def verify_invitation_code(
 
 async def get_invitation_by_code(db: AsyncSession, raw_code: str) -> Invitation | None:
     """Retrieve an invitation by verifying the raw code against hashed codes."""
-    # Get all pending invitations
-    result = await db.execute(
+    # Get all pending invitations using modern SQLAlchemy syntax
+    stmt = (
         select(Invitation)
-        .filter(Invitation.status == InvitationStatus.PENDING)
-        .filter(Invitation.expires_at > datetime.now())
+        .where(Invitation.status == InvitationStatus.PENDING)
+        .where(Invitation.expires_at > datetime.now())
     )
+    result = await db.execute(stmt)
     invitations = list(result.scalars().all())
 
     # Check each invitation's hashed code against the provided raw code

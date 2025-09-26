@@ -10,15 +10,17 @@ async def get_file_type_by_id(db: AsyncSession, file_type_id: int) -> FileType |
 
 
 async def get_file_type_by_name(db: AsyncSession, name: str) -> FileType | None:
-    result = await DatabaseUtils.get_by_filter(db, FileType, {"name": name}, limit=1)
-    return result[0] if result else None
+    """Get file type by name."""
+    filters = {"name": name}
+    return await DatabaseUtils.get_one_or_none(db, FileType, filters=filters)
 
 
-async def get_file_type_by_extension(db: AsyncSession, extension: str):
-    result = await DatabaseUtils.get_by_filter(
-        db, FileType, {"extension": extension}, limit=1
-    )
-    return result[0] if result else None
+async def get_file_type_by_extension(
+    db: AsyncSession, extension: str
+) -> FileType | None:
+    """Get file type by extension."""
+    filters = {"extension": extension}
+    return await DatabaseUtils.get_one_or_none(db, FileType, filters=filters)
 
 
 async def create_file_type(db: AsyncSession, extension: str) -> FileType:

@@ -11,15 +11,13 @@ logger = get_logger(__name__)
 
 
 async def get_or_create_accepted_value(db: AsyncSession, value: str) -> AcceptedValue:
-    filters = {"value": value}
-    results = await DatabaseUtils.get_by_filter(db, AcceptedValue, filters, limit=1)
-    obj = results[0] if results else None
-    if obj:
-        return obj
-    obj = AcceptedValue(value=value)
-    await DatabaseUtils.create(db, obj)
-    await db.flush()
-    return obj
+    """Get existing accepted value or create new one."""
+    accepted_value, created = await DatabaseUtils.upsert(
+        db, AcceptedValue, defaults={}, value=value
+    )
+    if created:
+        await db.flush()
+    return accepted_value
 
 
 async def delete_orphaned_accepted_values(db: AsyncSession):

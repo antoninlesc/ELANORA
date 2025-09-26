@@ -1,6 +1,8 @@
 """User CRUD operations - Pure database access layer."""
 
+from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.model.user import User, UserRole
 from app.schema.common.user import UserCreateData
@@ -9,24 +11,25 @@ from app.utils.database import DatabaseUtils
 ROLE_ADMIN = UserRole.ADMIN
 
 
-async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:
-    """Retrieve a user by their ID with relationships pre-loaded."""
-    # Use DatabaseUtils for basic get_by_id
-    return await DatabaseUtils.get_by_id(db, User, "user_id", user_id)
+async def get_user_by_id(
+    db: AsyncSession, user_id: int, load_relationships: bool = False
+) -> User | None:
+    """Retrieve a user by their ID with optional relationship loading."""
+    options = None
+    if load_relationships:
+        options = [
+            selectinload(User.address),
+            selectinload(User.notification_preference),
+        ]
+    return await DatabaseUtils.get_by_id(db, User, "user_id", user_id, options=options)
 
 
 async def get_user_by_username_or_email(
     db: AsyncSession, login_or_email: str
 ) -> User | None:
-    """Retrieve a user by their username or email."""
-    filters = {"username": login_or_email}
-    result = await DatabaseUtils.get_by_filter(db, User, filters, limit=1)
-    user = result[0] if result else None
-    if user:
-        return user
-    filters = {"email": login_or_email}
-    result = await DatabaseUtils.get_by_filter(db, User, filters, limit=1)
-    return result[0] if result else None
+    """Retrieve a user by their username or email using efficient OR condition."""
+    conditions = [or_(User.username == login_or_email, User.email == login_or_email)]
+    return await DatabaseUtils.get_one_or_none(db, User, conditions=conditions)
 
 
 async def create_user_in_db(
@@ -56,35 +59,24 @@ async def create_user_in_db(
 
 
 async def update_user_password(
-    db: AsyncSession, user: User, new_password_hash: str
-) -> bool:
-    """Update user's password hash in database."""
-    filters = {"user_id": user.user_id}
+    db: AsyncSession, user_id: int, new_password_hash: str
+) -> int:
+    """Update user's password hash in database. Returns number of updated rows."""
+    filters = {"user_id": user_id}
     update_fields = {"hashed_password": new_password_hash}
-    try:
-        await DatabaseUtils.update_by_filter(db, User, filters, update_fields)
-        return True
-    except Exception:
-        await db.rollback()
-        return False
+    return await DatabaseUtils.update_by_filter(db, User, filters, update_fields)
 
 
-async def update_user_profile(db: AsyncSession, user: User, **update_fields) -> bool:
-    """Update user profile fields in database."""
-    filters = {"user_id": user.user_id}
-    try:
-        await DatabaseUtils.update_by_filter(db, User, filters, update_fields)
-        return True
-    except Exception:
-        await db.rollback()
-        return False
+async def update_user_profile(db: AsyncSession, user_id: int, **update_fields) -> int:
+    """Update user profile fields in database. Returns number of updated rows."""
+    filters = {"user_id": user_id}
+    return await DatabaseUtils.update_by_filter(db, User, filters, update_fields)
 
 
 async def validate_user_exists_and_active(db: AsyncSession, user_id: int) -> bool:
     """Validate that a user exists and has an active account."""
     filters = {"user_id": user_id, "is_active": True}
-    result = await DatabaseUtils.get_by_filter(db, User, filters, limit=1)
-    user = result[0] if result else None
+    user = await DatabaseUtils.get_one_or_none(db, User, filters=filters)
     return user is not None
 
 
@@ -92,25 +84,39 @@ async def get_admin_emails(db: AsyncSession) -> list[str]:
     """Get email addresses of all site administrators."""
     filters = {"role": ROLE_ADMIN, "is_active": True}
     admins = await DatabaseUtils.get_by_filter(db, User, filters)
-    admin_emails = [admin.email for admin in admins]
-    if not admin_emails:
-        return ["admin@example.com"]
-    return admin_emails
+    admin_emails = [admin.email for admin in admins if admin.email]
+    return admin_emails or ["admin@example.com"]
 
 
 async def check_user_exists_by_username(db: AsyncSession, username: str) -> bool:
     """Check if a user with the given username exists."""
-    # Use DatabaseUtils.exists
     return await DatabaseUtils.exists(db, User, "username", username)
 
 
 async def check_user_exists_by_email(db: AsyncSession, email: str) -> bool:
     """Check if a user with the given email exists."""
-    # Use DatabaseUtils.exists
     return await DatabaseUtils.exists(db, User, "email", email)
 
 
-async def get_all_active_users(db: AsyncSession) -> list[User]:
-    """Get all active users."""
+async def get_all_active_users(
+    db: AsyncSession, limit: int | None = None, offset: int | None = None
+) -> list[User]:
+    """Get all active users with optional pagination."""
     filters = {"is_active": True}
-    return await DatabaseUtils.get_by_filter(db, User, filters)
+    order_by = [User.username]
+    return await DatabaseUtils.get_by_filter(
+        db, User, filters, order_by=order_by, limit=limit, offset=offset
+    )
+
+
+async def get_users_by_role(
+    db: AsyncSession, role: UserRole, active_only: bool = True
+) -> list[User]:
+    """Get users by their role."""
+    conditions = [User.role == role]
+    if active_only:
+        conditions.append(User.is_active.is_(True))
+    order_by = [User.username]
+    return await DatabaseUtils.get_by_conditions(
+        db, User, conditions=conditions, order_by=order_by
+    )

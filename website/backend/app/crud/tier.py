@@ -96,25 +96,19 @@ async def get_root_tiers(db: AsyncSession, include_staged: bool = False) -> list
 async def get_tier_id_by_name(
     db: AsyncSession, tier_name: str, include_staged: bool = False
 ) -> int | None:
-    conditions = [Tier.tier_name == tier_name]
-    if not include_staged:
-        conditions.append(Tier.is_staged.is_(False))
-    results = await DatabaseUtils.get_by_conditions(
-        db, Tier, conditions=conditions, limit=1
-    )
-    return results[0].tier_id if results else None
+    """Get tier ID by name efficiently."""
+    tier = await get_tier_by_name(db, tier_name, include_staged)
+    return tier.tier_id if tier else None
 
 
 async def get_tier_by_name(
     db: AsyncSession, tier_name: str, include_staged: bool = False
 ) -> Tier | None:
+    """Get tier by name with optional staging filter."""
     conditions = [Tier.tier_name == tier_name]
     if not include_staged:
         conditions.append(Tier.is_staged.is_(False))
-    results = await DatabaseUtils.get_by_conditions(
-        db, Tier, conditions=conditions, limit=1
-    )
-    return results[0] if results else None
+    return await DatabaseUtils.get_one_or_none(db, Tier, conditions=conditions)
 
 
 async def create_tier_in_db(

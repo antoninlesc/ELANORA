@@ -12,15 +12,13 @@ logger = get_logger(__name__)
 
 async def link_component_to_accepted_value(
     db: AsyncSession, component_template_id: int, accepted_value_id: int
-):
+) -> ComponentAcceptedValue:
+    """Link a component template to an accepted value if not already linked."""
     filters = {
         "component_template_id": component_template_id,
         "accepted_value_id": accepted_value_id,
     }
-    results = await DatabaseUtils.get_by_filter(
-        db, ComponentAcceptedValue, filters, limit=1
-    )
-    link = results[0] if results else None
+    link = await DatabaseUtils.get_one_or_none(db, ComponentAcceptedValue, filters)
     if not link:
         link = ComponentAcceptedValue(
             component_template_id=component_template_id,

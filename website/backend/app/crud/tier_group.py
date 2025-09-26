@@ -104,18 +104,14 @@ async def assign_tier_hierarchy_to_section(
         tier = await get_tier_by_id(db, tier_id_in_hierarchy)
         if tier:
             # Check if tier group already exists
-            existing = await DatabaseUtils.get_by_filter(
-                db,
-                TierGroup,
-                {"project_id": project_id, "tier_id": tier_id_in_hierarchy},
-                limit=1,
+            filters = {"project_id": project_id, "tier_id": tier_id_in_hierarchy}
+            existing = await DatabaseUtils.get_one_or_none(
+                db, TierGroup, filters=filters
             )
             if existing:
                 # Update existing group
-                await update_tier_group_section(
-                    db, existing[0].tier_group_id, section_id
-                )
-                created_groups.append(existing[0])
+                await update_tier_group_section(db, existing.tier_group_id, section_id)
+                created_groups.append(existing)
             else:
                 # Create new group
                 group = await create_tier_group(

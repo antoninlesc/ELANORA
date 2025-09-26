@@ -32,8 +32,7 @@ async def get_file_content_by_hash(
 ) -> FileContent | None:
     """Get file content by hash."""
     filters = {"content_hash": content_hash}
-    results = await DatabaseUtils.get_by_filter(db, FileContent, filters, limit=1)
-    return results[0] if results else None
+    return await DatabaseUtils.get_one_or_none(db, FileContent, filters=filters)
 
 
 async def get_file_content_by_id(

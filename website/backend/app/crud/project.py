@@ -1,5 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
 from app.crud.annotation import delete_unused_annotation_values
@@ -27,6 +28,7 @@ async def create_project_db(
     instance_id: int,
     creator_user_id: int,
 ) -> Project:
+    """Create a new project and assign creator as owner."""
     if description is not None and description.strip() == "":
         description = None
     project = Project(
@@ -48,6 +50,7 @@ async def create_project_db(
 
 
 async def get_project_name_by_id(db: AsyncSession, project_id: int) -> str | None:
+    """Get project name by ID."""
     project = await DatabaseUtils.get_by_id(db, Project, "project_id", project_id)
     if project:
         return project.project_name
@@ -55,20 +58,27 @@ async def get_project_name_by_id(db: AsyncSession, project_id: int) -> str | Non
 
 
 async def get_project_by_name(db: AsyncSession, project_name: str) -> Project | None:
+    """Get project by name using optimized single query."""
     filters = {"project_name": project_name}
-    results = await DatabaseUtils.get_by_filter(db, Project, filters, limit=1)
-    return results[0] if results else None
+    return await DatabaseUtils.get_one_or_none(db, Project, filters=filters)
 
 
-async def get_project_by_id(db: AsyncSession, project_id: int) -> Project | None:
-    return await DatabaseUtils.get_by_id(db, Project, "project_id", project_id)
+async def get_project_by_id(
+    db: AsyncSession, project_id: int, load_relationships: bool = False
+) -> Project | None:
+    """Get project by ID with optional relationship loading."""
+    options = None
+    if load_relationships:
+        options = [selectinload(Project.users)]
+    return await DatabaseUtils.get_by_id(
+        db, Project, "project_id", project_id, options=options
+    )
 
 
 async def get_project_id_by_name(db: AsyncSession, project_name: str) -> int | None:
+    """Get project ID by name efficiently."""
     project = await get_project_by_name(db, project_name)
-    if project:
-        return project.project_id
-    return None
+    return project.project_id if project else None
 
 
 async def delete_project_db(db: AsyncSession, project_name: str) -> None:
@@ -121,8 +131,7 @@ async def user_in_project(
 ) -> UserToProject | None:
     """Check if a user is already in a project."""
     filters = {"user_id": user_id, "project_id": project_id}
-    results = await DatabaseUtils.get_by_filter(db, UserToProject, filters, limit=1)
-    return results[0] if results else None
+    return await DatabaseUtils.get_one_or_none(db, UserToProject, filters=filters)
 
 
 async def add_user_to_project(
@@ -151,10 +160,7 @@ async def add_user_to_project(
         project_id=project_id,
         permission=permission,
     )
-    db.add(user_to_project)
-    await db.commit()
-    await db.refresh(user_to_project)
-    return user_to_project
+    return await DatabaseUtils.create(db, user_to_project)
 
 
 async def list_projects_by_user(
@@ -177,25 +183,13 @@ async def update_user_project_permission(
     user_id: int,
     project_id: int,
     permission: ProjectPermission,
-) -> UserToProject | None:
-    """Update a user's permission for a project."""
-    # Check if user is in the project
-    existing_membership = await user_in_project(db, user_id, project_id)
-    if not existing_membership:
-        logger.warning(
-            "User is not in project",
-            extra={
-                "user_id": user_id,
-                "project_id": project_id,
-            },
-        )
-        return None
-
-    # Update permission
-    existing_membership.permission = permission
-    await db.commit()
-    await db.refresh(existing_membership)
-    return existing_membership
+) -> int:
+    """Update a user's permission for a project. Returns number of updated rows."""
+    filters = {"user_id": user_id, "project_id": project_id}
+    update_fields = {"permission": permission}
+    return await DatabaseUtils.update_by_filter(
+        db, UserToProject, filters, update_fields
+    )
 
 
 async def get_project_admins_and_owners(db: AsyncSession, project_id: int) -> list[int]:

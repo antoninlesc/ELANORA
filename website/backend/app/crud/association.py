@@ -17,10 +17,10 @@ logger = get_logger()
 # --- ElanFileToMedia ---
 
 
-async def add_elan_file_to_media(db: AsyncSession, elan_id: int, media_id: int):
+async def add_elan_file_to_media(db: AsyncSession, elan_id: int, media_id: int) -> None:
+    """Add an ELAN file to media association if it doesn't already exist."""
     filters = {"elan_id": elan_id, "media_id": media_id}
-    results = await DatabaseUtils.get_by_filter(db, ElanFileToMedia, filters, limit=1)
-    exists = results[0] if results else None
+    exists = await DatabaseUtils.get_one_or_none(db, ElanFileToMedia, filters)
     if not exists:
         assoc = ElanFileToMedia(elan_id=elan_id, media_id=media_id)
         await DatabaseUtils.create(db, assoc)
@@ -88,10 +88,10 @@ async def has_any_project_for_elan_file(db: AsyncSession, elan_id: int) -> bool:
 # --- ElanFileToTier ---
 
 
-async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: int):
+async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: int) -> None:
+    """Add an ELAN file to tier association if it doesn't already exist."""
     filters = {"elan_id": elan_id, "tier_id": tier_id}
-    results = await DatabaseUtils.get_by_filter(db, ElanFileToTier, filters, limit=1)
-    exists = results[0] if results else None
+    exists = await DatabaseUtils.get_one_or_none(db, ElanFileToTier, filters)
     if not exists:
         assoc = ElanFileToTier(elan_id=elan_id, tier_id=tier_id)
         await DatabaseUtils.create(db, assoc)
@@ -117,10 +117,10 @@ async def update_elan_file_tier(
 # --- UserToProject ---
 
 
-async def add_user_to_project(db: AsyncSession, user_id: int, project_id: int):
+async def add_user_to_project(db: AsyncSession, user_id: int, project_id: int) -> None:
+    """Add a user to project association if it doesn't already exist."""
     filters = {"user_id": user_id, "project_id": project_id}
-    results = await DatabaseUtils.get_by_filter(db, UserToProject, filters, limit=1)
-    exists = results[0] if results else None
+    exists = await DatabaseUtils.get_one_or_none(db, UserToProject, filters)
     if not exists:
         assoc = UserToProject(user_id=user_id, project_id=project_id)
         await DatabaseUtils.create(db, assoc)
@@ -145,9 +145,12 @@ async def update_user_project(
 
 
 # --- ProjectFileType ---
+
+
 async def remove_file_type_from_project(
     db: AsyncSession, project_id: int, file_type_id: int
-):
+) -> None:
+    """Remove a file type from a project."""
     await DatabaseUtils.delete_by_filter(
         db, ProjectFileType, project_id=project_id, file_type_id=file_type_id
     )
@@ -158,10 +161,10 @@ async def add_project_file_type(
     project_id: int,
     name: str,
     file_type_id: int,
-):
+) -> ProjectFileType:
+    """Add a project file type association, returning existing or new instance."""
     filters = {"project_id": project_id, "name": name}
-    results = await DatabaseUtils.get_by_filter(db, ProjectFileType, filters, limit=1)
-    exists = results[0] if results else None
+    exists = await DatabaseUtils.get_one_or_none(db, ProjectFileType, filters)
     if not exists:
         assoc = ProjectFileType(
             project_id=project_id,
@@ -207,24 +210,25 @@ async def update_project_file_type(
         )
 
 
-async def get_project_file_type_by_id(db: AsyncSession, project_file_type_id: int):
-    results = await DatabaseUtils.get_by_filter(
+async def get_project_file_type_by_id(
+    db: AsyncSession, project_file_type_id: int
+) -> ProjectFileType | None:
+    """Get a project file type by ID with file type relationship loaded."""
+    return await DatabaseUtils.get_one_or_none(
         db,
         ProjectFileType,
         {"id": project_file_type_id},
         options=[selectinload(ProjectFileType.file_type)],
-        limit=1,
     )
-    return results[0] if results else None
 
 
 async def count_project_file_types_by_file_type_id(
     db: AsyncSession, file_type_id: int
 ) -> int:
-    results = await DatabaseUtils.get_by_filter(
+    """Count project file types using a specific file type ID."""
+    return await DatabaseUtils.count_records(
         db, ProjectFileType, {"file_type_id": file_type_id}
     )
-    return len(results)
 
 
 async def update_project_file_type_name(
@@ -247,27 +251,23 @@ async def update_project_file_type_file_type_id(
 
 
 async def get_project_file_type_by_project_and_file_type(
-    db, project_id: int, file_type_id: int
-):
+    db: AsyncSession, project_id: int, file_type_id: int
+) -> ProjectFileType | None:
     """Get the ProjectFileType for a given project and file_type_id."""
-    from app.model.project_file_type import ProjectFileType
+    filters = {"project_id": project_id, "file_type_id": file_type_id}
+    return await DatabaseUtils.get_one_or_none(db, ProjectFileType, filters)
 
-    results = await DatabaseUtils.get_by_filter(
+
+async def get_project_file_type_with_file_type(
+    db: AsyncSession, project_file_type_id: int
+) -> ProjectFileType | None:
+    """Get a project file type with file type relationship loaded."""
+    return await DatabaseUtils.get_one_or_none(
         db,
         ProjectFileType,
-        {"project_id": project_id, "file_type_id": file_type_id},
-        limit=1,
+        {"id": project_file_type_id},
+        options=[selectinload(ProjectFileType.file_type)],
     )
-    return results[0] if results else None
-
-
-async def get_project_file_type_with_file_type(db, project_file_type_id: int):
-    result = await db.execute(
-        select(ProjectFileType)
-        .options(selectinload(ProjectFileType.file_type))
-        .where(ProjectFileType.id == project_file_type_id)
-    )
-    return result.scalar_one_or_none()
 
 
 # --- Bulk delete for project associations (unchanged) ---

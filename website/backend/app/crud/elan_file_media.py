@@ -81,9 +81,9 @@ async def get_project_files_with_media(
 
 async def get_media_by_url(db: AsyncSession, media_url: str) -> ElanFileMedia | None:
     """Retrieve a media file by its URL."""
-    filters = {"media_url": media_url}
-    results = await DatabaseUtils.get_by_filter(db, ElanFileMedia, filters, limit=1)
-    return results[0] if results else None
+    return await DatabaseUtils.get_one_or_none(
+        db, ElanFileMedia, {"media_url": media_url}
+    )
 
 
 async def create_media_in_db(
@@ -109,11 +109,15 @@ async def create_or_get_media_in_db(
     mime_type: str | None = None,
     relative_media_url: str | None = None,
 ) -> ElanFileMedia:
-    """Get or create a media file by URL."""
-    media = await get_media_by_url(db, media_url)
-    if media:
-        return media
-    return await create_media_in_db(db, media_url, mime_type, relative_media_url)
+    """Get or create a media file by URL using upsert functionality."""
+    media_data = {
+        "mime_type": mime_type,
+        "relative_media_url": relative_media_url,
+    }
+    result, created = await DatabaseUtils.upsert(
+        db, ElanFileMedia, media_data, media_url=media_url
+    )
+    return result
 
 
 async def get_media_by_id(db: AsyncSession, media_id: int) -> ElanFileMedia | None:

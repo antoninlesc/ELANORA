@@ -5,7 +5,7 @@ Service layer for upload-related operations.
 
 import os
 import shutil
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +29,7 @@ async def cleanup_expired_upload_sessions(db: AsyncSession) -> dict[str, Any]:
     """
     try:
         # Define expiration time (e.g., 24 hours)
-        expiration_time = datetime.utcnow() - timedelta(hours=24)
+        expiration_time = datetime.now(timezone.utc) - timedelta(hours=24)
 
         # Find expired sessions
         expired_sessions = await DatabaseUtils.get_by_conditions(

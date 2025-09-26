@@ -16,30 +16,30 @@ async def get_notifications_by_user_id(
     db: AsyncSession, user_id: int, skip: int = 0, limit: int = 100
 ) -> list[Notification]:
     """Retrieve notifications for a specific user with pagination."""
-    stmt = (
-        select(Notification)
-        .where(Notification.user_id == user_id)
-        .order_by(desc(Notification.created_at))
-        .offset(skip)
-        .limit(limit)
+    filters = {"user_id": user_id}
+    order_by = [desc(Notification.created_at)]
+    return await DatabaseUtils.get_by_filter(
+        db, Notification, filters, order_by=order_by, offset=skip, limit=limit
     )
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
 
 
 async def get_unread_notifications_by_user_id(
     db: AsyncSession, user_id: int, skip: int = 0, limit: int = 100
 ) -> list[Notification]:
     """Retrieve unread notifications for a specific user with pagination."""
-    stmt = (
-        select(Notification)
-        .where(Notification.user_id == user_id, ~Notification.is_read)
-        .order_by(desc(Notification.created_at))
-        .offset(skip)
-        .limit(limit)
+    conditions = [
+        Notification.user_id == user_id,
+        Notification.is_read.is_(False),
+    ]
+    order_by = [desc(Notification.created_at)]
+    return await DatabaseUtils.get_by_conditions(
+        db,
+        Notification,
+        conditions=conditions,
+        order_by=order_by,
+        offset=skip,
+        limit=limit,
     )
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
 
 
 async def get_notification_by_id(
@@ -67,41 +67,41 @@ async def create_notification(
     return notification
 
 
-async def mark_notification_as_read(
-    db: AsyncSession, notification_id: int
-) -> Notification | None:
-    """Mark a notification as read."""
-    notification = await get_notification_by_id(db, notification_id)
-    if notification:
-        notification.is_read = True
-        await db.flush()
-        await db.refresh(notification)
-    return notification
+async def mark_notification_as_read(db: AsyncSession, notification_id: int) -> bool:
+    """Mark a notification as read. Returns True if updated."""
+    filters = {"notification_id": notification_id}
+    update_fields = {"is_read": True}
+    updated_count = await DatabaseUtils.update_by_filter(
+        db, Notification, filters, update_fields
+    )
+    return updated_count > 0
 
 
 async def mark_all_notifications_as_read(db: AsyncSession, user_id: int) -> int:
     """Mark all notifications for a user as read. Returns the number of updated notifications."""
-    stmt = select(Notification).where(
-        Notification.user_id == user_id, ~Notification.is_read
+    conditions = [
+        Notification.user_id == user_id,
+        Notification.is_read.is_(False),
+    ]
+    update_fields = {"is_read": True}
+    # Use the enhanced update method for bulk updates with conditions
+    from sqlalchemy import update
+
+    stmt = (
+        update(Notification)
+        .where(Notification.user_id == user_id, Notification.is_read.is_(False))
+        .values(is_read=True)
     )
     result = await db.execute(stmt)
-    notifications = list(result.scalars().all())
-
-    for notification in notifications:
-        notification.is_read = True
-
-    await db.flush()
-    return len(notifications)
+    return result.rowcount
 
 
 async def delete_notification(db: AsyncSession, notification_id: int) -> bool:
     """Delete a notification by its ID."""
-    notification = await get_notification_by_id(db, notification_id)
-    if notification:
-        await db.delete(notification)
-        await db.flush()
-        return True
-    return False
+    deleted_count = await DatabaseUtils.delete_by_filter(
+        db, Notification, notification_id=notification_id
+    )
+    return deleted_count > 0
 
 
 async def get_notification_stats(db: AsyncSession, user_id: int) -> dict[str, int]:
@@ -139,10 +139,9 @@ async def get_notification_preference_by_user_id(
 ) -> NotificationPreference | None:
     """Retrieve notification preferences for a specific user."""
     filters = {"user_id": user_id}
-    result = await DatabaseUtils.get_by_filter(
-        db, NotificationPreference, filters, limit=1
+    return await DatabaseUtils.get_one_or_none(
+        db, NotificationPreference, filters=filters
     )
-    return result[0] if result else None
 
 
 async def create_notification_preference(

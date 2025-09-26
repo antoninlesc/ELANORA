@@ -10,16 +10,15 @@ async def set_effective_standard(
     project_file_type_id: int,
     naming_standard_id: int,
     location_id: int,
-):
+) -> EffectiveNamingStandard:
+    """Set or update the effective naming standard for a project location and file type."""
     filters = {
         "project_id": project_id,
         "project_file_type_id": project_file_type_id,
         "location_id": location_id,
     }
-    existing = await DatabaseUtils.get_by_filter(
-        db, EffectiveNamingStandard, filters, limit=1
-    )
-    existing = existing[0] if existing else None
+    existing = await DatabaseUtils.get_one_or_none(db, EffectiveNamingStandard, filters)
+
     if existing:
         existing.naming_standard_id = naming_standard_id
         await db.flush()

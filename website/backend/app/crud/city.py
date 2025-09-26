@@ -16,8 +16,7 @@ async def get_city_by_name_and_country(
         City.country_id == country_id,
         func.lower(func.trim(City.city_name)) == normalized_city_name,
     ]
-    cities = await DatabaseUtils.get_by_conditions(db, City, conditions, limit=1)
-    return cities[0] if cities else None
+    return await DatabaseUtils.get_one_or_none(db, City, conditions=conditions)
 
 
 async def create_city(db: AsyncSession, city: City) -> City:

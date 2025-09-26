@@ -11,13 +11,9 @@ async def get_or_create_annotation_value(
     db: AsyncSession, value: str
 ) -> AnnotationValue:
     """Get the annotation value object, or create it if it doesn't exist."""
-    filters = {"annotation_value": value}
-    results = await DatabaseUtils.get_by_filter(db, AnnotationValue, filters, limit=1)
-    annotation_value = results[0] if results else None
-    if annotation_value:
-        return annotation_value
-    annotation_value = AnnotationValue(annotation_value=value)
-    await DatabaseUtils.create(db, annotation_value)
+    annotation_value, created = await DatabaseUtils.upsert(
+        db, AnnotationValue, defaults={}, annotation_value=value
+    )
     return annotation_value
 
 

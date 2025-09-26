@@ -34,8 +34,7 @@ async def get_annotation_by_id(
 ) -> Annotation | None:
     """Retrieve an annotation by ID."""
     filters = {"annotation_id": annotation_id, "content_id": content_id}
-    results = await DatabaseUtils.get_by_filter(db, Annotation, filters, limit=1)
-    return results[0] if results else None
+    return await DatabaseUtils.get_one_or_none(db, Annotation, filters=filters)
 
 
 async def get_annotations_by_tier(db: AsyncSession, tier_id: int) -> list[Annotation]:
@@ -120,10 +119,17 @@ async def create_annotation_in_db(
 async def check_annotation_exists(
     db: AsyncSession, annotation_id: str, content_id: int
 ) -> bool:
-    filters = {"annotation_id": annotation_id, "content_id": content_id}
-    return await DatabaseUtils.exists(
-        db, Annotation, "annotation_id", annotation_id
-    ) and await DatabaseUtils.exists(db, Annotation, "content_id", content_id)
+    """Check if annotation exists using efficient single query."""
+    conditions = [
+        and_(
+            Annotation.annotation_id == annotation_id,
+            Annotation.content_id == content_id,
+        )
+    ]
+    annotation = await DatabaseUtils.get_one_or_none(
+        db, Annotation, conditions=conditions
+    )
+    return annotation is not None
 
 
 async def delete_annotations_by_tier(db: AsyncSession, tier_id: int) -> int:
@@ -145,11 +151,11 @@ async def bulk_create_annotations(
 ) -> None:
     """Bulk create annotations for multiple tiers, checking for existing annotations first."""
     # Check if annotations already exist for this content_id
-    existing_count = await DatabaseUtils.get_by_filter(
-        db, Annotation, {"content_id": content_id}, limit=1
+    existing_annotation = await DatabaseUtils.get_one_or_none(
+        db, Annotation, filters={"content_id": content_id}
     )
 
-    if existing_count:
+    if existing_annotation:
         logger.info(
             f"Annotations already exist for content_id {content_id}, skipping bulk insert"
         )

@@ -8,15 +8,17 @@ from app.utils.database import DatabaseUtils
 async def get_or_create_component_template(
     db: AsyncSession, file_type_id: int, name: str, regex: str, description: str | None
 ) -> ComponentTemplate:
+    """Get existing component template or create a new one."""
     filters = {
         "file_type_id": file_type_id,
         "name": name,
         "regex": regex,
         "description": description,
     }
-    results = await DatabaseUtils.get_by_filter(db, ComponentTemplate, filters, limit=1)
-    if results:
-        return results[0]
+    existing = await DatabaseUtils.get_one_or_none(db, ComponentTemplate, filters)
+    if existing:
+        return existing
+
     template = ComponentTemplate(
         file_type_id=file_type_id, name=name, regex=regex, description=description
     )
