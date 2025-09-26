@@ -8,7 +8,7 @@ from app.db.database import Base
 from app.utils.file_processing import make_path_absolute_from_projects
 
 if TYPE_CHECKING:
-    from .association import ElanFileToMedia
+    from .elan_file_to_media import ElanFileToMedia
     from .file_content import FileContent
     from .project import Project
 

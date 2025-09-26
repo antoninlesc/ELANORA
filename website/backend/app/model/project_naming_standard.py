@@ -1,7 +1,14 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .project import Project
+    from .project_file_type import ProjectFileType
+    from .standard_component import StandardComponent
 
 
 class ProjectNamingStandard(Base):
@@ -26,8 +33,12 @@ class ProjectNamingStandard(Base):
     pattern: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)
 
-    project_file_type = relationship("ProjectFileType")
-    standard_components = relationship(
+    # Relationships
+    project: Mapped["Project"] = relationship("Project")
+    project_file_type: Mapped["ProjectFileType"] = relationship(
+        "ProjectFileType", back_populates="naming_standards"
+    )
+    standard_components: Mapped[list["StandardComponent"]] = relationship(
         "StandardComponent",
         back_populates="naming_standard",
         cascade="all, delete-orphan",

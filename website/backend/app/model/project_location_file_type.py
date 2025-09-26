@@ -1,7 +1,13 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Integer, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .project import Project
+    from .project_file_type import ProjectFileType
 
 
 class ProjectLocationFileType(Base):
@@ -22,3 +28,7 @@ class ProjectLocationFileType(Base):
     project_file_type_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PROJECT_FILE_TYPE.id", ondelete="CASCADE"), nullable=False
     )
+
+    # Relationships
+    project: Mapped["Project"] = relationship("Project")
+    project_file_type: Mapped["ProjectFileType"] = relationship("ProjectFileType")

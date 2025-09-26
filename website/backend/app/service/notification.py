@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.crud import notification as notification_crud
-from app.crud.notification import get_notification_preference_by_user_id
+from app.crud import notification_preference as preference_crud
 from app.schema.requests.notification import (
     NotificationCreateRequest,
     NotificationPreferenceUpdateRequest,
@@ -154,7 +154,7 @@ class NotificationService:
         """Get notification preferences for a user."""
         logger.info(f"Getting notification preferences for user {user_id}")
 
-        preference = await notification_crud.get_or_create_notification_preference(
+        preference = await preference_crud.get_or_create_notification_preference(
             db, user_id
         )
         return NotificationPreferenceResponse.model_validate(preference)
@@ -168,11 +168,13 @@ class NotificationService:
         """Update notification preferences for a user."""
         logger.info(f"Updating notification preferences for user {user_id}")
 
-        preference = await notification_crud.update_notification_preference(
+        preference = await preference_crud.update_notification_preference(
             db, user_id, preference_data
         )
+        if not preference:
+            raise ValueError(f"Notification preference not found for user {user_id}")
+
         await db.commit()
-        await db.refresh(preference)
 
         logger.info(f"Notification preferences updated for user {user_id}")
         return NotificationPreferenceResponse.model_validate(preference)
@@ -184,9 +186,10 @@ class NotificationService:
         """Create default notification preferences for a new user."""
         logger.info(f"Creating default notification preferences for user {user_id}")
 
-        preference = await notification_crud.create_notification_preference(
+        preference = await preference_crud.create_notification_preference(
             db, user_id, email_enabled
         )
+        await db.commit()
 
         logger.info(f"Default notification preferences created for user {user_id}")
         return NotificationPreferenceResponse.model_validate(preference)
@@ -312,7 +315,9 @@ class NotificationService:
         # Check if user wants email notifications
         email_sent = False
         try:
-            preference = await get_notification_preference_by_user_id(db, user_id)
+            preference = await preference_crud.get_notification_preference_by_user_id(
+                db, user_id
+            )
             if preference and preference.email_enabled:
                 email_service = EmailService()
                 email_sent = await email_service.send_role_change_email(

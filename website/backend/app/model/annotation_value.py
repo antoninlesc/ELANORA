@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Integer, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .annotation import Annotation
 
 
 class AnnotationValue(Base):
@@ -9,3 +14,8 @@ class AnnotationValue(Base):
 
     value_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     annotation_value: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+
+    # Relationships
+    annotations: Mapped[list["Annotation"]] = relationship(
+        "Annotation", back_populates="annotation_value"
+    )

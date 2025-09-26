@@ -37,7 +37,9 @@ class Annotation(Base):
 
     # Relationships
     tier: Mapped["Tier"] = relationship("Tier", back_populates="annotations")
-    annotation_value: Mapped["AnnotationValue"] = relationship("AnnotationValue")
+    annotation_value: Mapped["AnnotationValue"] = relationship(
+        "AnnotationValue", back_populates="annotations"
+    )
     file_content: Mapped["FileContent"] = relationship("FileContent")
 
     def __repr__(self) -> str:

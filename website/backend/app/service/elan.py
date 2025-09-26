@@ -16,11 +16,6 @@ from app.crud.annotation import (
     get_annotations_by_time_range,
 )
 from app.crud.annotation_value import bulk_get_or_create_annotation_values
-from app.crud.association import (
-    get_elan_ids_for_project,
-    has_any_project_for_elan_file,
-    remove_elan_file_from_project,
-)
 from app.crud.elan_file import (
     check_elan_file_exists_by_filename_and_project,
     create_elan_file_in_db,
@@ -30,9 +25,12 @@ from app.crud.elan_file import (
     get_elan_file_by_filename_and_project,
     get_elan_file_by_id,
     get_elan_files_by_user,
+    get_elan_ids_for_project,
+    has_any_project_for_elan_file,
+    remove_elan_file_from_project,
     store_elan_file_data_in_db,
-    sync_elan_file_to_tiers,
 )
+from app.crud.elan_file_to_tier import sync_elan_file_to_tiers
 from app.crud.file_content import calculate_file_hash, get_file_content_by_hash
 from app.crud.project import get_project_by_name
 from app.crud.tier import (

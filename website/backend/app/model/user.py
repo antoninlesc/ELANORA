@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from .invitation import Invitation
     from .notification import Notification
     from .notification_preference import NotificationPreference
+    from .user_to_project import UserToProject
 
 
 class UserRole(str, PyEnum):
@@ -92,6 +93,9 @@ class User(Base):
     )
     notification_preference: Mapped["NotificationPreference | None"] = relationship(
         "NotificationPreference", back_populates="user", uselist=False
+    )
+    projects: Mapped[list["UserToProject"]] = relationship(
+        "UserToProject", back_populates="user"
     )
 
     def __repr__(self) -> str:

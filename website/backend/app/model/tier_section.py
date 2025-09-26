@@ -1,7 +1,13 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .project import Project
+    from .tier_group import TierGroup
 
 
 class TierSection(Base):
@@ -16,6 +22,7 @@ class TierSection(Base):
     session_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Relationships
-    tier_groups = relationship(
+    tier_groups: Mapped[list["TierGroup"]] = relationship(
         "TierGroup", back_populates="section", passive_deletes=True
     )
+    project: Mapped["Project"] = relationship("Project")

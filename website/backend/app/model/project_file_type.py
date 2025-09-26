@@ -1,7 +1,14 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .file_type import FileType
+    from .project import Project
+    from .project_naming_standard import ProjectNamingStandard
 
 
 class ProjectFileType(Base):
@@ -19,4 +26,11 @@ class ProjectFileType(Base):
     )
     name: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    file_type = relationship("FileType")
+    # Relationships
+    file_type: Mapped["FileType"] = relationship(
+        "FileType", back_populates="project_file_types"
+    )
+    project: Mapped["Project"] = relationship("Project")
+    naming_standards: Mapped[list["ProjectNamingStandard"]] = relationship(
+        "ProjectNamingStandard", back_populates="project_file_type"
+    )

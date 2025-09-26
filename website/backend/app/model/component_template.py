@@ -1,7 +1,14 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .accepted_value import AcceptedValue
+    from .file_type import FileType
+    from .standard_component import StandardComponent
 
 
 class ComponentTemplate(Base):
@@ -24,9 +31,15 @@ class ComponentTemplate(Base):
     regex: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=True)
 
-    file_type = relationship("FileType")
-    accepted_values = relationship(
+    # Relationships
+    file_type: Mapped["FileType"] = relationship(
+        "FileType", back_populates="component_templates"
+    )
+    accepted_values: Mapped[list["AcceptedValue"]] = relationship(
         "AcceptedValue",
         secondary="COMPONENT_ACCEPTED_VALUE",
-        backref="component_templates",
+        back_populates="component_templates",
+    )
+    standard_components: Mapped[list["StandardComponent"]] = relationship(
+        "StandardComponent", back_populates="component_template"
     )

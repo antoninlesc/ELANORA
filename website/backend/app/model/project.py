@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .elan_file import ElanFile
     from .instance import Instance
     from .invitation import Invitation
+    from .user_to_project import UserToProject
 
 
 class Project(Base):
@@ -33,6 +34,9 @@ class Project(Base):
     instance: Mapped["Instance"] = relationship("Instance", back_populates="projects")
     invitations: Mapped[list["Invitation"]] = relationship(
         "Invitation", back_populates="project"
+    )
+    users: Mapped[list["UserToProject"]] = relationship(
+        "UserToProject", back_populates="project"
     )
 
     def __repr__(self) -> str:

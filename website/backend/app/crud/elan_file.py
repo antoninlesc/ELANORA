@@ -7,11 +7,11 @@ from app.core.centralized_logging import get_logger
 from app.crud.annotation import (
     delete_unused_annotation_values,
 )
-from app.crud.association import add_elan_file_to_media
 from app.crud.elan_file_media import (
     create_or_get_media_in_db,
     delete_orphaned_media,
 )
+from app.crud.elan_file_to_media import add_elan_file_to_media
 from app.crud.file_content import get_or_create_file_content
 from app.model.elan_file import ElanFile
 from app.model.elan_file_to_media import ElanFileToMedia
@@ -206,88 +206,6 @@ async def get_all_elan_files(db: AsyncSession) -> list[ElanFile]:
     return await DatabaseUtils.get_all(
         db, ElanFile, options=[selectinload(ElanFile.file_content)]
     )
-
-
-# --- ELAN_FILE_TO_TIER ASSOCIATION CRUD ---
-
-
-async def get_tiers_for_elan_file(db: AsyncSession, elan_id: int) -> list[int]:
-    """Get all tier_ids associated with an ELAN file."""
-    # First get the content_id for this elan_id
-    elan_file = await get_elan_file_by_id(db, elan_id)
-    if not elan_file:
-        return []
-
-    filters = {"content_id": elan_file.content_id}
-    associations = await DatabaseUtils.get_by_filter(db, ElanFileToTier, filters)
-    return [assoc.tier_id for assoc in associations]
-
-
-async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: int) -> None:
-    """Add association between ELAN file and tier if not exists."""
-    # Get content_id from elan_id
-    elan_file = await get_elan_file_by_id(db, elan_id)
-    if not elan_file:
-        return
-
-    filters = {"content_id": elan_file.content_id, "tier_id": tier_id}
-    exists = await DatabaseUtils.get_one_or_none(db, ElanFileToTier, filters)
-    if not exists:
-        assoc = ElanFileToTier(content_id=elan_file.content_id, tier_id=tier_id)
-        await DatabaseUtils.create(db, assoc)
-
-
-async def remove_elan_file_to_tier(
-    db: AsyncSession, elan_id: int, tier_id: int
-) -> None:
-    """Remove association between ELAN file and tier."""
-    # Get content_id from elan_id
-    elan_file = await get_elan_file_by_id(db, elan_id)
-    if not elan_file:
-        return
-
-    await DatabaseUtils.delete_by_conditions(
-        db,
-        ElanFileToTier,
-        conditions=[
-            (ElanFileToTier.content_id == elan_file.content_id)
-            & (ElanFileToTier.tier_id == tier_id)
-        ],
-    )
-
-
-async def sync_elan_file_to_tiers(
-    db: AsyncSession, elan_id: int, new_tier_ids: list[int]
-) -> None:
-    """Synchronize ELAN file associations with tiers.
-
-    Args:
-        db: Database session
-        elan_id: ID of the ELAN file
-        new_tier_ids: List of tier IDs to associate with the file
-
-    """
-    # Get content_id from elan_id
-    elan_file = await get_elan_file_by_id(db, elan_id)
-    if not elan_file:
-        return
-
-    current_tier_ids = set(await get_tiers_for_elan_file(db, elan_id))
-    new_tier_ids_set = set(new_tier_ids)
-
-    # Add new associations
-    for tier_id in new_tier_ids_set - current_tier_ids:
-        assoc = ElanFileToTier(content_id=elan_file.content_id, tier_id=tier_id)
-        await DatabaseUtils.create(db, assoc)
-
-    # Remove old associations
-    for tier_id in current_tier_ids - new_tier_ids_set:
-        await DatabaseUtils.delete_by_filter(
-            db, ElanFileToTier, content_id=elan_file.content_id, tier_id=tier_id
-        )
-
-
-# --- ELAN_FILE_TO_PROJECT ASSOCIATION CRUD ---
 
 
 async def get_projects_for_elan_file(db: AsyncSession, elan_id: int) -> list[int]:
@@ -521,3 +439,33 @@ async def get_elan_files_by_ids_and_project(
     )
     result = await db.execute(stmt)
     return list(result.scalars().all())
+
+
+async def get_elan_ids_for_project(db, project_id):
+    """Get all ELAN file IDs for a project - now uses direct project_id FK."""
+    records = await DatabaseUtils.get_by_filter(
+        db, ElanFile, {"project_id": project_id}
+    )
+    return [r.elan_id for r in records]
+
+
+async def remove_elan_file_from_project(
+    db: AsyncSession, elan_id: int, project_id: int
+):
+    """Remove ELAN file from project association by setting project_id to None.
+
+    Note: With the new schema, ELAN files have a direct FK to project.
+    This function disassociates the file from the project without deleting it.
+    """
+    # Verify the file is actually associated with this project
+    elan_file = await DatabaseUtils.get_by_id(db, ElanFile, "elan_id", elan_id)
+    if elan_file and elan_file.project_id == project_id:
+        await DatabaseUtils.update_by_filter(
+            db, ElanFile, {"elan_id": elan_id}, {"project_id": None}
+        )
+
+
+async def has_any_project_for_elan_file(db: AsyncSession, elan_id: int) -> bool:
+    """Check if an ELAN file has any project association."""
+    elan_file = await DatabaseUtils.get_by_id(db, ElanFile, "elan_id", elan_id)
+    return elan_file is not None and elan_file.project_id is not None

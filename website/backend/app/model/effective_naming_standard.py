@@ -1,7 +1,14 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Integer, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .project import Project
+    from .project_file_type import ProjectFileType
+    from .project_naming_standard import ProjectNamingStandard
 
 
 class EffectiveNamingStandard(Base):
@@ -27,3 +34,10 @@ class EffectiveNamingStandard(Base):
         nullable=False,
     )
     location_id: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Relationships
+    project: Mapped["Project"] = relationship("Project")
+    project_file_type: Mapped["ProjectFileType"] = relationship("ProjectFileType")
+    naming_standard: Mapped["ProjectNamingStandard"] = relationship(
+        "ProjectNamingStandard"
+    )

@@ -1,7 +1,13 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .elan_file import ElanFile
+    from .elan_file_media import ElanFileMedia
 
 ELAN_FILE_ELANID_FK = "ELAN_FILE.elan_id"
 
@@ -21,5 +27,9 @@ class ElanFileToMedia(Base):
     )
 
     # Relationships
-    elan_file = relationship("ElanFile", back_populates="media_links")
-    media = relationship("ElanFileMedia", back_populates="elan_files")
+    elan_file: Mapped["ElanFile"] = relationship(
+        "ElanFile", back_populates="media_links"
+    )
+    media: Mapped["ElanFileMedia"] = relationship(
+        "ElanFileMedia", back_populates="elan_files"
+    )

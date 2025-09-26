@@ -1,9 +1,14 @@
 from enum import Enum as PyEnum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum, ForeignKey, Integer
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .project import Project
+    from .user import User
 
 PROJECT_PROJECTID_FK = "PROJECT.project_id"
 
@@ -39,3 +44,7 @@ class UserToProject(Base):
     permission: Mapped[ProjectPermission] = mapped_column(
         Enum(ProjectPermission), nullable=False, default=ProjectPermission.READ
     )
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="projects")
+    project: Mapped["Project"] = relationship("Project", back_populates="users")

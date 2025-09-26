@@ -4,12 +4,13 @@ from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
 from app.crud.annotation import delete_unused_annotation_values
-from app.crud.association import delete_project_associations
 from app.crud.elan_file import delete_elan_file_full, get_orphan_elan_files_by_project
 from app.crud.elan_file_media import delete_orphaned_media
 from app.crud.file_type import delete_orphaned_file_types
 from app.crud.invitation import delete_project_invitations
+from app.crud.project_file_type import delete_project_file_types_for_project
 from app.crud.tier import delete_tiers_for_elan_file
+from app.crud.user_to_project import delete_project_users_for_project
 from app.model.project import Project
 from app.model.tier_group import TierGroup
 from app.model.tier_section import TierSection
@@ -102,7 +103,8 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
             db, project.project_id
         )
         # Now delete project associations (users, standards, file links)
-        await delete_project_associations(db, project.project_id)
+        await delete_project_file_types_for_project(db, project.project_id)
+        await delete_project_users_for_project(db, project.project_id)
         await delete_project_invitations(db, project.project_id)
         await db.flush()
         # Clean up unused annotation values

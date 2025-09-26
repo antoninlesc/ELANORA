@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .elan_file_to_media import ElanFileToMedia
 
 
 class ElanFileMedia(Base):
@@ -13,6 +18,6 @@ class ElanFileMedia(Base):
     relative_media_url: Mapped[str] = mapped_column(String(1024), nullable=True)
 
     # Relationships
-    elan_files = relationship(
+    elan_files: Mapped[list["ElanFileToMedia"]] = relationship(
         "ElanFileToMedia", back_populates="media", cascade="all, delete-orphan"
     )

@@ -1,7 +1,13 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from .component_template import ComponentTemplate
+    from .project_naming_standard import ProjectNamingStandard
 
 
 class StandardComponent(Base):
@@ -17,7 +23,10 @@ class StandardComponent(Base):
     )
     order: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    naming_standard = relationship(
+    # Relationships
+    naming_standard: Mapped["ProjectNamingStandard"] = relationship(
         "ProjectNamingStandard", back_populates="standard_components"
     )
-    component_template = relationship("ComponentTemplate")
+    component_template: Mapped["ComponentTemplate"] = relationship(
+        "ComponentTemplate", back_populates="standard_components"
+    )
