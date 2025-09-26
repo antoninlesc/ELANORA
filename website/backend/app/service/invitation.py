@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from app.model.user_to_project import ProjectPermission
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -319,7 +320,7 @@ class InvitationService:
     async def accept_invitation(
         self,
         db: AsyncSession,
-        invitation_id: str,
+        invitation_id: int,
         user_id: int,
     ) -> bool:
         """Mark an invitation as accepted and add user to project."""
@@ -578,7 +579,7 @@ class InvitationService:
             invitation_id=invitation.invitation_id,
             receiver_email=invitation.receiver_email,
             project_id=invitation.project_id,
-            project_permission=project_permission,
+            project_permission=ProjectPermission[project_permission],
             status=invitation.status,
             created_at=invitation.created_at,
             expires_at=invitation.expires_at,
@@ -823,7 +824,9 @@ class InvitationService:
                     log_extra.update(
                         {
                             "old_invitation_id": invitation_id,
-                            "new_invitation_id": new_invitation.invitation_id,
+                            "new_invitation_id": new_invitation.invitation_id
+                            if new_invitation
+                            else None,
                         }
                     )
                     logger.info("Invitation resent with new code", extra=log_extra)
