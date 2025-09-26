@@ -19,7 +19,7 @@ class GitConflictParser:
     ) -> dict[str, Any]:
         """Parse conflict file efficiently - store only essential data."""
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 raw_content = f.read()
 
             return self._create_efficient_conflict_data(

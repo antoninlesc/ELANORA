@@ -32,8 +32,6 @@ async def delete_tiers_for_elan_file(db: AsyncSession, elan_id: int):
         ]
         logger.info(f"tier_ids to delete for elan_id={elan_id}: {tier_ids}")
         if tier_ids:
-            from sqlalchemy import and_
-
             conditions = [Annotation.tier_id.in_(tier_ids)]
             await DatabaseUtils.delete_by_conditions(
                 db, Annotation, conditions=conditions
@@ -183,8 +181,9 @@ async def update_parent_tier(
 async def get_all_tier_names_with_annotations(db: AsyncSession) -> list[str]:
     """Get all unique tier names that have annotations."""
     # Use distinct query to get tier names that have annotations
-    from app.model.annotation import Annotation
     from sqlalchemy import distinct, select
+
+    from app.model.annotation import Annotation
 
     query = (
         select(distinct(Tier.tier_name))
@@ -201,8 +200,9 @@ async def get_tiers_with_annotations_for_content(
 ) -> list[Tier]:
     """Get all tiers that have at least one annotation for a specific content."""
     # Use DatabaseUtils with join to get distinct tiers
-    from app.model.annotation import Annotation
     from sqlalchemy import distinct
+
+    from app.model.annotation import Annotation
 
     # Get distinct tier_ids that have annotations for this content
     subquery = select(distinct(Annotation.tier_id)).where(
@@ -218,7 +218,6 @@ async def get_tiers_with_annotations_for_content(
 async def get_tier_statistics(db: AsyncSession) -> list[tuple[str, int]]:
     """Get statistics about tiers across all files."""
     # Use DatabaseUtils aggregate query support
-    from sqlalchemy import func
     from app.model.annotation import Annotation
 
     aggregates = {

@@ -61,8 +61,7 @@ def copy_githooks(project_path: Path, project_name: str):
 
 
 def update_project_githooks(project_path: Path, new_project_name: str):
-    """
-    Update git hooks in the project to reflect the new project name.
+    """Update git hooks in the project to reflect the new project name.
     This will re-copy hooks from the central .githooks folder and update placeholders.
     """
     central_githooks = project_path.parent / ".githooks"

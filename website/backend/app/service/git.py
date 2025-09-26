@@ -1,47 +1,45 @@
 import os
 import re
 import subprocess
+import zipfile
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 import aiofiles
 from fastapi import UploadFile
-from sqlalchemy.ext.asyncio import AsyncSession
-import zipfile
-from io import BytesIO
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
-
+from app.crud import elan_file_media as elan_media_crud
+from app.crud.effective_naming_standard import get_effective_standards_for_project
+from app.crud.elan_file import (
+    get_elan_file_by_filename_and_project,
+    get_elan_file_name_by_id,
+    get_elan_files_by_ids_and_project,
+    get_elan_files_by_project,
+    update_elan_file_name,
+)
 from app.crud.project import (
     create_project_db,
     delete_project_db,
+    get_project_by_id,
     get_project_by_name,
     get_project_id_by_name,
     list_projects_by_instance,
     list_projects_by_user,
     project_exists_by_name,
-    get_project_by_id,
-    get_project_name_by_id,
 )
-from app.crud.elan_file import (
-    get_elan_files_by_project,
-    get_elan_file_name_by_id,
-    get_elan_file_by_filename_and_project,
-    update_elan_file_name,
-    get_elan_files_by_ids_and_project,
-)
-from app.service.database_rename_handler import DatabaseRenameHandler
-from app.service.git_status_parser import GitStatusParser, GitFileStatusAnalyzer
-from app.crud import elan_file_media as elan_media_crud
-from app.crud.effective_naming_standard import get_effective_standards_for_project
 from app.schema.responses.git import (
-    FileRenameResponse,
     BulkRenameResponse,
+    FileRenameResponse,
     RenameResult,
 )
+from app.service.database_rename_handler import DatabaseRenameHandler
+from app.service.git_status_parser import GitFileStatusAnalyzer, GitStatusParser
 
 
 class RenameConflictError(Exception):
@@ -58,12 +56,11 @@ class RenameConflictError(Exception):
         self.message_key = message_key
 
 
-from app.crud.project_naming_standard import get_standard_with_components_full
 from app.core.effective_naming_standard_locations import get_location_id_by_name
+from app.crud.project_naming_standard import get_standard_with_components_full
 from app.schema.common.git import FileStatus
 from app.schema.responses.git import ProjectInfo, ProjectSyncCheckResponse
 from app.service.elan import ElanService
-from app.utils.project_backup import restore_project_backup
 from app.service.git_operations import (
     FileUploadProcessor,
     GitBranchManager,
@@ -71,12 +68,11 @@ from app.service.git_operations import (
     GitDiffAnalyzer,
     delete_project_folder,
 )
-from app.utils.file_processing import list_untracked_contents
 from app.utils.project_backup import (
     create_project_backup_structure,
     remove_project_backup,
-    restore_project_backup,
     rename_project_backup_folder,
+    restore_project_backup,
 )
 from app.utils.project_setup_utils import (
     copy_githooks,
@@ -1540,6 +1536,7 @@ class GitService:
 
         Raises:
             ValueError: If project or files not found, or access denied.
+
         """
         # Validate project exists
         project = await get_project_by_name(db, project_name)

@@ -1,8 +1,10 @@
-from sqlalchemy import func, select
+from sqlalchemy import func
+from sqlalchemy import select as sql_select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.model.accepted_value import AcceptedValue
+from app.model.component_accepted_value import ComponentAcceptedValue
 from app.utils.database import DatabaseUtils
 
 logger = get_logger(__name__)
@@ -21,9 +23,6 @@ async def get_or_create_accepted_value(db: AsyncSession, value: str) -> Accepted
 
 
 async def delete_orphaned_accepted_values(db: AsyncSession):
-    from app.model.component_accepted_value import ComponentAcceptedValue
-    from sqlalchemy import select as sql_select
-
     try:
         logger.info("Starting orphaned AcceptedValue cleanup...")
         # Count before

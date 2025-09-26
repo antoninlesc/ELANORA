@@ -12,7 +12,6 @@ from app.crud.annotation import (
     bulk_create_annotations,
     delete_annotations_by_file,
     delete_annotations_by_tier,
-    get_annotations_by_tier,
     get_annotations_by_tier_and_content,
     get_annotations_by_time_range,
 )
@@ -34,7 +33,7 @@ from app.crud.elan_file import (
     store_elan_file_data_in_db,
     sync_elan_file_to_tiers,
 )
-from app.crud.file_content import get_file_content_by_hash, calculate_file_hash
+from app.crud.file_content import calculate_file_hash, get_file_content_by_hash
 from app.crud.project import get_project_by_name
 from app.crud.tier import (
     create_tier_in_db,
@@ -227,7 +226,7 @@ class ElanService:
                 )
             else:
                 logger.error(f"Failed to get elan_file_obj for elan_id {elan_id}")
-                raise ValueError(f"Could not retrieve elan file after creation")
+                raise ValueError("Could not retrieve elan file after creation")
 
             # Now that tiers have IDs, sync associations
             tier_ids = [tier["tier_id"] for tier in file_info["tiers"]]
@@ -315,7 +314,7 @@ class ElanService:
                 )
             else:
                 logger.error(f"Failed to get elan_file_obj for elan_id {elan_id}")
-                raise ValueError(f"Could not retrieve elan file after creation")
+                raise ValueError("Could not retrieve elan file after creation")
 
             # Now that tiers have IDs, sync associations
             tier_ids = [tier["tier_id"] for tier in file_info["tiers"]]

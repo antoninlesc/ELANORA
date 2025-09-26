@@ -29,9 +29,7 @@ from app.schema.requests.user import (
 from app.service.address import AddressService
 from app.service.email import EmailService
 from app.service.notification import NotificationService
-
 from app.utils.database import DatabaseUtils
-
 
 # Get logger for this module
 logger = get_logger()

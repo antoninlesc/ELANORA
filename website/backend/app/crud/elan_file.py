@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
@@ -14,9 +13,9 @@ from app.crud.elan_file_media import (
     delete_orphaned_media,
 )
 from app.crud.file_content import get_or_create_file_content
+from app.model.elan_file import ElanFile
 from app.model.elan_file_to_media import ElanFileToMedia
 from app.model.elan_file_to_tier import ElanFileToTier
-from app.model.elan_file import ElanFile
 from app.model.file_content import FileContent
 from app.model.user import User
 from app.utils.database import DatabaseUtils
@@ -45,8 +44,6 @@ async def delete_elan_file_associations(db: AsyncSession, elan_id: int):
         # Get content_id from elan_id
         elan_file = await get_elan_file_by_id(db, elan_id)
         if elan_file:
-            from sqlalchemy import and_
-
             conditions = [ElanFileToTier.content_id == elan_file.content_id]
             await DatabaseUtils.delete_by_conditions(
                 db, ElanFileToTier, conditions=conditions
@@ -107,7 +104,7 @@ async def get_elan_files_by_user(db: AsyncSession, user_id: int) -> list[ElanFil
 async def check_elan_file_exists_by_filename(db: AsyncSession, filename: str) -> bool:
     """Check if an ELAN file with the given filename exists."""
     # Use DatabaseUtils with exists check on joined query
-    from sqlalchemy import select, exists
+    from sqlalchemy import exists, select
 
     stmt = select(
         exists().where(
@@ -144,7 +141,7 @@ async def check_elan_file_exists_by_filename_and_project(
 ) -> bool:
     """Check if an ELAN file with the given filename exists in a specific project."""
     # Use DatabaseUtils with exists check on joined query
-    from sqlalchemy import select, exists
+    from sqlalchemy import exists, select
 
     stmt = select(
         exists().where(
@@ -267,6 +264,7 @@ async def sync_elan_file_to_tiers(
         db: Database session
         elan_id: ID of the ELAN file
         new_tier_ids: List of tier IDs to associate with the file
+
     """
     # Get content_id from elan_id
     elan_file = await get_elan_file_by_id(db, elan_id)

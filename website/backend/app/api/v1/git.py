@@ -1,18 +1,18 @@
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.crud.elan_file import get_elan_file_name_by_id
 from app.dependency.database import get_db_dep
 from app.dependency.elan_validation import validate_multiple_elan_files
 from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.user import User
-from app.crud.elan_file import get_elan_file_name_by_id
 from app.schema.requests.git import (
     BulkRenameRequest,
     CommitRequest,
+    DownloadFilesRequest,
     ProjectCheckoutRequest,
     ProjectCreateRequest,
     ProjectEditRequest,
-    DownloadFilesRequest,
 )
 from app.schema.responses.git import (
     BulkRenameResponse,

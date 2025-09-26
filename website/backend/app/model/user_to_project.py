@@ -1,6 +1,7 @@
-from sqlalchemy import ForeignKey, Integer, Enum
-from sqlalchemy.orm import Mapped, mapped_column
 from enum import Enum as PyEnum
+
+from sqlalchemy import Enum, ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.database import Base
 

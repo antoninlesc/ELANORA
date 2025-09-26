@@ -42,8 +42,7 @@ async def delete_file_type(db: AsyncSession, file_type_id: int) -> int:
 
 async def delete_orphaned_file_types(db: AsyncSession) -> int:
     """Delete FileType records not referenced by any ProjectFileType."""
-    from sqlalchemy import select, exists
-    from app.model.project_naming_standard import ProjectNamingStandard
+    from sqlalchemy import exists, select
 
     # Find orphaned FileType records using a more complex query
     # A FileType is orphaned if:

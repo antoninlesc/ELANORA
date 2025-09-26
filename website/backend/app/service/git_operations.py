@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Any
 
 from app.core.centralized_logging import get_logger
-from app.utils.project_backup import create_hidden_folder_in_root, update_backup
 from app.service.git_diff_parser import GitDiffParser
+from app.utils.project_backup import create_hidden_folder_in_root, update_backup
 
 logger = get_logger()
 

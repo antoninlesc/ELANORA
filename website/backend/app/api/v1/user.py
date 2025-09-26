@@ -2,27 +2,29 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.crud.user import get_all_active_users
+from app.crud.project import list_projects_by_user
+from app.crud.user import get_all_active_users, get_user_by_id
 from app.dependency.database import get_db_dep
-from app.dependency.user import get_user_dep
-from app.model.user import User
+from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.address import Address
 from app.model.city import City
+from app.model.user import User
+from app.schema.requests.user import (
+    AddressRequest,
+    ChangePasswordRequest,
+    ProfileUpdateRequest,
+)
+from app.schema.responses.project import UserProjectListResponse, UserProjectInfo
 from app.schema.responses.user import (
     AddressResponse,
+    CityResponse,
+    ProfileUpdateResponse,
     UserListResponse,
     UserProfileResponse,
     UserResponse,
-    CityResponse,
-    ProfileUpdateResponse,
 )
-from app.schema.requests.user import (
-    ProfileUpdateRequest,
-    AddressRequest,
-    ChangePasswordRequest,
-)
-from app.service.user import UserService
 from app.service.address import AddressService
+from app.service.user import UserService
 from app.utils.database import DatabaseUtils
 
 router = APIRouter()
@@ -73,7 +75,7 @@ async def get_current_user_profile(
             city_response = CityResponse(
                 city_id=city_obj.city_id,
                 name=city_obj.city_name,
-                country=city_obj.country.country_name if city_obj.country else None,
+                country=city_obj.country.country_name if city_obj.country else "",
             )
         address_data = AddressResponse(
             address_id=user_with_address.address.address_id,
@@ -157,6 +159,9 @@ async def update_current_user_address(
             ],
         )
 
+        if not user_with_address:
+            raise HTTPException(status_code=404, detail="User not found")
+
         if user_with_address and user_with_address.address:
             # Update existing address
             updated_address = await AddressService.update_address(
@@ -181,19 +186,29 @@ async def update_current_user_address(
             ],
         )
 
+        if not updated_address_with_relations:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve updated address",
+            )
+
         # Return the updated address with city and country info
         city_obj = updated_address_with_relations.city
+
+        city_response = None
+        if city_obj:
+            city_response = CityResponse(
+                city_id=city_obj.city_id,
+                name=city_obj.city_name,
+                country=city_obj.country.country_name if city_obj.country else "",
+            )
 
         return AddressResponse(
             address_id=updated_address_with_relations.address_id,
             street_number=updated_address_with_relations.street_number,
             street_name=updated_address_with_relations.street_name,
             city_id=updated_address_with_relations.city_id,
-            city=CityResponse(
-                city_id=city_obj.city_id,
-                name=city_obj.city_name,
-                country=city_obj.country.country_name,
-            ),
+            city=city_response,
             postal_code=updated_address_with_relations.postal_code,
             address_line_2=updated_address_with_relations.address_line_2,
             created_at=updated_address_with_relations.created_at,
@@ -264,3 +279,35 @@ async def change_user_password(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error changing password: {e!s}",
         ) from e
+
+
+@router.get("/users/{user_id}/projects", response_model=UserProjectListResponse)
+async def list_user_projects_admin(
+    user_id: int,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """List all projects associated with a specific user (admin only)."""
+    try:
+        # check if the user exists
+        target_user = await get_user_by_id(db, user_id)
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Retrieve the user's projects
+        projects = await list_projects_by_user(db, user_id, instance_id=1)
+
+        return UserProjectListResponse(
+            user_id=user_id,
+            username=target_user.username,
+            projects=[
+                UserProjectInfo(
+                    project_id=project.project_id,
+                    project_name=project.project_name,
+                    description=project.description,
+                )
+                for project in projects
+            ],
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e

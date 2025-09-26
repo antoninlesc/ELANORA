@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from pydantic import EmailStr
 
 from app.schema.common.base import CustomBaseModel
@@ -133,3 +132,19 @@ class ResetPasswordResponse(CustomBaseModel):
     message: str
     email: str
     reset_successful: bool
+
+
+class UserProjectInfo(CustomBaseModel):
+    """Information about a project associated with a user."""
+
+    project_id: int
+    project_name: str
+    description: str
+
+
+class UserProjectListResponse(CustomBaseModel):
+    """Response containing list of projects for a user."""
+
+    user_id: int
+    username: str
+    projects: list[UserProjectInfo]

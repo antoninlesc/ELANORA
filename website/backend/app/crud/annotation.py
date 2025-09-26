@@ -17,8 +17,6 @@ logger = get_logger()
 async def delete_unused_annotation_values(db: AsyncSession) -> int:
     """Delete annotation values not referenced by any annotation."""
     try:
-        from sqlalchemy import and_
-
         subquery = select(Annotation.value_id)
         conditions = [~AnnotationValue.value_id.in_(subquery)]
         count = await DatabaseUtils.delete_by_conditions(
@@ -71,8 +69,6 @@ async def get_annotations_by_time_range(
     db: AsyncSession, tier_id: int, start_time: Decimal, end_time: Decimal
 ) -> list[Annotation]:
     """Get annotations within a time range for a specific tier."""
-    from sqlalchemy import and_
-
     conditions = [
         Annotation.tier_id == tier_id,
         Annotation.start_time >= start_time,
@@ -89,8 +85,6 @@ async def get_annotations_by_tier_and_content(
     db: AsyncSession, tier_id: int, content_id: int
 ) -> list[Annotation]:
     """Get all annotations for a specific tier and content."""
-    from sqlalchemy import and_
-
     conditions = [
         and_(Annotation.tier_id == tier_id, Annotation.content_id == content_id)
     ]
@@ -135,8 +129,6 @@ async def check_annotation_exists(
 async def delete_annotations_by_tier(db: AsyncSession, tier_id: int) -> int:
     """Delete all annotations for a tier."""
     try:
-        from sqlalchemy import and_
-
         conditions = [Annotation.tier_id == tier_id]
         count = await DatabaseUtils.delete_by_conditions(
             db, Annotation, conditions=conditions
@@ -184,8 +176,6 @@ async def bulk_create_annotations(
 async def delete_annotations_by_file(db: AsyncSession, content_id: int) -> int:
     """Delete all annotations for a given content."""
     try:
-        from sqlalchemy import and_
-
         conditions = [Annotation.content_id == content_id]
         count = await DatabaseUtils.delete_by_conditions(
             db, Annotation, conditions=conditions

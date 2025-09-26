@@ -6,7 +6,7 @@ from app.utils.database import DatabaseUtils
 
 async def get_tier_hierarchy(db: AsyncSession, tier_id: int) -> list[int]:
     """Get all tier IDs in the hierarchy (parent and all children)."""
-    from app.crud.tier import get_tier_by_id, get_child_tiers
+    from app.crud.tier import get_child_tiers
 
     hierarchy = [tier_id]
 

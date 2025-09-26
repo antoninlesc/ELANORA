@@ -1,13 +1,13 @@
 from datetime import datetime
+from enum import Enum as PyEnum
 from typing import TYPE_CHECKING
 
-from app.model.user_to_project import ProjectPermission
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from enum import Enum as PyEnum
 
 from app.db.database import Base
+from app.model.user_to_project import ProjectPermission
 
 if TYPE_CHECKING:
     from .project import Project

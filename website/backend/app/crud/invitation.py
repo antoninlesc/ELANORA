@@ -8,8 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
-from app.model.invitation import InvitationStatus
-from app.model.invitation import Invitation
+from app.model.invitation import Invitation, InvitationStatus
 from app.model.user_to_project import ProjectPermission
 
 # Password context for hashing codes

@@ -1,4 +1,3 @@
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.model.component_template import ComponentTemplate
@@ -54,8 +53,9 @@ async def get_unique_component_names_by_project(db: AsyncSession, project_id: in
 
 
 async def delete_orphaned_component_templates(db: AsyncSession):
-    from app.model.standard_component import StandardComponent
     from sqlalchemy import select as sql_select
+
+    from app.model.standard_component import StandardComponent
 
     try:
         # Delete ComponentTemplates not referenced by any StandardComponent

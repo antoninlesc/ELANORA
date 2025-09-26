@@ -8,19 +8,14 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.auth import router as auth_router
-from app.api.v1.contact import router as contact_router
 from app.api.v1.file_type import router as file_type_router
 from app.api.v1.git import router as git_router
-from app.api.v1.effective_naming_standard import (
-    router as effective_naming_standard_router,
-)
-from app.api.v1.notification import router as notification_router
 from app.api.v1.instance import router as instance_router
 from app.api.v1.invitation import router as invitation_router
 from app.api.v1.location import router as location_router
 from app.api.v1.notification import router as notification_router
-from app.api.v1.project_associations import router as project_associations_router
-from app.api.v1.project_naming_standard import router as project_naming_standard_router
+from app.api.v1.project import router as project_router
+from app.api.v1.project_standard import router as project_standard_router
 from app.api.v1.tier import router as tier_router
 from app.api.v1.upload import router as upload_router
 from app.api.v1.user import router as user_router
@@ -35,11 +30,7 @@ from app.core.limiter import limiter
 from app.middleware.csrf import CSRFMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.utils.project_backup import create_hidden_folder_in_root
-from app.api.v1.project_location_file_type import (
-    router as project_location_file_type_router,
-)
 
-# Get logger (this will automatically call setup_application_logging)
 logger = get_logger()
 
 API_V1_PREFIX = "/api/v1"
@@ -113,28 +104,17 @@ app.include_router(
     instance_router, prefix=f"{API_V1_PREFIX}/instance", tags=["INSTANCE"]
 )
 app.include_router(
-    project_associations_router,
-    prefix=f"{API_V1_PREFIX}/project-associations",
-    tags=["PROJECT ASSOCIATIONS"],
+    project_router,
+    prefix=f"{API_V1_PREFIX}/projects",
+    tags=["PROJECTS"],
 )
 app.include_router(
-    project_naming_standard_router,
-    prefix=f"{API_V1_PREFIX}/project-naming-standard",
-    tags=["PROJECT NAMING STANDARD"],
+    project_standard_router,
+    prefix=f"{API_V1_PREFIX}/project-standard",
+    tags=["PROJECT STANDARD"],
 )
 app.include_router(
     file_type_router, prefix=f"{API_V1_PREFIX}/file-type", tags=["FILE TYPE"]
-)
-app.include_router(
-    effective_naming_standard_router,
-    prefix=f"{API_V1_PREFIX}/effective-naming-standard",
-    tags=["EFFECTIVE NAMING STANDARD"],
-)
-
-app.include_router(
-    project_location_file_type_router,
-    prefix=f"{API_V1_PREFIX}/project-location-file-type",
-    tags=["PROJECT LOCATION FILE TYPE"],
 )
 
 app.include_router(

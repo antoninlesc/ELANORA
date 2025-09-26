@@ -5,7 +5,6 @@ from datetime import datetime
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from app.core.centralized_logging import get_logger
 from app.model.elan_file import ElanFile

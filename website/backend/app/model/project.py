@@ -6,9 +6,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
 
 if TYPE_CHECKING:
+    from .elan_file import ElanFile
     from .instance import Instance
     from .invitation import Invitation
-    from .elan_file import ElanFile
 
 
 class Project(Base):

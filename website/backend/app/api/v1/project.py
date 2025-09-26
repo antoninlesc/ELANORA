@@ -1,6 +1,7 @@
 """API endpoints for managing project-user associations (admin only)."""
 
 import logging
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,22 +9,20 @@ from app.crud.association import get_project_users, remove_user_from_project
 from app.crud.project import (
     add_user_to_project,
     get_project_by_id,
-    list_projects_by_instance,
-    list_projects_by_user,
     update_user_project_permission,
 )
-from app.crud.user import get_all_active_users, get_user_by_id
+from app.crud.user import get_user_by_id
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep
 from app.model.user import User
-from app.schema.requests.project_association import (
+from app.schema.requests.project import (
     AddUserToProjectRequest,
     UpdateUserPermissionRequest,
 )
-from app.schema.responses.project_association import (
-    ProjectAssociationResponse,
+from app.schema.responses.project import (
+    ProjectUserAssociationResponse,
+    ProjectUserInfo,
     ProjectUserListResponse,
-    UserProjectListResponse,
 )
 from app.service.notification import NotificationService
 
@@ -53,12 +52,12 @@ async def list_project_users(
         return ProjectUserListResponse(
             project_name=project.project_name,
             users=[
-                {
-                    "user_id": user_info["user_id"],
-                    "username": user_info["username"],
-                    "email": user_info["email"],
-                    "permission": user_info["permission"],
-                }
+                ProjectUserInfo(
+                    user_id=user_info["user_id"],
+                    username=user_info["username"],
+                    email=user_info["email"],
+                    permission=user_info["permission"],
+                )
                 for user_info in users
             ],
         )
@@ -66,39 +65,9 @@ async def list_project_users(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/users/{user_id}/projects", response_model=UserProjectListResponse)
-async def list_user_projects_admin(
-    user_id: int,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """List all projects associated with a specific user (admin only)."""
-    try:
-        # check if the user exists
-        target_user = await get_user_by_id(db, user_id)
-        if not target_user:
-            raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
-
-        # Retrieve the user's projects
-        projects = await list_projects_by_user(db, user_id, instance_id=1)
-
-        return UserProjectListResponse(
-            user_id=user_id,
-            username=target_user.username,
-            projects=[
-                {
-                    "project_id": project.project_id,
-                    "project_name": project.project_name,
-                    "description": project.description,
-                }
-                for project in projects
-            ],
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post("/projects/{project_id}/users", response_model=ProjectAssociationResponse)
+@router.post(
+    "/projects/{project_id}/users", response_model=ProjectUserAssociationResponse
+)
 async def add_user_to_project_admin(
     project_id: int,
     request: AddUserToProjectRequest,
@@ -125,7 +94,7 @@ async def add_user_to_project_admin(
             permission=request.permission,
         )
 
-        return ProjectAssociationResponse(
+        return ProjectUserAssociationResponse(
             project_name=project.project_name,
             user_id=request.user_id,
             username=target_user.username,
@@ -141,7 +110,7 @@ async def add_user_to_project_admin(
 
 @router.put(
     "/projects/{project_id}/users/{user_id}",
-    response_model=ProjectAssociationResponse,
+    response_model=ProjectUserAssociationResponse,
 )
 async def update_user_project_permission_admin(
     project_id: int,
@@ -196,7 +165,7 @@ async def update_user_project_permission_admin(
         # Commit the changes
         await db.commit()
 
-        return ProjectAssociationResponse(
+        return ProjectUserAssociationResponse(
             project_name=project.project_name,
             user_id=user_id,
             username=target_user.username,
@@ -212,7 +181,7 @@ async def update_user_project_permission_admin(
 
 @router.delete(
     "/projects/{project_id}/users/{user_id}",
-    response_model=ProjectAssociationResponse,
+    response_model=ProjectUserAssociationResponse,
 )
 async def remove_user_from_project_admin(
     project_id: int,
@@ -234,58 +203,13 @@ async def remove_user_from_project_admin(
 
         await remove_user_from_project(db, user_id, project.project_id)
 
-        return ProjectAssociationResponse(
+        return ProjectUserAssociationResponse(
             project_name=project.project_name,
             user_id=user_id,
             username=target_user.username,
             permission=None,
             message=f"User {target_user.username} removed from project {project.project_name}",
         )
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get("/overview", response_model=dict)
-async def get_associations_overview(
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Get an overview of all project-user associations (admin only)."""
-    try:
-        # Retrieve all projects
-        projects = await list_projects_by_instance(db, instance_id=1)
-
-        # Retrieve all active users
-        users = await get_all_active_users(db)
-
-        # Construire l'aperçu
-        overview = {
-            "total_projects": len(projects),
-            "total_users": len(users),
-            "projects": [],
-        }
-
-        for project in projects:
-            project_users = await get_project_users(db, project.project_id)
-            overview["projects"].append(
-                {
-                    "project_id": project.project_id,
-                    "project_name": project.project_name,
-                    "description": project.description,
-                    "user_count": len(project_users),
-                    "users": [
-                        {
-                            "user_id": assoc.user_id,
-                            "username": assoc.user.username,
-                            "permission": assoc.permission,
-                        }
-                        for assoc in project_users
-                    ],
-                }
-            )
-
-        return overview
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

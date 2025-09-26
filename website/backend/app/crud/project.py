@@ -9,11 +9,10 @@ from app.crud.elan_file_media import delete_orphaned_media
 from app.crud.file_type import delete_orphaned_file_types
 from app.crud.invitation import delete_project_invitations
 from app.crud.tier import delete_tiers_for_elan_file
-from app.model.user_to_project import UserToProject
-from app.model.user_to_project import ProjectPermission
 from app.model.project import Project
 from app.model.tier_group import TierGroup
 from app.model.tier_section import TierSection
+from app.model.user_to_project import ProjectPermission, UserToProject
 from app.service.project_naming_standard import ProjectNamingStandardService
 from app.utils.database import DatabaseUtils
 
@@ -83,7 +82,6 @@ async def delete_project_db(db: AsyncSession, project_name: str) -> None:
             await delete_tiers_for_elan_file(db, orphan_elan_file.elan_id)
             await delete_elan_file_full(db, orphan_elan_file.elan_id)
         # Delete all TierGroups and TierSections for this project
-        from sqlalchemy import and_
 
         conditions = [TierGroup.project_id == project.project_id]
         await DatabaseUtils.delete_by_conditions(db, TierGroup, conditions=conditions)

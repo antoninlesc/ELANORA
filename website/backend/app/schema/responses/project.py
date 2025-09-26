@@ -1,11 +1,8 @@
-"""Response schemas for project-user association management."""
-
-from pydantic import BaseModel
-
+from app.schema.common.base import CustomBaseModel
 from app.model.user_to_project import ProjectPermission
 
 
-class ProjectUserInfo(BaseModel):
+class ProjectUserInfo(CustomBaseModel):
     """Information about a user associated with a project."""
 
     user_id: int
@@ -14,15 +11,14 @@ class ProjectUserInfo(BaseModel):
     permission: ProjectPermission
 
 
-class UserProjectInfo(BaseModel):
-    """Information about a project associated with a user."""
+class ProjectUserListResponse(CustomBaseModel):
+    """Response containing list of users for a project."""
 
-    project_id: int
     project_name: str
-    description: str
+    users: list[ProjectUserInfo]
 
 
-class ProjectAssociationResponse(BaseModel):
+class ProjectUserAssociationResponse(CustomBaseModel):
     """Response for project-user association operations."""
 
     project_name: str
@@ -32,14 +28,15 @@ class ProjectAssociationResponse(BaseModel):
     message: str
 
 
-class ProjectUserListResponse(BaseModel):
-    """Response containing list of users for a project."""
+class UserProjectInfo(CustomBaseModel):
+    """Information about a project associated with a user."""
 
+    project_id: int
     project_name: str
-    users: list[ProjectUserInfo]
+    description: str | None
 
 
-class UserProjectListResponse(BaseModel):
+class UserProjectListResponse(CustomBaseModel):
     """Response containing list of projects for a user."""
 
     user_id: int
