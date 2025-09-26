@@ -14,6 +14,7 @@ from app.schema.requests.user import (
     ChangePasswordRequest,
     ProfileUpdateRequest,
 )
+from app.schema.responses.git import ProjectListResponse
 from app.schema.responses.project import UserProjectInfo, UserProjectListResponse
 from app.schema.responses.user import (
     AddressResponse,
@@ -24,10 +25,13 @@ from app.schema.responses.user import (
     UserResponse,
 )
 from app.service.address import AddressService
+from app.service.git import GitService
 from app.service.user import UserService
 from app.utils.database import DatabaseUtils
 
 router = APIRouter()
+
+git_service = GitService()
 
 
 @router.get("/me", response_model=UserResponse)
@@ -279,6 +283,17 @@ async def change_user_password(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error changing password: {e!s}",
         ) from e
+
+
+@router.get("/projects", response_model=ProjectListResponse)
+async def list_user_projects(
+    db: AsyncSession = get_db_dep,
+    user: User = get_user_dep,
+):
+    """List project names that the current user has access to."""
+    instance_id = 1
+    projects = await git_service.list_user_projects(db, user.user_id, instance_id)
+    return ProjectListResponse(projects=projects)
 
 
 @router.get("/users/{user_id}/projects", response_model=UserProjectListResponse)

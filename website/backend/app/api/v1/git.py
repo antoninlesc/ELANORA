@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.elan_file import get_elan_file_name_by_id
@@ -8,17 +8,11 @@ from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.user import User
 from app.schema.requests.git import (
     BulkRenameRequest,
-    DownloadFilesRequest,
-    ProjectCreateRequest,
-    ProjectEditRequest,
 )
 from app.schema.responses.git import (
     BulkRenameResponse,
     FileRenameResponse,
     GitStatusResponse,
-    ProjectCreateResponse,
-    ProjectEditResponse,
-    ProjectListResponse,
     ProjectSyncCheckResponse,
 )
 from app.service.git import GitService, RenameConflictError
@@ -52,107 +46,6 @@ async def check_git(user: User = get_admin_dep) -> GitStatusResponse:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/projects/create", response_model=ProjectCreateResponse)
-async def create_project(
-    project_data: ProjectCreateRequest,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Create a new ELAN project with Git repository.
-
-    Args:
-        project_data: Project creation request containing project name.
-        user: Authenticated admin user.
-
-    Returns:
-        ProjectCreateResponse: Details of the created project including path and Git status.
-
-    Raises:
-        HTTPException: 400 if project already exists, 500 if creation fails.
-
-    """
-    try:
-        result = await git_service.create_project(
-            project_data.project_name,
-            project_data.description or "",
-            db,
-            user.user_id,
-        )
-        return ProjectCreateResponse(**result)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get("/projects", response_model=ProjectListResponse)
-async def list_projects(
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """List all project names for the current instance (admin only)."""
-    instance_id = 1
-    projects = await git_service.list_projects(db, instance_id)
-    return ProjectListResponse(projects=projects)
-
-
-@router.get("/user-projects", response_model=ProjectListResponse)
-async def list_user_projects(
-    db: AsyncSession = get_db_dep,
-    user: User = get_user_dep,
-):
-    """List project names that the current user has access to."""
-    instance_id = 1
-    projects = await git_service.list_user_projects(db, user.user_id, instance_id)
-    return ProjectListResponse(projects=projects)
-
-
-@router.post("/projects/init-from-folder-upload", response_model=ProjectCreateResponse)
-async def init_project_from_folder_upload(
-    project_name: str = Form(...),
-    description: str = Form(...),
-    files: list[UploadFile] | None = None,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Initialize a project by uploading a folder (only .eaf files and structure are kept)."""
-    if files is None:
-        files = []
-    try:
-        result = await git_service.init_project_from_folder_upload(
-            project_name, description, files, db, user.user_id
-        )
-        return ProjectCreateResponse(**result)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get("/projects/{project_name}/files")
-async def get_project_files(
-    project_name: str,
-    include_media: bool = False,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Get project files, optionally with media information.
-
-    Args:
-        project_name: Name of the project
-        include_media: Whether to include media filenames for each file
-        db: Database session
-        user: Authenticated admin user
-
-    Returns:
-        ProjectFilesResponse or ProjectFilesWithMediaResponse depending on include_media
-
-    """
-    try:
-        result = await git_service.list_project_files(project_name, db, include_media)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
 @router.get("/projects/{project_name}/synchronize/check")
 async def synchronize_project_check(
     project_name: str,
@@ -163,43 +56,6 @@ async def synchronize_project_check(
     """Synchronize the project's elan_files folder with the git repo and database."""
     try:
         return git_service.synchronize_project_check(project_name)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.delete("/projects/{project_name}")
-async def delete_project(
-    project_name: str,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Delete a project, its files, and all associated database artifacts."""
-    try:
-        await git_service.delete_project(project_name, db)
-        return {"status": "success", "detail": f"Project '{project_name}' deleted."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post(
-    "/projects/{project_name}/edit",
-    response_model=ProjectEditResponse,
-)
-async def edit_project(
-    project_name: str,
-    req: ProjectEditRequest,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    try:
-        result = await git_service.edit_project(
-            project_name, req.new_project_name, req.new_project_description, db
-        )
-        return ProjectEditResponse(**result)
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except FileExistsError as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -328,23 +184,6 @@ async def rename_files(
         return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post("/projects/{project_name}/download")
-async def download_files(
-    project_name: str,
-    request: DownloadFilesRequest,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Download selected files as a ZIP archive (admin only)."""
-    try:
-        result = await git_service.download_files(project_name, request.elan_ids, db)
-        return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:

@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.association import get_project_users, remove_user_from_project
@@ -13,27 +13,38 @@ from app.crud.project import (
 )
 from app.crud.user import get_user_by_id
 from app.dependency.database import get_db_dep
-from app.dependency.user import get_admin_dep
+from app.dependency.elan_validation import validate_multiple_elan_files
+from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.user import User
+from app.schema.requests.git import ProjectCreateRequest
 from app.schema.requests.project import (
     AddUserToProjectRequest,
     UpdateUserPermissionRequest,
 )
+from app.schema.responses.elan_file_media import ProjectFilesWithMediaResponse
+from app.schema.responses.git import ProjectCreateResponse, ProjectListResponse
 from app.schema.responses.project import (
     ProjectUserAssociationResponse,
     ProjectUserInfo,
     ProjectUserListResponse,
 )
+from app.service import elan_file_media as elan_media_service
+from app.service.git import GitService
 from app.service.notification import NotificationService
 
 router = APIRouter()
+
+git_service = GitService()
 
 # Constants to avoid duplication
 PROJECT_NOT_FOUND = "Project not found"
 USER_NOT_FOUND = "User not found"
 
+# Create a dependency instance at module level
+validate_elan_files_dep = Depends(validate_multiple_elan_files)
 
-@router.get("/projects/{project_id}/users", response_model=ProjectUserListResponse)
+
+@router.get("/{project_id}/users", response_model=ProjectUserListResponse)
 async def list_project_users(
     project_id: int,
     db: AsyncSession = get_db_dep,
@@ -65,9 +76,7 @@ async def list_project_users(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post(
-    "/projects/{project_id}/users", response_model=ProjectUserAssociationResponse
-)
+@router.post("/{project_id}/users", response_model=ProjectUserAssociationResponse)
 async def add_user_to_project_admin(
     project_id: int,
     request: AddUserToProjectRequest,
@@ -109,7 +118,7 @@ async def add_user_to_project_admin(
 
 
 @router.put(
-    "/projects/{project_id}/users/{user_id}",
+    "/{project_id}/users/{user_id}",
     response_model=ProjectUserAssociationResponse,
 )
 async def update_user_project_permission_admin(
@@ -180,7 +189,7 @@ async def update_user_project_permission_admin(
 
 
 @router.delete(
-    "/projects/{project_id}/users/{user_id}",
+    "/{project_id}/users/{user_id}",
     response_model=ProjectUserAssociationResponse,
 )
 async def remove_user_from_project_admin(
@@ -213,3 +222,106 @@ async def remove_user_from_project_admin(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/create", response_model=ProjectCreateResponse)
+async def create_project(
+    project_data: ProjectCreateRequest,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Create a new ELAN project with Git repository.
+
+    Args:
+        project_data: Project creation request containing project name.
+        user: Authenticated admin user.
+
+    Returns:
+        ProjectCreateResponse: Details of the created project including path and Git status.
+
+    Raises:
+        HTTPException: 400 if project already exists, 500 if creation fails.
+
+    """
+    try:
+        result = await git_service.create_project(
+            project_data.project_name,
+            project_data.description or "",
+            db,
+            user.user_id,
+        )
+        return ProjectCreateResponse(**result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("", response_model=ProjectListResponse)
+async def list_projects(
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """List all project names for the current instance (admin only)."""
+    instance_id = 1
+    projects = await git_service.list_projects(db, instance_id)
+    return ProjectListResponse(projects=projects)
+
+
+@router.post("/init-from-folder-upload", response_model=ProjectCreateResponse)
+async def init_project_from_folder_upload(
+    project_name: str = Form(...),
+    description: str = Form(...),
+    files: list[UploadFile] | None = None,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Initialize a project by uploading a folder (only .eaf files and structure are kept)."""
+    if files is None:
+        files = []
+    try:
+        result = await git_service.init_project_from_folder_upload(
+            project_name, description, files, db, user.user_id
+        )
+        return ProjectCreateResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/{project_name}/files")
+async def get_project_files(
+    project_name: str,
+    include_media: bool = False,
+    db: AsyncSession = get_db_dep,
+    user: User = get_admin_dep,
+):
+    """Get project files, optionally with media information.
+
+    Args:
+        project_name: Name of the project
+        include_media: Whether to include media filenames for each file
+        db: Database session
+        user: Authenticated admin user
+
+    Returns:
+        ProjectFilesResponse or ProjectFilesWithMediaResponse depending on include_media
+
+    """
+    try:
+        result = await git_service.list_project_files(project_name, db, include_media)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get(
+    "/{project_id}/files-with-media",
+    response_model=ProjectFilesWithMediaResponse,
+)
+async def get_project_files_with_media(
+    project_id: int,
+    db: AsyncSession = get_db_dep,
+    current_user: User = get_user_dep,
+) -> ProjectFilesWithMediaResponse:
+    """Get project files with their associated media for rename suggestions."""
+    return await elan_media_service.get_project_files_with_media(db, project_id)
