@@ -29,27 +29,6 @@ const gitService = {
     return data;
   },
 
-  // Commit changes to a project
-  async commitChanges(projectName, commitMessage, userName) {
-    const payload = {
-      commit_message: commitMessage,
-      user_name: userName,
-    };
-    const { data } = await axiosInstance.post(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/commit`,
-      payload
-    );
-    return data;
-  },
-
-  // Get all branches for a project
-  async getBranches(projectName) {
-    const { data } = await axiosInstance.get(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches`
-    );
-    return data;
-  },
-
   // List files in a project (recursive structure)
   async listProjectFiles(projectName, includeMedia = false) {
     const params = includeMedia ? { include_media: true } : {};
@@ -137,13 +116,6 @@ const gitService = {
   async declineBackup(projectName) {
     const { data } = await axiosInstance.post(
       `/git/projects/${encodeURIComponent(projectName)}/decline-backup`
-    );
-    return data;
-  },
-  // Get detailed conflict information for a file
-  async getConflictDetails(projectName, branchName, filename) {
-    const { data } = await axiosInstance.get(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts/${encodeURIComponent(filename)}/details`
     );
     return data;
   },

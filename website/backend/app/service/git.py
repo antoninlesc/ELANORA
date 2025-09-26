@@ -65,7 +65,6 @@ from app.service.git_operations import (
     FileUploadProcessor,
     GitBranchManager,
     GitCommandRunner,
-    GitDiffAnalyzer,
     delete_project_folder,
 )
 from app.utils.project_backup import (
@@ -192,43 +191,6 @@ class GitService:
             await db.rollback()
             raise RuntimeError(f"Project creation failed: {e}") from e
 
-    def commit_changes(
-        self, project_name: str, commit_message: str, user_name: str = "user"
-    ) -> dict[str, Any]:
-        """Commit changes to a project."""
-        project_path = self.base_path / project_name
-
-        if not project_path.exists():
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-
-        try:
-            runner = GitCommandRunner(project_path)
-
-            # Check if there are changes to commit
-            if not runner.get_status().strip():
-                raise ValueError("No changes to commit")
-
-            # Add all changes
-            runner.add_all()
-
-            # Commit with user info
-            full_message = f"{commit_message}\n\nCommitted by: {user_name}"
-            runner.commit(full_message)
-
-            # Get commit hash
-            commit_hash = runner.get_commit_hash()
-
-            return {
-                "project_name": project_name,
-                "message": commit_message,
-                "commit_hash": commit_hash,
-                "status": "committed",
-                "committed_at": datetime.now().isoformat(),
-            }
-
-        except Exception as e:
-            raise RuntimeError(f"Commit failed: {e}") from e
-
     async def add_elan_files(
         self,
         project_id: int,
@@ -333,9 +295,6 @@ class GitService:
             raise ValueError(
                 f"Filename compliance check failed due to data issue: {e}"
             ) from e
-        # Proceed with the rest of the method
-        self._validate_upload_request(project_path, files)
-        logger.info("Upload request validated successfully")
 
         try:
             # Setup Git environment
@@ -345,7 +304,6 @@ class GitService:
             # Initialize managers
             branch_manager = GitBranchManager(project_path)
             file_processor = FileUploadProcessor(project_path)
-            diff_analyzer = GitDiffAnalyzer(project_path)
 
             # Create branch and process files
             branch_name = branch_manager.create_upload_branch(user_name, len(files))
@@ -594,20 +552,6 @@ class GitService:
                 str(elan_file), user_id, project_name
             )
 
-    def _validate_upload_request(
-        self, project_path: Path, files: list[UploadFile]
-    ) -> None:
-        """Validate the upload request."""
-        if not project_path.exists():
-            raise FileNotFoundError(
-                "Project not found at the specified path: {project_path}"
-            )
-        if not files:
-            raise ValueError("No files provided")
-        for file in files:
-            if not file.filename:
-                raise ValueError("All files must have filenames")
-
     def _get_existing_files(
         self, project_path: Path, files: list[UploadFile]
     ) -> list[str]:
@@ -650,157 +594,13 @@ class GitService:
         except Exception as e:
             raise RuntimeError(f"Failed to get branches: {e}") from e
 
-    async def resolve_conflicts(
-        self,
-        project_name: str,
-        branch_name: str,
-        resolution_strategy: str,
-        db: AsyncSession,
-        user_id: int,
-    ) -> dict[str, Any]:
-        """Resolve conflicts and merge a branch, then sync ELAN files with DB."""
-        project_path = self.base_path / project_name
-
-        if not project_path.exists():
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-
-        try:
-            runner = GitCommandRunner(project_path)
-            result = runner.resolve_conflicts(branch_name, resolution_strategy)
-
-            # --- Sync DB with merged ELAN files ---
-            await self._sync_elan_files_with_db(project_path, db, user_id, project_name)
-
-            return {
-                "project_name": project_name,
-                **result,
-                "resolved_at": datetime.now().isoformat(),
-            }
-
-        except Exception as e:
-            raise RuntimeError(f"Failed to resolve conflicts: {e}") from e
-
     def _configure_git_user(self, project_path: Path, instance_name: str) -> None:
         runner = GitCommandRunner(project_path)
         runner.configure_user(instance_name)
 
-    def _detect_merge_conflicts(self, project_path: Path) -> list[dict[str, str]]:
-        """Detect and parse merge conflicts."""
-        try:
-            # Get files with conflicts
-            result = subprocess.run(
-                ["git", "diff", "--name-only", "--diff-filter=U"],
-                cwd=project_path,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-
-            conflicts = []
-            if result.stdout:
-                for filename in result.stdout.strip().split("\n"):
-                    if filename.strip():
-                        # Get conflict details for each file
-                        conflict_details = self._get_conflict_details(
-                            project_path, filename.strip()
-                        )
-                        conflicts.append(
-                            {
-                                "filename": filename.strip(),
-                                "type": "content_conflict",
-                                "details": conflict_details,
-                            }
-                        )
-
-            return conflicts
-
-        except subprocess.CalledProcessError:
-            return []
-
-    def _get_conflict_details(
-        self, project_path: Path, filename: str
-    ) -> dict[str, Any]:
-        """Get detailed information about a specific conflict."""
-        try:
-            # Get the conflict markers and content
-            file_path = project_path / filename
-            if file_path.exists():
-                with open(file_path, encoding="utf-8", errors="ignore") as f:
-                    content = f.read()
-
-                # Count conflict markers
-                conflict_markers = content.count("<<<<<<< HEAD")
-
-                return {
-                    "conflict_markers_count": conflict_markers,
-                    "file_size": len(content),
-                    "has_binary_conflict": "<<<<<<< HEAD"
-                    not in content,  # Binary files won't have text markers
-                }
-
-            return {"error": "File not found"}
-
-        except Exception as e:
-            return {"error": str(e)}
-
     def _create_readme(self, project_name: str) -> str:
         """Generate README content for a new project."""
         return f"# {project_name}\n\nThis is the ELAN project '{project_name}'.\n"
-
-    def _parse_git_status(self, status_output: str) -> list[dict[str, str]]:
-        """Parse the output of 'git status --porcelain'."""
-        files = []
-        pattern = re.compile(r"^([ MADRCU\?]{1,2})\s+(.*)$")
-        for line in status_output.strip().splitlines():
-            if not line:
-                continue
-            match = pattern.match(line)
-            if match:
-                status = match.group(1).strip()
-                filename = match.group(2).strip()
-                files.append({"filename": filename, "status": status})
-        return files
-
-    def _get_recent_commits(
-        self, project_path: Path, count: int = 5
-    ) -> list[dict[str, str]]:
-        """Get recent commits for the project."""
-        runner = GitCommandRunner(project_path)
-        result = runner.get_log(count)
-        commits = []
-        for line in result.strip().splitlines():
-            parts = line.split("|", 3)
-            if len(parts) == 4:
-                commits.append(
-                    {
-                        "hash": parts[0],
-                        "author": parts[1],
-                        "date": parts[2],
-                        "message": parts[3],
-                    }
-                )
-        return commits
-
-    def _check_for_conflicts(self, project_path: Path) -> list[dict[str, str]]:
-        """Check for merge conflicts in the project."""
-        return self._detect_merge_conflicts(project_path)
-
-    def checkout_branch(self, project_name: str, branch_name: str) -> dict[str, str]:
-        """Switch to a different branch in the given project."""
-        project_path = self.base_path / project_name
-        if not project_path.exists():
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-        try:
-            runner = GitCommandRunner(project_path)
-            runner.checkout(branch_name)
-            return {
-                "project_name": project_name,
-                "branch_name": branch_name,
-                "status": "checked_out",
-                "message": f"Switched to branch '{branch_name}' in project '{project_name}'.",
-            }
-        except Exception as e:
-            raise RuntimeError(f"Failed to checkout branch: {e}") from e
 
     async def list_project_files(
         self, project_name: str, db: AsyncSession, include_media: bool = False

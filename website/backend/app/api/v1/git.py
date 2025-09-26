@@ -8,18 +8,14 @@ from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.user import User
 from app.schema.requests.git import (
     BulkRenameRequest,
-    CommitRequest,
     DownloadFilesRequest,
-    ProjectCheckoutRequest,
     ProjectCreateRequest,
     ProjectEditRequest,
 )
 from app.schema.responses.git import (
     BulkRenameResponse,
-    CommitResponse,
     FileRenameResponse,
     GitStatusResponse,
-    ProjectCheckoutResponse,
     ProjectCreateResponse,
     ProjectEditResponse,
     ProjectListResponse,
@@ -85,66 +81,6 @@ async def create_project(
         return ProjectCreateResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post("/projects/{project_name}/commit", response_model=CommitResponse)
-async def commit_changes(
-    project_name: str, commit_data: CommitRequest
-) -> CommitResponse:
-    """Commit changes to a project.
-
-    Args:
-        project_name: Name of the project to commit changes to.
-        commit_data: Commit request containing message and user information.
-
-    Returns:
-        CommitResponse: Details of the commit including hash and timestamp.
-
-    Raises:
-        HTTPException: 404 if project not found, 400 if no changes or invalid data, 500 if commit fails.
-
-    """
-    try:
-        result = git_service.commit_changes(
-            project_name, commit_data.commit_message, commit_data.user_name
-        )
-        return CommitResponse(**result)
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get("/projects/{project_name}/branches")
-async def get_project_branches(project_name: str):
-    """Get all branches for a project."""
-    try:
-        result = git_service.get_branches(project_name)
-        return result
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post(
-    "/projects/{project_name}/checkout", response_model=ProjectCheckoutResponse
-)
-async def checkout_project_branch(
-    project_name: str,
-    checkout_data: ProjectCheckoutRequest,
-    user: User = get_admin_dep,
-):
-    """Switch to a different branch in the given project."""
-    try:
-        result = git_service.checkout_branch(project_name, checkout_data.branch_name)
-        return ProjectCheckoutResponse(**result)
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
