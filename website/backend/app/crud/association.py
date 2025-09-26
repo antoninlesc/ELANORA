@@ -4,12 +4,12 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
+from app.model.elan_file import ElanFile
 from app.model.elan_file_to_media import ElanFileToMedia
 from app.model.elan_file_to_tier import ElanFileToTier
-from app.model.user_to_project import UserToProject
-from app.model.elan_file import ElanFile
 from app.model.project_file_type import ProjectFileType
 from app.model.user import User
+from app.model.user_to_project import UserToProject
 from app.utils.database import DatabaseUtils
 
 logger = get_logger()

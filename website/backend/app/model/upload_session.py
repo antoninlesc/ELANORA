@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     DateTime,
@@ -12,9 +11,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.database import Base
 
-if TYPE_CHECKING:
-    pass
-
 
 class UploadSession(Base):
     """UploadSession model for temporary upload sessions during multi-step upload process."""
@@ -24,7 +20,7 @@ class UploadSession(Base):
     session_id: Mapped[str] = mapped_column(String, primary_key=True)
     project_id: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False, default="processing")
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.current_timestamp()
     )

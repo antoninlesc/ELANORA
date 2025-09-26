@@ -1,6 +1,7 @@
 """API endpoints for managing project-user associations (admin only)."""
 
 import logging
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 

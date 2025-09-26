@@ -1,21 +1,17 @@
-"""
-upload.py
+"""upload.py
 
 API endpoints for file upload processing.
 """
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
-from typing import List, Dict, Any
 import uuid
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.service.tier_extraction_service import extract_tiers_from_files
+from app.core.centralized_logging import get_logger
 from app.dependency.database import get_db_dep
 from app.model.upload_session import UploadSession
-from app.model.tier import Tier
-from app.model.tier_group import TierGroup
-from app.model.tier_section import TierSection
-from app.core.centralized_logging import get_logger
+from app.service.tier_extraction_service import extract_tiers_from_files
 
 logger = get_logger()
 
@@ -24,12 +20,11 @@ router = APIRouter()
 
 @router.post("/process")
 async def process_upload_files(
-    files: List[UploadFile] = File(...),
+    files: list[UploadFile] = File(...),
     project_id: str = Form(...),
     db: AsyncSession = get_db_dep,
 ):
-    """
-    Process uploaded files for tier extraction.
+    """Process uploaded files for tier extraction.
     Creates staged database entries and returns extracted tiers.
     """
     try:
@@ -55,9 +50,9 @@ async def process_upload_files(
         return {"session_id": session_id, "extracted_tiers": extracted_tiers}
 
     except Exception as e:
-        logger.error(f"Error processing upload files: {str(e)}")
+        logger.error(f"Error processing upload files: {e!s}")
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error processing files: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing files: {e!s}")
 
 
 @router.post("/confirm")
@@ -68,9 +63,7 @@ async def confirm_upload(
     description: str = Form(...),
     db: AsyncSession = get_db_dep,
 ):
-    """
-    Confirm and finalize the upload by marking it as pending approval.
-    """
+    """Confirm and finalize the upload by marking it as pending approval."""
     try:
         # Get the upload session
         upload_session = await db.get(UploadSession, session_id)
@@ -145,11 +138,9 @@ async def confirm_upload(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error confirming upload: {str(e)}")
+        logger.error(f"Error confirming upload: {e!s}")
         await db.rollback()
-        raise HTTPException(
-            status_code=500, detail=f"Error confirming upload: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error confirming upload: {e!s}")
 
 
 @router.post("/cancel")
@@ -157,9 +148,7 @@ async def cancel_upload(
     session_id: str = Form(...),
     db: AsyncSession = get_db_dep,
 ):
-    """
-    Cancel an upload session and clean up all staged data.
-    """
+    """Cancel an upload session and clean up all staged data."""
     try:
         # Get the upload session
         upload_session = await db.get(UploadSession, session_id)
@@ -167,11 +156,12 @@ async def cancel_upload(
             raise HTTPException(status_code=404, detail="Upload session not found")
 
         # Delete all staged data associated with this session
-        from app.utils.database import DatabaseUtils
+        from sqlalchemy import or_
+
         from app.model.tier import Tier
         from app.model.tier_group import TierGroup
         from app.model.tier_section import TierSection
-        from sqlalchemy import or_
+        from app.utils.database import DatabaseUtils
 
         # Delete staged tier groups
         await DatabaseUtils.delete_by_conditions(
@@ -218,19 +208,16 @@ async def cancel_upload(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error cancelling upload: {str(e)}")
+        logger.error(f"Error cancelling upload: {e!s}")
         await db.rollback()
-        raise HTTPException(
-            status_code=500, detail=f"Error cancelling upload: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error cancelling upload: {e!s}")
 
 
 @router.delete("/cleanup-expired")
 async def cleanup_expired_sessions(
     db: AsyncSession = get_db_dep,
 ):
-    """
-    Clean up expired upload sessions and their associated staged data and temp files.
+    """Clean up expired upload sessions and their associated staged data and temp files.
     This endpoint can be called periodically to remove abandoned uploads.
     """
     from app.service.upload_service import cleanup_expired_upload_sessions

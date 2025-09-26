@@ -1,11 +1,12 @@
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from sqlalchemy.ext.asyncio import AsyncSession
 import os
 
-from app.model.elan_file_to_media import ElanFileToMedia
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.model.elan_file import ElanFile
 from app.model.elan_file_media import ElanFileMedia
+from app.model.elan_file_to_media import ElanFileToMedia
 from app.model.file_content import FileContent
 from app.utils.database import DatabaseUtils
 
@@ -14,7 +15,6 @@ async def get_project_files_with_media_simple(
     db: AsyncSession, project_id: int
 ) -> list[dict]:
     """Get all ELAN files for a project with their associated media using simple joins."""
-
     # Use a simpler approach with explicit joins to avoid lazy loading issues
     stmt = (
         select(

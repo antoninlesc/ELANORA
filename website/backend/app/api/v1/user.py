@@ -5,24 +5,24 @@ from sqlalchemy.orm import selectinload
 from app.crud.user import get_all_active_users
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
-from app.model.user import User
 from app.model.address import Address
 from app.model.city import City
+from app.model.user import User
+from app.schema.requests.user import (
+    AddressRequest,
+    ChangePasswordRequest,
+    ProfileUpdateRequest,
+)
 from app.schema.responses.user import (
     AddressResponse,
+    CityResponse,
+    ProfileUpdateResponse,
     UserListResponse,
     UserProfileResponse,
     UserResponse,
-    CityResponse,
-    ProfileUpdateResponse,
 )
-from app.schema.requests.user import (
-    ProfileUpdateRequest,
-    AddressRequest,
-    ChangePasswordRequest,
-)
-from app.service.user import UserService
 from app.service.address import AddressService
+from app.service.user import UserService
 from app.utils.database import DatabaseUtils
 
 router = APIRouter()

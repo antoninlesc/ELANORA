@@ -1,11 +1,10 @@
-"""
-tier_extraction_utils.py
+"""tier_extraction_utils.py
 
 Reusable utilities for extracting tier information from ELAN files.
 """
 
 from pathlib import Path
-from typing import Dict, List
+
 from lxml import etree
 
 from app.core.centralized_logging import get_logger
@@ -17,15 +16,15 @@ class TierExtractor:
     """Reusable class for extracting tier information from ELAN XML."""
 
     @staticmethod
-    def extract_tiers_from_elan_file(file_path: str) -> List[Dict]:
-        """
-        Extract all tiers from an ELAN file.
+    def extract_tiers_from_elan_file(file_path: str) -> list[dict]:
+        """Extract all tiers from an ELAN file.
 
         Args:
             file_path: Path to the ELAN file
 
         Returns:
             List of tier dictionaries with tier information
+
         """
         file_path_obj = Path(file_path)
         if not file_path_obj.exists() or file_path_obj.suffix.lower() != ".eaf":
@@ -57,19 +56,19 @@ class TierExtractor:
             return tiers
 
         except Exception as e:
-            logger.error(f"Error parsing ELAN file {file_path}: {str(e)}")
+            logger.error(f"Error parsing ELAN file {file_path}: {e!s}")
             raise
 
     @staticmethod
-    def extract_time_slots(root: etree._Element) -> Dict[str, int]:
-        """
-        Extract time slots from ELAN file.
+    def extract_time_slots(root: etree._Element) -> dict[str, int]:
+        """Extract time slots from ELAN file.
 
         Args:
             root: XML root element
 
         Returns:
             Dictionary mapping time slot IDs to time values
+
         """
         time_slots = {}
         for time_slot in root.findall(".//TIME_SLOT", namespaces=None):
@@ -82,15 +81,15 @@ class TierExtractor:
         return time_slots
 
     @staticmethod
-    def extract_media_descriptors(root: etree._Element) -> List[Dict]:
-        """
-        Extract media descriptors from ELAN file.
+    def extract_media_descriptors(root: etree._Element) -> list[dict]:
+        """Extract media descriptors from ELAN file.
 
         Args:
             root: XML root element
 
         Returns:
             List of media descriptor dictionaries
+
         """
         media_descriptors = []
         for media in root.findall(".//MEDIA_DESCRIPTOR", namespaces=None):
@@ -109,15 +108,15 @@ class TierExtractor:
         return media_descriptors
 
     @staticmethod
-    def extract_linguistic_types(root: etree._Element) -> List[Dict]:
-        """
-        Extract linguistic types from ELAN file.
+    def extract_linguistic_types(root: etree._Element) -> list[dict]:
+        """Extract linguistic types from ELAN file.
 
         Args:
             root: XML root element
 
         Returns:
             List of linguistic type dictionaries
+
         """
         linguistic_types = []
         for ling_type in root.findall(".//LINGUISTIC_TYPE", namespaces=None):
@@ -131,9 +130,7 @@ class TierExtractor:
             }
             # Remove None values
             type_info = {
-                k: v
-                for k, v in type_info.items()
-                if k in type_info and type_info[k] is not None
+                k: v for k, v in type_info.items() if k in type_info and v is not None
             }
             linguistic_types.append(type_info)
 

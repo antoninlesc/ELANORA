@@ -1,5 +1,4 @@
-"""
-upload_service.py
+"""upload_service.py
 
 Service layer for upload-related operations.
 """
@@ -7,7 +6,7 @@ Service layer for upload-related operations.
 import os
 import shutil
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,12 +20,12 @@ from app.utils.database import DatabaseUtils
 logger = get_logger()
 
 
-async def cleanup_expired_upload_sessions(db: AsyncSession) -> Dict[str, Any]:
-    """
-    Clean up expired upload sessions and their associated staged data and temp files.
+async def cleanup_expired_upload_sessions(db: AsyncSession) -> dict[str, Any]:
+    """Clean up expired upload sessions and their associated staged data and temp files.
 
     Returns:
         Dict with cleanup results
+
     """
     try:
         # Define expiration time (e.g., 24 hours)
@@ -77,7 +76,7 @@ async def cleanup_expired_upload_sessions(db: AsyncSession) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"Error cleaning up expired sessions: {str(e)}")
+        logger.error(f"Error cleaning up expired sessions: {e!s}")
         await db.rollback()
         raise
 

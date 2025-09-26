@@ -21,16 +21,15 @@ from app.crud.notification import (
 )
 from app.crud.project import (
     add_user_to_project,
+    get_project_admins_and_owners,
     get_project_by_id,
     get_project_by_name,
-    get_project_admins_and_owners,
     user_in_project,
 )
 from app.crud.user import get_user_by_id, get_user_by_username_or_email
-from app.model.invitation import InvitationStatus
-from app.model.invitation import Invitation
-from app.schema.requests.notification import NotificationCreateRequest
+from app.model.invitation import Invitation, InvitationStatus
 from app.schema.requests.invitation import InvitationSendRequest
+from app.schema.requests.notification import NotificationCreateRequest
 from app.schema.responses.invitation import (
     InvitationListResponse,
     InvitationResponse,

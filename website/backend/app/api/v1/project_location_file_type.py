@@ -1,16 +1,17 @@
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.dependency.database import get_db_dep
-from app.service.project_location_file_type import (
-    service_add_file_type_to_location,
-    service_remove_file_type_from_location,
-    service_get_file_types_for_location,
-)
 from app.schema.responses.project_location_file_type import (
     AddFileTypeToLocationResponse,
-    RemoveFileTypeFromLocationResponse,
-    GetFileTypesForLocationResponse,
     FileTypeLocationOut,
+    GetFileTypesForLocationResponse,
+    RemoveFileTypeFromLocationResponse,
+)
+from app.service.project_location_file_type import (
+    service_add_file_type_to_location,
+    service_get_file_types_for_location,
+    service_remove_file_type_from_location,
 )
 
 router = APIRouter()

@@ -2,8 +2,8 @@
 
 from datetime import datetime
 
-from app.model.user_to_project import ProjectPermission
 from app.model.invitation import InvitationStatus
+from app.model.user_to_project import ProjectPermission
 from app.schema.common.base import CustomBaseModel
 
 

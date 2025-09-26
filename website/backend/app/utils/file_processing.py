@@ -1,9 +1,9 @@
 """File processing utilities for ELAN files."""
 
-from decimal import Decimal
-from pathlib import Path
 import os
 from datetime import datetime
+from decimal import Decimal
+from pathlib import Path
 
 from lxml import etree
 

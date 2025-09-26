@@ -7,7 +7,6 @@ from typing import Any
 
 from app.core.centralized_logging import get_logger
 from app.utils.project_backup import create_hidden_folder_in_root, update_backup
-from app.service.git_diff_parser import GitDiffParser
 
 logger = get_logger()
 
@@ -21,17 +20,6 @@ class FileUploadResult:
     existed: bool
     success: bool
     error: str | None = None
-
-
-@dataclass
-class MergeAnalysis:
-    """Analysis of merge differences."""
-
-    new_files: list[str]
-    modified_files: list[str]
-    deleted_files: list[str]
-    has_conflicts: bool
-    file_diffs: dict[str, dict] | None = None
 
 
 class GitBranchManager:
@@ -68,303 +56,6 @@ class GitBranchManager:
         """Delete a branch."""
         self.commandRunner.delete_branch(branch_name)
         logger.info(f"Deleted branch: {branch_name}")
-
-
-class GitDiffAnalyzer:
-    """Analyzes Git differences between branches."""
-
-    def __init__(self, project_path: Path):
-        """Initialize with the project path."""
-        self.project_path = project_path
-
-    def analyze_merge_differences(self, branch_name: str) -> MergeAnalysis:
-        """Analyze differences and return structured data with parsed diffs."""
-        logger.info(
-            f"Analyzing merge differences for branch '{branch_name}' using Git diff"
-        )
-        diff_parser = GitDiffParser()
-
-        diff_name_status_result = subprocess.run(
-            ["git", "diff", f"master...{branch_name}", "--name-status"],
-            cwd=self.project_path,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        logger.debug(f"Git diff output: {diff_name_status_result.stdout}")
-
-        new_files, modified_files, deleted_files = diff_parser.parse_name_status_output(
-            diff_name_status_result.stdout
-        )
-
-        has_conflicts = len(modified_files) > 0 or len(deleted_files) > 0
-
-        logger.info(
-            f"Git diff analysis - New: {len(new_files)}, Modified: {len(modified_files)}, Deleted: {len(deleted_files)}"
-        )
-
-        file_diffs = {}
-
-        # For each modified file, parse the diff ONCE
-        for filename in modified_files:
-            file_diff_result = subprocess.run(
-                ["git", "diff", f"master...{branch_name}", "--", filename],
-                cwd=self.project_path,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-
-            if file_diff_result.stdout:
-                parsed_diff = diff_parser.parse_single_file_diff(
-                    file_diff_result.stdout
-                )
-                file_diffs[filename] = parsed_diff  # STORE PARSED DATA
-
-        return MergeAnalysis(
-            new_files=new_files,
-            modified_files=modified_files,
-            deleted_files=deleted_files,
-            has_conflicts=has_conflicts,
-            file_diffs=file_diffs,
-        )
-
-
-class GitMerger:
-    """Handles Git merge operations."""
-
-    def __init__(self, project_path: Path):
-        """Initialize with the project path."""
-        self.project_path = project_path
-
-    def selective_merge_with_conflict_isolation(
-        self, branch_name: str, analysis: MergeAnalysis
-    ) -> dict[str, Any]:
-        """Perform selective merge: auto-merge safe files, isolate conflicts."""
-        logger.info(f"Starting selective merge for branch '{branch_name}'")
-        logger.info(
-            f"Analysis summary - New files: {len(analysis.new_files)}, Modified: {len(analysis.modified_files)}, Deleted: {len(analysis.deleted_files)}"
-        )
-
-        if not analysis.has_conflicts:
-            logger.info("No conflicts detected, performing auto-merge")
-            return self._perform_auto_merge(branch_name, analysis.new_files)
-
-        logger.info("Conflicts detected, proceeding with selective merge strategy")
-        # If we have conflicts, perform selective merge
-        return self._perform_selective_merge(branch_name, analysis)
-
-    def _perform_selective_merge(
-        self, branch_name: str, analysis: MergeAnalysis
-    ) -> dict[str, Any]:
-        """Merge only non-conflicting files, isolate problematic ones."""
-        logger.info(f"Performing selective merge for branch '{branch_name}'")
-        runner = GitCommandRunner(self.project_path)
-
-        conflict_branch_name = f"{branch_name}_conflicts"
-
-        try:
-            # Start from master and create conflict branch
-            runner.checkout("master")
-            runner.run(["checkout", "-b", conflict_branch_name], check=True)
-            logger.info(f"Created conflict branch '{conflict_branch_name}' from master")
-
-            # Cherry-pick ONLY modified files to conflict branch
-            if analysis.modified_files:
-                logger.info(
-                    f"Adding {len(analysis.modified_files)} modified files to conflict branch"
-                )
-                for modified_file in analysis.modified_files:
-                    try:
-                        # Get the modified version from upload branch
-                        runner.run(
-                            ["checkout", branch_name, "--", modified_file], check=True
-                        )
-                        logger.debug(f"Added modified file: {modified_file}")
-                    except subprocess.CalledProcessError as e:
-                        logger.warning(f"Could not add {modified_file}: {e}")
-
-                # Commit only the modified files
-                runner.add_all()
-                runner.commit(f"Modified files from {branch_name} for review")
-                logger.info("Successfully created conflict branch with modified files")
-
-            # Switch to upload branch and remove ALL conflicting content
-            runner.checkout(branch_name)
-
-            # Remove modified files (reset to master version = remove changes)
-            if analysis.modified_files:
-                logger.info(
-                    f"Resetting {len(analysis.modified_files)} modified files to master version"
-                )
-                for modified_file in analysis.modified_files:
-                    try:
-                        runner.run(
-                            ["checkout", "master", "--", modified_file], check=True
-                        )
-                        logger.debug(f"Reset to master: {modified_file}")
-                    except subprocess.CalledProcessError as e:
-                        logger.warning(f"Could not reset {modified_file}: {e}")
-
-            # Handle deleted files (restore them from master)
-            if analysis.deleted_files:
-                logger.info(
-                    f"Restoring {len(analysis.deleted_files)} deleted files from master"
-                )
-                for deleted_file in analysis.deleted_files:
-                    try:
-                        runner.run(
-                            ["checkout", "master", "--", deleted_file], check=True
-                        )
-                        logger.debug(f"Restored deleted file: {deleted_file}")
-                    except subprocess.CalledProcessError as e:
-                        logger.debug(
-                            f"Could not restore {deleted_file} (may not exist in master): {e}"
-                        )
-
-            # Commit the cleanup (this makes upload branch have only new files)
-            if analysis.modified_files or analysis.deleted_files:
-                runner.add_all()
-                runner.commit("Remove conflicting changes - keep only new files")
-                logger.info("Cleaned upload branch to contain only new files")
-
-            # Merge clean upload branch to master
-            runner.checkout("master")
-
-            # Check what's actually different (should be only new files now)
-            files_to_merge = analysis.new_files.copy()
-
-            if files_to_merge:
-                merge_message = (
-                    f"Add {len(files_to_merge)} new files from {branch_name}"
-                )
-                runner.merge(branch_name, merge_message, no_ff=True)
-                logger.info(f"Successfully merged {len(files_to_merge)} new files")
-            else:
-                logger.info("No new files to merge")
-
-            # Clean up upload branch
-            runner.delete_branch(branch_name)
-
-            return {
-                "status": "selective_merge_completed",
-                "has_conflicts": True,
-                "has_differences": True,
-                "merged_files": files_to_merge,
-                "conflict_files": analysis.modified_files,
-                "conflict_branch": conflict_branch_name,
-                "deleted_files": analysis.deleted_files,
-                "message": f"Merged {len(files_to_merge)} new files. {len(analysis.modified_files)} modified files isolated for review in '{conflict_branch_name}'",
-                "analysis": analysis,
-            }
-
-        except Exception as e:
-            # Cleanup on error
-            try:
-                runner.checkout("master")
-                runner.run(["branch", "-D", conflict_branch_name], check=False)
-                runner.run(["branch", "-D", branch_name], check=False)
-            except:
-                pass
-            raise RuntimeError(f"Selective merge failed: {e}") from e
-
-    def auto_merge_if_safe(
-        self, branch_name: str, analysis: MergeAnalysis
-    ) -> dict[str, Any]:
-        """Automatically merge if only new files, otherwise return conflict info."""
-        logger.info(f"Checking if auto-merge is safe for branch '{branch_name}'")
-
-        if not analysis.has_conflicts:
-            logger.info("No conflicts detected, proceeding with auto-merge")
-            return self._perform_auto_merge(branch_name, analysis.new_files)
-        else:
-            logger.warning(
-                f"Conflicts detected in branch '{branch_name}', returning conflict response"
-            )
-            return self._create_conflict_response(branch_name, analysis)
-
-    def _perform_auto_merge(
-        self, branch_name: str, new_files: list[str]
-    ) -> dict[str, Any]:
-        """Perform automatic merge for new files only."""
-        logger.info(
-            f"Performing auto-merge for branch '{branch_name}' with {len(new_files)} new files"
-        )
-
-        merge_message = f"Merge batch upload branch '{branch_name}' into master - {len(new_files)} new files added"
-        logger.debug(f"Merge message: {merge_message}")
-
-        try:
-            subprocess.run(
-                [
-                    "git",
-                    "merge",
-                    branch_name,
-                    "--no-ff",
-                    "-m",
-                    merge_message,
-                ],
-                cwd=self.project_path,
-                check=True,
-            )
-            update_backup(self.project_path.name, self.project_path.parent)
-            logger.info(
-                f"Successfully auto-merged {len(new_files)} new files from branch '{branch_name}'"
-            )
-
-            return {
-                "status": "merged_successfully",
-                "has_conflicts": False,
-                "has_differences": True,
-                "new_files": new_files,
-                "modified_files": [],
-                "deleted_files": [],
-                "message": f"Successfully merged {len(new_files)} new files",
-            }
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Auto-merge failed for branch '{branch_name}': {e}")
-            raise RuntimeError(f"Auto-merge failed: {e}") from e
-
-    def _create_conflict_response(
-        self, branch_name: str, analysis: MergeAnalysis
-    ) -> dict[str, Any]:
-        """Create response for conflicts that need review."""
-        logger.info(f"Creating conflict response for branch '{branch_name}'")
-        logger.info(
-            f"Conflict summary - Modified: {analysis.modified_files}, Deleted: {analysis.deleted_files}"
-        )
-
-        # Get summary stats
-        try:
-            detailed_diff = subprocess.run(
-                ["git", "diff", f"master...{branch_name}", "--stat"],
-                cwd=self.project_path,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            logger.debug(f"Generated diff stats for branch '{branch_name}'")
-        except Exception as e:
-            logger.error(f"Failed to generate diff stats: {e}")
-            detailed_diff = subprocess.CompletedProcess([], 0, "", "")
-
-        logger.warning(
-            f"Conflicts detected in branch '{branch_name}' - modified files: {analysis.modified_files}"
-        )
-
-        return {
-            "status": "changes_detected",
-            "has_conflicts": True,
-            "has_differences": True,
-            "new_files": analysis.new_files,
-            "modified_files": analysis.modified_files,
-            "deleted_files": analysis.deleted_files,
-            "diff_summary": detailed_diff.stdout,
-            "file_changes": analysis.file_changes,
-            "branch_name": branch_name,
-            "message": f"Conflicts detected - {len(analysis.modified_files)} modified files require review",
-        }
 
 
 class FileUploadProcessor:
@@ -518,30 +209,6 @@ class GitCommandRunner:
         self.stage_all_changes()
         return self.get_status()
 
-    def get_log(self, count: int = 5) -> str:
-        return self.run(
-            ["log", f"-{count}", "--pretty=format:%h|%an|%ad|%s", "--date=iso"]
-        ).stdout
-
-    def get_conflicted_files(self) -> list[str]:
-        result = self.run(["diff", "--name-only", "--diff-filter=U"])
-        return [
-            line.strip() for line in result.stdout.strip().split("\n") if line.strip()
-        ]
-
-    def get_conflict_details(self, filename: str) -> dict[str, Any]:
-        file_path = self.project_path / filename
-        if file_path.exists():
-            with open(file_path, encoding="utf-8", errors="ignore") as f:
-                content = f.read()
-            conflict_markers = content.count("<<<<<<< HEAD")
-            return {
-                "conflict_markers_count": conflict_markers,
-                "file_size": len(content),
-                "has_binary_conflict": "<<<<<<< HEAD" not in content,
-            }
-        return {"error": "File not found"}
-
     def configure_user(self, instance_name: str):
         """Configure Git user using the instance name."""
         # Clean the instance name for use in email (lowercase, no spaces)
@@ -567,9 +234,6 @@ class GitCommandRunner:
             args.append("-d")
         self.run(args, check=True)
 
-    def checkout(self, branch: str):
-        self.run(["checkout", branch], check=True)
-
     def add_all(self):
         self.run(["add", "."], check=True)
         update_backup(self.project_path.name, self.project_path.parent)
@@ -578,31 +242,9 @@ class GitCommandRunner:
         self.run(["commit", "-m", message], check=True)
         update_backup(self.project_path.name, self.project_path.parent)
 
-    def push(self, branch: str = "master"):
-        self.run(["push", "origin", branch], check=True)
-        update_backup(self.project_path.name, self.project_path.parent)
-
-    def get_commit_hash(self) -> str:
-        return self.run(["rev-parse", "HEAD"]).stdout.strip()
-
     def init_repo(self):
         self.run(["init"], check=True)
         update_backup(self.project_path.name, self.project_path.parent)
-
-    def add_file(self, filepath: str):
-        self.run(["add", filepath], check=True)
-        update_backup(self.project_path.name, self.project_path.parent)
-
-    def merge(self, branch_name: str, message: str, no_ff: bool = True):
-        args = ["merge", branch_name]
-        if no_ff:
-            args.append("--no-ff")
-        args += ["-m", message]
-        self.run(args, check=True)
-        update_backup(self.project_path.name, self.project_path.parent)
-
-    def diff_stat(self, branch_name: str) -> str:
-        return self.run(["diff", f"master...{branch_name}", "--stat"]).stdout
 
     def delete_branch_localy(self, branch_name: str):
         self.run(["branch", "-D", branch_name], check=False)
@@ -614,71 +256,6 @@ class GitCommandRunner:
         self.delete_branch_localy(branch_name)
         self.delete_branch_on_remote(branch_name)
         update_backup(self.project_path.name, self.project_path.parent)
-
-    def resolve_conflicts(
-        self, branch_name: str, resolution_strategy: str
-    ) -> dict[str, Any]:
-        self.checkout("master")
-        self.run(["merge", branch_name, "--no-ff"], check=False)
-        if resolution_strategy == "accept_incoming":
-            self.run(["checkout", "--theirs", "."], check=True)
-        elif resolution_strategy == "accept_current":
-            self.run(["checkout", "--ours", "."], check=True)
-        self.run(["add", "."], check=True)
-        self.run(
-            [
-                "commit",
-                "-m",
-                f"Resolve conflicts from {branch_name} using {resolution_strategy}",
-            ],
-            check=True,
-        )
-        self.run(["branch", "-d", branch_name], check=False)
-        update_backup(self.project_path.name, self.project_path.parent)
-        return {
-            "branch_name": branch_name,
-            "resolution_strategy": resolution_strategy,
-            "status": "resolved",
-        }
-
-    def cleanup_on_error(self, branch_name: str | None = None):
-        """Cleanup on error: optionally delete a branch, then checkout master."""
-        try:
-            if branch_name:
-                self.run(["branch", "-D", branch_name], check=False)
-            self.run(["checkout", "master"], check=False)
-            update_backup(self.project_path.name, self.project_path.parent)
-        except Exception:
-            logger.exception("Exception occurred during cleanup_on_error")
-
-    def detect_merge_conflicts(self) -> list[dict[str, str]]:
-        result = self.run(["diff", "--name-only", "--diff-filter=U"])
-        conflicts = []
-        if result.stdout:
-            for filename in result.stdout.strip().split("\n"):
-                if filename.strip():
-                    conflict_details = self.get_conflict_details(filename.strip())
-                    conflicts.append(
-                        {
-                            "filename": filename.strip(),
-                            "type": "content_conflict",
-                            "details": conflict_details,
-                        }
-                    )
-        return conflicts
-
-    def get_current_branch(self) -> str:
-        """Get the current branch name."""
-        try:
-            result = self.run(["branch", "--show-current"])
-            return result.stdout.strip()
-        except:
-            # Fallback method
-            try:
-                result = self.run(["rev-parse", "--abbrev-ref", "HEAD"])
-                return result.stdout.strip()
-            except:
-                return "master"
 
 
 def delete_project_folder(project_path: Path) -> None:
