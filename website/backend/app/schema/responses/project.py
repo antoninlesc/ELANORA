@@ -1,5 +1,5 @@
-from app.schema.common.base import CustomBaseModel
 from app.model.user_to_project import ProjectPermission
+from app.schema.common.base import CustomBaseModel
 
 
 class ProjectUserInfo(CustomBaseModel):

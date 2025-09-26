@@ -14,7 +14,7 @@ from app.schema.requests.user import (
     ChangePasswordRequest,
     ProfileUpdateRequest,
 )
-from app.schema.responses.project import UserProjectListResponse, UserProjectInfo
+from app.schema.responses.project import UserProjectInfo, UserProjectListResponse
 from app.schema.responses.user import (
     AddressResponse,
     CityResponse,
