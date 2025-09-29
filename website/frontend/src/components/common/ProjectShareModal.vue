@@ -9,15 +9,15 @@
       <div class="share-options">
         <!-- Tab Selector -->
         <div class="tab-selector">
-          <button 
-            class="tab-button" 
+          <button
+            class="tab-button"
             :class="{ active: inviteMode === 'email' }"
             @click="setInviteMode('email')"
           >
             {{ t('project.share.invite_by_email') }}
           </button>
-          <button 
-            class="tab-button" 
+          <button
+            class="tab-button"
             :class="{ active: inviteMode === 'user' }"
             @click="setInviteMode('user')"
           >
@@ -27,7 +27,7 @@
 
         <!-- Email Invitation Form -->
         <div v-if="inviteMode === 'email'" class="tab-content">
-          <form @submit.prevent="sendProjectInvitation" class="invitation-form">
+          <form class="invitation-form" @submit.prevent="sendProjectInvitation">
             <div class="share-form-group">
               <label for="share-email" class="form-label">
                 {{ t('project.share.email_label') }}
@@ -78,16 +78,26 @@
               <label for="share-email-permission" class="form-label">
                 {{ t('project.share.permission_label') }}
               </label>
-              <select id="share-email-permission" v-model="form.emailPermission" class="share-form-select">
-                <option value="read">{{ t('project.share.permission_read') }}</option>
-                <option value="write">{{ t('project.share.permission_write') }}</option>
-                <option value="admin">{{ t('project.share.permission_admin') }}</option>
+              <select
+                id="share-email-permission"
+                v-model="form.emailPermission"
+                class="share-form-select"
+              >
+                <option value="read">
+                  {{ t('project.share.permission_read') }}
+                </option>
+                <option value="write">
+                  {{ t('project.share.permission_write') }}
+                </option>
+                <option value="admin">
+                  {{ t('project.share.permission_admin') }}
+                </option>
               </select>
             </div>
 
-            <button 
-              type="submit" 
-              class="btn-primary send-btn" 
+            <button
+              type="submit"
+              class="btn-primary send-btn"
               :disabled="sending || !form.email"
             >
               <span v-if="sending">{{ t('project.share.sending') }}</span>
@@ -98,7 +108,7 @@
 
         <!-- User Selection Form -->
         <div v-if="inviteMode === 'user'" class="tab-content">
-          <form @submit.prevent="sendUserInvitation" class="invitation-form">
+          <form class="invitation-form" @submit.prevent="sendUserInvitation">
             <div class="share-form-group">
               <label for="share-user" class="form-label">
                 {{ t('project.share.select_user') }}
@@ -113,17 +123,25 @@
                 :disabled="loadingUsers"
               >
                 <option value="" disabled>
-                  {{ loadingUsers ? t('common.loading') : t('project.share.choose_user') }}
+                  {{
+                    loadingUsers
+                      ? t('common.loading')
+                      : t('project.share.choose_user')
+                  }}
                 </option>
-                <option 
-                  v-for="user in availableUsers" 
-                  :key="user.user_id" 
+                <option
+                  v-for="user in availableUsers"
+                  :key="user.user_id"
                   :value="user.user_id"
                 >
-                  {{ user.first_name }} {{ user.last_name }} ({{ user.username }}) - {{ user.email }}
+                  {{ user.first_name }} {{ user.last_name }} ({{
+                    user.username
+                  }}) - {{ user.email }}
                 </option>
               </select>
-              <div v-if="userError" class="share-error-message">{{ userError }}</div>
+              <div v-if="userError" class="share-error-message">
+                {{ userError }}
+              </div>
             </div>
 
             <div class="share-form-group">
@@ -143,7 +161,11 @@
               <label for="share-user-language" class="form-label">
                 {{ t('project.share.language_label') }}
               </label>
-              <select id="share-user-language" v-model="form.userLanguage" class="share-form-select">
+              <select
+                id="share-user-language"
+                v-model="form.userLanguage"
+                class="share-form-select"
+              >
                 <option value="en">English</option>
                 <option value="fr">Français</option>
               </select>
@@ -153,16 +175,26 @@
               <label for="share-permission" class="form-label">
                 {{ t('project.share.permission_label') }}
               </label>
-              <select id="share-permission" v-model="form.permission" class="share-form-select">
-                <option value="read">{{ t('project.share.permission_read') }}</option>
-                <option value="write">{{ t('project.share.permission_write') }}</option>
-                <option value="admin">{{ t('project.share.permission_admin') }}</option>
+              <select
+                id="share-permission"
+                v-model="form.permission"
+                class="share-form-select"
+              >
+                <option value="read">
+                  {{ t('project.share.permission_read') }}
+                </option>
+                <option value="write">
+                  {{ t('project.share.permission_write') }}
+                </option>
+                <option value="admin">
+                  {{ t('project.share.permission_admin') }}
+                </option>
               </select>
             </div>
 
-            <button 
-              type="submit" 
-              class="btn-primary send-btn" 
+            <button
+              type="submit"
+              class="btn-primary send-btn"
               :disabled="sending || !form.selectedUserId"
             >
               <span v-if="sending">{{ t('project.share.sending') }}</span>
@@ -221,7 +253,7 @@ const form = ref({
   selectedUserId: '',
   userMessage: '',
   userLanguage: 'fr',
-  permission: 'read'
+  permission: 'read',
 });
 
 // States
@@ -238,14 +270,16 @@ const projectName = computed(() => props.projectName);
 // Get selected user's email
 const selectedUserEmail = computed(() => {
   if (!form.value.selectedUserId) return '';
-  const user = availableUsers.value.find(u => u.user_id == form.value.selectedUserId);
+  const user = availableUsers.value.find(
+    (u) => u.user_id == form.value.selectedUserId
+  );
   return user ? user.email : '';
 });
 
 // Load users when modal opens and user mode is selected
 const loadActiveUsers = async () => {
   if (loadingUsers.value) return;
-  
+
   loadingUsers.value = true;
   try {
     const response = await fetchActiveUsers();
@@ -261,11 +295,14 @@ const loadActiveUsers = async () => {
 };
 
 // Watch for mode changes and modal visibility
-watch(() => props.show, (newShow) => {
-  if (newShow && inviteMode.value === 'user') {
-    loadActiveUsers();
+watch(
+  () => props.show,
+  (newShow) => {
+    if (newShow && inviteMode.value === 'user') {
+      loadActiveUsers();
+    }
   }
-});
+);
 
 watch(inviteMode, (newMode) => {
   if (newMode === 'user' && props.show) {
@@ -283,30 +320,49 @@ onMounted(() => {
 // Helper function to handle invitation errors
 const handleInvitationError = (error) => {
   console.error('Error sending invitation:', error);
-  
+
   // Check if it's a server response with a specific message
   if (error.response?.data?.message) {
     const message = error.response.data.message.toLowerCase();
-    
+
     if (message.includes('active invitation already exists')) {
-      eventMessageStore.addMessage('project.share.invitation_send_error_already_invited', 'warning');
+      eventMessageStore.addMessage(
+        'project.share.invitation_send_error_already_invited',
+        'warning'
+      );
     } else if (message.includes('already a member')) {
-      eventMessageStore.addMessage('project.share.invitation_send_error_already_member', 'warning');
+      eventMessageStore.addMessage(
+        'project.share.invitation_send_error_already_member',
+        'warning'
+      );
     } else if (message.includes('project not found')) {
-      eventMessageStore.addMessage('project.share.invitation_send_error_project_not_found', 'error');
+      eventMessageStore.addMessage(
+        'project.share.invitation_send_error_project_not_found',
+        'error'
+      );
     } else {
       // Generic error with server message
       eventMessageStore.addMessage(error.response.data.message, 'error');
     }
   } else if (error.response?.status === 409) {
     // Conflict status usually means already invited or already member
-    eventMessageStore.addMessage('project.share.invitation_send_error_already_invited', 'warning');
+    eventMessageStore.addMessage(
+      'project.share.invitation_send_error_already_invited',
+      'warning'
+    );
   } else if (error.response?.status === 400) {
     // Bad request - could be validation error
-    eventMessageStore.addMessage(error.response?.data?.detail || 'project.share.invitation_send_error_generic', 'error');
+    eventMessageStore.addMessage(
+      error.response?.data?.detail ||
+        'project.share.invitation_send_error_generic',
+      'error'
+    );
   } else {
     // Generic network or unknown error
-    eventMessageStore.addMessage('project.share.invitation_send_error_generic', 'error');
+    eventMessageStore.addMessage(
+      'project.share.invitation_send_error_generic',
+      'error'
+    );
   }
 };
 
@@ -329,7 +385,7 @@ const closeModal = () => {
     selectedUserId: '',
     userMessage: '',
     userLanguage: 'fr',
-    permission: 'read'
+    permission: 'read',
   };
   emailError.value = '';
   userError.value = '';
@@ -356,7 +412,7 @@ const sendProjectInvitation = async () => {
       message: form.value.message,
       language: form.value.language,
       expires_in_days: 7,
-      project_permission: form.value.emailPermission
+      project_permission: form.value.emailPermission,
     };
 
     const response = await sendInvitationAPI(invitationData);
@@ -373,11 +429,20 @@ const sendProjectInvitation = async () => {
       // Handle specific error from server response
       const message = response.data.message.toLowerCase();
       if (message.includes('active invitation already exists')) {
-        eventMessageStore.addMessage('project.share.invitation_send_error_already_invited', 'warning');
+        eventMessageStore.addMessage(
+          'project.share.invitation_send_error_already_invited',
+          'warning'
+        );
       } else if (message.includes('already a member')) {
-        eventMessageStore.addMessage('project.share.invitation_send_error_already_member', 'warning');
+        eventMessageStore.addMessage(
+          'project.share.invitation_send_error_already_member',
+          'warning'
+        );
       } else if (message.includes('project not found')) {
-        eventMessageStore.addMessage('project.share.invitation_send_error_project_not_found', 'error');
+        eventMessageStore.addMessage(
+          'project.share.invitation_send_error_project_not_found',
+          'error'
+        );
       } else {
         eventMessageStore.addMessage(response.data.message, 'error');
       }
@@ -396,7 +461,7 @@ const sendProjectInvitation = async () => {
 
 const sendUserInvitation = async () => {
   userError.value = '';
-  
+
   if (!form.value.selectedUserId) {
     userError.value = t('project.share.user_required');
     return;
@@ -409,7 +474,7 @@ const sendUserInvitation = async () => {
   }
 
   sending.value = true;
-  
+
   try {
     const invitationData = {
       receiver_email: userEmail,
@@ -417,13 +482,16 @@ const sendUserInvitation = async () => {
       message: form.value.userMessage,
       language: form.value.userLanguage,
       expires_in_days: 7,
-      project_permission: form.value.permission
+      project_permission: form.value.permission,
     };
 
     const response = await sendInvitationAPI(invitationData);
-    
+
     if (response.data.success) {
-      eventMessageStore.addMessage('project.share.invitation_sent_success', 'success');
+      eventMessageStore.addMessage(
+        'project.share.invitation_sent_success',
+        'success'
+      );
       form.value.selectedUserId = '';
       form.value.userMessage = '';
       emit('success');
@@ -431,16 +499,28 @@ const sendUserInvitation = async () => {
       // Handle specific error from server response
       const message = response.data.message.toLowerCase();
       if (message.includes('active invitation already exists')) {
-        eventMessageStore.addMessage('project.share.invitation_send_error_already_invited', 'warning');
+        eventMessageStore.addMessage(
+          'project.share.invitation_send_error_already_invited',
+          'warning'
+        );
       } else if (message.includes('already a member')) {
-        eventMessageStore.addMessage('project.share.invitation_send_error_already_member', 'warning');
+        eventMessageStore.addMessage(
+          'project.share.invitation_send_error_already_member',
+          'warning'
+        );
       } else if (message.includes('project not found')) {
-        eventMessageStore.addMessage('project.share.invitation_send_error_project_not_found', 'error');
+        eventMessageStore.addMessage(
+          'project.share.invitation_send_error_project_not_found',
+          'error'
+        );
       } else {
         eventMessageStore.addMessage(response.data.message, 'error');
       }
     } else {
-      eventMessageStore.addMessage('project.share.invitation_send_error', 'error');
+      eventMessageStore.addMessage(
+        'project.share.invitation_send_error',
+        'error'
+      );
     }
   } catch (error) {
     handleInvitationError(error, userEmail);
