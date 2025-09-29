@@ -9,7 +9,10 @@
           + {{ t('configureNamingStandards.add') }}
         </button>
         <button class="configure-naming-add-btn" @click="startImportFlow">
-          {{ t('configureNamingStandards.import') || 'Import from another project' }}
+          {{
+            t('configureNamingStandards.import') ||
+            'Import from another project'
+          }}
         </button>
       </div>
     </div>
@@ -657,8 +660,13 @@
 
 <script setup>
 import UserPrompt from '@components/common/UserPrompt.vue';
-import projectNamingStandardApi from '@/api/service/projectNamingStandard.js';
-import fileTypeService from '@/api/service/fileTypeService.js';
+import {
+  getProjectsWithStandards,
+  getProjectNamingStandardsFull,
+  importSelectedStandards as importSelectedStandardsApi,
+  getProjectFileTypes,
+  importSelected as importSelectedFileTypes,
+} from '@api/service/projectNamingStandard.js';
 import { ref, onMounted, watch, computed, nextTick } from 'vue';
 import { useNamingStandardStore } from '@stores/namingStandard';
 import { useFileTypeStore } from '@stores/fileType';
@@ -679,7 +687,7 @@ const standards = computed(() => {
     // First sort by name alphabetically
     const nameComparison = a.name.localeCompare(b.name);
     if (nameComparison !== 0) return nameComparison;
-    
+
     // If names are equal, sort by file type display name
     const fileTypeA = getFileTypeDisplay(a.project_file_type_id);
     const fileTypeB = getFileTypeDisplay(b.project_file_type_id);
@@ -1099,10 +1107,7 @@ async function extractRegexFromExample() {
         ) {
           run++;
         }
-        if (
-          (charClass === '\\p{L}' || charClass === '\\p{N}') &&
-          run >= 1
-        ) {
+        if ((charClass === '\\p{L}' || charClass === '\\p{N}') && run >= 1) {
           out += `${charClass}{${run}}`;
         } else {
           out += charClass.repeat(run);
@@ -1150,7 +1155,7 @@ async function extractRegexFromExample() {
           name: comp.name,
           value: val,
           length: val.length,
-          example: val.length === 3 ? '001-150' : '01-99'
+          example: val.length === 3 ? '001-150' : '01-99',
         }),
         '',
         (input) => {
@@ -1192,8 +1197,9 @@ async function handleShowAddStandard() {
 
 async function addStandard() {
   const exists = namingStandardStore.standards.some(
-    std =>
-      std.name.trim().toLowerCase() === newStandard.value.name.trim().toLowerCase() &&
+    (std) =>
+      std.name.trim().toLowerCase() ===
+        newStandard.value.name.trim().toLowerCase() &&
       std.project_file_type_id === newStandard.value.project_file_type_id
   );
   if (exists) {
@@ -1207,7 +1213,7 @@ async function addStandard() {
 
   // Block if any regex is empty or only whitespace
   const hasEmptyRegex = newStandard.value.components.some(
-    c => !c.regex || !c.regex.trim()
+    (c) => !c.regex || !c.regex.trim()
   );
   if (hasEmptyRegex) {
     eventMessageStore.addMessage(
@@ -1235,10 +1241,10 @@ async function addStandard() {
         project_file_type_id: newStandard.value.project_file_type_id,
       })),
     };
-    
+
     // Clear cache before adding
     exampleValuesCache.value = {};
-    
+
     await namingStandardStore.addNamingStandard(standardData, projectId.value);
     showAddStandard.value = false;
     resetAddForm();
@@ -1247,11 +1253,14 @@ async function addStandard() {
       'success',
       4000
     );
-    
+
     // Ensure DOM updates and scroll to top
     await nextTick();
     if (standardsTopRef.value) {
-      standardsTopRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      standardsTopRef.value.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
     }
   } catch (err) {
     if (err?.response?.status === 409) {
@@ -1280,7 +1289,7 @@ async function deleteStandard(id) {
   try {
     // Clear cache before deleting
     exampleValuesCache.value = {};
-    
+
     await namingStandardStore.deleteNamingStandard(id, projectId.value);
     eventMessageStore.addMessage(
       'configureNamingStandards.eventMessages.deleteSuccess',
@@ -1298,7 +1307,7 @@ async function deleteStandard(id) {
 
 async function importMissingFileType(std) {
   try {
-    await fileTypeService.importSelected(
+    await importSelectedFileTypes(
       selectedImportProject.value,
       projectId.value,
       [getSourceFileTypeNameById(std.project_file_type_id)]
@@ -1401,7 +1410,9 @@ function toggleAccordion(id) {
 function getPatternOrderedComponents(std) {
   if (!std?.pattern || !Array.isArray(std.components)) return [];
   // Extract component names in order from the pattern
-  const names = Array.from(std.pattern.matchAll(/\{([^}]+)\}/g)).map((m) => m[1]);
+  const names = Array.from(std.pattern.matchAll(/\{([^}]+)\}/g)).map(
+    (m) => m[1]
+  );
   // Map names to actual component objects
   return names
     .map((name) => std.components.find((c) => c.name === name))
@@ -1423,16 +1434,16 @@ function getExampleValuesForStandard(std) {
 
 // Call this whenever standards change to clear the cache
 watch(
-  standards, 
+  standards,
   (newStandards, oldStandards) => {
     // Clear cache when standards change
     exampleValuesCache.value = {};
-    
+
     // Force reactivity update for newly added standards
     if (newStandards.length > (oldStandards?.length || 0)) {
       nextTick(() => {
         // Trigger re-computation of example values for all standards
-        newStandards.forEach(std => {
+        newStandards.forEach((std) => {
           if (std.id && !exampleValuesCache.value[std.id]) {
             // This will trigger the cache to be populated
             getExampleValuesForStandard(std);
@@ -1440,7 +1451,7 @@ watch(
         });
       });
     }
-  }, 
+  },
   { immediate: true, deep: true }
 );
 
@@ -1549,7 +1560,10 @@ function resetAddForm() {
   regexExtractionError.value = '';
   nextTick(() => {
     if (standardsTopRef.value) {
-      standardsTopRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      standardsTopRef.value.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
     }
   });
 }
@@ -1629,22 +1643,20 @@ function isStandardFolded(standardId) {
 
 // Fetch projects with standards (excluding current)
 async function fetchProjectsWithStandards() {
-  const { data } = await projectNamingStandardApi.getProjectsWithStandards();
+  const { data } = await getProjectsWithStandards();
   importProjects.value = data.filter((p) => p.id !== projectId.value);
 }
 
 // Fetch standards for selected project (and source file types)
 async function fetchStandardsForImportProject() {
-  const { data } = await projectNamingStandardApi.getProjectNamingStandardsFull(
+  const { data } = await getProjectNamingStandardsFull(
     selectedImportProject.value
   );
   importStandards.value = data.standards || [];
   selectedStandardIds.value = [];
   foldedStandardIds.value = new Set(importStandards.value.map((std) => std.id));
   // Fetch file types for the source project
-  const fileTypeResp = await fileTypeService.getProjectFileTypes(
-    selectedImportProject.value
-  );
+  const fileTypeResp = await getProjectFileTypes(selectedImportProject.value);
   sourceFileTypes.value = fileTypeResp.data || [];
 }
 
@@ -1672,18 +1684,21 @@ function startImportFlow() {
 // Import selected standards (with event message)
 async function importSelectedStandards() {
   try {
-    await projectNamingStandardApi.importSelectedStandards({
+    await importSelectedStandardsApi({
       target_project_id: projectId.value,
       standard_ids: selectedStandardIds.value,
     });
-    
+
     showImportModal.value = false;
-    
+
     // Clear cache before fetching new data
     exampleValuesCache.value = {};
-    
-    await namingStandardStore.fetchStandardsAndComponentNames(projectId.value, true);
-    
+
+    await namingStandardStore.fetchStandardsAndComponentNames(
+      projectId.value,
+      true
+    );
+
     eventMessageStore.addMessage(
       'configureNamingStandards.eventMessages.importSuccessStandard',
       'success'
@@ -1974,7 +1989,7 @@ function splitPatternBlocks(pattern, sep) {
   text-align: left;
   overflow-wrap: break-word;
   max-width: 180px;
-  white-space: pre-line; 
+  white-space: pre-line;
   box-sizing: border-box;
 }
 
