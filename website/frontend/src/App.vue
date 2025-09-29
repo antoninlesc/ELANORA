@@ -1,6 +1,6 @@
 <template>
-    <router-view />
-    <EventMessageContainer />
+  <router-view />
+  <EventMessageContainer />
 </template>
 
 <script setup>
@@ -8,7 +8,7 @@ import { onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLanguageStore } from '@stores/language';
 import { useAppInfoStore } from '@/stores/appInfo';
-import instanceService from '@/api/service/instanceService';
+import instanceService from '@api/service/instanceService';
 
 import EventMessageContainer from '@components/eventComponent/eventMessageContainer.vue';
 

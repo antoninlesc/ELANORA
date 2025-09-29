@@ -28,10 +28,12 @@
       <main class="profile-content">
         <div class="profile-content-header">
           <div class="profile-header-flex">
-            
             <div>
               <h1>{{ currentMenuItem?.title }}</h1>
-              <p v-if="currentMenuItem?.description" class="profile-content-subtitle">
+              <p
+                v-if="currentMenuItem?.description"
+                class="profile-content-subtitle"
+              >
                 {{ currentMenuItem.description }}
               </p>
             </div>
@@ -72,33 +74,38 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useEventMessageStore } from '@/stores/eventMessage.js'
-import { fetchUserProfile } from '@/api/service/userService.js'
-import ProfileOverview from '@/components/pageSpecific/profile/ProfileOverview.vue'
-import ProfileSettings from '@/components/pageSpecific/profile/ProfileSettings.vue'
-import ProfileSecurity from '@/components/pageSpecific/profile/ProfileSecurity.vue'
-import ProfileNotifications from '@/components/pageSpecific/profile/ProfileNotifications.vue'
+import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
+import { useEventMessageStore } from '@/stores/eventMessage.js';
+import { fetchUserProfile } from '@api/service/userService.js';
+import ProfileOverview from '@/components/pageSpecific/profile/ProfileOverview.vue';
+import ProfileSettings from '@/components/pageSpecific/profile/ProfileSettings.vue';
+import ProfileSecurity from '@/components/pageSpecific/profile/ProfileSecurity.vue';
+import ProfileNotifications from '@/components/pageSpecific/profile/ProfileNotifications.vue';
 
-const { t } = useI18n()
-const route = useRoute()
-const eventMessageStore = useEventMessageStore()
+const { t } = useI18n();
+const route = useRoute();
+const eventMessageStore = useEventMessageStore();
 
 // State
-const currentSection = ref('overview')
-const userProfile = ref(null)
-const loading = ref(true)
-const error = ref('')
+const currentSection = ref('overview');
+const userProfile = ref(null);
+const loading = ref(true);
+const error = ref('');
 
 // Initialize section from route query
 onMounted(() => {
-  if (route.query.tab && ['overview', 'settings', 'security', 'notifications'].includes(route.query.tab)) {
-    currentSection.value = route.query.tab
+  if (
+    route.query.tab &&
+    ['overview', 'settings', 'security', 'notifications'].includes(
+      route.query.tab
+    )
+  ) {
+    currentSection.value = route.query.tab;
   }
-  loadUserProfile()
-})
+  loadUserProfile();
+});
 
 // Menu configuration
 const menuItems = computed(() => [
@@ -132,8 +139,8 @@ const menuItems = computed(() => [
   },
 ]);
 
-const currentMenuItem = computed(() => 
-  menuItems.value.find(item => item.id === currentSection.value)
+const currentMenuItem = computed(() =>
+  menuItems.value.find((item) => item.id === currentSection.value)
 );
 
 // Methods
@@ -154,10 +161,8 @@ async function loadUserProfile() {
     loading.value = false;
   }
 }
-
 </script>
 
 <style scoped>
-@import '../assets/css/profile-page.css';
+@import url('../assets/css/profile-page.css');
 </style>
-

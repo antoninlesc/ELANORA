@@ -221,8 +221,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
-import { sendInvitation } from '@/api/service/invitationService';
-import { fetchActiveUsers } from '@/api/service/userService';
+import { sendInvitation } from '@api/service/invitationService';
+import { fetchActiveUsers } from '@api/service/userService';
 import '@/assets/css/ProjectShareModal.css';
 
 const props = defineProps({

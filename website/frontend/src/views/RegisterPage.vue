@@ -694,18 +694,18 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
-import { validateInvitation } from '@/api/service/invitationService';
-import { registerWithInvitation } from '@/api/service/authService';
+import { validateInvitation } from '@api/service/invitationService';
+import { registerWithInvitation } from '@api/service/authService';
 import {
   getCountries,
   validateCity,
   validatePostalCode,
   validateStreetName,
-} from '@/api/service/locationService';
+} from '@api/service/locationService';
 import {
   checkUsernameAvailability,
   checkEmailAvailability,
-} from '@/api/service/userService';
+} from '@api/service/userService';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -1367,7 +1367,7 @@ const validateStreetInCityField = async () => {
   try {
     // Import the function dynamically to avoid unused import linting errors
     const { validateStreetInCity } = await import(
-      '@/api/service/locationService'
+      '@api/service/locationService'
     );
     const result = await validateStreetInCity(
       form.value.address.streetName,
@@ -1418,7 +1418,7 @@ const validatePostalCodeInCityField = async () => {
   try {
     // Import the function dynamically to avoid unused import linting errors
     const { validatePostalCodeInCity } = await import(
-      '@/api/service/locationService'
+      '@api/service/locationService'
     );
     const result = await validatePostalCodeInCity(
       form.value.address.postalCode,

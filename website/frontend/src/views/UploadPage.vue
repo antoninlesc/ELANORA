@@ -262,7 +262,11 @@ import {
   processUploadFiles,
   confirmUpload,
   cancelUpload,
-} from '@/api/service/uploadService';
+} from '@api/service/uploadService';
+import {
+  fetchSectionsAndGroups,
+  deleteSection,
+} from '@api/service/tierService';
 
 const loading = ref(true);
 const uploadResults = ref([]);
@@ -602,13 +606,10 @@ async function proceedToStep2() {
 // Step 3: Fetch existing tier sections
 async function fetchExistingSections() {
   try {
-    const response = await fetch(
-      `/api/v1/tier/${uploadStore.selectedProject}/sections?include_staged=true`
+    const data = await fetchSectionsAndGroups(
+      uploadStore.selectedProject,
+      true
     );
-    if (!response.ok) {
-      throw new Error('Failed to fetch sections');
-    }
-    const data = await response.json();
     const newSections = data.sections || [];
 
     // Ensure is_staged is boolean and set name property
@@ -790,9 +791,7 @@ async function handleCancelUpload() {
     );
     for (const section of stagedSections) {
       try {
-        await fetch(`/api/v1/tier/section/${section.section_id}`, {
-          method: 'DELETE',
-        });
+        await deleteSection(section.section_id, true);
       } catch (deleteErr) {
         console.error(
           'Error deleting staged section:',

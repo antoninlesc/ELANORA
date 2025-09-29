@@ -44,7 +44,7 @@ import { useI18n } from 'vue-i18n';
 import {
   acceptInvitation,
   rejectInvitation,
-} from '@/api/service/invitationService';
+} from '@api/service/invitationService';
 
 const route = useRoute();
 const { t } = useI18n();

@@ -130,7 +130,7 @@ import {
   acceptInvitation,
   rejectInvitation,
   getInvitationDetails,
-} from '@/api/service/invitationService';
+} from '@api/service/invitationService';
 
 const route = useRoute();
 const { t } = useI18n();

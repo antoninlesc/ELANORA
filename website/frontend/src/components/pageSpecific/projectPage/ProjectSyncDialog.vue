@@ -167,7 +167,7 @@ import {
   declineBackup,
   discardLocalChanges,
   synchronizeProject,
-} from '@/api/service/gitService';
+} from '@api/service/gitService';
 import UserConfirm from '@/components/common/UserConfirm.vue';
 import { useEventMessageStore } from '@stores/eventMessage';
 

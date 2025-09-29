@@ -695,7 +695,7 @@ import {
   renameSection,
   deleteSection,
   moveTierGroup,
-} from '@/api/service/tierService';
+} from '@api/service/tierService';
 import draggable from 'vuedraggable';
 
 const props = defineProps({

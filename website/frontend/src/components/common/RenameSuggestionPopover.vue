@@ -233,7 +233,7 @@ async function confirmRename() {
       }
 
       // Import gitService dynamically to avoid circular dependencies
-      const gitService = (await import('@/api/service/gitService')).default;
+      const gitService = (await import('@api/service/gitService')).default;
 
       console.log('RenameSuggestionPopover props:', {
         projectName: props.projectName,
@@ -519,6 +519,7 @@ async function confirmRename() {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

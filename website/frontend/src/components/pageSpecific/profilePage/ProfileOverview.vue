@@ -1328,7 +1328,7 @@ import { useI18n } from 'vue-i18n';
 import {
   updateUserProfile,
   updateUserAddress,
-} from '@/api/service/userService.js';
+} from '@api/service/userService.js';
 
 const { t } = useI18n();
 
@@ -1505,7 +1505,7 @@ watch(
 // Load countries when component mounts
 const loadCountries = async () => {
   try {
-    const { getCountries } = await import('@/api/service/locationService');
+    const { getCountries } = await import('@api/service/locationService');
     const result = await getCountries();
     if (result.success) {
       countries.value = result.data;
@@ -1581,7 +1581,7 @@ async function validateCityField() {
   addressValidation.value.city.loading = true;
 
   try {
-    const { validateCity } = await import('@/api/service/locationService');
+    const { validateCity } = await import('@api/service/locationService');
     const result = await validateCity(
       editedAddress.value.cityName,
       editedAddress.value.countryId
@@ -1660,9 +1660,7 @@ async function validatePostalCodeField() {
   addressValidation.value.postalCode.loading = true;
 
   try {
-    const { validatePostalCode } = await import(
-      '@/api/service/locationService'
-    );
+    const { validatePostalCode } = await import('@api/service/locationService');
     const result = await validatePostalCode(
       editedAddress.value.postalCode,
       editedAddress.value.countryId
@@ -1708,7 +1706,7 @@ async function validatePostalCodeField() {
 }
 
 async function validateStreetNameField() {
-  const { validateStreetName } = await import('@/api/service/locationService');
+  const { validateStreetName } = await import('@api/service/locationService');
   const result = validateStreetName(editedAddress.value.streetName);
 
   if (!result.isValid) {
@@ -1762,7 +1760,7 @@ async function validateStreetInCityField() {
 
   try {
     const { validateStreetInCity } = await import(
-      '@/api/service/locationService'
+      '@api/service/locationService'
     );
     const result = await validateStreetInCity(
       editedAddress.value.streetName,
@@ -1812,7 +1810,7 @@ async function validatePostalCodeInCityField() {
 
   try {
     const { validatePostalCodeInCity } = await import(
-      '@/api/service/locationService'
+      '@api/service/locationService'
     );
     const result = await validatePostalCodeInCity(
       editedAddress.value.postalCode,
@@ -2251,5 +2249,5 @@ function editAddress() {
 </script>
 
 <style scoped>
-@import '../../../assets/css/profile-overview.css';
+@import url('../../../assets/css/profile-overview.css');
 </style>

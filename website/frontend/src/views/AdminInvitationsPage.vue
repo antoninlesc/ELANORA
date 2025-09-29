@@ -134,8 +134,8 @@ import { useEventMessageStore } from '@stores/eventMessage';
 import {
   sendInvitation,
   getSentInvitations,
-} from '@/api/service/invitationService';
-import projectService from '@/api/service/projectService';
+} from '@api/service/invitationService';
+import projectService from '@api/service/projectService';
 
 const { t } = useI18n();
 const eventMessageStore = useEventMessageStore();

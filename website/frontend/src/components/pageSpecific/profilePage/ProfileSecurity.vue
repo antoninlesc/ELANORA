@@ -105,7 +105,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { changePassword } from '@/api/service/userService.js';
+import { changePassword } from '@api/service/userService.js';
 
 const { t } = useI18n();
 const emit = defineEmits(['show-message']);
@@ -227,5 +227,5 @@ watch(
 </script>
 
 <style scoped>
-@import '../../../assets/css/profile-security.css';
+@import url('../../../assets/css/profile-security.css');
 </style>

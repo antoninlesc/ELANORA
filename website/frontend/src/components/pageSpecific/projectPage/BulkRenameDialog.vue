@@ -104,7 +104,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { generateMediaBasedSuggestions } from '@/utils/filenameFromMediaFile';
 import { isElanFilenameCompliant } from '@/utils/elanFilenameCompliance';
-import gitService from '@/api/service/gitService';
+import { renameFiles } from '@api/service/gitService';
 
 const { t } = useI18n();
 
@@ -243,7 +243,7 @@ async function applyRenames() {
       }));
 
     if (renames.length > 0) {
-      const result = await gitService.renameFiles(props.projectName, renames);
+      const result = await renameFiles(props.projectName, renames);
 
       // Handle conflicts and other results
       if (result.conflicts_count > 0) {

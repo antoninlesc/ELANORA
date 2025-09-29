@@ -119,7 +119,7 @@ import {
   getProjectInvitations,
   resendInvitation,
   cancelInvitation,
-} from '@/api/service/invitationService';
+} from '@api/service/invitationService';
 import ProjectShareModal from '@/components/common/ProjectShareModal.vue';
 
 const { t } = useI18n();
@@ -332,6 +332,7 @@ watch(
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

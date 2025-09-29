@@ -7,8 +7,11 @@ export async function fetchProjectTiers(projectName) {
   return response.data;
 }
 
-export async function fetchSectionsAndGroups(projectId) {
-  const response = await axiosInstance.get(`/tier/${projectId}/sections`);
+export async function fetchSectionsAndGroups(projectId, includeStaged = false) {
+  const params = includeStaged ? { include_staged: true } : {};
+  const response = await axiosInstance.get(`/tier/${projectId}/sections`, {
+    params,
+  });
   return response.data;
 }
 
