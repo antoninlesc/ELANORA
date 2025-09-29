@@ -1,10 +1,3 @@
-/**
- * contactService.js
- *
- * API service for contact form functionality.
- * Provides methods for sending contact messages to administrators.
- */
-
 import axiosInstance from '@api/apiClient.js';
 
 /**
