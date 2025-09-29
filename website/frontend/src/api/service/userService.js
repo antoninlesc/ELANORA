@@ -69,3 +69,16 @@ export async function updateUserAddress(addressData) {
 export async function changePassword(passwordData) {
   return await axiosInstance.put('/user/me/password', passwordData);
 }
+
+export const userService = {
+  fetchUser,
+  fetchUserProfile,
+  fetchActiveUsers,
+  checkUsernameAvailability,
+  checkEmailAvailability,
+  updateUserProfile,
+  updateUserAddress,
+  changePassword,
+};
+
+export default userService;

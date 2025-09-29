@@ -31,9 +31,11 @@
       <div v-if="invitations.length === 0" class="empty-state">
         <div class="empty-icon">📧</div>
         <p>{{ t('projectSettings.invitations.no_invitations') }}</p>
-        <small>{{ t('projectSettings.invitations.no_invitations_desc') }}</small>
+        <small>{{
+          t('projectSettings.invitations.no_invitations_desc')
+        }}</small>
       </div>
-      
+
       <div v-else class="invitations-list">
         <div
           v-for="invitation in invitations"
@@ -46,32 +48,39 @@
               <div class="email-details">
                 <div class="email-address">{{ invitation.receiver_email }}</div>
                 <div class="invitation-date">
-                  {{ t('projectSettings.invitations.sent_on') }} 
+                  {{ t('projectSettings.invitations.sent_on') }}
                   {{ formatDate(invitation.created_at) }}
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div class="invitation-permission">
-            <span class="permission-badge" :class="invitation.project_permission">
-              {{ t(`projectSettings.permissions.${invitation.project_permission}`) }}
+            <span
+              class="permission-badge"
+              :class="invitation.project_permission"
+            >
+              {{
+                t(
+                  `projectSettings.permissions.${invitation.project_permission}`
+                )
+              }}
             </span>
           </div>
-          
+
           <div class="invitation-status">
             <span class="status-badge" :class="invitation.status">
               {{ t(`projectSettings.invitations.status.${invitation.status}`) }}
             </span>
           </div>
-          
+
           <div class="invitation-actions">
             <button
               v-if="canCancelInvitation(invitation)"
               class="btn-resend"
               :disabled="processingInvitations.has(invitation.invitation_id)"
               :title="t('projectSettings.invitations.resend')"
-              @click="resendInvitation(invitation)"
+              @click="handleResendInvitation(invitation)"
             >
               🔄
             </button>
@@ -96,7 +105,6 @@
       @close="closeInviteModal"
       @success="onInvitationSuccess"
     />
-
   </div>
 </template>
 
@@ -107,10 +115,10 @@ import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { useProjectStore } from '@/stores/project';
 import { useUserConfirm } from '@/composables/useUserConfirm';
-import { 
-  getProjectInvitations, 
-  resendInvitation as resendInvitationAPI, 
-  cancelInvitation as cancelInvitationAPI 
+import {
+  getProjectInvitations,
+  resendInvitation,
+  cancelInvitation,
 } from '@/api/service/invitationService';
 import ProjectShareModal from '@/components/common/ProjectShareModal.vue';
 
@@ -150,20 +158,20 @@ const canManageInvitations = computed(() => {
 const loadInvitations = async () => {
   loading.value = true;
   error.value = '';
-  
+
   try {
     if (!projectId.value) {
       console.warn('No project ID available');
       invitations.value = [];
       return;
     }
-    
+
     const response = await getProjectInvitations(projectId.value);
     invitations.value = response.data.invitations || [];
-    
   } catch (err) {
     console.error('Error loading invitations:', err);
-    error.value = err.response?.data?.detail || t('projectSettings.invitations.load_error');
+    error.value =
+      err.response?.data?.detail || t('projectSettings.invitations.load_error');
     invitations.value = [];
   } finally {
     loading.value = false;
@@ -171,8 +179,10 @@ const loadInvitations = async () => {
 };
 
 const canCancelInvitation = (invitation) => {
-  return ['admin', 'owner'].includes(currentUserRole.value) && 
-         ['pending'].includes(invitation.status);
+  return (
+    ['admin', 'owner'].includes(currentUserRole.value) &&
+    ['pending'].includes(invitation.status)
+  );
 };
 
 const formatDate = (dateString) => {
@@ -189,17 +199,20 @@ const onInvitationSuccess = async () => {
   await loadInvitations();
 };
 
-const resendInvitation = async (invitation) => {
+const handleResendInvitation = async (invitation) => {
   processingInvitations.value.add(invitation.invitation_id);
-  
+
   try {
-    await resendInvitationAPI(invitation.invitation_id);
-    eventMessageStore.addMessage('projectSettings.invitations.invitation_resent', 'success');
+    await resendInvitation(invitation.invitation_id);
+    eventMessageStore.addMessage(
+      'projectSettings.invitations.invitation_resent',
+      'success'
+    );
     await loadInvitations();
   } catch (err) {
     console.error('Error resending invitation:', err);
     eventMessageStore.addMessage(
-      err.response?.data?.detail || 'projectSettings.invitations.resend_error', 
+      err.response?.data?.detail || 'projectSettings.invitations.resend_error',
       'error'
     );
   } finally {
@@ -210,29 +223,34 @@ const resendInvitation = async (invitation) => {
 const confirmCancelInvitation = async (invitation) => {
   const confirmed = await userConfirm({
     title: t('projectSettings.invitations.cancel_modal.title'),
-    message: t('projectSettings.invitations.cancel_modal.message', { email: invitation.receiver_email }),
+    message: t('projectSettings.invitations.cancel_modal.message', {
+      email: invitation.receiver_email,
+    }),
     confirmText: t('common.yes_cancel'),
-    cancelText: t('common.no')
+    cancelText: t('common.no'),
   });
-  
+
   if (confirmed) {
-    await cancelInvitation(invitation);
+    await handleCancelInvitation(invitation);
   }
 };
 
-const cancelInvitation = async (invitation) => {
+const handleCancelInvitation = async (invitation) => {
   if (!invitation) return;
-  
+
   processingInvitations.value.add(invitation.invitation_id);
-  
+
   try {
-    await cancelInvitationAPI(invitation.invitation_id);
-    eventMessageStore.addMessage('projectSettings.invitations.invitation_canceled', 'success');
+    await cancelInvitation(invitation.invitation_id);
+    eventMessageStore.addMessage(
+      'projectSettings.invitations.invitation_canceled',
+      'success'
+    );
     await loadInvitations(); // Refresh the list
   } catch (err) {
     console.error('Error canceling invitation:', err);
     eventMessageStore.addMessage(
-      err.response?.data?.detail || 'projectSettings.invitations.cancel_error', 
+      err.response?.data?.detail || 'projectSettings.invitations.cancel_error',
       'error'
     );
   } finally {
@@ -294,7 +312,8 @@ watch(
   font-size: 1rem;
 }
 
-.loading-state, .error-state {
+.loading-state,
+.error-state {
   text-align: center;
   padding: 2rem 1rem;
 }
@@ -310,8 +329,12 @@ watch(
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {
@@ -460,7 +483,8 @@ watch(
   align-items: center;
 }
 
-.btn-resend, .btn-cancel {
+.btn-resend,
+.btn-cancel {
   width: 32px;
   height: 32px;
   border: none;
@@ -478,15 +502,16 @@ watch(
   color: #1e40af;
 }
 
-.btn-resend:hover:not(:disabled) {
-  background: #bfdbfe;
-  transform: scale(1.1);
-}
-
 .btn-cancel {
   background: #fee2e2;
   color: #dc2626;
   font-weight: bold;
+}
+
+.btn-resend:disabled,
+.btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-cancel:hover:not(:disabled) {
@@ -494,9 +519,8 @@ watch(
   transform: scale(1.1);
 }
 
-.btn-resend:disabled, .btn-cancel:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.btn-resend:hover:not(:disabled) {
+  background: #bfdbfe;
+  transform: scale(1.1);
 }
-
 </style>

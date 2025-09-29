@@ -1,9 +1,11 @@
-import axiosClient from '@/api/apiClient';
+import axiosInstance from '@api/apiClient';
 import axios from 'axios';
 
 /**
  * Service for location-related API calls
  */
+
+const LOCATION_PREFIX = '/location';
 
 /**
  * Get all countries from REST Countries API
@@ -35,7 +37,9 @@ export const getCountries = async () => {
 
     // Fallback to internal API if REST Countries fails
     try {
-      const fallbackResponse = await axiosClient.get('/location/countries');
+      const fallbackResponse = await axiosInstance.get(
+        `${LOCATION_PREFIX}/countries`
+      );
       return {
         success: true,
         data: fallbackResponse.data,
@@ -669,3 +673,16 @@ export const validateStreetNumber = (streetNumber) => {
     message: 'Valid street number',
   };
 };
+
+export const locationService = {
+  getCountries,
+  validateCity,
+  validatePostalCode,
+  validatePostalCodeInCity,
+  validateStreetName,
+  validateStreetInCity,
+  validateStreetNumberInStreet,
+  validateStreetNumber,
+};
+
+export default locationService;

@@ -75,8 +75,8 @@
               v-if="uploadStore.selectedFiles.length > 0"
               class="upload-actions"
             >
-              <button class="clear-btn" @click="cancelUpload">
-                {{ $t('uploadPage.cancel') }}
+              <button class="clear-btn" @click="handleCancelUpload">
+                {{ $t('uploadPage.clear') }}
               </button>
               <button
                 class="upload-btn"
@@ -99,7 +99,7 @@
             <!-- Display extracted tiers (add logic later) -->
             <p>{{ $t('uploadPage.step2.completed') }}</p>
             <div class="upload-actions">
-              <button class="clear-btn" @click="cancelUpload">
+              <button class="clear-btn" @click="handleCancelUpload">
                 {{ $t('uploadPage.cancel') }}
               </button>
               <button class="clear-btn" @click="uploadStore.prevStep">
@@ -129,7 +129,7 @@
           />
 
           <div class="upload-actions">
-            <button class="clear-btn" @click="cancelUpload">
+            <button class="clear-btn" @click="handleCancelUpload">
               {{ $t('uploadPage.cancel') }}
             </button>
             <button class="clear-btn" @click="uploadStore.prevStep">
@@ -198,13 +198,13 @@
           </div>
 
           <div class="upload-actions">
-            <button class="clear-btn" @click="cancelUpload">
+            <button class="clear-btn" @click="handleCancelUpload">
               {{ $t('uploadPage.cancel') }}
             </button>
             <button class="clear-btn" @click="uploadStore.prevStep">
               {{ $t('uploadPage.back') }}
             </button>
-            <button class="upload-btn" @click="confirmUpload">
+            <button class="upload-btn" @click="handleConfirmUpload">
               {{ $t('uploadPage.step4.confirm') }}
             </button>
           </div>
@@ -260,8 +260,8 @@ import {
 } from '@/utils/filenameCompliance';
 import {
   processUploadFiles,
-  confirmUpload as confirmUploadApi,
-  cancelUpload as cancelUploadApi,
+  confirmUpload,
+  cancelUpload,
 } from '@/api/service/uploadService';
 
 const loading = ref(true);
@@ -751,10 +751,10 @@ async function proceedToStep4() {
   uploadStore.nextStep();
 }
 
-async function confirmUpload() {
+async function handleConfirmUpload() {
   try {
     // Call the confirmation API using the service
-    await confirmUploadApi(
+    await confirmUpload(
       uploadStore.sessionId,
       uploadStore.tierAssignments,
       uploadStore.newSectionNames,
@@ -775,7 +775,7 @@ async function confirmUpload() {
   }
 }
 
-async function cancelUpload() {
+async function handleCancelUpload() {
   if (!uploadStore.sessionId) {
     // If no session, just reset the store
     uploadStore.reset();
@@ -804,7 +804,7 @@ async function cancelUpload() {
     }
 
     // Call the cancel API using the service
-    await cancelUploadApi(uploadStore.sessionId);
+    await cancelUpload(uploadStore.sessionId);
 
     // Show success message
     eventMessageStore.addMessage('uploadPage.cancel.success', 'info', 3000);

@@ -60,7 +60,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import gitService from '@api/service/gitService';
+import { editProject } from '@api/service/projectService';
 import { useProjectStore } from '@stores/project';
 
 const props = defineProps({
@@ -134,7 +134,7 @@ async function handleEdit() {
   }
   editing.value = true;
   try {
-    await gitService.editProject(
+    await editProject(
       props.project.project_name,
       name.value.trim(),
       description.value.trim()

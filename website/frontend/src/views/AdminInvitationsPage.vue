@@ -135,7 +135,7 @@ import {
   sendInvitation,
   getSentInvitations,
 } from '@/api/service/invitationService';
-import gitService from '@/api/service/gitService';
+import projectService from '@/api/service/projectService';
 
 const { t } = useI18n();
 const eventMessageStore = useEventMessageStore();
@@ -162,7 +162,7 @@ onMounted(async () => {
 
 const loadProjects = async () => {
   try {
-    const response = await gitService.listProjects();
+    const response = await projectService.listProjects();
     projects.value = response.projects || [];
   } catch (error) {
     console.error('Failed to load projects:', error);

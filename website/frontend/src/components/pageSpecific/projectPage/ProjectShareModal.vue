@@ -221,7 +221,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
-import { sendInvitation as sendInvitationAPI } from '@/api/service/invitationService';
+import { sendInvitation } from '@/api/service/invitationService';
 import { fetchActiveUsers } from '@/api/service/userService';
 import '@/assets/css/ProjectShareModal.css';
 
@@ -415,7 +415,7 @@ const sendProjectInvitation = async () => {
       project_permission: form.value.emailPermission,
     };
 
-    const response = await sendInvitationAPI(invitationData);
+    const response = await sendInvitation(invitationData);
 
     if (response.data.success) {
       eventMessageStore.addMessage(
@@ -485,7 +485,7 @@ const sendUserInvitation = async () => {
       project_permission: form.value.permission,
     };
 
-    const response = await sendInvitationAPI(invitationData);
+    const response = await sendInvitation(invitationData);
 
     if (response.data.success) {
       eventMessageStore.addMessage(

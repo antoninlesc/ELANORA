@@ -1,5 +1,10 @@
 import { defineStore } from 'pinia';
-import effectiveNamingStandardApi from '@/api/service/effectiveNamingStandard.js';
+import {
+  getEffectiveStandardsLocations,
+  getEffectiveStandards,
+  assignEffectiveStandard,
+  unassignEffectiveStandard,
+} from '@/api/service/projectStandardService.js';
 
 export const useEffectiveStandardStore = defineStore('effectiveStandard', {
   state: () => ({
@@ -17,7 +22,7 @@ export const useEffectiveStandardStore = defineStore('effectiveStandard', {
       }
       this.isLoading = true;
       try {
-        const { data } = await effectiveNamingStandardApi.getEffectiveStandardsLocations();
+        const { data } = await getEffectiveStandardsLocations();
         this.locations = data.locations || [];
       } catch (err) {
         console.error('Error fetching locations:', err);
@@ -28,27 +33,27 @@ export const useEffectiveStandardStore = defineStore('effectiveStandard', {
     },
     async fetchEffectiveStandards(projectId, locationId, fileTypeIds = []) {
       if (!locationId) return;
-      
+
       // Create unique key for this request
       const requestKey = `${projectId}-${locationId}`;
-      
+
       // Prevent duplicate calls
       if (this.ongoingRequests.has(requestKey)) {
         return;
       }
-      
+
       // Mark as ongoing
       this.ongoingRequests.add(requestKey);
-      
+
       try {
-        const { data } = await effectiveNamingStandardApi.getEffectiveStandards(projectId, locationId);
+        const { data } = await getEffectiveStandards(projectId, locationId);
         const standardsMap = {};
         for (const eff of data.effective_standards) {
           standardsMap[eff.project_file_type_id] = eff.naming_standard_id;
         }
         for (const fileTypeId of fileTypeIds) {
           if (!(fileTypeId in standardsMap)) {
-            standardsMap[fileTypeId] = "";
+            standardsMap[fileTypeId] = '';
           }
         }
         this.effectiveStandards[locationId] = standardsMap;
@@ -61,20 +66,32 @@ export const useEffectiveStandardStore = defineStore('effectiveStandard', {
         this.ongoingRequests.delete(requestKey);
       }
     },
-    async assignEffectiveStandard(projectId, fileTypeId, standardId, locationId) {
-      await effectiveNamingStandardApi.assignEffectiveStandard(projectId, fileTypeId, standardId, locationId);
-      if (!this.effectiveStandards[locationId]) this.effectiveStandards[locationId] = {};
+    async assignEffectiveStandard(
+      projectId,
+      fileTypeId,
+      standardId,
+      locationId
+    ) {
+      await assignEffectiveStandard(
+        projectId,
+        fileTypeId,
+        standardId,
+        locationId
+      );
+      if (!this.effectiveStandards[locationId])
+        this.effectiveStandards[locationId] = {};
       this.effectiveStandards[locationId][fileTypeId] = standardId;
-      
+
       // Clear the ongoing request flag if we need to refetch
       const requestKey = `${projectId}-${locationId}`;
       this.ongoingRequests.delete(requestKey);
     },
     async unassignEffectiveStandard(projectId, fileTypeId, locationId) {
-      await effectiveNamingStandardApi.unassignEffectiveStandard(projectId, fileTypeId, locationId);
-      if (!this.effectiveStandards[locationId]) this.effectiveStandards[locationId] = {};
-      this.effectiveStandards[locationId][fileTypeId] = "";
-      
+      await unassignEffectiveStandard(projectId, fileTypeId, locationId);
+      if (!this.effectiveStandards[locationId])
+        this.effectiveStandards[locationId] = {};
+      this.effectiveStandards[locationId][fileTypeId] = '';
+
       // Clear the ongoing request flag if we need to refetch
       const requestKey = `${projectId}-${locationId}`;
       this.ongoingRequests.delete(requestKey);

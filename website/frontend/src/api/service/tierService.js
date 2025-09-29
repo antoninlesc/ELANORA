@@ -61,3 +61,14 @@ export async function moveTierGroup(
     is_staged: isStaged,
   });
 }
+
+export const tierService = {
+  fetchProjectTiers,
+  fetchSectionsAndGroups,
+  createSection,
+  renameSection,
+  deleteSection,
+  moveTierGroup,
+};
+
+export default tierService;

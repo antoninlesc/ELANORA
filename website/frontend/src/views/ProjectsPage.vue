@@ -326,6 +326,7 @@ import { useProjectStore } from '@stores/project';
 import { useUserStore } from '@stores/user';
 import { useAppInfoStore } from '@stores/appInfo';
 import gitService from '@api/service/gitService';
+import projectService from '@api/service/projectService';
 import FileTree from '@components/common/FileTree.vue';
 import ProjectCreateDialog from '@/components/pageSpecific/projectsPage/ProjectCreateDialog.vue';
 import ProjectShareModal from '@components/common/ProjectShareModal.vue';
@@ -451,7 +452,7 @@ watch(currentPage, (val) => {
 async function fetchProjects() {
   loading.value = true;
   try {
-    const res = await gitService.listUserProjects();
+    const res = await projectService.listUserProjects();
     projects.value = res.projects;
     projectStore.setProjects(res.projects);
     if (res.projects.length === 0) {
@@ -481,7 +482,7 @@ async function fetchProjectFiles() {
 
   filesLoading.value = true;
   try {
-    const res = await gitService.listProjectFiles(
+    const res = await projectService.listProjectFiles(
       currentProjectName.value,
       true
     ); // Always include media info
@@ -579,7 +580,7 @@ async function deleteProject(projectName) {
   if (!confirmed) return;
 
   try {
-    await gitService.deleteProject(projectName);
+    await projectService.deleteProject(projectName);
     await fetchProjects();
     if (currentProjectName.value === projectName) {
       projectStore.clearCurrentProject();

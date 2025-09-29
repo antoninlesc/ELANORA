@@ -93,7 +93,7 @@
           <button
             class="btn btn-green"
             :disabled="actionLoading"
-            @click="restoreFromBackup"
+            @click="handleRestoreFromBackup"
           >
             {{ t('projectsPage.syncDialog.restoreFromBackup') }}
           </button>
@@ -128,7 +128,7 @@
           <button
             class="btn btn-yellow"
             :disabled="actionLoading"
-            @click="syncToMaster"
+            @click="handleSyncToMaster"
           >
             {{ t('projectsPage.syncDialog.syncToMaster') }}
           </button>
@@ -161,7 +161,13 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import gitService from '@/api/service/gitService';
+import {
+  checkSyncStatus,
+  restoreFromBackup,
+  declineBackup,
+  discardLocalChanges,
+  synchronizeProject,
+} from '@/api/service/gitService';
 import UserConfirm from '@/components/common/UserConfirm.vue';
 import { useEventMessageStore } from '@stores/eventMessage';
 
@@ -214,14 +220,14 @@ function closeDialog() {
   emit('close');
 }
 
-async function checkSync() {
+async function handleCheckSync() {
   loading.value = true;
   syncState.value = '';
   syncChanges.value = [];
   syncError.value = '';
   missingType.value = '';
   try {
-    const status = await gitService.checkSyncStatus(props.projectName);
+    const status = await checkSyncStatus(props.projectName);
     if (
       status.status === 'missing_folder' ||
       status.status === 'missing_git' ||
@@ -257,10 +263,10 @@ function openDiffDialog(filename, status) {
   emit('inspect-diff', { filename, status });
 }
 
-async function restoreFromBackup() {
+async function handleRestoreFromBackup() {
   actionLoading.value = true;
   try {
-    await gitService.restoreFromBackup(props.projectName);
+    await restoreFromBackup(props.projectName);
     emit('sync-completed');
     closeDialog();
     eventMessageStore.addMessage(
@@ -283,14 +289,14 @@ async function restoreFromBackup() {
 function confirmDelete() {
   confirmTitle.value = t('projectsPage.syncDialog.deleteProject');
   confirmMessage.value = t('projectsPage.syncDialog.deleteConfirm');
-  confirmAction = deleteProject;
+  confirmAction = handleDeleteProject;
   showConfirm.value = true;
 }
 
-async function deleteProject() {
+async function handleDeleteProject() {
   actionLoading.value = true;
   try {
-    await gitService.declineBackup(props.projectName);
+    await declineBackup(props.projectName);
     emit('sync-completed');
     closeDialog();
     eventMessageStore.addMessage(
@@ -313,14 +319,14 @@ async function deleteProject() {
 function confirmDiscard() {
   confirmTitle.value = t('projectsPage.syncDialog.discardLocalChanges');
   confirmMessage.value = t('projectsPage.syncDialog.discardConfirm');
-  confirmAction = discardLocalChanges;
+  confirmAction = handleDiscardLocalChanges;
   showConfirm.value = true;
 }
 
-async function discardLocalChanges() {
+async function handleDiscardLocalChanges() {
   actionLoading.value = true;
   try {
-    await gitService.discardLocalChanges(props.projectName);
+    await discardLocalChanges(props.projectName);
     emit('sync-completed');
     closeDialog();
     eventMessageStore.addMessage(
@@ -340,10 +346,10 @@ async function discardLocalChanges() {
   }
 }
 
-async function syncToMaster() {
+async function handleSyncToMaster() {
   actionLoading.value = true;
   try {
-    await gitService.synchronizeProject(props.projectName);
+    await synchronizeProject(props.projectName);
     emit('sync-completed');
     closeDialog();
     eventMessageStore.addMessage(
@@ -354,10 +360,7 @@ async function syncToMaster() {
     syncState.value = 'error';
     syncError.value =
       e?.response?.data?.detail || t('projectsPage.syncDialog.syncFailed');
-    eventMessageStore.addMessage(
-      'projectsPage.syncDialog.syncFailed',
-      'error'
-    );
+    eventMessageStore.addMessage('projectsPage.syncDialog.syncFailed', 'error');
   } finally {
     actionLoading.value = false;
   }
@@ -371,7 +374,7 @@ function handleConfirmed() {
 watch(
   () => props.visible,
   (v) => {
-    if (v) checkSync();
+    if (v) handleCheckSync();
   }
 );
 </script>

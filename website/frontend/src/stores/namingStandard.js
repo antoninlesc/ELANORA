@@ -1,5 +1,10 @@
 import { defineStore } from 'pinia';
-import namingStandardService from '@api/service/projectNamingStandard.js';
+import {
+  getStandardsByProject,
+  getProjectStandardsFull,
+  createStandardWithComponents,
+  deleteStandard,
+} from '@/api/service/projectStandardService.js';
 
 export const useNamingStandardStore = defineStore('namingStandard', {
   state: () => ({
@@ -15,7 +20,7 @@ export const useNamingStandardStore = defineStore('namingStandard', {
           this.standards = [];
           return;
         }
-        const response = await namingStandardService.getStandardsByProject(projectId);
+        const response = await getStandardsByProject(projectId);
         this.standards = [...response.data];
       } catch (err) {
         console.error('Error fetching naming standards:', err);
@@ -27,7 +32,11 @@ export const useNamingStandardStore = defineStore('namingStandard', {
       if (this.isLoading) {
         return;
       }
-      if (!forceRefresh && this.standards.length > 0 && this.componentNames.length > 0) {
+      if (
+        !forceRefresh &&
+        this.standards.length > 0 &&
+        this.componentNames.length > 0
+      ) {
         return;
       }
       this.isLoading = true;
@@ -37,9 +46,11 @@ export const useNamingStandardStore = defineStore('namingStandard', {
           this.componentNames = [];
           return;
         }
-        const { data } = await namingStandardService.getProjectNamingStandardsFull(projectId);
+        const { data } = await getProjectStandardsFull(projectId);
         this.standards = Array.isArray(data.standards) ? data.standards : [];
-        this.componentNames = Array.isArray(data.component_names) ? data.component_names : [];
+        this.componentNames = Array.isArray(data.component_names)
+          ? data.component_names
+          : [];
         for (const std of this.standards) {
           if (std.components) {
             std.components = std.components.map((c) => ({
@@ -56,11 +67,11 @@ export const useNamingStandardStore = defineStore('namingStandard', {
       }
     },
     async addNamingStandard(newStandard, projectId) {
-      await namingStandardService.createStandardWithComponents(newStandard);
+      await createStandardWithComponents(newStandard);
       await this.fetchStandardsAndComponentNames(projectId, true);
     },
     async deleteNamingStandard(id, projectId) {
-      await namingStandardService.deleteStandard(id);
+      await deleteStandard(id);
       await this.fetchStandardsAndComponentNames(projectId, true);
     },
   },

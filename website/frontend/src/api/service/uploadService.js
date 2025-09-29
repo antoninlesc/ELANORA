@@ -1,10 +1,6 @@
-/**
- * uploadService.js
- *
- * Service for handling upload-related API calls.
- */
+import axiosInstance from '@/api/apiClient';
 
-import apiClient from '@/api/apiClient';
+const UPLOAD_PREFIX = '/upload';
 
 /**
  * Process uploaded files for tier extraction.
@@ -23,11 +19,15 @@ export const processUploadFiles = async (files, projectId) => {
   // Add project ID
   formData.append('project_id', projectId);
 
-  const response = await apiClient.post('/upload/process', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  const response = await axiosInstance.post(
+    `${UPLOAD_PREFIX}/process`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
 
   return response.data;
 };
@@ -76,11 +76,15 @@ export const confirmUpload = async (
   );
   formData.append('description', description);
 
-  const response = await apiClient.post('/upload/confirm', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  const response = await axiosInstance.post(
+    `${UPLOAD_PREFIX}/confirm`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
 
   return response.data;
 };
@@ -94,11 +98,23 @@ export const cancelUpload = async (sessionId) => {
   const formData = new FormData();
   formData.append('session_id', sessionId);
 
-  const response = await apiClient.post('/upload/cancel', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  const response = await axiosInstance.post(
+    `${UPLOAD_PREFIX}/cancel`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
 
   return response.data;
 };
+
+export const uploadService = {
+  processUploadFiles,
+  confirmUpload,
+  cancelUpload,
+};
+
+export default uploadService;

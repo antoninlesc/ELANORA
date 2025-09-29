@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
 import { useProjectStore } from '@stores/project.js';
-import gitService from '@/api/service/gitService';
+import projectService from '@/api/service/projectService';
 
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import HomePage from '@views/HomePage.vue';
@@ -19,7 +19,6 @@ import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
 import InvitationResponsePage from '@views/InvitationResponsePage.vue';
 import InvitationDecisionPage from '@views/InvitationDecisionPage.vue';
 import TiersPage from '@views/TiersPage.vue';
-import TestProjectUsersPage from '@views/TestProjectUsersPage.vue';
 import ProjectConfigurationPage from '@views/ProjectConfigurationPage.vue';
 import ProfilePage from '@views/ProfilePage.vue';
 import ContributionPage from '@views/ContributionPage.vue';
@@ -112,12 +111,6 @@ const routes = [
         path: 'tiers',
         name: 'TiersPage',
         component: TiersPage,
-        meta: { requiresAuth: true },
-      },
-      {
-        path: 'test/project-users',
-        name: 'TestProjectUsersPage',
-        component: TestProjectUsersPage,
         meta: { requiresAuth: true },
       },
       {
@@ -222,7 +215,7 @@ router.beforeEach(async (to, from, next) => {
       const projectStore = useProjectStore();
       if (!projectStore.projects.length) {
         try {
-          const res = await gitService.listUserProjects();
+          const res = await projectService.listUserProjects();
           if (res?.projects) {
             projectStore.setProjects(res.projects);
             if (res.projects.length === 0) {

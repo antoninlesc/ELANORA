@@ -79,7 +79,10 @@
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UploadFolder from '@components/common/UploadFolder.vue';
-import gitService from '@api/service/gitService';
+import {
+  initProjectFromFolderUpload,
+  createProject,
+} from '@api/service/projectService';
 import { useProjectStore } from '@stores/project';
 
 const { t } = useI18n();
@@ -140,13 +143,13 @@ async function handleCreate() {
   creating.value = true;
   try {
     if (selectedFiles.value.length > 0) {
-      await gitService.initProjectFromFolderUpload({
+      await initProjectFromFolderUpload({
         project_name: name.value.trim(),
         description: description.value.trim() || undefined,
         files: selectedFiles.value,
       });
     } else {
-      await gitService.createProject({
+      await createProject({
         project_name: name.value.trim(),
         description: description.value.trim() || undefined,
       });

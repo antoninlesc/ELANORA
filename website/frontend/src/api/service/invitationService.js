@@ -1,9 +1,3 @@
-/**
- * invitationService.js
- *
- * Provides invitation-related API calls.
- */
-
 import axiosInstance from '@api/apiClient.js';
 
 /**
@@ -100,3 +94,18 @@ export async function cancelInvitation(invitationId) {
 export async function getInvitationDetails(invitationId) {
   return await axiosInstance.get(`/invitation/details/${invitationId}`);
 }
+
+export const invitationService = {
+  sendInvitation,
+  validateInvitation,
+  getSentInvitations,
+  getProjectInvitations,
+  getReceivedInvitations,
+  acceptInvitation,
+  rejectInvitation,
+  resendInvitation,
+  cancelInvitation,
+  getInvitationDetails,
+};
+
+export default invitationService;
