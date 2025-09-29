@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
 import { useProjectStore } from '@stores/project.js';
-import projectService from '@/api/service/projectService';
+import { listUserProjects } from '@api/service/projectService';
 
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import HomePage from '@views/HomePage.vue';
@@ -215,7 +215,7 @@ router.beforeEach(async (to, from, next) => {
       const projectStore = useProjectStore();
       if (!projectStore.projects.length) {
         try {
-          const res = await projectService.listUserProjects();
+          const res = await listUserProjects();
           if (res?.projects) {
             projectStore.setProjects(res.projects);
             if (res.projects.length === 0) {

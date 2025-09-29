@@ -170,7 +170,7 @@ import { ref, computed, onUnmounted, onMounted } from 'vue';
 import FontAwesomeIcon from '@/plugins/fontawesome';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { useI18n } from 'vue-i18n';
-import RenameSuggestionPopover from '@/components/common/RenameSuggestionPopover.vue';
+import RenameSuggestionPopover from '@components/common/RenameSuggestionPopover.vue';
 import {
   processElanFileForMedia,
   clearElanFileCache,
@@ -1052,6 +1052,7 @@ defineExpose({
   100% {
     opacity: 0.7;
   }
+
   50% {
     opacity: 1;
   }

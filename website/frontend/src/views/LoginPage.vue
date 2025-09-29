@@ -91,9 +91,7 @@
             }}</router-link>
           </p>
           <p class="contact-link">
-            <router-link to="/contact">{{
-              t('login.need_help')
-            }}</router-link>
+            <router-link to="/contact">{{ t('login.need_help') }}</router-link>
           </p>
         </div>
       </div>
@@ -162,7 +160,7 @@ onMounted(() => {
 
 const handleLogin = async () => {
   try {
-    const response = await userStore.login({
+    const response = await userStore.performLogin({
       login: loginForm.value.login,
       password: loginForm.value.password,
     });

@@ -120,7 +120,7 @@ import {
   resendInvitation,
   cancelInvitation,
 } from '@api/service/invitationService';
-import ProjectShareModal from '@/components/common/ProjectShareModal.vue';
+import ProjectShareModal from '@components/pageSpecific/projectsPage/ProjectShareModal.vue';
 
 const { t } = useI18n();
 const route = useRoute();

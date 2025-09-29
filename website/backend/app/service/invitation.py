@@ -16,10 +16,8 @@ from app.crud.invitation import (
     get_pending_invitations_by_email,
     update_invitation_status,
 )
-from app.crud.notification import (
-    create_notification,
-    get_notification_preference_by_user_id,
-)
+from app.crud.notification import create_notification
+from app.crud.notification_preference import get_notification_preference_by_user_id
 from app.crud.project import (
     add_user_to_project,
     get_project_admins_and_owners,

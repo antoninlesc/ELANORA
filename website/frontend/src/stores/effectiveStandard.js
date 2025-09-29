@@ -4,7 +4,7 @@ import {
   getEffectiveStandards,
   assignEffectiveStandard,
   unassignEffectiveStandard,
-} from '@/api/service/projectStandardService.js';
+} from '@api/service/projectStandardService.js';
 
 export const useEffectiveStandardStore = defineStore('effectiveStandard', {
   state: () => ({

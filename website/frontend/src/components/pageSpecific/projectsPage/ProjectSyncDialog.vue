@@ -168,7 +168,7 @@ import {
   discardLocalChanges,
   synchronizeProject,
 } from '@api/service/gitService';
-import UserConfirm from '@/components/common/UserConfirm.vue';
+import UserConfirm from '@components/common/UserConfirm.vue';
 import { useEventMessageStore } from '@stores/eventMessage';
 
 const { t } = useI18n();

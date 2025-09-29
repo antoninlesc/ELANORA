@@ -9,7 +9,7 @@
 </template>
 
 <script setup>
-import TierAssignmentTree from '@/components/common/TierAssignmentTree.vue';
+import TierAssignmentTree from '@components/common/TierAssignmentTree.vue';
 
 // Re-export events for backward compatibility
 defineEmits([

@@ -648,7 +648,7 @@
           <button
             class="configure-naming-btn"
             :disabled="selectedStandardIds.length === 0"
-            @click="importSelectedStandards"
+            @click="handleImportSelectedStandards"
           >
             {{ t('configureNamingStandards.importModal.importSelected') }}
           </button>
@@ -663,10 +663,10 @@ import UserPrompt from '@components/common/UserPrompt.vue';
 import {
   getProjectsWithStandards,
   getProjectNamingStandardsFull,
-  importSelectedStandards as importSelectedStandardsApi,
+  importSelectedStandards,
   getProjectFileTypes,
-  importSelected as importSelectedFileTypes,
-} from '@api/service/projectNamingStandard.js';
+  importSelected,
+} from '@api/service/projectStandardService.js';
 import { ref, onMounted, watch, computed, nextTick } from 'vue';
 import { useNamingStandardStore } from '@stores/namingStandard';
 import { useFileTypeStore } from '@stores/fileType';
@@ -1307,11 +1307,9 @@ async function deleteStandard(id) {
 
 async function importMissingFileType(std) {
   try {
-    await importSelectedFileTypes(
-      selectedImportProject.value,
-      projectId.value,
-      [getSourceFileTypeNameById(std.project_file_type_id)]
-    );
+    await importSelected(selectedImportProject.value, projectId.value, [
+      getSourceFileTypeNameById(std.project_file_type_id),
+    ]);
     await fileTypeStore.fetchFileTypes(projectId.value);
     fileTypes.value = [...fileTypeStore.fileTypes];
     await fetchStandardsForImportProject();
@@ -1682,9 +1680,9 @@ function startImportFlow() {
 }
 
 // Import selected standards (with event message)
-async function importSelectedStandards() {
+async function handleImportSelectedStandards() {
   try {
-    await importSelectedStandardsApi({
+    await importSelectedStandards({
       target_project_id: projectId.value,
       standard_ids: selectedStandardIds.value,
     });

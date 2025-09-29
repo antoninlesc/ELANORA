@@ -246,8 +246,8 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import UploadFolder from '@/components/common/UploadFolder.vue';
-import TierAssignmentTree from '@/components/common/TierAssignmentTree.vue';
+import UploadFolder from '@components/common/UploadFolder.vue';
+import TierAssignmentTree from '@components/common/TierAssignmentTree.vue';
 import '@/assets/css/upload-page.css';
 import { useProjectStore } from '@/stores/project';
 import { useEffectiveStandardStore } from '@/stores/effectiveStandard';

@@ -1,9 +1,6 @@
 import { defineStore } from 'pinia';
-import { fetchUser } from '@/api/service/userService';
-import {
-  login as authLogin,
-  logout as authLogout,
-} from '@/api/service/authService';
+import { fetchUser } from '@api/service/userService';
+import { login, logout } from '@api/service/authService';
 
 /* =========================
    Store Definition
@@ -18,7 +15,7 @@ export const useUserStore = defineStore('user', {
       initialized: false,
       isAuthenticated: false,
       loading: true,
-    }
+    },
   }),
 
   /* =========================
@@ -69,10 +66,10 @@ export const useUserStore = defineStore('user', {
      * Handles user login.
      * @param {Object} credentials - { login, password }
      */
-    async login(credentials) {
+    async performLogin(credentials) {
       try {
         // First request: authentication
-        const response = await authLogin(credentials);
+        const response = await login(credentials);
 
         // Mark as authenticated as soon as login succeeds (cookies set)
         this.authState.isAuthenticated = true;
@@ -99,14 +96,14 @@ export const useUserStore = defineStore('user', {
     /**
      * Log user out (with API call).
      */
-    async logout() {
+    async performLogout() {
       try {
         const csrfToken = document.cookie
           .split('; ')
           .find((row) => row.startsWith('elanora_csrf='))
           ?.split('=')[1];
         if (csrfToken) {
-          await authLogout(csrfToken);
+          await logout(csrfToken);
         }
       } catch (error) {
         console.error('Logout error:', error);
@@ -124,7 +121,7 @@ export const useUserStore = defineStore('user', {
       if (document.cookie.indexOf(csrfCookieName) >= 0) {
         document.cookie = `${csrfCookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
       }
-    }
+    },
   },
 
   /* =========================

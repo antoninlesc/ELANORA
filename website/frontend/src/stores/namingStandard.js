@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia';
 import {
   getStandardsByProject,
-  getProjectStandardsFull,
+  getProjectNamingStandardsFull,
   createStandardWithComponents,
   deleteStandard,
-} from '@/api/service/projectStandardService.js';
+} from '@api/service/projectStandardService.js';
 
 export const useNamingStandardStore = defineStore('namingStandard', {
   state: () => ({
@@ -46,7 +46,7 @@ export const useNamingStandardStore = defineStore('namingStandard', {
           this.componentNames = [];
           return;
         }
-        const { data } = await getProjectStandardsFull(projectId);
+        const { data } = await getProjectNamingStandardsFull(projectId);
         this.standards = Array.isArray(data.standards) ? data.standards : [];
         this.componentNames = Array.isArray(data.component_names)
           ? data.component_names

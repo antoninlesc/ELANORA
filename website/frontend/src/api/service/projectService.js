@@ -1,4 +1,4 @@
-import axiosInstance from '@/api/apiClient';
+import axiosInstance from '@api/apiClient';
 
 const PROJECT_PREFIX = '/project';
 

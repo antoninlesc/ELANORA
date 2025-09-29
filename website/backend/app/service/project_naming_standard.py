@@ -11,7 +11,7 @@ from app.crud import (
     project_naming_standard,
     standard_component,
 )
-from app.crud.association import get_project_file_type_by_project_and_file_type
+from app.crud.project_file_type import get_project_file_type_by_project_and_file_type
 from app.crud.project_naming_standard import get_standard_with_components_full
 from app.model.project_file_type import ProjectFileType
 from app.schema.responses.project_naming_standard import (
@@ -246,6 +246,11 @@ class ProjectNamingStandardService:
                 source_pft = await db.get(
                     ProjectFileType, source_standard["project_file_type_id"]
                 )
+                if not source_pft:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Source standard has invalid project_file_type_id",
+                    )
                 file_type_id = source_pft.file_type_id
 
                 # Use the new CRUD util to get the ProjectFileType for the target project
@@ -281,7 +286,9 @@ class ProjectNamingStandardService:
                         source_standard.get("description", ""),
                         components,
                     )
-                    imported_standards.append(NamingStandardResponse(**new_standard))
+                    imported_standards.append(
+                        NamingStandardResponse.model_validate(new_standard)
+                    )
                 except IntegrityError as e:
                     await db.rollback()
                     msg = str(e.orig)

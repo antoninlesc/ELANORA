@@ -285,17 +285,6 @@ async def change_user_password(
         ) from e
 
 
-@router.get("/projects", response_model=ProjectListResponse)
-async def list_user_projects(
-    db: AsyncSession = get_db_dep,
-    user: User = get_user_dep,
-):
-    """List project names that the current user has access to."""
-    instance_id = 1
-    projects = await git_service.list_user_projects(db, user.user_id, instance_id)
-    return ProjectListResponse(projects=projects)
-
-
 @router.get("/users/{user_id}/projects", response_model=UserProjectListResponse)
 async def list_user_projects_admin(
     user_id: int,

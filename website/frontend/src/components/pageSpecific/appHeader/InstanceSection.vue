@@ -139,7 +139,7 @@ function closeDropdown() {
 }
 function handleAction(option) {
   if (option.action === 'logout') {
-    userStore.logout().then(() => {
+    userStore.performLogout().then(() => {
       closeDropdown();
       router.push('/');
     });

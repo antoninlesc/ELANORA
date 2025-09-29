@@ -5,7 +5,10 @@ import logging
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud.association import get_project_users, remove_user_from_project
+from app.crud.user_to_project import (
+    get_project_users,
+    remove_user_from_project,
+)
 from app.crud.project import (
     add_user_to_project,
     get_project_by_id,
@@ -16,6 +19,7 @@ from app.dependency.database import get_db_dep
 from app.dependency.elan_validation import validate_multiple_elan_files
 from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.user import User
+from app.model.user_to_project import ProjectPermission
 from app.schema.requests.git import ProjectCreateRequest
 from app.schema.requests.project import (
     AddUserToProjectRequest,
@@ -178,7 +182,7 @@ async def update_user_project_permission_admin(
             project_name=project.project_name,
             user_id=user_id,
             username=target_user.username,
-            permission=association.permission,
+            permission=ProjectPermission(request.permission.value),
             message=f"User {target_user.username} permission updated to {request.permission} in project {project.project_name}",
         )
 
@@ -265,6 +269,17 @@ async def list_projects(
     """List all project names for the current instance (admin only)."""
     instance_id = 1
     projects = await git_service.list_projects(db, instance_id)
+    return ProjectListResponse(projects=projects)
+
+
+@router.get("/user-projects", response_model=ProjectListResponse)
+async def list_user_projects(
+    db: AsyncSession = get_db_dep,
+    user: User = get_user_dep,
+):
+    """List project names that the current user has access to."""
+    instance_id = 1
+    projects = await git_service.list_user_projects(db, user.user_id, instance_id)
     return ProjectListResponse(projects=projects)
 
 

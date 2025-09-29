@@ -1,5 +1,5 @@
 import { h, render } from 'vue';
-import UserConfirm from '@/components/common/UserConfirm.vue';
+import UserConfirm from '@components/common/UserConfirm.vue';
 
 export function useUserConfirm() {
   return (options) => {

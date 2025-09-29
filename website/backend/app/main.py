@@ -104,8 +104,8 @@ app.include_router(
 )
 app.include_router(
     project_router,
-    prefix=f"{API_V1_PREFIX}/projects",
-    tags=["PROJECTS"],
+    prefix=f"{API_V1_PREFIX}/project",
+    tags=["PROJECT"],
 )
 app.include_router(
     project_standard_router,
@@ -113,7 +113,7 @@ app.include_router(
     tags=["PROJECT STANDARD"],
 )
 app.include_router(
-    notification_router, prefix=f"{API_V1_PREFIX}/notifications", tags=["NOTIFICATION"]
+    notification_router, prefix=f"{API_V1_PREFIX}/notification", tags=["NOTIFICATION"]
 )
 
 app.include_router(upload_router, prefix=f"{API_V1_PREFIX}/upload", tags=["UPLOAD"])

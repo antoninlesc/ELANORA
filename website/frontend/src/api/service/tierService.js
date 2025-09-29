@@ -1,4 +1,4 @@
-import axiosInstance from '@/api/apiClient';
+import axiosInstance from '@api/apiClient';
 
 export async function fetchProjectTiers(projectName) {
   const response = await axiosInstance.get(

@@ -79,10 +79,10 @@ import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@/stores/eventMessage.js';
 import { fetchUserProfile } from '@api/service/userService.js';
-import ProfileOverview from '@/components/pageSpecific/profile/ProfileOverview.vue';
-import ProfileSettings from '@/components/pageSpecific/profile/ProfileSettings.vue';
-import ProfileSecurity from '@/components/pageSpecific/profile/ProfileSecurity.vue';
-import ProfileNotifications from '@/components/pageSpecific/profile/ProfileNotifications.vue';
+import ProfileOverview from '@components/pageSpecific/profilePage/ProfileOverview.vue';
+import ProfileSettings from '@components/pageSpecific/profilePage/ProfileSettings.vue';
+import ProfileSecurity from '@components/pageSpecific/profilePage/ProfileSecurity.vue';
+import ProfileNotifications from '@components/pageSpecific/profilePage/ProfileNotifications.vue';
 
 const { t } = useI18n();
 const route = useRoute();

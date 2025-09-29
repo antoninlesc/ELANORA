@@ -7,7 +7,7 @@ import {
   addProjectFileType,
   deleteProjectFileType,
   updateProjectFileType,
-} from '@/api/service/projectStandardService.js';
+} from '@api/service/projectStandardService.js';
 export const useFileTypeStore = defineStore('fileType', {
   state: () => ({
     fileTypes: [],

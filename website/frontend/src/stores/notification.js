@@ -8,7 +8,7 @@ import {
   deleteNotification,
   getNotificationPreferences,
   updateNotificationPreferences,
-} from '@/api/service/notificationService.js';
+} from '@api/service/notificationService.js';
 
 export const useNotificationStore = defineStore('notification', () => {
   // State

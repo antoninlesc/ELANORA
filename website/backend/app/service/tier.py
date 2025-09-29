@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
-from app.crud.association import get_elan_ids_for_project
+from app.crud.elan_file import get_elan_ids_for_project
 from app.crud.elan_file import get_elan_file_by_id
 from app.crud.project import get_project_by_id, get_project_id_by_name
 from app.crud.tier import get_tiers_by_elan_id
@@ -131,11 +131,6 @@ class TierSectionService:
         project = await get_project_by_id(db, project_id)
         if not project:
             return {"sections": [], "tier_groups": []}
-
-        # Get all tiers available in this project (from all ELAN files)
-        from app.crud.association import get_elan_ids_for_project
-        from app.crud.tier import get_tiers_by_elan_id
-
         elan_ids = await get_elan_ids_for_project(db, project_id)
         all_project_tiers = []
         for elan_id in elan_ids:

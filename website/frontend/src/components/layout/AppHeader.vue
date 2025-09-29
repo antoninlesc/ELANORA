@@ -52,9 +52,9 @@
 <script setup>
 import { useI18n } from 'vue-i18n';
 import { useUserStore } from '@/stores/user';
-import InstanceSection from '@/components/pageSpecific/appHeader/InstanceSection.vue';
-import ProjectSection from '@/components/pageSpecific/appHeader/ProjectSection.vue';
-import NotificationBell from '@/components/common/NotificationBell.vue';
+import InstanceSection from '@components/pageSpecific/appHeader/InstanceSection.vue';
+import ProjectSection from '@components/pageSpecific/appHeader/ProjectSection.vue';
+import NotificationBell from '@components/pageSpecific/appHeader/NotificationBell.vue';
 
 const { t } = useI18n();
 const userStore = useUserStore();

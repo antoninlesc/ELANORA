@@ -97,15 +97,13 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useHead } from '@unhead/vue';
-import StatCard from '@/components/common/StatCard.vue';
+import StatCard from '@components/common/StatCard.vue';
 
 const { t } = useI18n();
 
 useHead({
   title: t('homePage.pageTitle'),
-  meta: [
-    { name: 'description', content: t('homePage.pageDescription') },
-  ],
+  meta: [{ name: 'description', content: t('homePage.pageDescription') }],
 });
 
 // Features data
