@@ -164,25 +164,19 @@ class TierSectionService:
                 )
                 assigned_tier_ids.add(group.tier_id)
 
-        # Add unassigned tiers as tier groups with section_id = None
-        for tier in unique_tiers:
-            if tier.tier_id not in assigned_tier_ids:
-                # Create a temporary tier group entry for unassigned tiers
-                tier_group_info.append(
-                    TierGroupInfo(
-                        tier_group_id=None,  # No actual tier group exists yet
-                        tier_name=tier.tier_name,
-                        section_id=None,  # Unassigned
-                        tier_id=tier.tier_id,
-                        parent_tier_id=tier.parent_tier_id,
-                    )
-                )
+        # Build sections with optional staged flags
+        sections_list = [
+            SectionInfo(
+                section_id=s.tier_section_id,
+                name=s.section_name,
+                is_staged=s.is_staged if include_staged else None,
+                session_id=s.session_id if include_staged else None,
+            )
+            for s in sections
+        ]
 
         return {
-            "sections": [
-                SectionInfo(section_id=s.tier_section_id, name=s.section_name)
-                for s in sections
-            ],
+            "sections": sections_list,
             "tier_groups": tier_group_info,
         }
 
@@ -191,8 +185,8 @@ class TierGroupService:
     @staticmethod
     async def assign_group_to_section(
         db,
-        tier_group_id: int | None,
-        section_id: int | None,
+        tier_group_id: int,
+        section_id: int,
         project_id: int,
         tier_id: int,
         tier_name: str,
@@ -227,16 +221,10 @@ class TierGroupService:
                     )
                     created_or_updated_ids.append(existing_group.tier_group_id)
                 else:
-                    # Create new tier group
-                    group = await create_tier_group(
-                        db,
-                        section_id,
-                        project_id,
-                        tier_id_in_hierarchy,
-                        tier.tier_name,
-                        is_staged,
+                    # This should not happen since tier_group_id is provided, but handle gracefully
+                    raise ValueError(
+                        f"Tier group for tier {tier_id_in_hierarchy} not found"
                     )
-                    created_or_updated_ids.append(group.tier_group_id)
 
             await db.commit()
             return created_or_updated_ids[0] if created_or_updated_ids else None
@@ -246,11 +234,16 @@ class TierGroupService:
 
     @staticmethod
     async def create_group(
-        db, section_id: int | None, project_id: int, tier_id: int, tier_name: str
+        db,
+        section_id: int,
+        project_id: int,
+        tier_id: int,
+        tier_name: str,
+        is_staged: bool = False,
     ):
         try:
             group = await create_tier_group(
-                db, section_id, project_id, tier_id, tier_name
+                db, section_id, project_id, tier_id, tier_name, is_staged
             )
             await db.commit()
             return group

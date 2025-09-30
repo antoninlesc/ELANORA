@@ -65,6 +65,22 @@ export async function moveTierGroup(
   });
 }
 
+export async function createTierGroup(
+  sectionId,
+  projectId,
+  tierId,
+  tierName,
+  isStaged = false
+) {
+  return axiosInstance.post('/tier/tier_group/create', {
+    section_id: sectionId,
+    project_id: projectId,
+    tier_id: tierId,
+    tier_name: tierName,
+    is_staged: isStaged,
+  });
+}
+
 export const tierService = {
   fetchProjectTiers,
   fetchSectionsAndGroups,
@@ -72,6 +88,7 @@ export const tierService = {
   renameSection,
   deleteSection,
   moveTierGroup,
+  createTierGroup,
 };
 
 export default tierService;

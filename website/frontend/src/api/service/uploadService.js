@@ -95,20 +95,13 @@ export const confirmUpload = async (
  * @returns {Promise<Object>} - Cancellation response
  */
 export const cancelUpload = async (sessionId) => {
-  const formData = new FormData();
-  formData.append('session_id', sessionId);
-
-  const response = await axiosInstance.post(
+  return axiosInstance.post(
     `${UPLOAD_PREFIX}/cancel`,
-    formData,
+    { session_id: sessionId },
     {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'application/json' },
     }
   );
-
-  return response.data;
 };
 
 export const uploadService = {

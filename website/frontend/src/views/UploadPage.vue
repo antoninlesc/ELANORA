@@ -117,7 +117,7 @@
           <TierAssignmentTree
             mode="assignment"
             :extracted-tiers="uploadStore.extractedTiers"
-            :existing-sections="existingSections"
+            :existing-sections="uploadStore.existingSections"
             :tier-assignments="uploadStore.tierAssignments"
             :new-section-names="newSectionNames"
             :session-id="uploadStore.sessionId"
@@ -275,8 +275,6 @@ const projectStore = useProjectStore();
 const uploadStore = useUploadStore();
 
 // Step 3: Tier Assignment
-const existingSections = ref([]);
-const newSectionNames = ref({});
 
 // Stores and Composables
 const effectiveStandardStore = useEffectiveStandardStore();
@@ -366,10 +364,15 @@ watch(
   }
 );
 
-// Watch for step changes to fetch sections when entering step 3
+// Watch for step changes to fetch sections when entering step 3 and auto-cancel on back to step 1
 watch(
   () => uploadStore.currentStep,
-  async (newStep) => {
+  async (newStep, oldStep) => {
+    // Automatically cancel if navigating back to step 1 from a higher step
+    if (newStep === 1 && oldStep > 1) {
+      await handleCancelUpload();
+    }
+    // Existing logic for fetching sections on step 3
     if (
       newStep === 3 &&
       uploadStore.selectedProject &&
@@ -518,8 +521,8 @@ const isStep3Valid = computed(() => {
   // Check that all new sections have names
   const allNewSectionsNamed = uniqueNewSections.value.every((sectionName) => {
     return (
-      newSectionNames.value[sectionName] &&
-      newSectionNames.value[sectionName].trim() !== ''
+      uploadStore.newSectionNames[sectionName] &&
+      uploadStore.newSectionNames[sectionName].trim() !== ''
     );
   });
 
@@ -649,14 +652,14 @@ async function fetchExistingSections() {
       }
     });
 
-    existingSections.value = newSections;
+    uploadStore.existingSections = newSections;
   } catch (err) {
     console.error('Error fetching existing sections:', err);
     eventMessageStore.addMessage(
       'uploadPage.step3.fetchSectionsError',
       'error'
     );
-    existingSections.value = [];
+    uploadStore.existingSections = [];
   }
 }
 
@@ -666,7 +669,7 @@ function handleTierAssignment({ tierKey, assignment }) {
 }
 
 function handleNewSectionNameUpdate({ sectionName, newName }) {
-  newSectionNames.value[sectionName] = newName;
+  uploadStore.newSectionNames[sectionName] = newName;
 }
 
 function handleSectionCreated({ section }) {
@@ -683,17 +686,20 @@ function handleSectionCreated({ section }) {
     }
   });
   // Add the new section to existing sections
-  existingSections.value.push(section);
+  uploadStore.existingSections.push(section);
   console.log(
     'UploadPage: Current tierAssignments after:',
     uploadStore.tierAssignments
   );
-  console.log('UploadPage: existingSections after:', existingSections.value);
+  console.log(
+    'UploadPage: existingSections after:',
+    uploadStore.existingSections
+  );
 }
 
 function handleSectionRenamed({ sectionId, newName }) {
   // Update the section name in existing sections
-  const section = existingSections.value.find(
+  const section = uploadStore.existingSections.find(
     (s) => s.section_id === sectionId
   );
   if (section) {
@@ -703,11 +709,11 @@ function handleSectionRenamed({ sectionId, newName }) {
 
 function handleSectionDeleted({ sectionId }) {
   // Remove the section from existing sections
-  const index = existingSections.value.findIndex(
+  const index = uploadStore.existingSections.findIndex(
     (s) => s.section_id === sectionId
   );
   if (index !== -1) {
-    existingSections.value.splice(index, 1);
+    uploadStore.existingSections.splice(index, 1);
   }
 }
 
@@ -731,7 +737,7 @@ async function proceedToStep4() {
   }
 
   // Validate that new sections have names
-  const unnamedSections = Object.entries(newSectionNames.value).filter(
+  const unnamedSections = Object.entries(uploadStore.newSectionNames).filter(
     ([, name]) => {
       return !name || name.trim() === '';
     }
@@ -745,8 +751,8 @@ async function proceedToStep4() {
     return;
   }
 
-  // Store the new section names in the assignments
-  uploadStore.newSectionNames = { ...newSectionNames.value };
+  // Store the new section names in the assignments (already in store)
+  // uploadStore.newSectionNames = { ...uploadStore.newSectionNames };
 
   // Proceed to step 4
   uploadStore.nextStep();
@@ -786,7 +792,7 @@ async function handleCancelUpload() {
 
   try {
     // Delete any staged sections created during this upload session
-    const stagedSections = existingSections.value.filter(
+    const stagedSections = uploadStore.existingSections.filter(
       (section) => section.is_staged
     );
     for (const section of stagedSections) {

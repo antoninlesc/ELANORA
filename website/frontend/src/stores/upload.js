@@ -31,6 +31,7 @@ export const useUploadStore = defineStore('upload', () => {
   const sessionId = ref(null); // From backend
   const description = ref('');
   const isProcessing = ref(false);
+  const existingSections = ref([]); // Existing sections for assignment
 
   // Load initial state
   const initialState = loadFromLocalStorage();
@@ -44,6 +45,8 @@ export const useUploadStore = defineStore('upload', () => {
   if (initialState.sessionId) sessionId.value = initialState.sessionId;
   if (initialState.newSectionNames)
     newSectionNames.value = initialState.newSectionNames;
+  if (initialState.existingSections)
+    existingSections.value = initialState.existingSections;
 
   // Watch for changes and save
   watch(
@@ -55,6 +58,7 @@ export const useUploadStore = defineStore('upload', () => {
       newSectionNames,
       sessionId,
       description,
+      existingSections,
     ],
     () => {
       saveToLocalStorage({
@@ -65,6 +69,7 @@ export const useUploadStore = defineStore('upload', () => {
         newSectionNames: newSectionNames.value,
         sessionId: sessionId.value,
         description: description.value,
+        existingSections: existingSections.value,
       });
     },
     { deep: true }
@@ -103,6 +108,7 @@ export const useUploadStore = defineStore('upload', () => {
     sessionId.value = null;
     description.value = '';
     isProcessing.value = false;
+    existingSections.value = [];
     localStorage.removeItem(STORAGE_KEY);
   }
 
@@ -116,6 +122,7 @@ export const useUploadStore = defineStore('upload', () => {
     sessionId,
     description,
     isProcessing,
+    existingSections,
     isStepValid,
     nextStep,
     prevStep,

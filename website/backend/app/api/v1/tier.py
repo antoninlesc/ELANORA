@@ -7,6 +7,7 @@ from app.schema.requests.tier import (
     DeleteSectionRequest,
     MoveTierGroupRequest,
     RenameSectionRequest,
+    CreateTierGroupRequest,
 )
 from app.schema.responses.tier import SectionsAndGroupsResponse, TierTreeResponse
 from app.service.tier import TierGroupService, TierSectionService, TierService
@@ -69,6 +70,20 @@ async def move_tier_group(request: MoveTierGroupRequest, db: AsyncSession = get_
     return await TierGroupService.assign_group_to_section(
         db,
         request.tier_group_id,
+        request.section_id,
+        request.project_id,
+        request.tier_id,
+        request.tier_name,
+        request.is_staged,
+    )
+
+
+@router.post("/tier_group/create")
+async def create_tier_group(
+    request: CreateTierGroupRequest, db: AsyncSession = get_db_dep
+):
+    return await TierGroupService.create_group(
+        db,
         request.section_id,
         request.project_id,
         request.tier_id,

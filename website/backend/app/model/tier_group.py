@@ -17,8 +17,8 @@ class TierGroup(Base):
     tier_group_id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     section_id: Mapped[int] = mapped_column(
         Integer,
-        ForeignKey("TIER_SECTION.tier_section_id", ondelete="SET NULL"),
-        nullable=True,
+        ForeignKey("TIER_SECTION.tier_section_id", ondelete="CASCADE"),
+        nullable=False,
     )
     project_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PROJECT.project_id"), nullable=False

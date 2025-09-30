@@ -1,7 +1,8 @@
 import os
 import uuid
+import json
 
-from fastapi import Request
+from fastapi import Request, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from slowapi import _rate_limit_exceeded_handler
@@ -61,6 +62,19 @@ def get_client_info(request: Request) -> dict:
     }
 
 
+def safe_json_dumps(obj):
+    """Custom JSON encoder to handle non-serializable objects like bytes."""
+
+    def default(o):
+        if isinstance(o, bytes):
+            return o.decode("utf-8", errors="replace")  # Decode bytes to string
+        raise TypeError(
+            f"Object of type {o.__class__.__name__} is not JSON serializable"
+        )
+
+    return json.dumps(obj, default=default, separators=(",", ":"))
+
+
 async def validation_exception_handler(
     request: Request, exc: Exception
 ) -> JSONResponse:
@@ -85,13 +99,23 @@ async def validation_exception_handler(
             },
         )
 
-        return JSONResponse(
-            status_code=HTTP_400_BAD_REQUEST,
-            content={
-                "detail": exc.errors(),
-                "correlation_id": client_info["correlation_id"],
-            },
-        )
+        try:
+            content = {
+                "detail": str(exc),
+                "errors": exc.errors(),
+            }
+            json_content = safe_json_dumps(content)
+            return JSONResponse(
+                status_code=HTTP_400_BAD_REQUEST,
+                content=json.loads(json_content),
+            )
+        except (TypeError, ValueError):
+            return JSONResponse(
+                status_code=HTTP_400_BAD_REQUEST,
+                content={
+                    "detail": "A validation error occurred, but details could not be serialized."
+                },
+            )
     raise exc
 
 
