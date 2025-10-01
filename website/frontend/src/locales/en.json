@@ -1202,6 +1202,7 @@
       "next": "Proceed to Confirm",
       "unassignedTiersWarning": "All tiers must be assigned to a section before proceeding.",
       "unnamedSectionsWarning": "All new sections must have a name before proceeding.",
+      "proceedDisabledTooltip": "Assign all {count} remaining unassigned tiers to proceed",
       "fetchSectionsError": "Failed to load existing sections",
       "dropTiersHere": "Drop tiers here",
       "unassignedTiers": "Unassigned Tiers",

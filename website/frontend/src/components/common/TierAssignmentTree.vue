@@ -41,6 +41,9 @@
                 </div>
                 <h2 v-else>
                   <span>{{ section.name }}</span>
+                  <span class="section-count"
+                    >({{ getTierCountForSection(section.section_id) }})</span
+                  >
                 </h2>
               </div>
               <div class="tiers-section-actions">
@@ -99,6 +102,11 @@
                         />
                       </button>
                       <span class="tier-name">{{ element.tier_name }}</span>
+                      <span
+                        v-if="element.children.length > 0"
+                        class="section-count"
+                        >({{ getDescendantCount(element) }})</span
+                      >
                       <span v-if="element.file_name" class="tier-file"
                         >({{ element.file_name }})</span
                       >
@@ -139,7 +147,12 @@
 
           <!-- Always show Unsectioned at the bottom -->
           <div class="tiers-section-block unsectioned" style="margin-top: 2rem">
-            <h2>{{ $t('tiersPage.uncategorized') }}</h2>
+            <h2>
+              {{ $t('tiersPage.uncategorized') }}
+              <span class="section-count"
+                >({{ getUnassignedTierCount() }})</span
+              >
+            </h2>
             <draggable
               :list="getTierTreesForSection(null)"
               group="tier-groups"
@@ -177,6 +190,11 @@
                         />
                       </button>
                       <span class="tier-name">{{ element.tier_name }}</span>
+                      <span
+                        v-if="element.children.length > 0"
+                        class="section-count"
+                        >({{ getDescendantCount(element) }})</span
+                      >
                       <span v-if="element.file_name" class="tier-file"
                         >({{ element.file_name }})</span
                       >
@@ -233,6 +251,11 @@
                   <div class="tiers-section-title-container">
                     <h2>
                       {{ section.name }}
+                      <span class="section-count"
+                        >({{
+                          getTierCountForSection(section.section_id)
+                        }})</span
+                      >
                       <span class="section-badge section-badge-production">{{
                         $t('tierAssignment.productionBadge')
                       }}</span>
@@ -278,6 +301,11 @@
                             />
                           </button>
                           <span class="tier-name">{{ element.tier_name }}</span>
+                          <span
+                            v-if="element.children.length > 0"
+                            class="section-count"
+                            >({{ getDescendantCount(element) }})</span
+                          >
                           <span class="tier-file"
                             >({{ element.file_name }})</span
                           >
@@ -341,6 +369,11 @@
                     </div>
                     <h2 v-else>
                       <span>{{ section.name || section.section_name }}</span>
+                      <span class="section-count"
+                        >({{
+                          getTierCountForSection(section.section_id)
+                        }})</span
+                      >
                       <span class="section-badge section-badge-staged">{{
                         $t('tierAssignment.stagedBadge')
                       }}</span>
@@ -404,6 +437,11 @@
                             />
                           </button>
                           <span class="tier-name">{{ element.tier_name }}</span>
+                          <span
+                            v-if="element.children.length > 0"
+                            class="section-count"
+                            >({{ getDescendantCount(element) }})</span
+                          >
                           <span class="tier-file"
                             >({{ element.file_name }})</span
                           >
@@ -472,6 +510,9 @@
                             )
                         "
                       />
+                      <span class="section-count"
+                        >({{ getTierCountForSection(sectionName) }})</span
+                      >
                       <div class="new-section-actions">
                         <button
                           class="tiers-section-action-btn tiers-edit-btn"
@@ -533,6 +574,11 @@
                             <span class="tier-name">{{
                               element.tier_name
                             }}</span>
+                            <span
+                              v-if="element.children.length > 0"
+                              class="section-count"
+                              >({{ getDescendantCount(element) }})</span
+                            >
                             <span class="tier-file"
                               >({{ element.file_name }})</span
                             >
@@ -586,7 +632,12 @@
               class="tiers-section-block unassigned"
               style="margin-top: 2rem"
             >
-              <h2>{{ $t('uploadPage.step3.unassignedTiers') }}</h2>
+              <h2>
+                {{ $t('uploadPage.step3.unassignedTiers') }}
+                <span class="section-count"
+                  >({{ getUnassignedTierCount() }})</span
+                >
+              </h2>
               <draggable
                 :list="getUnassignedTiers()"
                 group="assignment-tiers"
@@ -624,6 +675,11 @@
                           />
                         </button>
                         <span class="tier-name">{{ element.tier_name }}</span>
+                        <span
+                          v-if="element.children.length > 0"
+                          class="section-count"
+                          >({{ getDescendantCount(element) }})</span
+                        >
                         <span class="tier-file">({{ element.file_name }})</span>
                       </div>
                     </div>
@@ -651,31 +707,6 @@
                   </div>
                 </template>
               </draggable>
-            </div>
-
-            <!-- Assignment Summary -->
-            <div class="assignment-summary">
-              <h4>{{ $t('uploadPage.step3.summary') }}</h4>
-              <div class="summary-stats">
-                <div class="stat-item">
-                  <span class="stat-label"
-                    >{{ $t('uploadPage.step3.totalTiers') }}:</span
-                  >
-                  <span class="stat-value">{{ extractedTiers.length }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label"
-                    >{{ $t('uploadPage.step3.assignedTiersCount') }}:</span
-                  >
-                  <span class="stat-value">{{ assignedTiersCount }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label"
-                    >{{ $t('uploadPage.step3.newSectionsCount') }}:</span
-                  >
-                  <span class="stat-value">{{ uniqueNewSections.length }}</span>
-                </div>
-              </div>
             </div>
           </div>
         </template>
@@ -806,13 +837,7 @@ const uniqueNewSections = computed(() => {
   console.log('TierAssignmentTree: uniqueNewSections result:', [
     ...new Set(newAssignments),
   ]);
-  return [...new Set(newAssignments)];
-});
-
-const assignedTiersCount = computed(() => {
-  return Object.values(props.tierAssignments).filter(
-    (assignment) => assignment && assignment !== ''
-  ).length;
+  return [...new Set(newAssignments)].sort();
 });
 
 // Separate existing sections into production and staged
@@ -821,17 +846,21 @@ const productionSections = computed(() => {
     'TierAssignmentTree: Computing productionSections from existingSections:',
     props.existingSections
   );
-  const filtered = props.existingSections.filter((section) => {
-    console.log(
-      'TierAssignmentTree: Checking section:',
-      section.name || section.section_name,
-      'session_id:',
-      section.session_id,
-      'will include in production?',
-      !section.session_id
+  const filtered = props.existingSections
+    .filter((section) => {
+      console.log(
+        'TierAssignmentTree: Checking section:',
+        section.name || section.section_name,
+        'session_id:',
+        section.session_id,
+        'will include in production?',
+        !section.session_id
+      );
+      return !section.session_id;
+    })
+    .sort((a, b) =>
+      (a.name || a.section_name).localeCompare(b.name || b.section_name)
     );
-    return !section.session_id;
-  });
   console.log(
     'TierAssignmentTree: Filtered productionSections:',
     filtered.map((s) => ({
@@ -847,17 +876,21 @@ const stagedSections = computed(() => {
     'TierAssignmentTree: Computing stagedSections from existingSections:',
     props.existingSections
   );
-  const filtered = props.existingSections.filter((section) => {
-    console.log(
-      'TierAssignmentTree: Checking section:',
-      section.name || section.section_name,
-      'session_id:',
-      section.session_id,
-      'will include in staged?',
-      section.session_id === props.sessionId
+  const filtered = props.existingSections
+    .filter((section) => {
+      console.log(
+        'TierAssignmentTree: Checking section:',
+        section.name || section.section_name,
+        'session_id:',
+        section.session_id,
+        'will include in staged?',
+        section.session_id === props.sessionId
+      );
+      return section.session_id === props.sessionId;
+    })
+    .sort((a, b) =>
+      (a.name || a.section_name).localeCompare(b.name || b.section_name)
     );
-    return section.session_id === props.sessionId;
-  });
   console.log(
     'TierAssignmentTree: Filtered stagedSections:',
     filtered.map((s) => ({
@@ -929,6 +962,48 @@ function getUnassignedTiers() {
   });
   console.log('TierAssignmentTree: unassignedTiers result:', unassignedTiers);
   return buildTierTrees(unassignedTiers);
+}
+
+// Functions to count tiers in sections
+function getTierCountForSection(sectionId) {
+  if (props.mode === 'management') {
+    // Management mode: count tier groups in the section
+    return tierGroups.value.filter((tg) => tg.section_id === sectionId).length;
+  } else {
+    // Assignment mode: count assigned tiers in the section
+    return props.extractedTiers.filter((tier) => {
+      const tierKey = tier.tier_id || tier.tier_name;
+      return props.tierAssignments[tierKey] === sectionId;
+    }).length;
+  }
+}
+
+function getUnassignedTierCount() {
+  if (props.mode === 'management') {
+    // Management mode: count tier groups with null section_id
+    return tierGroups.value.filter((tg) => tg.section_id === null).length;
+  } else {
+    // Assignment mode: count tiers with no assignment
+    return props.extractedTiers.filter((tier) => {
+      const tierKey = tier.tier_id || tier.tier_name;
+      const assignment = props.tierAssignments[tierKey];
+      return !assignment || assignment === '';
+    }).length;
+  }
+}
+
+// Function to count all descendants of a tier (recursive)
+function getDescendantCount(tier) {
+  if (!tier.children || tier.children.length === 0) {
+    return 0;
+  }
+
+  let count = tier.children.length;
+  tier.children.forEach((child) => {
+    count += getDescendantCount(child);
+  });
+
+  return count;
 }
 
 async function onAssignmentDrop(targetSectionId, evt) {
@@ -1325,7 +1400,9 @@ async function loadData({ silent = false } = {}) {
     const custom = await fetchSectionsAndGroups(
       currentProject.value.project_id
     );
-    sections.value = custom.sections;
+    sections.value = custom.sections.sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
     tierGroups.value = custom.tier_groups;
     // Clear collapsed states for tiers that no longer exist
     const currentTierIds = new Set(tierGroups.value.map((tg) => tg.tier_id));
@@ -1912,10 +1989,10 @@ export default {
   border: 1px solid #d1d5db;
 }
 
-.section-badge-staged {
-  background: #e3f2fd;
-  color: #1976d2;
-  border: 1px solid #1976d2;
+.section-count {
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .unassigned h2::before {

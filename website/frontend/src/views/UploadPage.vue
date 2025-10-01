@@ -138,6 +138,13 @@
             <button
               class="upload-btn"
               :disabled="!isStep3Valid"
+              :title="
+                !isStep3Valid
+                  ? $t('uploadPage.step3.proceedDisabledTooltip', {
+                      count: unassignedTiersCount,
+                    })
+                  : ''
+              "
               @click="proceedToStep4"
             >
               {{ $t('uploadPage.step3.next') }}
@@ -152,6 +159,133 @@
             <p class="confirmation-description">
               {{ $t('uploadPage.step4.description') }}
             </p>
+
+            <!-- Assignment Summary -->
+            <div class="assignment-summary">
+              <div class="summary-grid">
+                <!-- Tiers Left to Assign -->
+                <div class="summary-card">
+                  <div class="card-header">
+                    <div class="card-icon">
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </div>
+                    <h5 class="card-title">
+                      {{ $t('uploadPage.step3.tiersLeftToAssign') }}
+                    </h5>
+                  </div>
+                  <div class="card-value">
+                    <span class="value-number">{{ unassignedTiersCount }}</span>
+                    <span class="value-label">{{
+                      $t('uploadPage.step3.tiers')
+                    }}</span>
+                  </div>
+                </div>
+
+                <!-- Production Sections Contributed -->
+                <div class="summary-card">
+                  <div class="card-header">
+                    <div class="card-icon">
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M19 11H5M19 11C20.1046 11 21 11.8954 21 13V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V13C3 11.8954 3.89543 11 5 11M19 11V9C19 7.89543 18.1046 7 17 7M5 11V9C5 7.89543 5.89543 7 7 7M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V7M7 7H17"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </div>
+                    <h5 class="card-title">
+                      {{ $t('uploadPage.step3.productionSections') }}
+                    </h5>
+                  </div>
+                  <div class="card-content">
+                    <div
+                      v-if="productionSectionsContributed.length === 0"
+                      class="empty-state"
+                    >
+                      <span class="empty-text">{{
+                        $t('uploadPage.step3.noProductionSections')
+                      }}</span>
+                    </div>
+                    <div v-else class="sections-list">
+                      <span
+                        v-for="sectionName in productionSectionsContributed"
+                        :key="sectionName"
+                        class="section-tag"
+                      >
+                        {{ sectionName }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- New Sections Created -->
+                <div class="summary-card">
+                  <div class="card-header">
+                    <div class="card-icon">
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M12 6V12M12 12V18M12 12H18M12 12H6"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </div>
+                    <h5 class="card-title">
+                      {{ $t('uploadPage.step3.newSectionsCreated') }}
+                    </h5>
+                  </div>
+                  <div class="card-content">
+                    <div
+                      v-if="newSectionsCreated.length === 0"
+                      class="empty-state"
+                    >
+                      <span class="empty-text">{{
+                        $t('uploadPage.step3.noNewSections')
+                      }}</span>
+                    </div>
+                    <div v-else class="sections-list">
+                      <span
+                        v-for="sectionName in newSectionsCreated"
+                        :key="sectionName"
+                        class="section-tag new-section-tag"
+                      >
+                        {{ sectionName }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <div class="upload-summary">
               <h4>{{ $t('uploadPage.step4.summary') }}</h4>
@@ -189,7 +323,6 @@
                 </div>
               </div>
             </div>
-
             <textarea
               v-model="uploadStore.description"
               :placeholder="$t('uploadPage.step4.placeholder')"
@@ -507,6 +640,45 @@ const uniqueNewSections = computed(() => {
   return [...new Set(newAssignments)];
 });
 
+// Step 3: Assignment summary computed properties
+const unassignedTiersCount = computed(() => {
+  return uploadStore.extractedTiers.length - assignedTiersCount.value;
+});
+
+const productionSectionsContributed = computed(() => {
+  const assignedSectionIds = new Set(
+    Object.values(uploadStore.tierAssignments).filter(
+      (assignment) =>
+        assignment &&
+        typeof assignment === 'string' &&
+        assignment !== '' &&
+        assignment !== 'new' &&
+        !assignment.startsWith('local_')
+    )
+  );
+
+  return uploadStore.existingSections
+    .filter((section) => assignedSectionIds.has(section.section_id))
+    .map((section) => section.name)
+    .sort((a, b) => a.localeCompare(b));
+});
+
+const newSectionsCreated = computed(() => {
+  const localSectionIds = new Set(
+    Object.values(uploadStore.tierAssignments).filter(
+      (assignment) =>
+        assignment &&
+        typeof assignment === 'string' &&
+        assignment.startsWith('local_')
+    )
+  );
+
+  return uploadStore.existingSections
+    .filter((section) => localSectionIds.has(section.section_id))
+    .map((section) => section.name)
+    .sort((a, b) => a.localeCompare(b));
+});
+
 // Step 3: Validation for proceeding to step 4
 const isStep3Valid = computed(() => {
   // Check that all tiers are assigned
@@ -617,10 +789,7 @@ async function fetchExistingSections() {
         section.section_id.startsWith('local_')
     );
 
-    const data = await fetchSectionsAndGroups(
-      uploadStore.selectedProject,
-      true
-    );
+    const data = await fetchSectionsAndGroups(uploadStore.selectedProject);
     const newSections = data.sections || [];
 
     // Ensure is_staged is boolean and set name property
@@ -645,10 +814,14 @@ async function fetchExistingSections() {
         section.is_staged
       );
       section.name = section.section_name || section.name;
+      // Ensure section_id is a string for consistent comparison
+      section.section_id = String(section.section_id);
     });
 
     // Clear assignments to sections that no longer exist or are not staged
-    const validSectionIds = new Set(newSections.map((s) => s.section_id));
+    const validSectionIds = new Set(
+      newSections.map((s) => String(s.section_id))
+    );
     Object.keys(uploadStore.tierAssignments).forEach((tierKey) => {
       const assignment = uploadStore.tierAssignments[tierKey];
       if (
@@ -676,7 +849,9 @@ async function fetchExistingSections() {
 
 // Step 3: Handle tier assignment events
 function handleTierAssignment({ tierKey, assignment }) {
-  uploadStore.tierAssignments[tierKey] = assignment;
+  uploadStore.tierAssignments[tierKey] = assignment
+    ? String(assignment)
+    : assignment;
 }
 
 function handleNewSectionNameUpdate({ sectionName, newName }) {
@@ -689,7 +864,7 @@ function handleSectionCreated({ section }) {
     'UploadPage: Current tierAssignments before:',
     uploadStore.tierAssignments
   );
-  const sectionId = section.section_id;
+  const sectionId = String(section.section_id);
   // Clear any existing assignments to this section ID to prevent conflicts from reused IDs
   Object.keys(uploadStore.tierAssignments).forEach((tierKey) => {
     if (uploadStore.tierAssignments[tierKey] === sectionId) {
@@ -697,7 +872,7 @@ function handleSectionCreated({ section }) {
     }
   });
   // Add the new section to existing sections
-  uploadStore.existingSections.push(section);
+  uploadStore.existingSections.push({ ...section, section_id: sectionId });
   console.log(
     'UploadPage: Current tierAssignments after:',
     uploadStore.tierAssignments
@@ -711,7 +886,7 @@ function handleSectionCreated({ section }) {
 function handleSectionRenamed({ sectionId, newName }) {
   // Update the section name in existing sections
   const section = uploadStore.existingSections.find(
-    (s) => s.section_id === sectionId
+    (s) => s.section_id === String(sectionId)
   );
   if (section) {
     section.name = newName;
@@ -721,7 +896,7 @@ function handleSectionRenamed({ sectionId, newName }) {
 function handleSectionDeleted({ sectionId }) {
   // Remove the section from existing sections
   const index = uploadStore.existingSections.findIndex(
-    (s) => s.section_id === sectionId
+    (s) => s.section_id === String(sectionId)
   );
   if (index !== -1) {
     uploadStore.existingSections.splice(index, 1);
@@ -898,8 +1073,7 @@ async function handleCancelUpload() {
 }
 
 .tiers-section h4,
-.new-section-section h4,
-.assignment-summary h4 {
+.new-section-section h4 {
   color: #333;
   margin-bottom: 16px;
   font-size: 1.1rem;
@@ -996,32 +1170,145 @@ async function handleCancelUpload() {
 }
 
 .assignment-summary {
-  margin-top: 24px;
-  padding: 16px;
-  background: #f5f5f5;
-  border-radius: 8px;
+  margin-top: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 10%),
+    0 2px 4px -2px rgb(0 0 0 / 10%);
 }
 
-.summary-stats {
+.summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 8px;
 }
 
-.stat-item {
+.summary-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+}
+
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -8px rgb(0 0 0 / 15%);
+}
+
+.card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.stat-label {
+.card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 10px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.card-title {
+  color: #374151;
+  font-size: 1rem;
   font-weight: 600;
-  color: #555;
+  margin: 0;
 }
 
-.stat-value {
-  font-weight: 700;
-  color: #1976d2;
+.card-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.value-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.value-label {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.card-content {
+  min-height: 60px;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+}
+
+.empty-text {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.sections-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 60px;
+  align-items: flex-start;
+  align-content: flex-start;
+}
+
+.section-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.section-tag:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.new-section-tag {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.new-section-tag:hover {
+  background: linear-gradient(135deg, #fde68a, #fcd34d);
 }
 
 /* Step 4: Confirmation Styles */

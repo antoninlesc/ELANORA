@@ -231,8 +231,15 @@
   font-weight: 500;
   color: #374151;
   font-size: 0.875rem;
-  flex: 1;
   line-height: 1.4;
+  position: relative;
+  z-index: 2;
+}
+
+.tier-file {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: #6b7280;
   position: relative;
   z-index: 2;
 }
@@ -513,4 +520,26 @@
 .tiers-edit-input:focus {
   border-color: #1565c0;
   box-shadow: 0 0 0 3px rgb(25 118 210 / 10%);
+}
+
+/* Section badges */
+.section-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.section-badge-production {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.section-badge-staged {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e3f2fd 100%);
+  color: #1976d2;
+  border: 1px solid #1976d2;
 }
