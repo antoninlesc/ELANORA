@@ -73,7 +73,7 @@ async def confirm_upload_service(
             db,
             upload_session.project_id,
             section_name,
-            is_staged=True,
+            is_staged=True,  # Keep staged until admin approval
             session_id=session_id,
         )
         section_mapping[section_name] = tier_section.tier_section_id
@@ -91,14 +91,14 @@ async def confirm_upload_service(
         # Get section_id from mapping, or None if not assigned to a section
         section_id = section_mapping.get(section_name) if section_name else None
 
-        # Create tier group (staged)
+        # Create tier group (staged until admin approval)
         await create_tier_group(
             db,
             section_id=section_id,
             project_id=upload_session.project_id,
             tier_id=tier_id,
             tier_name=tier_name,
-            is_staged=True,
+            is_staged=True,  # Keep staged until admin approval
             session_id=session_id,
         )
 

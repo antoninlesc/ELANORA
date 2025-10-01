@@ -1,5 +1,7 @@
 <template>
-  <div :class="{ 'dragging-disable-interaction': isDragging }">
+  <div
+    :class="{ 'dragging-disable-interaction': isDragging || movingInProgress }"
+  >
     <div v-if="loading" class="tiers-page-loading">
       {{ $t('tiersPage.loading') }}
     </div>
@@ -97,6 +99,9 @@
                         />
                       </button>
                       <span class="tier-name">{{ element.tier_name }}</span>
+                      <span v-if="element.file_name" class="tier-file"
+                        >({{ element.file_name }})</span
+                      >
                     </div>
                   </div>
                   <template v-if="!element.collapsed">
@@ -107,6 +112,9 @@
                       :style="{ marginLeft: (element.level + 1) * 20 + 'px' }"
                     >
                       <span class="tier-name">{{ child.tier_name }}</span>
+                      <span v-if="child.file_name" class="tier-file"
+                        >({{ child.file_name }})</span
+                      >
                     </div>
                   </template>
                 </div>
@@ -169,6 +177,9 @@
                         />
                       </button>
                       <span class="tier-name">{{ element.tier_name }}</span>
+                      <span v-if="element.file_name" class="tier-file"
+                        >({{ element.file_name }})</span
+                      >
                     </div>
                   </div>
                   <template v-if="!element.collapsed">
@@ -179,6 +190,9 @@
                       :style="{ marginLeft: (element.level + 1) * 20 + 'px' }"
                     >
                       <span class="tier-name">{{ child.tier_name }}</span>
+                      <span v-if="child.file_name" class="tier-file"
+                        >({{ child.file_name }})</span
+                      >
                     </div>
                   </template>
                 </div>
@@ -621,7 +635,9 @@
                         :style="{ marginLeft: (element.level + 1) * 20 + 'px' }"
                       >
                         <span class="tier-name">{{ child.tier_name }}</span>
-                        <span class="tier-file">({{ child.file_name }})</span>
+                        <span v-if="child.file_name" class="tier-file"
+                          >({{ child.file_name }})</span
+                        >
                       </div>
                     </template>
                   </div>
@@ -682,7 +698,6 @@ import {
   renameSection,
   deleteSection,
   moveTierGroup,
-  createTierGroup,
 } from '@api/service/tierService';
 import draggable from 'vuedraggable';
 
@@ -756,6 +771,8 @@ const isDragging = ref(false);
 const dragInProgress = ref(false);
 const collapsedStates = ref(new Map());
 const newSectionId = ref(null);
+const movingInProgress = ref(false);
+const localSectionCounter = ref(0);
 
 // Assignment mode computed properties
 const hasNewSectionAssignments = computed(() => {
@@ -931,6 +948,10 @@ async function onAssignmentDrop(targetSectionId, evt) {
     return;
   }
 
+  if (movingInProgress.value) return; // Prevent double-submit
+
+  movingInProgress.value = true;
+
   console.log(
     'TierAssignmentTree: Moving tier:',
     movedTier.tier_name,
@@ -952,83 +973,56 @@ async function onAssignmentDrop(targetSectionId, evt) {
     assignment = 'new';
   }
 
-  try {
-    if (props.mode === 'assignment') {
-      // For assignment mode, handle unassigned tiers by creating groups first
-      let groupId = movedTier.tier_group_id;
-      if (!groupId) {
-        // Create new group for unassigned tier
-        console.log(
-          'TierAssignmentTree: Creating new tier group for unassigned tier:',
-          movedTier.tier_name
-        );
-        const response = await createTierGroup(
-          assignment, // section_id
-          currentProject.value.project_id,
-          movedTier.tier_id,
-          movedTier.tier_name,
-          true // is_staged
-        );
-        groupId = response.data.tier_group_id;
-        // Update the tier with the new group id for future operations
-        movedTier.tier_group_id = groupId;
-        console.log(
-          'TierAssignmentTree: Created group with ID:',
-          groupId,
-          'for tier:',
-          movedTier.tier_name
-        );
-      } else {
-        // Existing group: move it
-        console.log(
-          'TierAssignmentTree: Moving existing tier group:',
-          groupId,
-          'to section:',
-          assignment
-        );
-        await moveTierGroup(
-          groupId,
-          assignment,
-          currentProject.value.project_id,
-          movedTier.tier_id,
-          movedTier.tier_name,
-          true // is_staged
-        );
-      }
-    }
+  // For assignment mode, keep everything local - no DB calls
+  // Handle tier groups: when moving a parent tier, move all its children too
+  const tiersToAssign = [movedTier];
+  if (movedTier.children && movedTier.children.length > 0) {
+    // Add all children of this tier group
+    tiersToAssign.push(...movedTier.children);
+  }
 
-    // Handle tier groups: when moving a parent tier, move all its children too
-    const tiersToAssign = [movedTier];
-    if (movedTier.children && movedTier.children.length > 0) {
-      // Add all children of this tier group
-      tiersToAssign.push(...movedTier.children);
-    }
+  console.log(
+    'TierAssignmentTree: Assigning tiers:',
+    tiersToAssign.map((t) => t.tier_name),
+    'to assignment:',
+    assignment
+  );
 
+  // Assign all tiers in the group
+  tiersToAssign.forEach((tier) => {
+    const tierKey = tier.tier_id || tier.tier_name;
     console.log(
-      'TierAssignmentTree: Assigning tiers:',
-      tiersToAssign.map((t) => t.tier_name),
-      'to assignment:',
+      'TierAssignmentTree: Emitting tier-assigned for tier:',
+      tierKey,
+      'assignment:',
       assignment
     );
+    emit('tier-assigned', { tierKey, assignment });
+  });
 
-    // Assign all tiers in the group
-    tiersToAssign.forEach((tier) => {
-      const tierKey = tier.tier_id || tier.tier_name;
-      console.log(
-        'TierAssignmentTree: Emitting tier-assigned for tier:',
-        tierKey,
-        'assignment:',
-        assignment
-      );
-      emit('tier-assigned', { tierKey, assignment });
-    });
-  } catch (error) {
-    console.error('Failed to move tier in assignment mode:', error);
-    eventMessageStore.addMessage(
-      'tiersPage.eventMessages.tierMoveFailed',
-      'error'
+  // Add success message for assignment (using existing key for consistency)
+  let destinationName;
+  if (assignment === null) {
+    destinationName = t('uploadPage.step3.unassignedTiers');
+  } else {
+    const section = props.existingSections.find(
+      (s) => s.section_id === assignment
     );
+    destinationName = section ? section.name : assignment;
   }
+
+  // Use the same message key as in management mode for moving tiers
+  eventMessageStore.addMessage(
+    'tiersPage.eventMessages.tierMoved',
+    'success',
+    3000,
+    {
+      tierName: movedTier.tier_name,
+      destination: destinationName,
+    }
+  );
+
+  movingInProgress.value = false;
 }
 
 function startRenameNewSection(sectionName) {
@@ -1101,31 +1095,22 @@ async function createNewSection() {
   );
   try {
     if (props.mode === 'assignment') {
-      // For assignment mode, create a staged section via backend
+      // For assignment mode, create a local section object
       console.log(
-        'TierAssignmentTree: Creating staged section for project:',
+        'TierAssignmentTree: Creating local section for project:',
         currentProject.value?.project_id
       );
-      const response = await createSection(
-        currentProject.value.project_id,
-        'New Section',
-        true, // is_staged
-        props.sessionId // session_id
-      );
-      const newSection = response.data;
-      newSection.section_id = newSection.tier_section_id;
-      newSection.name =
-        newSection.section_name || newSection.name || 'New Section';
-      const sectionId = newSection.tier_section_id || newSection.section_id;
+      const newSection = {
+        section_id: `local_${++localSectionCounter.value}`,
+        name: 'New Section',
+        is_staged: true,
+        session_id: props.sessionId,
+        project_id: currentProject.value.project_id,
+      };
+
       console.log(
-        'TierAssignmentTree: Created section with ID:',
-        sectionId,
-        'tier_section_id:',
-        newSection.tier_section_id,
-        'section_id:',
-        newSection.section_id,
-        'full response:',
-        response
+        'TierAssignmentTree: Created local section with ID:',
+        newSection.section_id
       );
 
       // Emit event to parent to update existing sections
@@ -1136,7 +1121,7 @@ async function createNewSection() {
       emit('section-created', { section: newSection });
 
       // Set the new section ID for scrolling
-      newSectionId.value = sectionId;
+      newSectionId.value = newSection.section_id;
 
       // Wait for DOM update and scroll to new section
       nextTick(() => {
@@ -1210,6 +1195,18 @@ watch(
       old: oldVal,
       new: newVal,
     });
+    // Update the local section counter based on existing local sections
+    const localIds = newVal
+      .filter(
+        (section) =>
+          section.section_id &&
+          typeof section.section_id === 'string' &&
+          section.section_id.startsWith('local_')
+      )
+      .map((section) => parseInt(section.section_id.split('_')[1]) || 0);
+    if (localIds.length > 0) {
+      localSectionCounter.value = Math.max(...localIds);
+    }
   },
   { deep: true }
 );
@@ -1527,6 +1524,9 @@ async function onDrop(newSectionId, evt) {
   const movedGroup = evt.added.element;
   if (!movedGroup) return;
 
+  if (movingInProgress.value) return; // Prevent double-submit
+
+  movingInProgress.value = true;
   try {
     await moveTierGroup(
       movedGroup.tier_group_id,
@@ -1573,6 +1573,8 @@ async function onDrop(newSectionId, evt) {
       'tiersPage.eventMessages.tierMoveFailed',
       'error'
     );
+  } finally {
+    movingInProgress.value = false;
   }
 }
 

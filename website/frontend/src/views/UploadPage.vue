@@ -119,7 +119,7 @@
             :extracted-tiers="uploadStore.extractedTiers"
             :existing-sections="uploadStore.existingSections"
             :tier-assignments="uploadStore.tierAssignments"
-            :new-section-names="newSectionNames"
+            :new-section-names="uploadStore.newSectionNames"
             :session-id="uploadStore.sessionId"
             @tier-assigned="handleTierAssignment"
             @new-section-name-updated="handleNewSectionNameUpdate"
@@ -609,6 +609,14 @@ async function proceedToStep2() {
 // Step 3: Fetch existing tier sections
 async function fetchExistingSections() {
   try {
+    // Preserve local sections that were loaded from localStorage
+    const preservedLocalSections = uploadStore.existingSections.filter(
+      (section) =>
+        section.section_id &&
+        typeof section.section_id === 'string' &&
+        section.section_id.startsWith('local_')
+    );
+
     const data = await fetchSectionsAndGroups(
       uploadStore.selectedProject,
       true
@@ -646,20 +654,23 @@ async function fetchExistingSections() {
       if (
         assignment &&
         assignment !== 'new' &&
-        !validSectionIds.has(assignment)
+        !validSectionIds.has(assignment) &&
+        !preservedLocalSections.some((s) => s.section_id === assignment)
       ) {
         uploadStore.tierAssignments[tierKey] = '';
       }
     });
 
-    uploadStore.existingSections = newSections;
+    // Merge backend sections with preserved local sections
+    uploadStore.existingSections = [...newSections, ...preservedLocalSections];
   } catch (err) {
     console.error('Error fetching existing sections:', err);
     eventMessageStore.addMessage(
       'uploadPage.step3.fetchSectionsError',
       'error'
     );
-    uploadStore.existingSections = [];
+    // On error, keep the existing sections (which may include local sections from localStorage)
+    // but don't modify them
   }
 }
 

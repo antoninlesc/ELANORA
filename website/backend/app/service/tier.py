@@ -133,9 +133,12 @@ class TierSectionService:
             return {"sections": [], "tier_groups": []}
         elan_ids = await get_elan_ids_for_project(db, project_id)
         all_project_tiers = []
+        tier_elan_map = {}
         for elan_id in elan_ids:
             tiers = await get_tiers_by_elan_id(db, elan_id)
             all_project_tiers.extend(tiers)
+            for tier in tiers:
+                tier_elan_map[tier.tier_id] = elan_id
 
         # Remove duplicates (same tier might appear in multiple files)
         seen_tier_ids = set()
@@ -153,6 +156,12 @@ class TierSectionService:
 
             tier = await get_tier_by_id(db, group.tier_id)
             if tier:
+                elan_id = tier_elan_map.get(group.tier_id)
+                if elan_id is not None:
+                    elan_file = await get_elan_file_by_id(db, elan_id)
+                    file_name = elan_file.filename if elan_file else None
+                else:
+                    file_name = None
                 tier_group_info.append(
                     TierGroupInfo(
                         tier_group_id=group.tier_group_id,
@@ -160,6 +169,7 @@ class TierSectionService:
                         section_id=group.section_id,
                         tier_id=group.tier_id,
                         parent_tier_id=tier.parent_tier_id,
+                        file_name=file_name,
                     )
                 )
                 assigned_tier_ids.add(group.tier_id)
@@ -186,13 +196,21 @@ class TierGroupService:
     async def assign_group_to_section(
         db,
         tier_group_id: int,
-        section_id: int,
+        section_id: int | None,  # Allow None for unassigned
         project_id: int,
         tier_id: int,
         tier_name: str,
         is_staged: bool = False,
     ):
         try:
+            # Validate section_id if provided (not None)
+            if section_id is not None:
+                from app.crud.tier_section import get_tier_section_by_id
+
+                section = await get_tier_section_by_id(db, section_id)
+                if not section:
+                    raise ValueError(f"Section with id {section_id} does not exist")
+
             # Get the tier hierarchy (parent + all children)
             from app.crud.tier_group import get_tier_hierarchy
 
@@ -235,13 +253,21 @@ class TierGroupService:
     @staticmethod
     async def create_group(
         db,
-        section_id: int,
+        section_id: int | None,  # Allow None for unassigned
         project_id: int,
         tier_id: int,
         tier_name: str,
         is_staged: bool = False,
     ):
         try:
+            # Validate section_id if provided (not None)
+            if section_id is not None:
+                from app.crud.tier_section import get_tier_section_by_id
+
+                section = await get_tier_section_by_id(db, section_id)
+                if not section:
+                    raise ValueError(f"Section with id {section_id} does not exist")
+
             group = await create_tier_group(
                 db, section_id, project_id, tier_id, tier_name, is_staged
             )

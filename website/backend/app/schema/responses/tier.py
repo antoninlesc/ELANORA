@@ -27,9 +27,10 @@ class SectionInfo(CustomBaseModel):
 class TierGroupInfo(CustomBaseModel):
     tier_group_id: int | None
     tier_name: str
-    section_id: int
+    section_id: int | None = None
     tier_id: int
     parent_tier_id: int | None = None
+    file_name: str | None = None
 
 
 class SectionsAndGroupsResponse(CustomBaseModel):

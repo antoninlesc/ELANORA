@@ -25,7 +25,7 @@ class DeleteSectionRequest(CustomBaseModel):
 
 class MoveTierGroupRequest(CustomBaseModel):
     tier_group_id: int
-    section_id: int
+    section_id: int | None  # Allow None for unassigned
     project_id: int
     tier_id: int
     tier_name: str
@@ -33,7 +33,7 @@ class MoveTierGroupRequest(CustomBaseModel):
 
 
 class CreateTierGroupRequest(CustomBaseModel):
-    section_id: int
+    section_id: int | None  # Allow None for unassigned
     project_id: int
     tier_id: int
     tier_name: str
