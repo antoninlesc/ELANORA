@@ -203,212 +203,227 @@
               {{ $t('uploadPage.step3.description') }}
             </p>
 
-            <!-- Production Sections (Read-only for assignment) -->
-            <div
-              v-for="section in productionSections"
-              :key="section.section_id"
-              class="tiers-section-block tiers-section-block-production"
-              :data-section-id="section.section_id"
-            >
-              <div class="tiers-section-header">
-                <div class="tiers-section-title-container">
-                  <h2>
-                    {{ section.name }}
-                    <span class="section-badge section-badge-production">{{
-                      $t('tierAssignment.productionBadge')
-                    }}</span>
-                  </h2>
-                </div>
-              </div>
-              <draggable
-                :list="getAssignedTiersForSection(section.section_id)"
-                group="assignment-tiers"
-                :move="onMove"
-                item-key="tier_id"
-                class="tier-group-draggable"
-                :scroll="true"
-                :force-fallback="true"
-                :scroll-sensitivity="100"
-                :scroll-speed="20"
-                @change="(evt) => onAssignmentDrop(section.section_id, evt)"
-                @start="onDragStart"
-                @end="onDragEnd"
+            <!-- Production Sections Group -->
+            <div class="section-group production-group">
+              <h3 class="section-group-title">
+                {{ $t('uploadPage.step3.existingSections') }}
+              </h3>
+              <!-- Production Sections (Read-only for assignment) -->
+              <div
+                v-for="section in productionSections"
+                :key="section.section_id"
+                class="tiers-section-block tiers-section-block-production"
+                :data-section-id="section.section_id"
               >
-                <template #item="{ element }">
-                  <div class="tier-tree-item">
-                    <div
-                      class="tier-item"
-                      :class="{
-                        'tier-parent': element.children.length > 0,
-                      }"
-                      :style="{ marginLeft: element.level * 20 + 'px' }"
-                      @click="handleTierClick(element)"
-                    >
-                      <div class="tier-content">
-                        <button
-                          v-if="element.children.length > 0"
-                          class="collapse-button"
-                        >
-                          <font-awesome-icon
-                            :icon="
-                              element.collapsed
-                                ? 'fa-solid fa-chevron-right'
-                                : 'fa-solid fa-chevron-down'
-                            "
-                            size="sm"
-                          />
-                        </button>
-                        <span class="tier-name">{{ element.tier_name }}</span>
-                        <span class="tier-file">({{ element.file_name }})</span>
-                      </div>
-                    </div>
-                    <template v-if="!element.collapsed">
+                <div class="tiers-section-header">
+                  <div class="tiers-section-title-container">
+                    <h2>
+                      {{ section.name }}
+                      <span class="section-badge section-badge-production">{{
+                        $t('tierAssignment.productionBadge')
+                      }}</span>
+                    </h2>
+                  </div>
+                </div>
+                <draggable
+                  :list="getAssignedTiersForSection(section.section_id)"
+                  group="assignment-tiers"
+                  :move="onMove"
+                  item-key="tier_id"
+                  class="tier-group-draggable"
+                  :scroll="true"
+                  :force-fallback="true"
+                  :scroll-sensitivity="100"
+                  :scroll-speed="20"
+                  @change="(evt) => onAssignmentDrop(section.section_id, evt)"
+                  @start="onDragStart"
+                  @end="onDragEnd"
+                >
+                  <template #item="{ element }">
+                    <div class="tier-tree-item">
                       <div
-                        v-for="child in element.children"
-                        :key="child.tier_id"
-                        class="tier-item tier-child"
-                        :style="{
-                          marginLeft: (element.level + 1) * 20 + 'px',
+                        class="tier-item"
+                        :class="{
+                          'tier-parent': element.children.length > 0,
                         }"
+                        :style="{ marginLeft: element.level * 20 + 'px' }"
+                        @click="handleTierClick(element)"
                       >
-                        <span class="tier-name">{{ child.tier_name }}</span>
-                        <span class="tier-file">({{ child.file_name }})</span>
+                        <div class="tier-content">
+                          <button
+                            v-if="element.children.length > 0"
+                            class="collapse-button"
+                          >
+                            <font-awesome-icon
+                              :icon="
+                                element.collapsed
+                                  ? 'fa-solid fa-chevron-right'
+                                  : 'fa-solid fa-chevron-down'
+                              "
+                              size="sm"
+                            />
+                          </button>
+                          <span class="tier-name">{{ element.tier_name }}</span>
+                          <span class="tier-file"
+                            >({{ element.file_name }})</span
+                          >
+                        </div>
                       </div>
-                    </template>
-                  </div>
-                </template>
-                <template #footer>
-                  <div
-                    v-if="
-                      getAssignedTiersForSection(section.section_id).length ===
-                      0
-                    "
-                    class="empty-section-message"
-                  >
-                    {{ $t('uploadPage.step3.dropTiersHere') }}
-                  </div>
-                </template>
-              </draggable>
+                      <template v-if="!element.collapsed">
+                        <div
+                          v-for="child in element.children"
+                          :key="child.tier_id"
+                          class="tier-item tier-child"
+                          :style="{
+                            marginLeft: (element.level + 1) * 20 + 'px',
+                          }"
+                        >
+                          <span class="tier-name">{{ child.tier_name }}</span>
+                          <span class="tier-file">({{ child.file_name }})</span>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                  <template #footer>
+                    <div
+                      v-if="
+                        getAssignedTiersForSection(section.section_id)
+                          .length === 0
+                      "
+                      class="empty-section-message"
+                    >
+                      {{ $t('uploadPage.step3.dropTiersHere') }}
+                    </div>
+                  </template>
+                </draggable>
+              </div>
             </div>
 
-            <!-- Staged Sections (Editable for assignment) -->
-            <div
-              v-for="section in stagedSections"
-              :key="section.section_id"
-              class="tiers-section-block tiers-section-block-staged"
-              :data-section-id="section.section_id"
-            >
-              <div class="tiers-section-header">
-                <div class="tiers-section-title-container">
-                  <div
-                    v-if="editingSectionId === section.section_id"
-                    class="tiers-edit-container"
-                  >
-                    <input
-                      v-model="renameSectionName"
-                      required
-                      class="tiers-edit-input"
-                      @keyup.enter="handleRenameSection(section.section_id)"
-                      @keyup.escape="cancelEdit"
-                    />
-                  </div>
-                  <h2 v-else>
-                    <span>{{ section.name || section.section_name }}</span>
-                    <span class="section-badge section-badge-staged">{{
-                      $t('tierAssignment.stagedBadge')
-                    }}</span>
-                  </h2>
-                </div>
-                <div class="tiers-section-actions">
-                  <button
-                    class="tiers-section-action-btn tiers-edit-btn"
-                    :title="$t('tiersPage.rename')"
-                    @click.stop="
-                      startRenameSection(section.section_id, section.name)
-                    "
-                  >
-                    <font-awesome-icon icon="fa-regular fa-pen-to-square" />
-                  </button>
-                  <button
-                    class="tiers-section-action-btn tiers-delete-btn"
-                    :title="$t('tiersPage.delete')"
-                    @click.stop="handleDeleteSection(section.section_id)"
-                  >
-                    <font-awesome-icon icon="fa-solid fa-trash" />
-                  </button>
-                </div>
-              </div>
-              <draggable
-                :list="getAssignedTiersForSection(section.section_id)"
-                group="assignment-tiers"
-                :move="onMove"
-                item-key="tier_id"
-                class="tier-group-draggable"
-                :scroll="true"
-                :force-fallback="true"
-                :scroll-sensitivity="100"
-                :scroll-speed="20"
-                @change="(evt) => onAssignmentDrop(section.section_id, evt)"
-                @start="onDragStart"
-                @end="onDragEnd"
+            <!-- Staged Sections Group -->
+            <div class="section-group staged-group">
+              <h3 class="section-group-title">
+                {{ $t('uploadPage.step3.stagedSections') }}
+              </h3>
+              <!-- Staged Sections (Editable for assignment) -->
+              <div
+                v-for="section in stagedSections"
+                :key="section.section_id"
+                class="tiers-section-block tiers-section-block-staged"
+                :data-section-id="section.section_id"
               >
-                <template #item="{ element }">
-                  <div class="tier-tree-item">
+                <div class="tiers-section-header">
+                  <div class="tiers-section-title-container">
                     <div
-                      class="tier-item"
-                      :class="{
-                        'tier-parent': element.children.length > 0,
-                      }"
-                      :style="{ marginLeft: element.level * 20 + 'px' }"
-                      @click="handleTierClick(element)"
+                      v-if="editingSectionId === section.section_id"
+                      class="tiers-edit-container"
                     >
-                      <div class="tier-content">
-                        <button
-                          v-if="element.children.length > 0"
-                          class="collapse-button"
-                        >
-                          <font-awesome-icon
-                            :icon="
-                              element.collapsed
-                                ? 'fa-solid fa-chevron-right'
-                                : 'fa-solid fa-chevron-down'
-                            "
-                            size="sm"
-                          />
-                        </button>
-                        <span class="tier-name">{{ element.tier_name }}</span>
-                        <span class="tier-file">({{ element.file_name }})</span>
-                      </div>
+                      <input
+                        v-model="renameSectionName"
+                        required
+                        class="tiers-edit-input"
+                        @keyup.enter="handleRenameSection(section.section_id)"
+                        @keyup.escape="cancelEdit"
+                      />
                     </div>
-                    <template v-if="!element.collapsed">
+                    <h2 v-else>
+                      <span>{{ section.name || section.section_name }}</span>
+                      <span class="section-badge section-badge-staged">{{
+                        $t('tierAssignment.stagedBadge')
+                      }}</span>
+                    </h2>
+                  </div>
+                  <div class="tiers-section-actions">
+                    <button
+                      class="tiers-section-action-btn tiers-edit-btn"
+                      :title="$t('tiersPage.rename')"
+                      @click.stop="
+                        startRenameSection(section.section_id, section.name)
+                      "
+                    >
+                      <font-awesome-icon icon="fa-regular fa-pen-to-square" />
+                    </button>
+                    <button
+                      class="tiers-section-action-btn tiers-delete-btn"
+                      :title="$t('tiersPage.delete')"
+                      @click.stop="handleDeleteSection(section.section_id)"
+                    >
+                      <font-awesome-icon icon="fa-solid fa-trash" />
+                    </button>
+                  </div>
+                </div>
+                <draggable
+                  :list="getAssignedTiersForSection(section.section_id)"
+                  group="assignment-tiers"
+                  :move="onMove"
+                  item-key="tier_id"
+                  class="tier-group-draggable"
+                  :scroll="true"
+                  :force-fallback="true"
+                  :scroll-sensitivity="100"
+                  :scroll-speed="20"
+                  @change="(evt) => onAssignmentDrop(section.section_id, evt)"
+                  @start="onDragStart"
+                  @end="onDragEnd"
+                >
+                  <template #item="{ element }">
+                    <div class="tier-tree-item">
                       <div
-                        v-for="child in element.children"
-                        :key="child.tier_id"
-                        class="tier-item tier-child"
-                        :style="{
-                          marginLeft: (element.level + 1) * 20 + 'px',
+                        class="tier-item"
+                        :class="{
+                          'tier-parent': element.children.length > 0,
                         }"
+                        :style="{ marginLeft: element.level * 20 + 'px' }"
+                        @click="handleTierClick(element)"
                       >
-                        <span class="tier-name">{{ child.tier_name }}</span>
-                        <span class="tier-file">({{ child.file_name }})</span>
+                        <div class="tier-content">
+                          <button
+                            v-if="element.children.length > 0"
+                            class="collapse-button"
+                          >
+                            <font-awesome-icon
+                              :icon="
+                                element.collapsed
+                                  ? 'fa-solid fa-chevron-right'
+                                  : 'fa-solid fa-chevron-down'
+                              "
+                              size="sm"
+                            />
+                          </button>
+                          <span class="tier-name">{{ element.tier_name }}</span>
+                          <span class="tier-file"
+                            >({{ element.file_name }})</span
+                          >
+                        </div>
                       </div>
-                    </template>
-                  </div>
-                </template>
-                <template #footer>
-                  <div
-                    v-if="
-                      getAssignedTiersForSection(section.section_id).length ===
-                      0
-                    "
-                    class="empty-section-message"
-                  >
-                    {{ $t('uploadPage.step3.dropTiersHere') }}
-                  </div>
-                </template>
-              </draggable>
+                      <template v-if="!element.collapsed">
+                        <div
+                          v-for="child in element.children"
+                          :key="child.tier_id"
+                          class="tier-item tier-child"
+                          :style="{
+                            marginLeft: (element.level + 1) * 20 + 'px',
+                          }"
+                        >
+                          <span class="tier-name">{{ child.tier_name }}</span>
+                          <span class="tier-file">({{ child.file_name }})</span>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                  <template #footer>
+                    <div
+                      v-if="
+                        getAssignedTiersForSection(section.section_id)
+                          .length === 0
+                      "
+                      class="empty-section-message"
+                    >
+                      {{ $t('uploadPage.step3.dropTiersHere') }}
+                    </div>
+                  </template>
+                </draggable>
+              </div>
             </div>
-
             <!-- New Section Creation -->
             <div
               v-if="hasNewSectionAssignments"
@@ -1876,7 +1891,7 @@ export default {
 }
 
 .tiers-section-block-staged h2::before {
-  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
 }
 
 /* Section badges */
@@ -1901,14 +1916,50 @@ export default {
   border: 1px solid #1976d2;
 }
 
-/* Unassigned section marker */
 .unassigned h2::before {
   content: '';
   display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+  width: 4px;
+  height: 16px;
   background: linear-gradient(135deg, #9ca3af, #6b7280);
-  margin-right: 8px;
+  border-radius: 2px;
+}
+
+/* Section Group Containers */
+.section-group {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.production-group {
+  border-color: #d1d5db;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+}
+
+.staged-group {
+  border-color: #1976d2;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e3f2fd 100%);
+}
+
+.section-group-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.production-group .section-group-title {
+  color: #6b7280;
+  border-bottom-color: #d1d5db;
+}
+
+.staged-group .section-group-title {
+  color: #1976d2;
+  border-bottom-color: #1976d2;
 }
 </style>
