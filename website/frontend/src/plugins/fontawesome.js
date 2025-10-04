@@ -23,6 +23,11 @@ import {
   faSortDown,
   faDownload,
   faTimes,
+  faArrowLeft,
+  faArrowRight,
+  faXmark,
+  faCircleCheck,
+  faSquarePlus,
 } from '@fortawesome/free-solid-svg-icons';
 import {
   faPenToSquare,
@@ -55,7 +60,12 @@ library.add(
   faSortUp,
   faSortDown,
   faDownload,
-  faTimes
+  faTimes,
+  faArrowLeft,
+  faArrowRight,
+  faXmark,
+  faCircleCheck,
+  faSquarePlus
 );
 
 export default FontAwesomeIcon;

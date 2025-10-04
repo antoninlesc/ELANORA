@@ -1169,7 +1169,7 @@
   "uploadPage": {
     "title": "Upload ELAN Files",
     "back": "Back",
-    "cancel": "Cancel",
+    "cancelButton": "Cancel upload",
     "step1": {
       "label": "Upload Files",
       "next": "Proceed to Processing"
@@ -1211,9 +1211,21 @@
     },
     "step4": {
       "label": "Confirm Upload",
-      "title": "Confirm Your Upload",
+      "title": "Confirm your upload",
       "description": "Review your upload details and add an optional description before submitting for administrator approval.",
       "summary": "Upload Summary",
+      "contributingTo": "Contributing to",
+      "totalTiersUploaded": "Total Tiers",
+      "productionSections": "Production Sections",
+      "stagedSections": "New Sections",
+      "contributingToProduction": "Contributing to Production Sections",
+      "suggestingNewSections": "Suggested New Sections",
+      "tier": "tier",
+      "tiers": "tiers",
+      "noSectionsAssigned": "No sections have been assigned yet",
+      "addDescription": "Add Description",
+      "optional": "Optional",
+      "placeholder": "Add any notes or context about this upload (optional)",
       "confirm": "Confirm Upload",
       "success": "Upload confirmed successfully! Your contribution is now pending administrator approval.",
       "error": "Failed to confirm upload. Please try again."
@@ -1237,6 +1249,11 @@
       "uploadFailed": "Upload failed"
     },
     "complianceWarning": "Some files don't comply with the naming standard. Please verify the file names and try again.",
-    "fileRenamed": "File renamed from '{oldName}' to '{newName}'"
+    "fileRenamed": "File renamed from '{oldName}' to '{newName}'",
+    "processingError": "An error occurred while processing the files. Please try again.",
+    "cancel": {
+      "success": "Upload cancelled successfully",
+      "error": "Failed to cancel upload. Please try again."
+    }
   }
 }

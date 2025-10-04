@@ -72,15 +72,17 @@
               v-if="uploadStore.selectedFiles.length > 0"
               class="upload-actions"
             >
-              <button class="clear-btn" @click="handleCancelUpload">
-                {{ $t('uploadPage.cancel') }}
+              <button class="btn-cancel" @click="handleCancelUpload">
+                <font-awesome-icon icon="fa-solid fa-xmark" />
+                {{ $t('uploadPage.cancelButton') }}
               </button>
               <button
-                class="upload-btn"
+                class="btn-primary"
                 :disabled="!uploadStore.isStepValid"
                 @click="proceedToStep2"
               >
                 {{ $t('uploadPage.step1.next') }}
+                <font-awesome-icon icon="fa-solid fa-arrow-right" />
               </button>
             </div>
           </div>
@@ -92,8 +94,9 @@
             <div class="spinner"></div>
             <p>{{ $t('uploadPage.step2.processing') }}</p>
             <div class="upload-actions">
-              <button class="clear-btn" @click="handleCancelUpload">
-                {{ $t('uploadPage.cancel') }}
+              <button class="btn-cancel" @click="handleCancelUpload">
+                <font-awesome-icon icon="fa-solid fa-xmark" />
+                {{ $t('uploadPage.cancelButton') }}
               </button>
             </div>
           </div>
@@ -116,11 +119,12 @@
           />
 
           <div class="upload-actions">
-            <button class="clear-btn" @click="handleCancelUpload">
-              {{ $t('uploadPage.cancel') }}
+            <button class="btn-cancel" @click="handleCancelUpload">
+              <font-awesome-icon icon="fa-solid fa-xmark" />
+              {{ $t('uploadPage.cancelButton') }}
             </button>
             <button
-              class="upload-btn"
+              class="btn-primary"
               :disabled="!isStep3Valid"
               :title="
                 !isStep3Valid
@@ -132,198 +136,252 @@
               @click="proceedToStep4"
             >
               {{ $t('uploadPage.step3.next') }}
+              <font-awesome-icon icon="fa-solid fa-arrow-right" />
             </button>
           </div>
         </div>
 
         <!-- Step 4: Confirm -->
         <div v-if="uploadStore.currentStep === 4">
-          <div class="confirmation-section">
-            <h3>{{ $t('uploadPage.step4.title') }}</h3>
-            <p class="confirmation-description">
-              {{ $t('uploadPage.step4.description') }}
-            </p>
+          <div class="step4-container">
+            <!-- Header -->
+            <div class="step4-header">
+              <h2 class="step4-title">{{ $t('uploadPage.step4.title') }}</h2>
+              <p class="step4-subtitle">
+                {{ $t('uploadPage.step4.description') }}
+              </p>
+            </div>
 
-            <!-- Assignment Summary -->
-            <div class="assignment-summary">
-              <div class="summary-grid">
-                <!-- Tiers Left to Assign -->
-                <div class="summary-card">
-                  <div class="card-header">
-                    <div class="card-icon">
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </div>
-                    <h5 class="card-title">
-                      {{ $t('uploadPage.step3.tiersLeftToAssign') }}
-                    </h5>
-                  </div>
-                  <div class="card-value">
-                    <span class="value-number">{{ unassignedTiersCount }}</span>
-                    <span class="value-label">{{
-                      $t('uploadPage.step3.tiers')
-                    }}</span>
+            <!-- Project Info Card -->
+            <div class="recap-card project-card">
+              <div class="card-icon-large">
+                <svg
+                  width="32"
+                  height="32"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M3 7C3 5.89543 3.89543 5 5 5H9.58579C9.851 5 10.1054 5.10536 10.2929 5.29289L12 7H19C20.1046 7 21 7.89543 21 9V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V7Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </div>
+              <div class="project-info">
+                <span class="project-label">{{
+                  $t('uploadPage.step4.contributingTo')
+                }}</span>
+                <h3 class="project-name">
+                  {{ getProjectName(uploadStore.selectedProject) }}
+                </h3>
+              </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="stats-overview">
+              <div class="stat-box stat-total">
+                <div class="stat-icon">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-value">{{ assignedTiersCount }}</div>
+                  <div class="stat-label">
+                    {{ $t('uploadPage.step4.totalTiersUploaded') }}
                   </div>
                 </div>
+              </div>
 
-                <!-- Production Sections Contributed -->
-                <div class="summary-card">
-                  <div class="card-header">
-                    <div class="card-icon">
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 11H5M19 11C20.1046 11 21 11.8954 21 13V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V13C3 11.8954 3.89543 11 5 11M19 11V9C19 7.89543 18.1046 7 17 7M5 11V9C5 7.89543 5.89543 7 7 7M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V7M7 7H17"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </div>
-                    <h5 class="card-title">
-                      {{ $t('uploadPage.step3.productionSections') }}
-                    </h5>
+              <div class="stat-box stat-production">
+                <div class="stat-icon">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M19 11H5M19 11C20.1046 11 21 11.8954 21 13V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V13C3 11.8954 3.89543 11 5 11M19 11V9C19 7.89543 18.1046 7 17 7M5 11V9C5 7.89543 5.89543 7 7 7M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V7M7 7H17"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-value">
+                    {{ productionSectionsWithCounts.length }}
                   </div>
-                  <div class="card-content">
-                    <div
-                      v-if="productionSectionsContributed.length === 0"
-                      class="empty-state"
-                    >
-                      <span class="empty-text">{{
-                        $t('uploadPage.step3.noProductionSections')
-                      }}</span>
-                    </div>
-                    <div v-else class="sections-list">
-                      <span
-                        v-for="sectionName in productionSectionsContributed"
-                        :key="sectionName"
-                        class="section-tag"
-                      >
-                        {{ sectionName }}
-                      </span>
-                    </div>
+                  <div class="stat-label">
+                    {{ $t('uploadPage.step4.productionSections') }}
                   </div>
                 </div>
+              </div>
 
-                <!-- New Sections Created -->
-                <div class="summary-card">
-                  <div class="card-header">
-                    <div class="card-icon">
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M12 6V12M12 12V18M12 12H18M12 12H6"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </div>
-                    <h5 class="card-title">
-                      {{ $t('uploadPage.step3.newSectionsCreated') }}
-                    </h5>
+              <div class="stat-box stat-staged">
+                <div class="stat-icon">
+                  <font-awesome-icon icon="fa-solid fa-square-plus" size="lg" />
+                </div>
+                <div class="stat-content">
+                  <div class="stat-value">
+                    {{ stagedSectionsWithCounts.length }}
                   </div>
-                  <div class="card-content">
-                    <div
-                      v-if="newSectionsCreated.length === 0"
-                      class="empty-state"
-                    >
-                      <span class="empty-text">{{
-                        $t('uploadPage.step3.noNewSections')
-                      }}</span>
-                    </div>
-                    <div v-else class="sections-list">
-                      <span
-                        v-for="sectionName in newSectionsCreated"
-                        :key="sectionName"
-                        class="section-tag new-section-tag"
-                      >
-                        {{ sectionName }}
-                      </span>
-                    </div>
+                  <div class="stat-label">
+                    {{ $t('uploadPage.step4.stagedSections') }}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="upload-summary">
-              <h4>{{ $t('uploadPage.step4.summary') }}</h4>
-              <div class="summary-details">
-                <div class="summary-item">
-                  <span class="summary-label"
-                    >{{ $t('uploadPage.projectSelection.label') }}:</span
+            <!-- Sections Breakdown -->
+            <div class="sections-breakdown">
+              <!-- Production Sections -->
+              <div
+                v-if="productionSectionsWithCounts.length > 0"
+                class="section-group"
+              >
+                <h4 class="section-group-title production-title">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
-                  <span class="summary-value">{{
-                    getProjectName(uploadStore.selectedProject)
-                  }}</span>
-                </div>
-                <div class="summary-item">
-                  <span class="summary-label"
-                    >{{ $t('uploadPage.step2.completed') }}:</span
+                    <path
+                      d="M19 11H5M19 11C20.1046 11 21 11.8954 21 13V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V13C3 11.8954 3.89543 11 5 11M19 11V9C19 7.89543 18.1046 7 17 7M5 11V9C5 7.89543 5.89543 7 7 7M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V7M7 7H17"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  {{ $t('uploadPage.step4.contributingToProduction') }}
+                </h4>
+                <div class="section-list">
+                  <div
+                    v-for="section in productionSectionsWithCounts"
+                    :key="section.section_id"
+                    class="section-item production-section"
                   >
-                  <span class="summary-value"
-                    >{{ uploadStore.extractedTiers.length }}
-                    {{ $t('uploadPage.step3.extractedTiers') }}</span
-                  >
-                </div>
-                <div class="summary-item">
-                  <span class="summary-label"
-                    >{{ $t('uploadPage.step3.assignedTiersCount') }}:</span
-                  >
-                  <span class="summary-value">{{ assignedTiersCount }}</span>
-                </div>
-                <div v-if="uniqueNewSections.length > 0" class="summary-item">
-                  <span class="summary-label"
-                    >{{ $t('uploadPage.step3.newSectionsCount') }}:</span
-                  >
-                  <span class="summary-value">{{
-                    uniqueNewSections.length
-                  }}</span>
+                    <span class="section-name">{{ section.name }}</span>
+                    <span class="section-badge production-badge">
+                      <span class="badge-count">{{ section.count }}</span>
+                      <span class="badge-label">{{
+                        section.count === 1
+                          ? $t('uploadPage.step4.tier')
+                          : $t('uploadPage.step4.tiers')
+                      }}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <textarea
-              v-model="uploadStore.description"
-              :placeholder="$t('uploadPage.step4.placeholder')"
-              class="description-textarea"
-            ></textarea>
-          </div>
 
-          <div class="upload-actions">
-            <button class="clear-btn" @click="handleCancelUpload">
-              {{ $t('uploadPage.cancel') }}
-            </button>
-            <button class="clear-btn" @click="uploadStore.prevStep">
-              {{ $t('uploadPage.back') }}
-            </button>
-            <button class="upload-btn" @click="handleConfirmUpload">
-              {{ $t('uploadPage.step4.confirm') }}
-            </button>
+              <!-- Staged Sections -->
+              <div
+                v-if="stagedSectionsWithCounts.length > 0"
+                class="section-group"
+              >
+                <h4 class="section-group-title staged-title">
+                  <font-awesome-icon icon="fa-solid fa-square-plus" />
+                  {{ $t('uploadPage.step4.suggestingNewSections') }}
+                </h4>
+                <div class="section-list">
+                  <div
+                    v-for="section in stagedSectionsWithCounts"
+                    :key="section.section_id"
+                    class="section-item staged-section"
+                  >
+                    <span class="section-name">{{ section.name }}</span>
+                    <span class="section-badge staged-badge">
+                      <span class="badge-count">{{ section.count }}</span>
+                      <span class="badge-label">{{
+                        section.count === 1
+                          ? $t('uploadPage.step4.tier')
+                          : $t('uploadPage.step4.tiers')
+                      }}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div
+                v-if="
+                  productionSectionsWithCounts.length === 0 &&
+                  stagedSectionsWithCounts.length === 0
+                "
+                class="empty-sections-state"
+              >
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                    stroke="#9ca3af"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <p>{{ $t('uploadPage.step4.noSectionsAssigned') }}</p>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="description-section">
+              <label class="description-label">
+                {{ $t('uploadPage.step4.addDescription') }}
+                <span class="optional-label"
+                  >({{ $t('uploadPage.step4.optional') }})</span
+                >
+              </label>
+              <textarea
+                v-model="uploadStore.description"
+                :placeholder="$t('uploadPage.step4.placeholder')"
+                class="description-textarea"
+                rows="4"
+              ></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="step4-actions">
+              <button class="btn-secondary" @click="uploadStore.prevStep">
+                <font-awesome-icon icon="fa-solid fa-arrow-left" />
+                {{ $t('uploadPage.back') }}
+              </button>
+              <button class="btn-cancel" @click="handleCancelUpload">
+                <font-awesome-icon icon="fa-solid fa-xmark" />
+                {{ $t('uploadPage.cancelButton') }}
+              </button>
+              <button class="btn-primary" @click="handleConfirmUpload">
+                <font-awesome-icon icon="fa-solid fa-circle-check" />
+                {{ $t('uploadPage.step4.confirm') }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -416,8 +474,8 @@ onMounted(async () => {
   // Ensure store is initialized (loads from localStorage if needed)
   projectStore.initializeFromStorage();
 
-  // Sync initial project selection
-  if (projectStore.currentProject) {
+  // Pre-select current project ONLY if uploadStore has no selection yet
+  if (!uploadStore.selectedProject && projectStore.currentProject) {
     uploadStore.selectedProject =
       projectStore.currentProject.project_id.toString();
   }
@@ -446,37 +504,18 @@ onMounted(async () => {
 });
 
 // Updated: Watcher to fetch standards only after initial load
+// This watcher does NOT sync back to projectStore - dropdown is independent
 watch(
   () => uploadStore.selectedProject,
   async (newProjectId, oldProjectId) => {
     if (!isInitialLoad.value && newProjectId && newProjectId !== oldProjectId) {
-      // Update project store when upload store project changes
-      const project = projectStore.projects.find(
-        (p) => p.project_id === parseInt(newProjectId)
-      );
-      if (project) {
-        projectStore.setCurrentProject(project);
-      }
+      // Only fetch standards, do NOT update projectStore
       await fetchStandards();
     } else if (!newProjectId) {
       // Reset if no project selected
       hasEffectiveStandard.value = false;
       standard.value = null;
       mediaStandard.value = null;
-    }
-  }
-);
-
-// Watch for project store changes and sync to upload store
-watch(
-  () => projectStore.currentProject,
-  (newProject) => {
-    if (
-      !isInitialLoad.value &&
-      newProject &&
-      newProject.project_id !== parseInt(uploadStore.selectedProject)
-    ) {
-      uploadStore.selectedProject = newProject.project_id.toString();
     }
   }
 );
@@ -611,38 +650,80 @@ const unassignedTiersCount = computed(() => {
   return uploadStore.extractedTiers.length - assignedTiersCount.value;
 });
 
-const productionSectionsContributed = computed(() => {
-  const assignedSectionIds = new Set(
-    Object.values(uploadStore.tierAssignments).filter(
-      (assignment) =>
-        assignment &&
-        typeof assignment === 'string' &&
-        assignment !== '' &&
-        assignment !== 'new' &&
-        !assignment.startsWith('local_')
-    )
-  );
+// Step 4: Sections with tier counts for recap
+const productionSectionsWithCounts = computed(() => {
+  const sectionCounts = new Map();
 
-  return uploadStore.existingSections
-    .filter((section) => assignedSectionIds.has(section.section_id))
-    .map((section) => section.name)
-    .sort((a, b) => a.localeCompare(b));
+  // Count tiers assigned to each production section
+  uploadStore.extractedTiers.forEach((tier) => {
+    const tierKey = tier.tier_id || tier.tier_name;
+    const assignment = uploadStore.tierAssignments[tierKey];
+
+    if (
+      assignment &&
+      assignment !== '' &&
+      assignment !== 'new' &&
+      !assignment.startsWith('local_')
+    ) {
+      const section = uploadStore.existingSections.find(
+        (s) => s.section_id === assignment && !s.is_staged
+      );
+
+      if (section) {
+        const currentCount = sectionCounts.get(section.section_id) || 0;
+        sectionCounts.set(section.section_id, currentCount + 1);
+      }
+    }
+  });
+
+  // Convert to array with section details
+  return Array.from(sectionCounts.entries())
+    .map(([sectionId, count]) => {
+      const section = uploadStore.existingSections.find(
+        (s) => s.section_id === sectionId
+      );
+      return {
+        section_id: sectionId,
+        name: section?.name || sectionId,
+        count,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 });
 
-const newSectionsCreated = computed(() => {
-  const localSectionIds = new Set(
-    Object.values(uploadStore.tierAssignments).filter(
-      (assignment) =>
-        assignment &&
-        typeof assignment === 'string' &&
-        assignment.startsWith('local_')
-    )
-  );
+const stagedSectionsWithCounts = computed(() => {
+  const sectionCounts = new Map();
 
-  return uploadStore.existingSections
-    .filter((section) => localSectionIds.has(section.section_id))
-    .map((section) => section.name)
-    .sort((a, b) => a.localeCompare(b));
+  // Count tiers assigned to each staged section
+  uploadStore.extractedTiers.forEach((tier) => {
+    const tierKey = tier.tier_id || tier.tier_name;
+    const assignment = uploadStore.tierAssignments[tierKey];
+
+    if (assignment && assignment.startsWith('local_')) {
+      const section = uploadStore.existingSections.find(
+        (s) => s.section_id === assignment && s.is_staged
+      );
+
+      if (section) {
+        const currentCount = sectionCounts.get(section.section_id) || 0;
+        sectionCounts.set(section.section_id, currentCount + 1);
+      }
+    }
+  });
+
+  // Convert to array with section details
+  return Array.from(sectionCounts.entries())
+    .map(([sectionId, count]) => {
+      const section = uploadStore.existingSections.find(
+        (s) => s.section_id === sectionId
+      );
+      return {
+        section_id: sectionId,
+        name: section?.name || section?.section_name || sectionId,
+        count,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 });
 
 // Step 3: Validation for proceeding to step 4
@@ -993,372 +1074,3 @@ async function handleCancelUpload() {
   }
 }
 </script>
-
-<style scoped>
-.upload-actions {
-  margin-top: 16px;
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.upload-btn {
-  background: #1976d2;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.upload-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.upload-btn:hover:not(:disabled) {
-  background: #1565c0;
-}
-
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #ffffff40;
-  border-top: 2px solid #fff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Step 3: Assignment Styles */
-.assignment-section {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.assignment-description {
-  color: #666;
-  margin-bottom: 24px;
-  line-height: 1.5;
-}
-
-.tiers-section h4,
-.new-section-section h4 {
-  color: #333;
-  margin-bottom: 16px;
-  font-size: 1.1rem;
-}
-
-.tiers-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.tier-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background: #fafafa;
-}
-
-.tier-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.tier-name {
-  font-weight: 600;
-  color: #333;
-}
-
-.tier-parent {
-  font-size: 0.9rem;
-  color: #666;
-}
-
-.tier-file {
-  font-size: 0.8rem;
-  color: #999;
-}
-
-.tier-assignment-select {
-  min-width: 200px;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: white;
-}
-
-.new-sections-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.new-section-item {
-  padding: 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background: #f9f9f9;
-}
-
-.new-section-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-.new-section-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-bottom: 12px;
-}
-
-.assigned-tiers {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.assigned-tiers-label {
-  font-weight: 600;
-  color: #555;
-}
-
-.assigned-tiers-list {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.assignment-summary {
-  margin-top: 32px;
-  padding: 24px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  box-shadow:
-    0 4px 6px -1px rgb(0 0 0 / 10%),
-    0 2px 4px -2px rgb(0 0 0 / 10%);
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-top: 8px;
-}
-
-.summary-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.summary-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-}
-
-.summary-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px -8px rgb(0 0 0 / 15%);
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  border-radius: 10px;
-  color: white;
-  flex-shrink: 0;
-}
-
-.card-title {
-  color: #374151;
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.card-value {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.value-number {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #1e293b;
-  line-height: 1;
-}
-
-.value-label {
-  color: #6b7280;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.card-content {
-  min-height: 60px;
-}
-
-.empty-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 60px;
-}
-
-.empty-text {
-  color: #9ca3af;
-  font-size: 0.875rem;
-  font-style: italic;
-}
-
-.sections-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-height: 60px;
-  align-items: flex-start;
-  align-content: flex-start;
-}
-
-.section-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  background: #f1f5f9;
-  color: #475569;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
-}
-
-.section-tag:hover {
-  background: #e2e8f0;
-  transform: translateY(-1px);
-}
-
-.new-section-tag {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #92400e;
-  border-color: #f59e0b;
-}
-
-.new-section-tag:hover {
-  background: linear-gradient(135deg, #fde68a, #fcd34d);
-}
-
-/* Step 4: Confirmation Styles */
-.confirmation-section {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.confirmation-description {
-  color: #666;
-  margin-bottom: 24px;
-  line-height: 1.5;
-}
-
-.upload-summary {
-  background: #f9f9f9;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 24px;
-}
-
-.upload-summary h4 {
-  color: #333;
-  margin-bottom: 16px;
-  font-size: 1.1rem;
-}
-
-.summary-details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.summary-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
-}
-
-.summary-label {
-  font-weight: 600;
-  color: #555;
-}
-
-.summary-value {
-  color: #333;
-}
-
-.description-textarea {
-  width: 100%;
-  min-height: 100px;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  resize: vertical;
-  font-family: inherit;
-  font-size: 1rem;
-  line-height: 1.4;
-}
-
-.description-textarea:focus {
-  outline: none;
-  border-color: #1976d2;
-  box-shadow: 0 0 0 2px rgb(25 118 210 / 20%);
-}
-</style>

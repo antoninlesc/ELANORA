@@ -1159,6 +1159,7 @@
   "uploadPage": {
     "title": "Upload des fichiers ELAN",
     "back": "Retour",
+    "cancelButton": "Annuler",
     "step1": {
       "label": "Télécharger les fichiers",
       "next": "Procéder au traitement"
@@ -1177,12 +1178,48 @@
       "stagedSections": "Sections temporaires",
       "productionBadge": "Production",
       "stagedBadge": "Temporaire",
-      "extractedTiers": "Tiers extraits"
+      "extractedTiers": "Tiers extraits",
+      "tiers": "tiers",
+      "tiersLeftToAssign": "Tiers à assigner",
+      "productionSections": "Sections de production",
+      "noProductionSections": "Aucune section de production",
+      "newSectionsCreated": "Nouvelles sections créées",
+      "noNewSections": "Aucune nouvelle section",
+      "assignedTiersCount": "Tiers assignés",
+      "newSectionsCount": "Nouvelles sections",
+      "createNewSection": "Créer une nouvelle section",
+      "newSections": "Nouvelles sections suggérées",
+      "sectionName": "Nom de section",
+      "sectionNamePlaceholder": "Entrez le nom de la section",
+      "unassignedTiers": "Tiers non assignés",
+      "allTiersAssigned": "Tous les tiers ont été assignés !",
+      "dropTiersHere": "Déposez les tiers ici",
+      "next": "Procéder à la confirmation",
+      "unassignedTiersWarning": "Tous les tiers doivent être assignés à une section avant de continuer.",
+      "unnamedSectionsWarning": "Toutes les nouvelles sections doivent avoir un nom avant de continuer.",
+      "proceedDisabledTooltip": "Assignez les {count} tiers non assignés restants pour continuer",
+      "fetchSectionsError": "Échec du chargement des sections existantes"
     },
     "step4": {
       "label": "Confirmer l'upload",
-      "placeholder": "Ajouter une description pour votre upload",
-      "confirm": "Confirmer l'upload"
+      "title": "Confirmez votre téléchargement",
+      "description": "Vérifiez les détails de votre téléchargement et ajoutez une description facultative avant de soumettre pour approbation par l'administrateur.",
+      "summary": "Résumé du téléchargement",
+      "contributingTo": "Contribuer à",
+      "totalTiersUploaded": "Total de tiers",
+      "productionSections": "Sections de production",
+      "stagedSections": "Nouvelles sections",
+      "contributingToProduction": "Contribution aux sections de production",
+      "suggestingNewSections": "Suggestion de nouvelles sections",
+      "tier": "tier",
+      "tiers": "tiers",
+      "noSectionsAssigned": "Aucune section n'a été assignée",
+      "addDescription": "Ajouter une description",
+      "optional": "Facultatif",
+      "placeholder": "Ajoutez des notes ou du contexte sur ce téléchargement (facultatif)",
+      "confirm": "Confirmer l'upload",
+      "success": "Téléchargement confirmé avec succès ! Votre contribution est en attente d'approbation par l'administrateur.",
+      "error": "Échec de la confirmation du téléchargement. Veuillez réessayer."
     },
     "projectSelection": {
       "label": "Sélectionner un projet :",
@@ -1202,6 +1239,12 @@
       "selectProjectAndFiles": "Veuillez sélectionner un projet et des fichiers",
       "uploadFailed": "Échec de l'upload des fichiers."
     },
-    "complianceWarning": "Certains fichiers ne respectent pas la norme de nommage. Veuillez vérifier les noms des fichiers et réessayer."
+    "complianceWarning": "Certains fichiers ne respectent pas la norme de nommage. Veuillez vérifier les noms des fichiers et réessayer.",
+    "fileRenamed": "Fichier renommé de '{oldName}' en '{newName}'",
+    "processingError": "Une erreur s'est produite lors du traitement des fichiers. Veuillez réessayer.",
+    "cancel": {
+      "success": "Téléchargement annulé avec succès",
+      "error": "Échec de l'annulation du téléchargement. Veuillez réessayer."
+    }
   }
 }
