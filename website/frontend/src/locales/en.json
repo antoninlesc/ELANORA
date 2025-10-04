@@ -1169,6 +1169,7 @@
   "uploadPage": {
     "title": "Upload ELAN Files",
     "back": "Back",
+    "cancel": "Cancel",
     "step1": {
       "label": "Upload Files",
       "next": "Proceed to Processing"

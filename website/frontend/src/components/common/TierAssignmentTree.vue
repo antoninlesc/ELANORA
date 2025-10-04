@@ -842,125 +842,43 @@ const uniqueNewSections = computed(() => {
 
 // Separate existing sections into production and staged
 const productionSections = computed(() => {
-  console.log(
-    'TierAssignmentTree: Computing productionSections from existingSections:',
-    props.existingSections
-  );
   const filtered = props.existingSections
     .filter((section) => {
-      console.log(
-        'TierAssignmentTree: Checking section:',
-        section.name || section.section_name,
-        'session_id:',
-        section.session_id,
-        'will include in production?',
-        !section.session_id
-      );
       return !section.session_id;
     })
     .sort((a, b) =>
       (a.name || a.section_name).localeCompare(b.name || b.section_name)
     );
-  console.log(
-    'TierAssignmentTree: Filtered productionSections:',
-    filtered.map((s) => ({
-      name: s.name || s.section_name,
-      session_id: s.session_id,
-    }))
-  );
   return filtered;
 });
 
 const stagedSections = computed(() => {
-  console.log(
-    'TierAssignmentTree: Computing stagedSections from existingSections:',
-    props.existingSections
-  );
   const filtered = props.existingSections
     .filter((section) => {
-      console.log(
-        'TierAssignmentTree: Checking section:',
-        section.name || section.section_name,
-        'session_id:',
-        section.session_id,
-        'will include in staged?',
-        section.session_id === props.sessionId
-      );
       return section.session_id === props.sessionId;
     })
     .sort((a, b) =>
       (a.name || a.section_name).localeCompare(b.name || b.section_name)
     );
-  console.log(
-    'TierAssignmentTree: Filtered stagedSections:',
-    filtered.map((s) => ({
-      name: s.name || s.section_name,
-      session_id: s.session_id,
-    }))
-  );
   return filtered;
 });
 
 // Assignment mode functions
 function getAssignedTiersForSection(sectionId) {
-  console.log(
-    'TierAssignmentTree: getAssignedTiersForSection called with sectionId:',
-    sectionId
-  );
-  console.log(
-    'TierAssignmentTree: Current tierAssignments:',
-    props.tierAssignments
-  );
-  console.log(
-    'TierAssignmentTree: Current extractedTiers:',
-    props.extractedTiers
-  );
   const assignedTiers = props.extractedTiers.filter((tier) => {
     const tierKey = tier.tier_id || tier.tier_name;
     const assignment = props.tierAssignments[tierKey];
-    console.log(
-      'TierAssignmentTree: Checking tier:',
-      tierKey,
-      'assignment:',
-      assignment,
-      'matches sectionId?',
-      assignment === sectionId
-    );
     return assignment === sectionId;
   });
-  console.log(
-    'TierAssignmentTree: Filtered assignedTiers for section',
-    sectionId,
-    ':',
-    assignedTiers
-  );
   return buildTierTrees(assignedTiers);
 }
 
 function getUnassignedTiers() {
-  console.log('TierAssignmentTree: getUnassignedTiers called');
-  console.log(
-    'TierAssignmentTree: Current tierAssignments:',
-    props.tierAssignments
-  );
-  console.log(
-    'TierAssignmentTree: Current extractedTiers:',
-    props.extractedTiers
-  );
   const unassignedTiers = props.extractedTiers.filter((tier) => {
     const tierKey = tier.tier_id || tier.tier_name;
     const assignment = props.tierAssignments[tierKey];
-    console.log(
-      'TierAssignmentTree: Checking tier for unassigned:',
-      tierKey,
-      'assignment:',
-      assignment,
-      'is unassigned?',
-      !assignment || assignment === ''
-    );
     return !assignment || assignment === '';
   });
-  console.log('TierAssignmentTree: unassignedTiers result:', unassignedTiers);
   return buildTierTrees(unassignedTiers);
 }
 
@@ -1007,32 +925,17 @@ function getDescendantCount(tier) {
 }
 
 async function onAssignmentDrop(targetSectionId, evt) {
-  console.log(
-    'TierAssignmentTree: onAssignmentDrop called with targetSectionId:',
-    targetSectionId,
-    'evt:',
-    evt
-  );
   if (!evt || !evt.added) {
-    console.log('TierAssignmentTree: No added element in drop event');
     return;
   }
   const movedTier = evt.added.element;
   if (!movedTier) {
-    console.log('TierAssignmentTree: No moved tier element');
     return;
   }
 
   if (movingInProgress.value) return; // Prevent double-submit
 
   movingInProgress.value = true;
-
-  console.log(
-    'TierAssignmentTree: Moving tier:',
-    movedTier.tier_name,
-    'to section:',
-    targetSectionId
-  );
 
   // If dropping on a new section that doesn't exist yet, mark as 'new' (only in management mode)
   let assignment = targetSectionId;
@@ -1265,11 +1168,7 @@ watch(currentProject, (newProject, oldProject) => {
 // Watchers for debugging prop changes
 watch(
   () => props.existingSections,
-  (newVal, oldVal) => {
-    console.log('TierAssignmentTree: existingSections prop changed:', {
-      old: oldVal,
-      new: newVal,
-    });
+  (newVal) => {
     // Update the local section counter based on existing local sections
     const localIds = newVal
       .filter(
@@ -1288,12 +1187,7 @@ watch(
 
 watch(
   () => props.tierAssignments,
-  (newVal, oldVal) => {
-    console.log('TierAssignmentTree: tierAssignments prop changed:', {
-      old: oldVal,
-      new: newVal,
-    });
-  },
+  () => {},
   { deep: true }
 );
 
@@ -1411,8 +1305,7 @@ async function loadData({ silent = false } = {}) {
         collapsedStates.value.delete(tierId);
       }
     }
-  } catch (err) {
-    console.error('Error loading data:', err);
+  } catch {
     error.value = t('tiersPage.error');
   } finally {
     if (!silent) loading.value = false;
@@ -1438,7 +1331,6 @@ async function handleAddSection() {
     );
 
     if (!sectionExists) {
-      console.warn('New section not found in sections array!');
       newSectionId.value = null;
       eventMessageStore.addMessage(
         'tiersPage.eventMessages.sectionCreateFailed',

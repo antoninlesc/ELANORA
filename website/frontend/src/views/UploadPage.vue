@@ -22,10 +22,7 @@
           </div>
         </div>
         <div class="stepper-progress">
-          <div
-            class="progress-bar"
-            :style="{ width: `${((uploadStore.currentStep - 1) / 3) * 100}%` }"
-          ></div>
+          <div class="progress-bar" :style="progressBarStyle"></div>
         </div>
       </div>
 
@@ -76,7 +73,7 @@
               class="upload-actions"
             >
               <button class="clear-btn" @click="handleCancelUpload">
-                {{ $t('uploadPage.clear') }}
+                {{ $t('uploadPage.cancel') }}
               </button>
               <button
                 class="upload-btn"
@@ -89,24 +86,14 @@
           </div>
         </div>
 
-        <!-- Step 2: Processing -->
+        <!-- Step 2: Processing (auto-advance, no back button) -->
         <div v-if="uploadStore.currentStep === 2">
-          <div v-if="uploadStore.isProcessing" class="upload-progress">
+          <div class="upload-progress">
             <div class="spinner"></div>
             <p>{{ $t('uploadPage.step2.processing') }}</p>
-          </div>
-          <div v-else>
-            <!-- Display extracted tiers (add logic later) -->
-            <p>{{ $t('uploadPage.step2.completed') }}</p>
             <div class="upload-actions">
               <button class="clear-btn" @click="handleCancelUpload">
                 {{ $t('uploadPage.cancel') }}
-              </button>
-              <button class="clear-btn" @click="uploadStore.prevStep">
-                {{ $t('uploadPage.back') }}
-              </button>
-              <button class="upload-btn" @click="uploadStore.nextStep">
-                {{ $t('uploadPage.step2.next') }}
               </button>
             </div>
           </div>
@@ -131,9 +118,6 @@
           <div class="upload-actions">
             <button class="clear-btn" @click="handleCancelUpload">
               {{ $t('uploadPage.cancel') }}
-            </button>
-            <button class="clear-btn" @click="uploadStore.prevStep">
-              {{ $t('uploadPage.back') }}
             </button>
             <button
               class="upload-btn"
@@ -498,11 +482,14 @@ watch(
 );
 
 // Watch for step changes to fetch sections when entering step 3 and auto-cancel on back to step 1
+// Flag to prevent duplicate cancel
+const isCancelling = ref(false);
+
 watch(
   () => uploadStore.currentStep,
   async (newStep, oldStep) => {
     // Automatically cancel if navigating back to step 1 from a higher step
-    if (newStep === 1 && oldStep > 1) {
+    if (newStep === 1 && oldStep > 1 && !isCancelling.value) {
       await handleCancelUpload();
     }
     // Existing logic for fetching sections on step 3
@@ -520,15 +507,9 @@ async function fetchStandards() {
   const UPLOAD_PAGE_LOCATION_ID = 4;
 
   if (!uploadStore.selectedProject) {
-    console.warn('UploadPage: No project selected, skipping standards fetch');
     hasEffectiveStandard.value = false;
     return;
   }
-
-  console.log(
-    'UploadPage: Fetching standards for project:',
-    uploadStore.selectedProject
-  );
 
   try {
     await effectiveStandardStore.fetchEffectiveStandards(
@@ -543,11 +524,6 @@ async function fetchStandards() {
     let standardId;
     const standardsObj =
       effectiveStandardStore.effectiveStandards[UPLOAD_PAGE_LOCATION_ID];
-    console.log(
-      'UploadPage: Effective standards for location 4:',
-      standardsObj
-    );
-
     if (standardsObj && typeof standardsObj === 'object') {
       const ids = Object.values(standardsObj).filter((id) => !!id);
       standardId = ids.length > 0 ? ids[0] : undefined;
@@ -562,26 +538,18 @@ async function fetchStandards() {
     standard.value = namingStandardStore.standards.find(
       (std) => std.id === standardId
     );
-    console.log('UploadPage: Found standard:', standard.value);
-
     // Clear compliance cache when standard changes
     complianceCache.clear();
     clearComplianceCache();
 
     // Fetch media standard (location 3 = elanMedia)
     const MEDIA_LOCATION_ID = 3;
-    console.log('UploadPage: Fetching media standards for location 3');
     await effectiveStandardStore.fetchEffectiveStandards(
       uploadStore.selectedProject,
       MEDIA_LOCATION_ID
     );
     const mediaStandardsObj =
       effectiveStandardStore.effectiveStandards[MEDIA_LOCATION_ID];
-    console.log(
-      'UploadPage: Effective standards for location 3:',
-      mediaStandardsObj
-    );
-
     let mediaStandardId;
     if (mediaStandardsObj && typeof mediaStandardsObj === 'object') {
       const ids = Object.values(mediaStandardsObj).filter((id) => !!id);
@@ -596,9 +564,7 @@ async function fetchStandards() {
     mediaStandard.value = namingStandardStore.standards.find(
       (std) => std.id === mediaStandardId
     );
-    console.log('UploadPage: Found media standard:', mediaStandard.value);
-  } catch (e) {
-    console.error('UploadPage: Error fetching standards:', e);
+  } catch {
     hasEffectiveStandard.value = false;
   }
 }
@@ -751,6 +717,13 @@ async function proceedToStep2() {
     return;
   }
 
+  // Scroll to top and animate progress bar before advancing
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  progressBarTransitioning.value = true;
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  progressBarTransitioning.value = false;
+  uploadStore.currentStep = 2;
+
   try {
     // Show processing state
     uploadStore.isProcessing = true;
@@ -761,22 +734,50 @@ async function proceedToStep2() {
       uploadStore.selectedProject
     );
 
-    // Store the results
-    uploadStore.extractedTiers = response.extracted_tiers;
+    // Store the results reactively
+    uploadStore.extractedTiers.splice(
+      0,
+      uploadStore.extractedTiers.length,
+      ...response.extracted_tiers
+    );
     uploadStore.sessionId = response.session_id;
 
     // Fetch existing sections for Step 3
     await fetchExistingSections();
 
-    // Move to step 3
-    uploadStore.nextStep();
-  } catch (err) {
-    console.error('Error processing upload files:', err);
+    // Show success message and advance to next step
+    eventMessageStore.addMessage('uploadPage.step2.success', 'success', 3000, {
+      count: response.extracted_tiers.length,
+    });
+
+    // Add a longer delay for user satisfaction, then scroll to top and advance
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      uploadStore.currentStep = 3;
+    }, 900);
+  } catch {
     eventMessageStore.addMessage('uploadPage.processingError', 'error');
   } finally {
     uploadStore.isProcessing = false;
   }
 }
+// Progress bar animation state
+const progressBarTransitioning = ref(false);
+const progressBarTarget = ref(null); // null = use currentStep, number = animate to this step
+const progressBarStyle = computed(() => {
+  let percent;
+  if (progressBarTarget.value !== null) {
+    percent = ((progressBarTarget.value - 1) / 3) * 100;
+  } else {
+    percent = ((uploadStore.currentStep - 1) / 3) * 100;
+  }
+  return {
+    width: `${percent}%`,
+    transition: progressBarTransitioning.value
+      ? 'width 1s cubic-bezier(0.4,0,0.2,1)'
+      : 'width 0.3s cubic-bezier(0.4,0,0.2,1)',
+  };
+});
 
 // Step 3: Fetch existing tier sections
 async function fetchExistingSections() {
@@ -794,25 +795,11 @@ async function fetchExistingSections() {
 
     // Ensure is_staged is boolean and set name property
     newSections.forEach((section) => {
-      console.log(
-        'Raw is_staged for section',
-        section.section_id,
-        ':',
-        section.is_staged,
-        'type:',
-        typeof section.is_staged
-      );
       section.is_staged =
         section.is_staged === true ||
         section.is_staged === 'true' ||
         section.is_staged === 1 ||
         section.is_staged === '1';
-      console.log(
-        'Converted is_staged for section',
-        section.section_id,
-        ':',
-        section.is_staged
-      );
       section.name = section.section_name || section.name;
       // Ensure section_id is a string for consistent comparison
       section.section_id = String(section.section_id);
@@ -859,11 +846,6 @@ function handleNewSectionNameUpdate({ sectionName, newName }) {
 }
 
 function handleSectionCreated({ section }) {
-  console.log('UploadPage: handleSectionCreated called with section:', section);
-  console.log(
-    'UploadPage: Current tierAssignments before:',
-    uploadStore.tierAssignments
-  );
   const sectionId = String(section.section_id);
   // Clear any existing assignments to this section ID to prevent conflicts from reused IDs
   Object.keys(uploadStore.tierAssignments).forEach((tierKey) => {
@@ -873,14 +855,6 @@ function handleSectionCreated({ section }) {
   });
   // Add the new section to existing sections
   uploadStore.existingSections.push({ ...section, section_id: sectionId });
-  console.log(
-    'UploadPage: Current tierAssignments after:',
-    uploadStore.tierAssignments
-  );
-  console.log(
-    'UploadPage: existingSections after:',
-    uploadStore.existingSections
-  );
 }
 
 function handleSectionRenamed({ sectionId, newName }) {
@@ -940,8 +914,11 @@ async function proceedToStep4() {
   // Store the new section names in the assignments (already in store)
   // uploadStore.newSectionNames = { ...uploadStore.newSectionNames };
 
-  // Proceed to step 4
-  uploadStore.nextStep();
+  // Scroll to top and proceed to step 4 after a short delay for satisfaction
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    uploadStore.nextStep();
+  }, 400);
 }
 
 async function handleConfirmUpload() {
@@ -962,17 +939,33 @@ async function handleConfirmUpload() {
 
     // Optionally redirect to a success page or contributions page
     // router.push('/contributions');
-  } catch (err) {
-    console.error('Error confirming upload:', err);
+  } catch {
     eventMessageStore.addMessage('uploadPage.step4.error', 'error');
   }
 }
 
 async function handleCancelUpload() {
+  if (isCancelling.value) return;
+  isCancelling.value = true;
+  // Always scroll to top and animate progress bar back to step 1
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  progressBarTarget.value = 1;
+  progressBarTransitioning.value = true;
+  // Wait for the animation
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  progressBarTransitioning.value = false;
+  progressBarTarget.value = null;
+  uploadStore.currentStep = 1;
+
+  // Show success message after animation completes
+  setTimeout(() => {
+    eventMessageStore.addMessage('uploadPage.cancel.success', 'info', 3000);
+    isCancelling.value = false;
+  }, 0);
+
   if (!uploadStore.sessionId) {
     // If no session, just reset the store
     uploadStore.reset();
-    eventMessageStore.addMessage('uploadPage.cancel.success', 'info', 3000);
     return;
   }
 
@@ -984,26 +977,18 @@ async function handleCancelUpload() {
     for (const section of stagedSections) {
       try {
         await deleteSection(section.section_id, true);
-      } catch (deleteErr) {
-        console.error(
-          'Error deleting staged section:',
-          section.section_id,
-          deleteErr
-        );
-        // Continue with other deletions
+      } catch {
+        // Continue with other deletions even if deletion fails
       }
     }
 
     // Call the cancel API using the service
     await cancelUpload(uploadStore.sessionId);
 
-    // Show success message
-    eventMessageStore.addMessage('uploadPage.cancel.success', 'info', 3000);
-
     // Reset the upload store to clear all data
     uploadStore.reset();
-  } catch (err) {
-    console.error('Error cancelling upload:', err);
+    return;
+  } catch {
     eventMessageStore.addMessage('uploadPage.cancel.error', 'error');
   }
 }

@@ -50,6 +50,13 @@ export const useUploadStore = defineStore('upload', () => {
 
   // Watch for changes and save
   watch(
+    () => currentStep.value,
+    (newStep, oldStep) => {
+      console.log('[DEBUG] Upload store step changed:', { newStep, oldStep });
+    }
+  );
+
+  watch(
     [
       currentStep,
       selectedProject,
@@ -99,6 +106,7 @@ export const useUploadStore = defineStore('upload', () => {
   }
 
   function reset() {
+    console.log('[DEBUG] Upload store reset called');
     currentStep.value = 1;
     selectedProject.value = '';
     selectedFiles.value = [];
