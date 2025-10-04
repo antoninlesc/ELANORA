@@ -310,6 +310,77 @@
                           : $t('uploadPage.step4.tiers')
                       }}</span>
                     </span>
+                    <div class="upload-page-section-item-tooltip">
+                      <div class="upload-page-tooltip-content">
+                        <div class="upload-page-tooltip-title">
+                          {{
+                            $t('uploadPage.step4.tiersInThisSection') ||
+                            'Tiers in this section:'
+                          }}
+                        </div>
+
+                        <!-- Tier Groups -->
+                        <div
+                          v-for="(group, index) in section.tierGroups"
+                          :key="'group-' + index"
+                          class="upload-page-tooltip-tier-group"
+                        >
+                          <div
+                            class="upload-page-tooltip-tier-group-name"
+                            @click.stop="toggleTooltipGroup(group.groupKey)"
+                          >
+                            <button class="upload-page-tooltip-collapse-button">
+                              <font-awesome-icon
+                                :icon="
+                                  group.collapsed
+                                    ? 'fa-solid fa-chevron-right'
+                                    : 'fa-solid fa-chevron-down'
+                                "
+                                size="sm"
+                              />
+                            </button>
+                            <font-awesome-icon
+                              icon="fa-solid fa-layer-group"
+                              class="upload-page-tooltip-tier-group-icon"
+                            />
+                            {{ group.name }}
+                            <span class="upload-page-tooltip-tier-count">{{
+                              group.children.length
+                            }}</span>
+                          </div>
+                          <div
+                            v-if="!group.collapsed"
+                            class="upload-page-tooltip-tier-group-children"
+                          >
+                            <div
+                              v-for="(child, childIndex) in group.children"
+                              :key="'child-' + childIndex"
+                              class="upload-page-tooltip-tier-child"
+                            >
+                              → {{ child }}
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Separator if both groups and standalone tiers exist -->
+                        <div
+                          v-if="
+                            section.tierGroups.length > 0 &&
+                            section.standaloneTiers.length > 0
+                          "
+                          class="upload-page-tooltip-separator"
+                        ></div>
+
+                        <!-- Standalone Tiers -->
+                        <div
+                          v-for="(tierName, index) in section.standaloneTiers"
+                          :key="'tier-' + index"
+                          class="upload-page-tooltip-standalone-tier"
+                        >
+                          {{ tierName }}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -346,6 +417,77 @@
                           : $t('uploadPage.step4.tiers')
                       }}</span>
                     </span>
+                    <div class="upload-page-section-item-tooltip">
+                      <div class="upload-page-tooltip-content">
+                        <div class="upload-page-tooltip-title">
+                          {{
+                            $t('uploadPage.step4.tiersInThisSection') ||
+                            'Tiers in this section:'
+                          }}
+                        </div>
+
+                        <!-- Tier Groups -->
+                        <div
+                          v-for="(group, index) in section.tierGroups"
+                          :key="'group-' + index"
+                          class="upload-page-tooltip-tier-group"
+                        >
+                          <div
+                            class="upload-page-tooltip-tier-group-name"
+                            @click.stop="toggleTooltipGroup(group.groupKey)"
+                          >
+                            <button class="upload-page-tooltip-collapse-button">
+                              <font-awesome-icon
+                                :icon="
+                                  group.collapsed
+                                    ? 'fa-solid fa-chevron-right'
+                                    : 'fa-solid fa-chevron-down'
+                                "
+                                size="sm"
+                              />
+                            </button>
+                            <font-awesome-icon
+                              icon="fa-solid fa-layer-group"
+                              class="upload-page-tooltip-tier-group-icon"
+                            />
+                            {{ group.name }}
+                            <span class="upload-page-tooltip-tier-count">{{
+                              group.children.length
+                            }}</span>
+                          </div>
+                          <div
+                            v-if="!group.collapsed"
+                            class="upload-page-tooltip-tier-group-children"
+                          >
+                            <div
+                              v-for="(child, childIndex) in group.children"
+                              :key="'child-' + childIndex"
+                              class="upload-page-tooltip-tier-child"
+                            >
+                              → {{ child }}
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Separator if both groups and standalone tiers exist -->
+                        <div
+                          v-if="
+                            section.tierGroups.length > 0 &&
+                            section.standaloneTiers.length > 0
+                          "
+                          class="upload-page-tooltip-separator"
+                        ></div>
+
+                        <!-- Standalone Tiers -->
+                        <div
+                          v-for="(tierName, index) in section.standaloneTiers"
+                          :key="'tier-' + index"
+                          class="upload-page-tooltip-standalone-tier"
+                        >
+                          {{ tierName }}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -693,6 +835,7 @@ const unassignedTiersCount = computed(() => {
 // Step 4: Sections with tier counts for recap
 const productionSectionsWithCounts = computed(() => {
   const sectionCounts = new Map();
+  const sectionTiers = new Map();
 
   // Count tiers assigned to each production section
   uploadStore.extractedTiers.forEach((tier) => {
@@ -712,6 +855,12 @@ const productionSectionsWithCounts = computed(() => {
       if (section) {
         const currentCount = sectionCounts.get(section.section_id) || 0;
         sectionCounts.set(section.section_id, currentCount + 1);
+
+        // Track full tier objects for tooltip (to show hierarchy)
+        if (!sectionTiers.has(section.section_id)) {
+          sectionTiers.set(section.section_id, []);
+        }
+        sectionTiers.get(section.section_id).push(tier);
       }
     }
   });
@@ -722,10 +871,57 @@ const productionSectionsWithCounts = computed(() => {
       const section = uploadStore.existingSections.find(
         (s) => s.section_id === sectionId
       );
+      const tiers = sectionTiers.get(sectionId) || [];
+
+      // Organize tiers into groups and standalone tiers
+      const tierGroups = [];
+      const standaloneTiers = [];
+      const processedTierIds = new Set();
+
+      // First, identify all parent tiers (tiers that have children)
+      tiers.forEach((tier) => {
+        // Check if this tier has any children in our list
+        const children = tiers.filter(
+          (t) =>
+            (t.parent_tier_id && t.parent_tier_id === tier.tier_id) ||
+            (t.parent_tier_name && t.parent_tier_name === tier.tier_name)
+        );
+
+        if (children.length > 0) {
+          // This is a parent tier with children
+          const groupKey = `prod_${sectionId}_${tier.tier_id}`;
+          tierGroups.push({
+            id: tier.tier_id,
+            name: tier.tier_name,
+            children: children.map((c) => c.tier_name),
+            collapsed: tooltipCollapsedStates.value.get(groupKey) ?? true,
+            groupKey,
+          });
+
+          // Mark this tier and its children as processed
+          processedTierIds.add(tier.tier_id);
+          children.forEach((c) => processedTierIds.add(c.tier_id));
+        }
+      });
+
+      // Then, add standalone tiers (tiers without children and without parents)
+      tiers.forEach((tier) => {
+        if (!processedTierIds.has(tier.tier_id)) {
+          // This is a standalone tier
+          standaloneTiers.push(tier.tier_name);
+        }
+      });
+
+      // Sort tier groups and standalone tiers alphabetically
+      tierGroups.sort((a, b) => a.name.localeCompare(b.name));
+      standaloneTiers.sort((a, b) => a.localeCompare(b));
+
       return {
         section_id: sectionId,
         name: section?.name || sectionId,
         count,
+        tierGroups,
+        standaloneTiers,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -733,6 +929,7 @@ const productionSectionsWithCounts = computed(() => {
 
 const stagedSectionsWithCounts = computed(() => {
   const sectionCounts = new Map();
+  const sectionTiers = new Map();
 
   // Count tiers assigned to each staged section
   uploadStore.extractedTiers.forEach((tier) => {
@@ -747,6 +944,12 @@ const stagedSectionsWithCounts = computed(() => {
       if (section) {
         const currentCount = sectionCounts.get(section.section_id) || 0;
         sectionCounts.set(section.section_id, currentCount + 1);
+
+        // Track full tier objects for tooltip (to show hierarchy)
+        if (!sectionTiers.has(section.section_id)) {
+          sectionTiers.set(section.section_id, []);
+        }
+        sectionTiers.get(section.section_id).push(tier);
       }
     }
   });
@@ -757,14 +960,67 @@ const stagedSectionsWithCounts = computed(() => {
       const section = uploadStore.existingSections.find(
         (s) => s.section_id === sectionId
       );
+      const tiers = sectionTiers.get(sectionId) || [];
+
+      // Organize tiers into groups and standalone tiers
+      const tierGroups = [];
+      const standaloneTiers = [];
+      const processedTierIds = new Set();
+
+      // First, identify all parent tiers (tiers that have children)
+      tiers.forEach((tier) => {
+        // Check if this tier has any children in our list
+        const children = tiers.filter(
+          (t) =>
+            (t.parent_tier_id && t.parent_tier_id === tier.tier_id) ||
+            (t.parent_tier_name && t.parent_tier_name === tier.tier_name)
+        );
+
+        if (children.length > 0) {
+          // This is a parent tier with children
+          const groupKey = `staged_${sectionId}_${tier.tier_id}`;
+          tierGroups.push({
+            id: tier.tier_id,
+            name: tier.tier_name,
+            children: children.map((c) => c.tier_name),
+            collapsed: tooltipCollapsedStates.value.get(groupKey) ?? true,
+            groupKey,
+          });
+
+          // Mark this tier and its children as processed
+          processedTierIds.add(tier.tier_id);
+          children.forEach((c) => processedTierIds.add(c.tier_id));
+        }
+      });
+
+      // Then, add standalone tiers (tiers without children and without parents)
+      tiers.forEach((tier) => {
+        if (!processedTierIds.has(tier.tier_id)) {
+          // This is a standalone tier
+          standaloneTiers.push(tier.tier_name);
+        }
+      });
+
+      // Sort tier groups and standalone tiers alphabetically
+      tierGroups.sort((a, b) => a.name.localeCompare(b.name));
+      standaloneTiers.sort((a, b) => a.localeCompare(b));
+
       return {
         section_id: sectionId,
         name: section?.name || section?.section_name || sectionId,
         count,
+        tierGroups,
+        standaloneTiers,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 });
+
+// Toggle collapsed state for tier groups in tooltip
+function toggleTooltipGroup(groupKey) {
+  const currentState = tooltipCollapsedStates.value.get(groupKey) ?? false;
+  tooltipCollapsedStates.value.set(groupKey, !currentState);
+}
 
 // Step 3: Validation for proceeding to step 4
 const isStep3Valid = computed(() => {
@@ -885,6 +1141,8 @@ async function proceedToStep2() {
 // Progress bar animation state
 const progressBarTransitioning = ref(false);
 const progressBarTarget = ref(null); // null = use currentStep, number = animate to this step
+const tooltipCollapsedStates = ref(new Map()); // Track collapsed state of tier groups in tooltips
+
 const progressBarStyle = computed(() => {
   let percent;
   if (progressBarTarget.value !== null) {

@@ -80,12 +80,15 @@
               @end="onDragEnd"
             >
               <template #item="{ element }">
-                <div class="tier-tree-item">
+                <div class="tier-tree-item" style="position: relative">
                   <div
                     class="tier-item"
                     :class="{ 'tier-parent': element.children.length > 0 }"
                     :style="{ marginLeft: element.level * 20 + 'px' }"
                     @click="handleTierClick(element)"
+                    @contextmenu="
+                      showContextMenu($event, element, section.section_id)
+                    "
                   >
                     <div class="tier-content">
                       <button
@@ -112,6 +115,92 @@
                       >
                     </div>
                   </div>
+
+                  <!-- Context Menu for this tier -->
+                  <div
+                    v-if="
+                      contextMenuVisible &&
+                      contextMenuTier?.tier_id === element.tier_id
+                    "
+                    class="tier-context-menu"
+                    @click.stop
+                  >
+                    <div
+                      v-if="contextMenuStep === 'main'"
+                      class="context-menu-content"
+                    >
+                      <button
+                        v-if="
+                          availableSectionsForMove.length > 0 ||
+                          shouldShowUnsectioned
+                        "
+                        class="context-menu-item"
+                        @click="showSectionsStep"
+                      >
+                        <font-awesome-icon
+                          icon="fa-solid fa-bars"
+                          class="menu-icon"
+                        />
+                        <span class="menu-item-text">
+                          {{ isTierGroup ? 'Move Tier Group' : 'Move Tier' }}
+                        </span>
+                        <font-awesome-icon
+                          icon="fa-solid fa-chevron-right"
+                          class="menu-arrow"
+                        />
+                      </button>
+                    </div>
+                    <div
+                      v-if="contextMenuStep === 'sections'"
+                      class="context-menu-content"
+                    >
+                      <div class="context-menu-header">
+                        <button class="context-menu-back" @click="backToMain">
+                          <font-awesome-icon icon="fa-solid fa-chevron-left" />
+                        </button>
+                        <span class="context-menu-title">{{
+                          isTierGroup ? 'Move Group To' : 'Move Tier To'
+                        }}</span>
+                      </div>
+                      <div class="context-menu-scrollable">
+                        <button
+                          v-for="targetSection in availableSectionsForMove"
+                          :key="targetSection.section_id"
+                          class="context-menu-item"
+                          @click="moveToSection(targetSection.section_id)"
+                        >
+                          <font-awesome-icon
+                            icon="fa-solid fa-folder"
+                            class="menu-icon"
+                          />
+                          <span class="menu-item-text">{{
+                            targetSection.name || targetSection.section_name
+                          }}</span>
+                        </button>
+                        <div
+                          v-if="
+                            shouldShowUnsectioned &&
+                            availableSectionsForMove.length > 0
+                          "
+                          class="context-menu-divider"
+                        ></div>
+                        <button
+                          v-if="shouldShowUnsectioned"
+                          class="context-menu-item"
+                          @click="moveToUnsectioned"
+                        >
+                          <font-awesome-icon
+                            icon="fa-solid fa-folder-open"
+                            class="menu-icon"
+                          />
+                          <span class="menu-item-text">{{
+                            $t('tiersPage.uncategorized')
+                          }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   <template v-if="!element.collapsed">
                     <div
                       v-for="child in element.children"
@@ -168,12 +257,13 @@
               @end="onDragEnd"
             >
               <template #item="{ element }">
-                <div class="tier-tree-item">
+                <div class="tier-tree-item" style="position: relative">
                   <div
                     class="tier-item"
                     :class="{ 'tier-parent': element.children.length > 0 }"
                     :style="{ marginLeft: element.level * 20 + 'px' }"
                     @click="handleTierClick(element)"
+                    @contextmenu="showContextMenu($event, element, null)"
                   >
                     <div class="tier-content">
                       <button
@@ -200,6 +290,95 @@
                       >
                     </div>
                   </div>
+
+                  <!-- Context Menu for this tier -->
+                  <div
+                    v-if="
+                      contextMenuVisible &&
+                      contextMenuTier?.tier_id === element.tier_id
+                    "
+                    class="tier-context-menu"
+                    @click.stop
+                  >
+                    <!-- Main Step -->
+                    <div
+                      v-if="contextMenuStep === 'main'"
+                      class="context-menu-content"
+                    >
+                      <button
+                        v-if="
+                          availableSectionsForMove.length > 0 ||
+                          shouldShowUnsectioned
+                        "
+                        class="context-menu-item"
+                        @click="showSectionsStep"
+                      >
+                        <font-awesome-icon
+                          icon="fa-solid fa-bars"
+                          class="menu-icon"
+                        />
+                        <span class="menu-item-text">
+                          {{ isTierGroup ? 'Move Tier Group' : 'Move Tier' }}
+                        </span>
+                        <font-awesome-icon
+                          icon="fa-solid fa-chevron-right"
+                          class="menu-arrow"
+                        />
+                      </button>
+                    </div>
+
+                    <!-- Sections Step -->
+                    <div
+                      v-if="contextMenuStep === 'sections'"
+                      class="context-menu-content"
+                    >
+                      <div class="context-menu-header">
+                        <button class="context-menu-back" @click="backToMain">
+                          <font-awesome-icon icon="fa-solid fa-chevron-left" />
+                        </button>
+                        <span class="context-menu-title">{{
+                          isTierGroup ? 'Move Group To' : 'Move Tier To'
+                        }}</span>
+                      </div>
+                      <div class="context-menu-scrollable">
+                        <button
+                          v-for="targetSection in availableSectionsForMove"
+                          :key="targetSection.section_id"
+                          class="context-menu-item"
+                          @click="moveToSection(targetSection.section_id)"
+                        >
+                          <font-awesome-icon
+                            icon="fa-solid fa-folder"
+                            class="menu-icon"
+                          />
+                          <span class="menu-item-text">{{
+                            targetSection.name || targetSection.section_name
+                          }}</span>
+                        </button>
+                        <div
+                          v-if="
+                            shouldShowUnsectioned &&
+                            availableSectionsForMove.length > 0
+                          "
+                          class="context-menu-divider"
+                        ></div>
+                        <button
+                          v-if="shouldShowUnsectioned"
+                          class="context-menu-item"
+                          @click="moveToUnsectioned"
+                        >
+                          <font-awesome-icon
+                            icon="fa-solid fa-folder-open"
+                            class="menu-icon"
+                          />
+                          <span class="menu-item-text">{{
+                            $t('tiersPage.uncategorized')
+                          }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   <template v-if="!element.collapsed">
                     <div
                       v-for="child in element.children"
@@ -285,6 +464,9 @@
                         }"
                         :style="{ marginLeft: element.level * 20 + 'px' }"
                         @click="handleTierClick(element)"
+                        @contextmenu="
+                          showContextMenu($event, element, section.section_id)
+                        "
                       >
                         <div class="tier-content">
                           <button
@@ -413,7 +595,7 @@
                   @end="onDragEnd"
                 >
                   <template #item="{ element }">
-                    <div class="tier-tree-item">
+                    <div class="tier-tree-item" style="position: relative">
                       <div
                         class="tier-item"
                         :class="{
@@ -421,6 +603,9 @@
                         }"
                         :style="{ marginLeft: element.level * 20 + 'px' }"
                         @click="handleTierClick(element)"
+                        @contextmenu="
+                          showContextMenu($event, element, section.section_id)
+                        "
                       >
                         <div class="tier-content">
                           <button
@@ -447,6 +632,100 @@
                           >
                         </div>
                       </div>
+
+                      <!-- Context Menu -->
+                      <div
+                        v-if="
+                          contextMenuVisible &&
+                          contextMenuTier?.tier_id?.tier_id ===
+                            element.t.tier_idier_id
+                        "
+                        class="tier-context-menu"
+                        @click.stop
+                      >
+                        <div
+                          v-if="contextMenuStep === 'main'"
+                          class="context-menu-content"
+                        >
+                          <button
+                            v-if="
+                              availableSectionsForMove.length > 0 ||
+                              shouldShowUnsectioned
+                            "
+                            class="context-menu-item"
+                            @click="showSectionsStep"
+                          >
+                            <font-awesome-icon
+                              icon="fa-solid fa-bars"
+                              class="menu-icon"
+                            />
+                            <span class="menu-item-text">
+                              {{
+                                isTierGroup ? 'Move Tier Group' : 'Move Tier'
+                              }}
+                            </span>
+                            <font-awesome-icon
+                              icon="fa-solid fa-chevron-right"
+                              class="menu-arrow"
+                            />
+                          </button>
+                        </div>
+                        <div
+                          v-if="contextMenuStep === 'sections'"
+                          class="context-menu-content"
+                        >
+                          <div class="context-menu-header">
+                            <button
+                              class="context-menu-back"
+                              @click="backToMain"
+                            >
+                              <font-awesome-icon
+                                icon="fa-solid fa-chevron-left"
+                              />
+                            </button>
+                            <span class="context-menu-title">{{
+                              isTierGroup ? 'Move Group To' : 'Move Tier To'
+                            }}</span>
+                          </div>
+                          <div class="context-menu-scrollable">
+                            <button
+                              v-for="targetSection in availableSectionsForMove"
+                              :key="targetSection.section_id"
+                              class="context-menu-item"
+                              @click="moveToSection(targetSection.section_id)"
+                            >
+                              <font-awesome-icon
+                                icon="fa-solid fa-folder"
+                                class="menu-icon"
+                              />
+                              <span class="menu-item-text">{{
+                                targetSection.name || targetSection.section_name
+                              }}</span>
+                            </button>
+                            <div
+                              v-if="
+                                shouldShowUnsectioned &&
+                                availableSectionsForMove.length > 0
+                              "
+                              class="context-menu-divider"
+                            ></div>
+                            <button
+                              v-if="shouldShowUnsectioned"
+                              class="context-menu-item"
+                              @click="moveToUnsectioned"
+                            >
+                              <font-awesome-icon
+                                icon="fa-solid fa-folder-open"
+                                class="menu-icon"
+                              />
+                              <span class="menu-item-text">{{
+                                $t('tiersPage.uncategorized')
+                              }}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
                       <template v-if="!element.collapsed">
                         <div
                           v-for="child in element.children"
@@ -548,7 +827,7 @@
                     @end="onDragEnd"
                   >
                     <template #item="{ element }">
-                      <div class="tier-tree-item">
+                      <div class="tier-tree-item" style="position: relative">
                         <div
                           class="tier-item"
                           :class="{
@@ -556,6 +835,9 @@
                           }"
                           :style="{ marginLeft: element.level * 20 + 'px' }"
                           @click="handleTierClick(element)"
+                          @contextmenu="
+                            showContextMenu($event, element, sectionName)
+                          "
                         >
                           <div class="tier-content">
                             <button
@@ -584,6 +866,100 @@
                             >
                           </div>
                         </div>
+
+                        <!-- Context Menu -->
+                        <div
+                          v-if="
+                            contextMenuVisible &&
+                            contextMenuTier?.tier_id === element.tier_id
+                          "
+                          class="tier-context-menu"
+                          @click.stop
+                        >
+                          <div
+                            v-if="contextMenuStep === 'main'"
+                            class="context-menu-content"
+                          >
+                            <button
+                              v-if="
+                                availableSectionsForMove.length > 0 ||
+                                shouldShowUnsectioned
+                              "
+                              class="context-menu-item"
+                              @click="showSectionsStep"
+                            >
+                              <font-awesome-icon
+                                icon="fa-solid fa-bars"
+                                class="menu-icon"
+                              />
+                              <span class="menu-item-text">
+                                {{
+                                  isTierGroup ? 'Move Tier Group' : 'Move Tier'
+                                }}
+                              </span>
+                              <font-awesome-icon
+                                icon="fa-solid fa-chevron-right"
+                                class="menu-arrow"
+                              />
+                            </button>
+                          </div>
+                          <div
+                            v-if="contextMenuStep === 'sections'"
+                            class="context-menu-content"
+                          >
+                            <div class="context-menu-header">
+                              <button
+                                class="context-menu-back"
+                                @click="backToMain"
+                              >
+                                <font-awesome-icon
+                                  icon="fa-solid fa-chevron-left"
+                                />
+                              </button>
+                              <span class="context-menu-title">{{
+                                isTierGroup ? 'Move Group To' : 'Move Tier To'
+                              }}</span>
+                            </div>
+                            <div class="context-menu-scrollable">
+                              <button
+                                v-for="targetSection in availableSectionsForMove"
+                                :key="targetSection.section_id"
+                                class="context-menu-item"
+                                @click="moveToSection(targetSection.section_id)"
+                              >
+                                <font-awesome-icon
+                                  icon="fa-solid fa-folder"
+                                  class="menu-icon"
+                                />
+                                <span class="menu-item-text">{{
+                                  targetSection.name ||
+                                  targetSection.section_name
+                                }}</span>
+                              </button>
+                              <div
+                                v-if="
+                                  shouldShowUnsectioned &&
+                                  availableSectionsForMove.length > 0
+                                "
+                                class="context-menu-divider"
+                              ></div>
+                              <button
+                                v-if="shouldShowUnsectioned"
+                                class="context-menu-item"
+                                @click="moveToUnsectioned"
+                              >
+                                <font-awesome-icon
+                                  icon="fa-solid fa-folder-open"
+                                  class="menu-icon"
+                                />
+                                <span class="menu-item-text">{{
+                                  $t('tiersPage.uncategorized')
+                                }}</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
                         <template v-if="!element.collapsed">
                           <div
                             v-for="child in element.children"
@@ -653,12 +1029,13 @@
                 @end="onDragEnd"
               >
                 <template #item="{ element }">
-                  <div class="tier-tree-item">
+                  <div class="tier-tree-item" style="position: relative">
                     <div
                       class="tier-item"
                       :class="{ 'tier-parent': element.children.length > 0 }"
                       :style="{ marginLeft: element.level * 20 + 'px' }"
                       @click="handleTierClick(element)"
+                      @contextmenu="showContextMenu($event, element, null)"
                     >
                       <div class="tier-content">
                         <button
@@ -683,6 +1060,94 @@
                         <span class="tier-file">({{ element.file_name }})</span>
                       </div>
                     </div>
+
+                    <!-- Context Menu -->
+                    <div
+                      v-if="
+                        contextMenuVisible &&
+                        contextMenuTier?.tier_id === element.tier_id
+                      "
+                      class="tier-context-menu"
+                      @click.stop
+                    >
+                      <div
+                        v-if="contextMenuStep === 'main'"
+                        class="context-menu-content"
+                      >
+                        <button
+                          v-if="
+                            availableSectionsForMove.length > 0 ||
+                            shouldShowUnsectioned
+                          "
+                          class="context-menu-item"
+                          @click="showSectionsStep"
+                        >
+                          <font-awesome-icon
+                            icon="fa-solid fa-bars"
+                            class="menu-icon"
+                          />
+                          <span class="menu-item-text">
+                            {{ isTierGroup ? 'Move Tier Group' : 'Move Tier' }}
+                          </span>
+                          <font-awesome-icon
+                            icon="fa-solid fa-chevron-right"
+                            class="menu-arrow"
+                          />
+                        </button>
+                      </div>
+                      <div
+                        v-if="contextMenuStep === 'sections'"
+                        class="context-menu-content"
+                      >
+                        <div class="context-menu-header">
+                          <button class="context-menu-back" @click="backToMain">
+                            <font-awesome-icon
+                              icon="fa-solid fa-chevron-left"
+                            />
+                          </button>
+                          <span class="context-menu-title">{{
+                            isTierGroup ? 'Move Group To' : 'Move Tier To'
+                          }}</span>
+                        </div>
+                        <div class="context-menu-scrollable">
+                          <button
+                            v-for="sec in availableSectionsForMove"
+                            :key="sec.section_id"
+                            class="context-menu-item"
+                            @click="moveToSection(sec.section_id)"
+                          >
+                            <font-awesome-icon
+                              icon="fa-solid fa-folder"
+                              class="menu-icon"
+                            />
+                            <span class="menu-item-text">{{
+                              sec.name || sec.section_name
+                            }}</span>
+                          </button>
+                          <div
+                            v-if="
+                              shouldShowUnsectioned &&
+                              availableSectionsForMove.length > 0
+                            "
+                            class="context-menu-divider"
+                          ></div>
+                          <button
+                            v-if="shouldShowUnsectioned"
+                            class="context-menu-item"
+                            @click="moveToUnsectioned"
+                          >
+                            <font-awesome-icon
+                              icon="fa-solid fa-folder-open"
+                              class="menu-icon"
+                            />
+                            <span class="menu-item-text">{{
+                              $t('tiersPage.uncategorized')
+                            }}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
                     <template v-if="!element.collapsed">
                       <div
                         v-for="child in element.children"
@@ -804,6 +1269,13 @@ const collapsedStates = ref(new Map());
 const newSectionId = ref(null);
 const movingInProgress = ref(false);
 const localSectionCounter = ref(0);
+
+// Context menu state
+const contextMenuVisible = ref(false);
+const contextMenuTier = ref(null);
+const contextMenuSection = ref(null);
+const contextMenuStep = ref('main'); // 'main' or 'sections'
+const closeMenuListener = ref(null); // Store the close listener reference
 
 // Assignment mode computed properties
 const hasNewSectionAssignments = computed(() => {
@@ -1255,16 +1727,29 @@ function buildTierTrees(tiers) {
   }
   setLevels(roots, 0);
 
-  // Sort roots and children alphabetically
-  function sortAlphabetically(nodes) {
-    nodes.sort((a, b) => a.tier_name.localeCompare(b.tier_name));
+  // Sort: tier groups first (those with children), then standalone tiers
+  // Within each category, sort alphabetically
+  function sortByGroupThenAlpha(nodes) {
+    nodes.sort((a, b) => {
+      const aHasChildren = a.children && a.children.length > 0;
+      const bHasChildren = b.children && b.children.length > 0;
+
+      // Groups (with children) come before standalone tiers
+      if (aHasChildren && !bHasChildren) return -1;
+      if (!aHasChildren && bHasChildren) return 1;
+
+      // Within same category, sort alphabetically
+      return a.tier_name.localeCompare(b.tier_name);
+    });
+
+    // Recursively sort children
     nodes.forEach((node) => {
       if (node.children && node.children.length > 0) {
-        sortAlphabetically(node.children);
+        sortByGroupThenAlpha(node.children);
       }
     });
   }
-  sortAlphabetically(roots);
+  sortByGroupThenAlpha(roots);
 
   return roots;
 }
@@ -1616,6 +2101,222 @@ function scrollToNewSection() {
   tryScroll();
 }
 
+// Context menu functions
+function showContextMenu(event, tier, sectionId) {
+  console.log('=== showContextMenu called ===');
+  console.log('Tier:', tier);
+  console.log('Section ID:', sectionId);
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  // Remove any existing close listener first
+  if (closeMenuListener.value) {
+    document.removeEventListener('click', closeMenuListener.value);
+    closeMenuListener.value = null;
+  }
+
+  contextMenuTier.value = tier;
+  contextMenuSection.value = sectionId;
+  contextMenuStep.value = 'main';
+
+  console.log('contextMenuTier set to:', contextMenuTier.value);
+  console.log('contextMenuSection set to:', contextMenuSection.value);
+
+  // Check if there are any valid actions (check after setting values)
+  nextTick(() => {
+    console.log('In nextTick - checking validity');
+    console.log('availableSectionsForMove:', availableSectionsForMove.value);
+    console.log('shouldShowUnsectioned:', shouldShowUnsectioned.value);
+
+    const hasValidActions =
+      shouldShowUnsectioned.value || availableSectionsForMove.value.length > 0;
+    console.log('hasValidActions:', hasValidActions);
+
+    if (!hasValidActions) {
+      console.log('No valid actions - not showing menu');
+      contextMenuVisible.value = false;
+      return; // Don't show menu if no actions available
+    }
+
+    console.log('Setting contextMenuVisible to true');
+    contextMenuVisible.value = true;
+    console.log('contextMenuVisible is now:', contextMenuVisible.value);
+  });
+
+  // Close menu when clicking outside
+  const closeMenu = () => {
+    console.log('Closing menu');
+    contextMenuVisible.value = false;
+    contextMenuStep.value = 'main';
+    if (closeMenuListener.value) {
+      document.removeEventListener('click', closeMenuListener.value);
+      closeMenuListener.value = null;
+    }
+  };
+  closeMenuListener.value = closeMenu;
+  setTimeout(() => {
+    document.addEventListener('click', closeMenu);
+  }, 100);
+}
+
+function hideContextMenu() {
+  contextMenuVisible.value = false;
+  contextMenuStep.value = 'main';
+  if (closeMenuListener.value) {
+    document.removeEventListener('click', closeMenuListener.value);
+    closeMenuListener.value = null;
+  }
+}
+
+function showSectionsStep() {
+  contextMenuStep.value = 'sections';
+}
+
+function backToMain() {
+  contextMenuStep.value = 'main';
+}
+
+const isTierGroup = computed(() => {
+  return (
+    contextMenuTier.value?.children && contextMenuTier.value.children.length > 0
+  );
+});
+
+async function moveToSection(targetSectionId) {
+  if (!contextMenuTier.value) return;
+
+  const tier = contextMenuTier.value;
+
+  if (props.mode === 'management') {
+    // Management mode: make backend call to move the tier
+    if (movingInProgress.value) return; // Prevent double-submit
+
+    movingInProgress.value = true;
+    try {
+      await moveTierGroup(
+        tier.tier_group_id,
+        targetSectionId,
+        currentProject.value.project_id,
+        tier.tier_id,
+        tier.tier_name
+      );
+      await loadData({ silent: true });
+
+      // Show success message
+      let destinationName;
+      if (targetSectionId === null) {
+        destinationName = t('tiersPage.uncategorized');
+      } else {
+        const section = sections.value.find(
+          (s) => s.section_id === targetSectionId
+        );
+        destinationName = section
+          ? section.name || section.section_name
+          : targetSectionId;
+      }
+
+      // Determine the appropriate message based on tier type
+      let messageKey;
+      if (tier.children && tier.children.length > 0) {
+        // This is a parent tier with children (tier group)
+        messageKey = 'tiersPage.eventMessages.tierGroupMoved';
+      } else if (tier.parent_tier_id) {
+        // This is a child tier of a group
+        messageKey = 'tiersPage.eventMessages.tierGroupChildMoved';
+      } else {
+        // This is a standalone tier
+        messageKey = 'tiersPage.eventMessages.tierMoved';
+      }
+
+      eventMessageStore.addMessage(messageKey, 'success', 3000, {
+        tierName: tier.tier_name,
+        destination: destinationName,
+      });
+    } catch (error) {
+      console.error('Failed to move tier:', error);
+      eventMessageStore.addMessage(
+        'tiersPage.eventMessages.tierMoveFailed',
+        'error'
+      );
+    } finally {
+      movingInProgress.value = false;
+    }
+  } else {
+    // Assignment mode: emit tier-assigned event
+    const tiersToMove = [tier];
+
+    // If it's a parent tier, include all children
+    if (tier.children && tier.children.length > 0) {
+      tiersToMove.push(...tier.children);
+    }
+
+    tiersToMove.forEach((t) => {
+      const tierKey = t.tier_id || t.tier_name;
+      emit('tier-assigned', { tierKey, assignment: targetSectionId });
+    });
+
+    // Show success message
+    let destinationName;
+    if (targetSectionId === null || targetSectionId === '') {
+      destinationName = t('uploadPage.step3.unassignedTiers');
+    } else if (targetSectionId === 'new') {
+      destinationName = t('uploadPage.step3.newSection');
+    } else {
+      const section = props.existingSections.find(
+        (s) =>
+          s.section_id === targetSectionId || s.section_name === targetSectionId
+      );
+      destinationName = section
+        ? section.name || section.section_name
+        : targetSectionId;
+    }
+
+    eventMessageStore.addMessage(
+      'tiersPage.eventMessages.tierMoved',
+      'success',
+      3000,
+      {
+        tierName: tier.tier_name,
+        destination: destinationName,
+      }
+    );
+  }
+
+  hideContextMenu();
+}
+
+function moveToUnsectioned() {
+  if (props.mode === 'management') {
+    moveToSection(null);
+  } else {
+    moveToSection('');
+  }
+}
+
+// Get available sections for context menu (excluding current section)
+const availableSectionsForMove = computed(() => {
+  const currentSection = contextMenuSection.value;
+
+  let allSections;
+  if (props.mode === 'management') {
+    // In management mode, use sections.value
+    allSections = sections.value || [];
+  } else {
+    // In assignment mode, use production and staged sections from props
+    allSections = [...productionSections.value, ...stagedSections.value];
+  }
+
+  return allSections.filter((s) => s.section_id !== currentSection);
+});
+
+// Check if we should show "Move to Unsectioned" option
+const shouldShowUnsectioned = computed(() => {
+  const currentSection = contextMenuSection.value;
+  // Don't show if already in unsectioned (null or empty string)
+  return currentSection !== null && currentSection !== '';
+});
+
 onMounted(() => {
   if (props.mode === 'management') {
     loadData();
@@ -1932,5 +2633,190 @@ export default {
 .staged-group .section-group-title {
   color: #1976d2;
   border-bottom-color: #1976d2;
+}
+
+/* Context Menu Styles */
+.tier-context-menu {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  z-index: 10000;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgb(148 163 184 / 20%);
+  border-radius: 12px;
+  box-shadow:
+    0 10px 40px rgb(0 0 0 / 30%),
+    0 0 1px rgb(255 255 255 / 10%) inset;
+  width: 240px;
+  max-height: 280px;
+  overflow: visible;
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+
+/* Arrow pointing downward to the element below */
+.tier-context-menu::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #0f172a;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 20%));
+}
+
+/* Add a subtle shadow to create depth */
+.tier-context-menu::before {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 9px solid rgb(148 163 184 / 20%);
+  z-index: -1;
+}
+
+.context-menu-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.context-menu-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 12px 8px;
+  border-bottom: 1px solid rgb(148 163 184 / 20%);
+  gap: 8px;
+}
+
+.context-menu-back {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.context-menu-back:hover {
+  background: rgb(59 130 246 / 15%);
+  color: #3b82f6;
+}
+
+.context-menu-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgb(226 232 240 / 80%);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  flex: 1;
+}
+
+.context-menu-scrollable {
+  overflow-y: auto;
+  max-height: 232px;
+  padding: 4px 0;
+}
+
+.context-menu-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.context-menu-scrollable::-webkit-scrollbar-track {
+  background: rgb(15 23 42 / 30%);
+  border-radius: 3px;
+}
+
+.context-menu-scrollable::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 30%);
+  border-radius: 3px;
+}
+
+.context-menu-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184 / 50%);
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(148 163 184 / 30%) 50%,
+    transparent 100%
+  );
+  margin: 6px 12px;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 11px 16px;
+  border: none;
+  background: transparent;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-left: 3px solid transparent;
+  gap: 10px;
+}
+
+.context-menu-item:hover {
+  background: rgb(59 130 246 / 15%);
+  border-left-color: #3b82f6;
+  padding-left: 19px;
+}
+
+.context-menu-item .menu-icon {
+  color: #94a3b8;
+  width: 16px;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.context-menu-item:hover .menu-icon {
+  color: #3b82f6;
+}
+
+.context-menu-item .menu-item-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.context-menu-item .menu-arrow {
+  color: #64748b;
+  width: 12px;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition:
+    transform 0.15s ease,
+    color 0.15s ease;
+}
+
+.context-menu-item:hover .menu-arrow {
+  color: #3b82f6;
+  transform: translateX(2px);
 }
 </style>

@@ -1213,6 +1213,7 @@
       "suggestingNewSections": "Suggestion de nouvelles sections",
       "tier": "tier",
       "tiers": "tiers",
+      "tiersInThisSection": "Tiers dans cette section :",
       "noSectionsAssigned": "Aucune section n'a été assignée",
       "addDescription": "Ajouter une description",
       "optional": "Facultatif",

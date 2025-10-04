@@ -942,6 +942,223 @@
   padding: 1rem 1.25rem;
   border-radius: 10px;
   transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer;
+}
+
+.upload-page-section-item-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: white;
+  padding: 0;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  min-width: 320px;
+  max-width: 480px;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 10px 25px rgb(0 0 0 / 40%), 0 0 0 1px rgb(255 255 255 / 10%);
+  border: 1px solid rgb(255 255 255 / 10%);
+}
+
+.upload-page-section-item-tooltip:hover,
+.upload-page-section-item:hover .upload-page-section-item-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+  pointer-events: auto;
+}
+
+.upload-page-section-item-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: #0f172a;
+}
+
+.upload-page-tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 280px;
+  overflow: hidden auto;
+  white-space: normal;
+  padding: 1rem;
+  padding-right: 0.75rem;
+}
+
+.upload-page-tooltip-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.upload-page-tooltip-content::-webkit-scrollbar-track {
+  background: rgb(255 255 255 / 5%);
+  border-radius: 4px;
+  margin: 0.5rem 0;
+}
+
+.upload-page-tooltip-content::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 20%);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.upload-page-tooltip-content::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 30%);
+  background-clip: padding-box;
+}
+
+.upload-page-tooltip-title {
+  font-weight: 700;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgb(59 130 246 / 30%);
+  color: #93c5fd;
+}
+
+.upload-page-tooltip-tier {
+  padding: 0.125rem 0;
+  font-size: 0.8125rem;
+  color: rgb(255 255 255 / 90%);
+}
+
+.upload-page-tooltip-tier-group {
+  margin: 0.375rem 0;
+  padding: 0.625rem 0.75rem;
+  background: linear-gradient(135deg, rgb(59 130 246 / 12%) 0%, rgb(59 130 246 / 6%) 100%);
+  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+  transition: background 0.2s ease;
+}
+
+.upload-page-tooltip-tier-group:hover {
+  background: linear-gradient(135deg, rgb(59 130 246 / 16%) 0%, rgb(59 130 246 / 8%) 100%);
+}
+
+.upload-page-tooltip-tier-group-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #60a5fa;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+  padding: 0.125rem 0;
+}
+
+.upload-page-tooltip-tier-group-name:hover {
+  color: #93c5fd;
+}
+
+.upload-page-tooltip-collapse-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #60a5fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.upload-page-tooltip-collapse-button:hover {
+  color: #93c5fd;
+  transform: scale(1.1);
+}
+
+.upload-page-tooltip-tier-count {
+  font-size: 0.75rem;
+  color: rgb(255 255 255 / 50%);
+  font-weight: 500;
+  margin-left: auto;
+  background: rgb(255 255 255 / 8%);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.upload-page-tooltip-tier-group-icon {
+  color: #3b82f6;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.upload-page-tooltip-tier-group-children {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-left: 2rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.upload-page-tooltip-tier-child {
+  font-size: 0.8125rem;
+  color: rgb(255 255 255 / 80%);
+  padding: 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.upload-page-tooltip-standalone-tier {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.8125rem;
+  color: rgb(255 255 255 / 85%);
+  background: linear-gradient(135deg, rgb(255 255 255 / 8%) 0%, rgb(255 255 255 / 4%) 100%);
+  border-radius: 8px;
+  margin: 0.375rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  transition: all 0.2s ease;
+  font-weight: 500;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.upload-page-tooltip-standalone-tier::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+  border-radius: 0 2px 2px 0;
+}
+
+.upload-page-tooltip-standalone-tier:hover {
+  background: linear-gradient(135deg, rgb(255 255 255 / 12%) 0%, rgb(255 255 255 / 6%) 100%);
+  border-color: rgb(255 255 255 / 15%);
+  transform: translateX(2px);
+}
+
+.upload-page-tooltip-separator {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 15%) 50%, transparent 100%);
+  margin: 0.75rem 0;
 }
 
 .upload-page-production-section {

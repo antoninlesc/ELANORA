@@ -28,6 +28,9 @@ import {
   faXmark,
   faCircleCheck,
   faSquarePlus,
+  faBars,
+  faLayerGroup,
+  faChevronLeft,
 } from '@fortawesome/free-solid-svg-icons';
 import {
   faPenToSquare,
@@ -65,7 +68,10 @@ library.add(
   faArrowRight,
   faXmark,
   faCircleCheck,
-  faSquarePlus
+  faSquarePlus,
+  faBars,
+  faLayerGroup,
+  faChevronLeft
 );
 
 export default FontAwesomeIcon;

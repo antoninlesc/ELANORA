@@ -1003,8 +1003,25 @@
     },
     "step4": {
       "label": "アップロードを確認",
+      "title": "アップロードを確認",
+      "description": "アップロードの詳細を確認し、管理者の承認前にオプションの説明を追加します。",
+      "summary": "アップロード概要",
+      "contributingTo": "貢献先",
+      "totalTiersUploaded": "合計階層数",
+      "productionSections": "本番セクション",
+      "stagedSections": "新規セクション",
+      "contributingToProduction": "本番セクションへの貢献",
+      "suggestingNewSections": "新規セクションの提案",
+      "tier": "階層",
+      "tiers": "階層",
+      "tiersInThisSection": "このセクションの階層：",
+      "noSectionsAssigned": "セクションがまだ割り当てられていません",
+      "addDescription": "説明を追加",
+      "optional": "オプション",
       "placeholder": "アップロードの説明を追加",
-      "confirm": "アップロードを確認"
+      "confirm": "アップロードを確認",
+      "success": "アップロードが正常に確認されました！管理者の承認待ちです。",
+      "error": "アップロードの確認に失敗しました。もう一度お試しください。"
     },
     "projectSelection": {
       "label": "プロジェクトを選択：",

@@ -1222,6 +1222,7 @@
       "suggestingNewSections": "Suggested New Sections",
       "tier": "tier",
       "tiers": "tiers",
+      "tiersInThisSection": "Tiers in this section:",
       "noSectionsAssigned": "No sections have been assigned yet",
       "addDescription": "Add Description",
       "optional": "Optional",
