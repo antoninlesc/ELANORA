@@ -4,25 +4,25 @@
       <h1 class="upload-title">{{ $t('uploadPage.title') }}</h1>
 
       <!-- Custom Stepper -->
-      <div class="stepper">
-        <div class="stepper-header">
+      <div class="upload-page-stepper">
+        <div class="upload-page-stepper-header">
           <div
             v-for="step in 4"
             :key="step"
-            class="step"
+            class="upload-page-step"
             :class="{
-              active: uploadStore.currentStep === step,
-              completed: uploadStore.currentStep > step,
+              'upload-page-active': uploadStore.currentStep === step,
+              'upload-page-completed': uploadStore.currentStep > step,
             }"
           >
-            <div class="step-circle">{{ step }}</div>
-            <div class="step-label">
+            <div class="upload-page-step-circle">{{ step }}</div>
+            <div class="upload-page-step-label">
               {{ $t(`uploadPage.step${step}.label`) }}
             </div>
           </div>
         </div>
-        <div class="stepper-progress">
-          <div class="progress-bar" :style="progressBarStyle"></div>
+        <div class="upload-page-stepper-progress">
+          <div class="upload-page-progress-bar" :style="progressBarStyle"></div>
         </div>
       </div>
 
@@ -31,14 +31,14 @@
         <!-- Step 1: Project Selection and Upload -->
         <div v-if="uploadStore.currentStep === 1">
           <!-- Project Selection -->
-          <div class="project-selection">
-            <label for="projectSelect" class="project-label">{{
+          <div class="upload-page-project-selection">
+            <label for="projectSelect" class="upload-page-project-label">{{
               $t('uploadPage.projectSelection.label')
             }}</label>
             <select
               id="projectSelect"
               v-model="uploadStore.selectedProject"
-              class="project-select"
+              class="upload-page-project-select"
               :disabled="loading"
             >
               <option value="">
@@ -72,12 +72,15 @@
               v-if="uploadStore.selectedFiles.length > 0"
               class="upload-actions"
             >
-              <button class="btn-cancel" @click="handleCancelUpload">
+              <button
+                class="upload-page-btn-cancel"
+                @click="handleCancelUpload"
+              >
                 <font-awesome-icon icon="fa-solid fa-xmark" />
                 {{ $t('uploadPage.cancelButton') }}
               </button>
               <button
-                class="btn-primary"
+                class="upload-page-btn-primary"
                 :disabled="!uploadStore.isStepValid"
                 @click="proceedToStep2"
               >
@@ -91,10 +94,13 @@
         <!-- Step 2: Processing (auto-advance, no back button) -->
         <div v-if="uploadStore.currentStep === 2">
           <div class="upload-progress">
-            <div class="spinner"></div>
+            <div class="upload-page-spinner"></div>
             <p>{{ $t('uploadPage.step2.processing') }}</p>
             <div class="upload-actions">
-              <button class="btn-cancel" @click="handleCancelUpload">
+              <button
+                class="upload-page-btn-cancel"
+                @click="handleCancelUpload"
+              >
                 <font-awesome-icon icon="fa-solid fa-xmark" />
                 {{ $t('uploadPage.cancelButton') }}
               </button>
@@ -119,12 +125,12 @@
           />
 
           <div class="upload-actions">
-            <button class="btn-cancel" @click="handleCancelUpload">
+            <button class="upload-page-btn-cancel" @click="handleCancelUpload">
               <font-awesome-icon icon="fa-solid fa-xmark" />
               {{ $t('uploadPage.cancelButton') }}
             </button>
             <button
-              class="btn-primary"
+              class="upload-page-btn-primary"
               :disabled="!isStep3Valid"
               :title="
                 !isStep3Valid
@@ -143,18 +149,20 @@
 
         <!-- Step 4: Confirm -->
         <div v-if="uploadStore.currentStep === 4">
-          <div class="step4-container">
+          <div class="upload-page-step4-container">
             <!-- Header -->
-            <div class="step4-header">
-              <h2 class="step4-title">{{ $t('uploadPage.step4.title') }}</h2>
-              <p class="step4-subtitle">
+            <div class="upload-page-step4-header">
+              <h2 class="upload-page-step4-title">
+                {{ $t('uploadPage.step4.title') }}
+              </h2>
+              <p class="upload-page-step4-subtitle">
                 {{ $t('uploadPage.step4.description') }}
               </p>
             </div>
 
             <!-- Project Info Card -->
-            <div class="recap-card project-card">
-              <div class="card-icon-large">
+            <div class="upload-page-recap-card upload-page-project-card">
+              <div class="upload-page-card-icon-large">
                 <svg
                   width="32"
                   height="32"
@@ -171,20 +179,20 @@
                   />
                 </svg>
               </div>
-              <div class="project-info">
-                <span class="project-label">{{
+              <div class="upload-page-project-info">
+                <span class="upload-page-project-label">{{
                   $t('uploadPage.step4.contributingTo')
                 }}</span>
-                <h3 class="project-name">
+                <h3 class="upload-page-project-name">
                   {{ getProjectName(uploadStore.selectedProject) }}
                 </h3>
               </div>
             </div>
 
             <!-- Stats Overview -->
-            <div class="stats-overview">
-              <div class="stat-box stat-total">
-                <div class="stat-icon">
+            <div class="upload-page-stats-overview">
+              <div class="upload-page-stat-box upload-page-stat-total">
+                <div class="upload-page-stat-icon">
                   <svg
                     width="24"
                     height="24"
@@ -201,16 +209,18 @@
                     />
                   </svg>
                 </div>
-                <div class="stat-content">
-                  <div class="stat-value">{{ assignedTiersCount }}</div>
-                  <div class="stat-label">
+                <div class="upload-page-stat-content">
+                  <div class="upload-page-stat-value">
+                    {{ assignedTiersCount }}
+                  </div>
+                  <div class="upload-page-stat-label">
                     {{ $t('uploadPage.step4.totalTiersUploaded') }}
                   </div>
                 </div>
               </div>
 
-              <div class="stat-box stat-production">
-                <div class="stat-icon">
+              <div class="upload-page-stat-box upload-page-stat-production">
+                <div class="upload-page-stat-icon">
                   <svg
                     width="24"
                     height="24"
@@ -227,25 +237,25 @@
                     />
                   </svg>
                 </div>
-                <div class="stat-content">
-                  <div class="stat-value">
+                <div class="upload-page-stat-content">
+                  <div class="upload-page-stat-value">
                     {{ productionSectionsWithCounts.length }}
                   </div>
-                  <div class="stat-label">
+                  <div class="upload-page-stat-label">
                     {{ $t('uploadPage.step4.productionSections') }}
                   </div>
                 </div>
               </div>
 
-              <div class="stat-box stat-staged">
-                <div class="stat-icon">
+              <div class="upload-page-stat-box upload-page-stat-staged">
+                <div class="upload-page-stat-icon">
                   <font-awesome-icon icon="fa-solid fa-square-plus" size="lg" />
                 </div>
-                <div class="stat-content">
-                  <div class="stat-value">
+                <div class="upload-page-stat-content">
+                  <div class="upload-page-stat-value">
                     {{ stagedSectionsWithCounts.length }}
                   </div>
-                  <div class="stat-label">
+                  <div class="upload-page-stat-label">
                     {{ $t('uploadPage.step4.stagedSections') }}
                   </div>
                 </div>
@@ -253,13 +263,15 @@
             </div>
 
             <!-- Sections Breakdown -->
-            <div class="sections-breakdown">
+            <div class="upload-page-sections-breakdown">
               <!-- Production Sections -->
               <div
                 v-if="productionSectionsWithCounts.length > 0"
-                class="section-group"
+                class="upload-page-section-group"
               >
-                <h4 class="section-group-title production-title">
+                <h4
+                  class="upload-page-section-group-title upload-page-production-title"
+                >
                   <svg
                     width="20"
                     height="20"
@@ -277,16 +289,22 @@
                   </svg>
                   {{ $t('uploadPage.step4.contributingToProduction') }}
                 </h4>
-                <div class="section-list">
+                <div class="upload-page-section-list">
                   <div
                     v-for="section in productionSectionsWithCounts"
                     :key="section.section_id"
-                    class="section-item production-section"
+                    class="upload-page-section-item upload-page-production-section"
                   >
-                    <span class="section-name">{{ section.name }}</span>
-                    <span class="section-badge production-badge">
-                      <span class="badge-count">{{ section.count }}</span>
-                      <span class="badge-label">{{
+                    <span class="upload-page-section-name">{{
+                      section.name
+                    }}</span>
+                    <span
+                      class="upload-page-section-badge upload-page-production-badge"
+                    >
+                      <span class="upload-page-badge-count">{{
+                        section.count
+                      }}</span>
+                      <span class="upload-page-badge-label">{{
                         section.count === 1
                           ? $t('uploadPage.step4.tier')
                           : $t('uploadPage.step4.tiers')
@@ -299,22 +317,30 @@
               <!-- Staged Sections -->
               <div
                 v-if="stagedSectionsWithCounts.length > 0"
-                class="section-group"
+                class="upload-page-section-group"
               >
-                <h4 class="section-group-title staged-title">
+                <h4
+                  class="upload-page-section-group-title upload-page-staged-title"
+                >
                   <font-awesome-icon icon="fa-solid fa-square-plus" />
                   {{ $t('uploadPage.step4.suggestingNewSections') }}
                 </h4>
-                <div class="section-list">
+                <div class="upload-page-section-list">
                   <div
                     v-for="section in stagedSectionsWithCounts"
                     :key="section.section_id"
-                    class="section-item staged-section"
+                    class="upload-page-section-item upload-page-staged-section"
                   >
-                    <span class="section-name">{{ section.name }}</span>
-                    <span class="section-badge staged-badge">
-                      <span class="badge-count">{{ section.count }}</span>
-                      <span class="badge-label">{{
+                    <span class="upload-page-section-name">{{
+                      section.name
+                    }}</span>
+                    <span
+                      class="upload-page-section-badge upload-page-staged-badge"
+                    >
+                      <span class="upload-page-badge-count">{{
+                        section.count
+                      }}</span>
+                      <span class="upload-page-badge-label">{{
                         section.count === 1
                           ? $t('uploadPage.step4.tier')
                           : $t('uploadPage.step4.tiers')
@@ -330,7 +356,7 @@
                   productionSectionsWithCounts.length === 0 &&
                   stagedSectionsWithCounts.length === 0
                 "
-                class="empty-sections-state"
+                class="upload-page-empty-sections-state"
               >
                 <svg
                   width="48"
@@ -352,32 +378,41 @@
             </div>
 
             <!-- Description -->
-            <div class="description-section">
-              <label class="description-label">
+            <div class="upload-page-description-section">
+              <label class="upload-page-description-label">
                 {{ $t('uploadPage.step4.addDescription') }}
-                <span class="optional-label"
+                <span class="upload-page-optional-label"
                   >({{ $t('uploadPage.step4.optional') }})</span
                 >
               </label>
               <textarea
                 v-model="uploadStore.description"
                 :placeholder="$t('uploadPage.step4.placeholder')"
-                class="description-textarea"
+                class="upload-page-description-textarea"
                 rows="4"
               ></textarea>
             </div>
 
             <!-- Actions -->
-            <div class="step4-actions">
-              <button class="btn-secondary" @click="uploadStore.prevStep">
+            <div class="upload-page-step4-actions">
+              <button
+                class="upload-page-btn-secondary"
+                @click="uploadStore.prevStep"
+              >
                 <font-awesome-icon icon="fa-solid fa-arrow-left" />
                 {{ $t('uploadPage.back') }}
               </button>
-              <button class="btn-cancel" @click="handleCancelUpload">
+              <button
+                class="upload-page-btn-cancel"
+                @click="handleCancelUpload"
+              >
                 <font-awesome-icon icon="fa-solid fa-xmark" />
                 {{ $t('uploadPage.cancelButton') }}
               </button>
-              <button class="btn-primary" @click="handleConfirmUpload">
+              <button
+                class="upload-page-btn-primary"
+                @click="handleConfirmUpload"
+              >
                 <font-awesome-icon icon="fa-solid fa-circle-check" />
                 {{ $t('uploadPage.step4.confirm') }}
               </button>
@@ -389,22 +424,27 @@
       <!-- Upload Results (if needed in later steps) -->
       <div v-if="uploadResults.length > 0" class="upload-results">
         <h3>{{ $t('uploadPage.uploadResults') }}</h3>
-        <div class="results-list">
+        <div class="upload-page-results-list">
           <div
             v-for="result in uploadResults"
             :key="result.filename"
-            class="result-item"
-            :class="{ success: result.success, error: !result.success }"
+            class="upload-page-result-item"
+            :class="{
+              'upload-page-success': result.success,
+              'upload-page-error': !result.success,
+            }"
           >
-            <span class="result-filename">{{ result.filename }}</span>
-            <span class="result-status">
+            <span class="upload-page-result-filename">{{
+              result.filename
+            }}</span>
+            <span class="upload-page-result-status">
               {{
                 result.success
                   ? $t('uploadPage.resultSuccess')
                   : $t('uploadPage.resultFailed')
               }}
             </span>
-            <span v-if="result.error" class="result-error">{{
+            <span v-if="result.error" class="upload-page-result-error">{{
               result.error
             }}</span>
           </div>
@@ -412,7 +452,7 @@
       </div>
 
       <!-- Error Messages -->
-      <div v-if="error" class="error-message">
+      <div v-if="error" class="upload-page-error-message">
         {{ error }}
       </div>
     </div>
