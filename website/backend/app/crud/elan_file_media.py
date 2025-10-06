@@ -117,6 +117,8 @@ async def create_or_get_media_in_db(
     result, created = await DatabaseUtils.upsert(
         db, ElanFileMedia, media_data, media_url=media_url
     )
+    if created:
+        await db.flush()  # Ensure auto-generated IDs are available for new records
     return result
 
 
