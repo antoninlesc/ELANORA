@@ -456,7 +456,7 @@
                   @end="onDragEnd"
                 >
                   <template #item="{ element }">
-                    <div class="tier-tree-item">
+                    <div class="tier-tree-item" style="position: relative">
                       <div
                         class="tier-item"
                         :class="{
@@ -493,6 +493,99 @@
                           >
                         </div>
                       </div>
+
+                      <!-- Context Menu -->
+                      <div
+                        v-if="
+                          contextMenuVisible &&
+                          contextMenuTier?.tier_id === element.tier_id
+                        "
+                        class="tier-context-menu"
+                        @click.stop
+                      >
+                        <div
+                          v-if="contextMenuStep === 'main'"
+                          class="context-menu-content"
+                        >
+                          <button
+                            v-if="
+                              availableSectionsForMove.length > 0 ||
+                              shouldShowUnsectioned
+                            "
+                            class="context-menu-item"
+                            @click="showSectionsStep"
+                          >
+                            <font-awesome-icon
+                              icon="fa-solid fa-bars"
+                              class="menu-icon"
+                            />
+                            <span class="menu-item-text">
+                              {{
+                                isTierGroup ? 'Move Tier Group' : 'Move Tier'
+                              }}
+                            </span>
+                            <font-awesome-icon
+                              icon="fa-solid fa-chevron-right"
+                              class="menu-arrow"
+                            />
+                          </button>
+                        </div>
+                        <div
+                          v-if="contextMenuStep === 'sections'"
+                          class="context-menu-content"
+                        >
+                          <div class="context-menu-header">
+                            <button
+                              class="context-menu-back"
+                              @click="backToMain"
+                            >
+                              <font-awesome-icon
+                                icon="fa-solid fa-chevron-left"
+                              />
+                            </button>
+                            <span class="context-menu-title">{{
+                              isTierGroup ? 'Move Group To' : 'Move Tier To'
+                            }}</span>
+                          </div>
+                          <div class="context-menu-scrollable">
+                            <button
+                              v-for="targetSection in availableSectionsForMove"
+                              :key="targetSection.section_id"
+                              class="context-menu-item"
+                              @click="moveToSection(targetSection.section_id)"
+                            >
+                              <font-awesome-icon
+                                icon="fa-solid fa-folder"
+                                class="menu-icon"
+                              />
+                              <span class="menu-item-text">{{
+                                targetSection.name || targetSection.section_name
+                              }}</span>
+                            </button>
+                            <div
+                              v-if="
+                                shouldShowUnsectioned &&
+                                availableSectionsForMove.length > 0
+                              "
+                              class="context-menu-divider"
+                            ></div>
+                            <button
+                              v-if="shouldShowUnsectioned"
+                              class="context-menu-item"
+                              @click="moveToUnsectioned"
+                            >
+                              <font-awesome-icon
+                                icon="fa-solid fa-folder-open"
+                                class="menu-icon"
+                              />
+                              <span class="menu-item-text">{{
+                                $t('tiersPage.uncategorized')
+                              }}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
                       <template v-if="!element.collapsed">
                         <div
                           v-for="child in element.children"
@@ -637,8 +730,7 @@
                       <div
                         v-if="
                           contextMenuVisible &&
-                          contextMenuTier?.tier_id?.tier_id ===
-                            element.t.tier_idier_id
+                          contextMenuTier?.tier_id === element.tier_id
                         "
                         class="tier-context-menu"
                         @click.stop
