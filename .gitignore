@@ -62,3 +62,6 @@ elanora_projects_backups
 elanora_projects/*
 !elanora_projects/.githooks/
 !elanora_projects/.githooks/**
+
+# Ignore tests merge_output files
+website/backend/tests/merge_outputs/

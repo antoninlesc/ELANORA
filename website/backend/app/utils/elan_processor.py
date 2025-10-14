@@ -18,6 +18,13 @@ from app.utils.elan_extractors import (
     AnnotationExtractor,
     MetadataExtractor,
     LinguisticTypeExtractor,
+    LinkedFileExtractor,
+    PropertyExtractor,
+    ControlledVocabularyExtractor,
+    LanguageExtractor,
+    ExternalRefExtractor,
+    LocaleExtractor,
+    ConstraintExtractor,
 )
 from app.utils.file_processing import ElanFileProcessor as BaseElanFileProcessor
 
@@ -60,6 +67,8 @@ class ElanFileCoordinator:
             - tiers: Tier information with annotations
             - annotations: Annotations grouped by tier
             - linguistic_types: Linguistic type definitions
+            - linked_file_descriptors: Linked file descriptors from header
+            - properties: Properties from header
         """
         logger.info(f"Starting complete processing of {self.file_path_obj}")
         start_time = time.perf_counter()
@@ -76,6 +85,13 @@ class ElanFileCoordinator:
             "tiers": self._extract_tiers(),
             "annotations": self._extract_annotations(),
             "linguistic_types": self._extract_linguistic_types(),
+            "linked_file_descriptors": self._extract_linked_files(),
+            "properties": self._extract_properties(),
+            "controlled_vocabularies": self._extract_controlled_vocabularies(),
+            "languages": self._extract_languages(),
+            "external_refs": self._extract_external_refs(),
+            "locales": self._extract_locales(),
+            "constraints": self._extract_constraints(),
         }
 
         processing_time = time.perf_counter() - start_time
@@ -90,7 +106,8 @@ class ElanFileCoordinator:
         Args:
             components: List of component names to extract. Valid values:
                        'file_info', 'metadata', 'time_slots', 'media',
-                       'tiers', 'annotations', 'linguistic_types'
+                       'tiers', 'annotations', 'linguistic_types',
+                       'linked_file_descriptors', 'properties'
 
         Returns:
             Dictionary containing only the requested components
@@ -197,4 +214,39 @@ class ElanFileCoordinator:
     def _extract_linguistic_types(self) -> List[Dict[str, Any]]:
         """Extract linguistic types."""
         extractor = LinguisticTypeExtractor(self.root, self.file_path_obj)
+        return extractor.extract()
+
+    def _extract_linked_files(self) -> List[Dict[str, Any]]:
+        """Extract linked file descriptors."""
+        extractor = LinkedFileExtractor(self.root, self.file_path_obj)
+        return extractor.extract()
+
+    def _extract_properties(self) -> List[Dict[str, str]]:
+        """Extract properties."""
+        extractor = PropertyExtractor(self.root, self.file_path_obj)
+        return extractor.extract()
+
+    def _extract_controlled_vocabularies(self) -> List[Dict[str, Any]]:
+        """Extract controlled vocabularies."""
+        extractor = ControlledVocabularyExtractor(self.root, self.file_path_obj)
+        return extractor.extract()
+
+    def _extract_languages(self) -> List[Dict[str, str]]:
+        """Extract languages."""
+        extractor = LanguageExtractor(self.root, self.file_path_obj)
+        return extractor.extract()
+
+    def _extract_external_refs(self) -> List[Dict[str, str]]:
+        """Extract external references."""
+        extractor = ExternalRefExtractor(self.root, self.file_path_obj)
+        return extractor.extract()
+
+    def _extract_locales(self) -> List[Dict[str, str]]:
+        """Extract locales."""
+        extractor = LocaleExtractor(self.root, self.file_path_obj)
+        return extractor.extract()
+
+    def _extract_constraints(self) -> List[Dict[str, str]]:
+        """Extract constraints."""
+        extractor = ConstraintExtractor(self.root, self.file_path_obj)
         return extractor.extract()

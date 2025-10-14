@@ -4,6 +4,7 @@ import time
 from decimal import Decimal
 from pathlib import Path
 
+from lxml import etree as ET
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -44,82 +45,97 @@ from app.crud.tier import (
 )
 from app.crud.tier_group import delete_tier_groups_for_project_and_tier
 from app.model.tier import Tier
-from app.utils.elan_processor import ElanFileCoordinator
-from app.utils.file_processing import ElanFileProcessor
-from app.schema.responses.elan_file_media import (
-    ElanFileWithMediaResponse,
-    ProjectFilesWithMediaResponse,
-)
+from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
 
 # Get logger for this module
 logger = get_logger()
 
 
 class ElanService:
-    """Enhanced service for ELAN file operations with modular processing."""
+    """Service for ELAN file operations."""
 
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.file_processor = ElanFileProcessor()
+        self.xml_extractor = XmlAttributeExtractor()
 
     def parse_elan_file(self, file_path: str) -> dict:
-        """Parse ELAN file using the new modular processor.
-
-        Args:
-            file_path: Path to the ELAN file
-
-        Returns:
-            Complete ELAN file data with all components
-        """
         logger.info(f"Starting to parse ELAN file: {file_path}")
         t0 = time.perf_counter()
 
-        # Use the new coordinated processor
-        processor = ElanFileCoordinator(file_path)
-        result = processor.process_complete()
+        # Use utility for validation
+        file_path_obj = ElanFileProcessor.validate_elan_file(file_path)
 
-        # Restructure result to match legacy format for compatibility
-        file_info = result["file_info"]
+        t_parse_start = time.perf_counter()
+        parser = ET.XMLParser(resolve_entities=False, no_network=True, recover=False)
+        tree = ET.parse(file_path_obj, parser=parser)
+        root = tree.getroot()
+        t_parse_end = time.perf_counter()
+        logger.info(f"XML parsing took {t_parse_end - t_parse_start:.3f}s")
+
+        t_info_start = time.perf_counter()
+        file_info = ElanFileProcessor.get_file_info(file_path_obj)
         file_info.update(
             {
-                "tiers": result["tiers"],
-                "time_slots": result["time_slots"],
-                "media": result["media"],
-                "metadata": result["metadata"],
-                "linguistic_types": result["linguistic_types"],
+                "tiers": [],
+                "time_slots": ElanFileProcessor.extract_time_slots(root),
+                "media": ElanFileProcessor.extract_media_descriptors(root),
             }
+        )
+        t_info_end = time.perf_counter()
+        logger.info(f"File info extraction took {t_info_end - t_info_start:.3f}s")
+
+        t_tiers_start = time.perf_counter()
+        self._extract_tiers(root, file_info)
+        t_tiers_end = time.perf_counter()
+        logger.info(
+            f"Tier and annotation extraction took {t_tiers_end - t_tiers_start:.3f}s"
         )
 
         total_time = time.perf_counter() - t0
         logger.info(f"Total parse_elan_file time: {total_time:.3f}s")
         return file_info
 
-    # ==================== MEDIA METHODS ====================
-
-    async def get_project_files_with_media(
-        self, project_id: int
-    ) -> ProjectFilesWithMediaResponse:
-        """Get project files with their associated media for rename suggestions."""
-        from app.crud import elan_file_media as elan_media_crud
-
-        logger.info(f"Getting project files with media for project {project_id}")
-
-        files_data = await elan_media_crud.get_project_files_with_media_simple(
-            self.db, project_id
-        )
-        files_with_media = [
-            ElanFileWithMediaResponse(
-                elan_id=file_data["elan_id"],
-                filename=file_data["filename"],
-                file_path=file_data["file_path"],
-                media_filenames=file_data["media_filenames"],
+    def _extract_tiers(self, root: ET._Element, file_info: dict) -> None:
+        """Extract tiers using utility functions."""
+        tier_count = 0
+        for tier_element in root.findall(".//TIER", namespaces=None):
+            tier_info = self.xml_extractor.get_tier_attributes(tier_element)
+            tier_info["annotations"] = self._extract_annotations(
+                tier_element, file_info["time_slots"]
             )
-            for file_data in files_data
-        ]
+            file_info["tiers"].append(tier_info)
+            tier_count += 1
 
-        logger.info(f"Found {len(files_with_media)} files with media")
-        return ProjectFilesWithMediaResponse(files=files_with_media)
+        logger.debug(f"Extracted {tier_count} tiers with annotations")
 
-    # ==================== FILE PROCESSING METHODS ====================
+    def _extract_annotations(
+        self, tier_element: ET._Element, time_slots: dict[str, int]
+    ) -> list[dict]:
+        """Extract annotations for a tier using utility functions."""
+        annotations = []
+
+        # Extract alignable annotations
+        for annotation_elem in tier_element.findall(
+            ".//ANNOTATION/ALIGNABLE_ANNOTATION",
+            namespaces=None,
+        ):
+            ann_info = self.xml_extractor.get_alignable_annotation_attributes(
+                annotation_elem, time_slots
+            )
+            if ann_info:
+                annotations.append(ann_info)
+
+        # Extract reference annotations
+        for annotation_elem in tier_element.findall(
+            ".//ANNOTATION/REF_ANNOTATION", namespaces=None
+        ):
+            ann_info = self.xml_extractor.get_ref_annotation_attributes(annotation_elem)
+            if ann_info:
+                annotations.append(ann_info)
+
+        logger.debug(f"Extracted {len(annotations)} annotations from tier")
+        return annotations
 
     def get_files_in_directory(self, directory_path: str) -> list[Path]:
         """Get all ELAN files in a flat directory using utility."""

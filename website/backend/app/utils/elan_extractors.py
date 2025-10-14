@@ -152,16 +152,26 @@ class TierExtractor(BaseElanExtractor):
         for annotation in tier_element.findall(
             ".//ALIGNABLE_ANNOTATION", namespaces=None
         ):
-            ann_data = XmlAttributeExtractor.get_alignable_annotation_attributes(
-                annotation, self.time_slots
-            )
-            if ann_data:
+            # Extract annotation attributes preserving time slot references for XML generation
+            annotation_value_elem = annotation.find("ANNOTATION_VALUE", namespaces=None)
+            if annotation_value_elem is not None and annotation_value_elem.text:
+                ann_data = {
+                    "annotation_id": annotation.get("ANNOTATION_ID", ""),
+                    "time_slot_ref1": annotation.get("TIME_SLOT_REF1", ""),
+                    "time_slot_ref2": annotation.get("TIME_SLOT_REF2", ""),
+                    "annotation_value": annotation_value_elem.text.strip(),
+                }
                 annotations.append(ann_data)
 
         # Extract reference annotations
         for annotation in tier_element.findall(".//REF_ANNOTATION", namespaces=None):
-            ann_data = XmlAttributeExtractor.get_ref_annotation_attributes(annotation)
-            if ann_data:
+            annotation_value_elem = annotation.find("ANNOTATION_VALUE", namespaces=None)
+            if annotation_value_elem is not None and annotation_value_elem.text:
+                ann_data = {
+                    "annotation_id": annotation.get("ANNOTATION_ID", ""),
+                    "annotation_ref": annotation.get("ANNOTATION_REF", ""),
+                    "annotation_value": annotation_value_elem.text.strip(),
+                }
                 annotations.append(ann_data)
 
         logger.debug(f"Extracted {len(annotations)} annotations from tier")
@@ -334,8 +344,9 @@ class LinguisticTypeExtractor(BaseElanExtractor):
                 "time_alignable": ling_type.get("TIME_ALIGNABLE") == "true",
                 "constraints": ling_type.get("CONSTRAINTS"),
                 "graphic_references": ling_type.get("GRAPHIC_REFERENCES") == "true",
-                "controlled_vocabulary": ling_type.get("CONTROLLED_VOCABULARY"),
-                "controlled_vocabulary_url": ling_type.get("CONTROLLED_VOCABULARY_URL"),
+                "controlled_vocabulary_ref": ling_type.get("CONTROLLED_VOCABULARY_REF"),
+                "ext_ref": ling_type.get("EXT_REF"),
+                "lexicon_ref": ling_type.get("LEXICON_REF"),
             }
             # Remove None values for cleaner output
             type_info = {k: v for k, v in type_info.items() if v is not None}
@@ -343,3 +354,235 @@ class LinguisticTypeExtractor(BaseElanExtractor):
 
         logger.info(f"Extracted {len(linguistic_types)} linguistic types")
         return linguistic_types
+
+
+class LinkedFileExtractor(BaseElanExtractor):
+    """Extract linked file descriptor information from ELAN files."""
+
+    def extract(self) -> List[Dict[str, Any]]:
+        """Extract all linked file descriptors from ELAN file header.
+
+        Returns:
+            List of linked file descriptor dictionaries with keys:
+            - link_url: URL/path to linked file
+            - relative_link_url: Relative path to linked file
+            - mime_type: MIME type of linked file
+            - time_origin: Time origin (optional)
+            - associated_with: Associated media (optional)
+        """
+        logger.info(f"Extracting linked file descriptors from {self.file_path}")
+
+        linked_files = []
+        for lfd_elem in self.root.findall(".//LINKED_FILE_DESCRIPTOR", namespaces=None):
+            link_url = lfd_elem.get("LINK_URL")
+
+            # Skip if no link URL
+            if not link_url:
+                logger.debug("Skipping linked file descriptor without LINK_URL")
+                continue
+
+            linked_file_info = {
+                "link_url": link_url,
+                "relative_link_url": lfd_elem.get("RELATIVE_LINK_URL"),
+                "mime_type": lfd_elem.get("MIME_TYPE"),
+                "time_origin": lfd_elem.get("TIME_ORIGIN"),
+                "associated_with": lfd_elem.get("ASSOCIATED_WITH"),
+            }
+            # Remove None values for cleaner output
+            linked_file_info = {
+                k: v for k, v in linked_file_info.items() if v is not None
+            }
+            linked_files.append(linked_file_info)
+
+        logger.info(f"Extracted {len(linked_files)} linked file descriptors")
+        return linked_files
+
+
+class PropertyExtractor(BaseElanExtractor):
+    """Extract property information from ELAN files."""
+
+    def extract(self) -> List[Dict[str, str]]:
+        """Extract all properties from ELAN file header.
+
+        Returns:
+            List of property dictionaries with keys:
+            - name: Property name
+            - value: Property value (optional)
+        """
+        logger.info(f"Extracting properties from {self.file_path}")
+
+        properties = []
+        for prop_elem in self.root.findall(".//PROPERTY", namespaces=None):
+            prop_name = prop_elem.get("NAME")
+
+            # Skip if no property name
+            if not prop_name:
+                logger.debug("Skipping property without NAME")
+                continue
+
+            property_info = {
+                "name": prop_name,
+                "value": prop_elem.text or prop_elem.get("VALUE", ""),
+            }
+            properties.append(property_info)
+
+        logger.info(f"Extracted {len(properties)} properties")
+        return properties
+
+
+class ControlledVocabularyExtractor(BaseElanExtractor):
+    """Extract CONTROLLED_VOCABULARY elements from ELAN XML."""
+
+    def extract(self) -> List[Dict[str, Any]]:
+        """Extract all CONTROLLED_VOCABULARY elements.
+
+        Returns:
+            List of controlled vocabulary dictionaries with keys:
+            - cv_id: Controlled vocabulary ID
+            - description: Description text (may be empty)
+            - description_lang: Language reference for description (defaults to 'und')
+            - entries: List of CV entries
+            - ext_ref: External reference (optional)
+        """
+        logger.info(f"Extracting controlled vocabularies from {self.file_path}")
+
+        vocabularies = []
+        for cv in self.root.findall(".//CONTROLLED_VOCABULARY", namespaces=None):
+            cv_data = {
+                "cv_id": cv.get("CV_ID", ""),
+                "ext_ref": cv.get("EXT_REF", ""),
+                "description": "",
+                "description_lang": "und",  # Default to 'und' as per ELAN convention
+                "entries": [],
+            }
+
+            # Extract description - ALWAYS preserve it even if empty
+            # According to EAF v3.0 schema, DESCRIPTION should come before CV_ENTRY_ML
+            desc_elem = cv.find("DESCRIPTION")
+            if desc_elem is not None:
+                cv_data["description"] = desc_elem.text or ""
+                cv_data["description_lang"] = desc_elem.get("LANG_REF", "und")
+
+            # Extract CV entries
+            for entry in cv.findall("CV_ENTRY_ML"):
+                entry_data = {"cve_id": entry.get("CVE_ID", ""), "values": []}
+
+                # Extract CV values
+                for value in entry.findall("CVE_VALUE"):
+                    value_data = {
+                        "lang_ref": value.get("LANG_REF", "und"),  # Default to 'und'
+                        "description": value.get("DESCRIPTION", ""),
+                        "value": value.text or "",
+                    }
+                    entry_data["values"].append(value_data)
+
+                cv_data["entries"].append(entry_data)
+
+            vocabularies.append(cv_data)
+
+        logger.info(f"Extracted {len(vocabularies)} controlled vocabularies")
+        return vocabularies
+
+
+class LanguageExtractor(BaseElanExtractor):
+    """Extract LANGUAGE elements from ELAN XML."""
+
+    def extract(self) -> List[Dict[str, Any]]:
+        """Extract all LANGUAGE elements.
+
+        Returns:
+            List of language dictionaries with keys:
+            - lang_id: Language ID
+            - lang_def: Language definition URL
+            - lang_label: Language label
+        """
+        logger.info(f"Extracting languages from {self.file_path}")
+
+        languages = []
+        for lang in self.root.findall(".//LANGUAGE", namespaces=None):
+            lang_data = {
+                "lang_id": lang.get("LANG_ID", ""),
+                "lang_def": lang.get("LANG_DEF", ""),
+                "lang_label": lang.get("LANG_LABEL", ""),
+            }
+            languages.append(lang_data)
+
+        logger.info(f"Extracted {len(languages)} languages")
+        return languages
+
+
+class ExternalRefExtractor(BaseElanExtractor):
+    """Extract EXTERNAL_REF elements from ELAN XML."""
+
+    def extract(self) -> List[Dict[str, Any]]:
+        """Extract all EXTERNAL_REF elements.
+
+        Returns:
+            List of external reference dictionaries with keys:
+            - ext_ref_id: External reference ID
+            - type: Reference type
+            - value: Reference value/URL
+        """
+        logger.info(f"Extracting external references from {self.file_path}")
+
+        external_refs = []
+        for ext_ref in self.root.findall(".//EXTERNAL_REF", namespaces=None):
+            ref_data = {
+                "ext_ref_id": ext_ref.get("EXT_REF_ID", ""),
+                "type": ext_ref.get("TYPE", ""),
+                "value": ext_ref.get("VALUE", ""),
+            }
+            external_refs.append(ref_data)
+
+        logger.info(f"Extracted {len(external_refs)} external references")
+        return external_refs
+
+
+class LocaleExtractor(BaseElanExtractor):
+    """Extract LOCALE elements from ELAN XML."""
+
+    def extract(self) -> List[Dict[str, Any]]:
+        """Extract all LOCALE elements.
+
+        Returns:
+            List of locale dictionaries with keys:
+            - country_code: Country code
+            - language_code: Language code
+        """
+        logger.info(f"Extracting locales from {self.file_path}")
+
+        locales = []
+        for locale in self.root.findall(".//LOCALE", namespaces=None):
+            locale_data = {
+                "country_code": locale.get("COUNTRY_CODE", ""),
+                "language_code": locale.get("LANGUAGE_CODE", ""),
+            }
+            locales.append(locale_data)
+
+        logger.info(f"Extracted {len(locales)} locales")
+        return locales
+
+
+class ConstraintExtractor(BaseElanExtractor):
+    """Extract CONSTRAINT elements from ELAN XML."""
+
+    def extract(self) -> List[Dict[str, Any]]:
+        """Extract all CONSTRAINT elements.
+
+        Returns:
+            List of constraint dictionaries with keys:
+            - stereotype: Constraint stereotype
+            - description: Constraint description
+        """
+        logger.info(f"Extracting constraints from {self.file_path}")
+
+        constraints = []
+        for constraint in self.root.findall(".//CONSTRAINT", namespaces=None):
+            constraint_data = {
+                "stereotype": constraint.get("STEREOTYPE", ""),
+                "description": constraint.get("DESCRIPTION", ""),
+            }
+            constraints.append(constraint_data)
+
+        logger.info(f"Extracted {len(constraints)} constraints")
+        return constraints

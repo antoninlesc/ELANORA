@@ -32,7 +32,7 @@ from app.schema.responses.project import (
     ProjectUserInfo,
     ProjectUserListResponse,
 )
-from app.service.elan import ElanService
+from app.service import elan_file_media as elan_media_service
 from app.service.git import GitService
 from app.service.notification import NotificationService
 
@@ -339,33 +339,4 @@ async def get_project_files_with_media(
     current_user: User = get_user_dep,
 ) -> ProjectFilesWithMediaResponse:
     """Get project files with their associated media for rename suggestions."""
-    elan_service = ElanService(db)
-    return await elan_service.get_project_files_with_media(project_id)
-
-
-@router.delete("/{project_name}")
-async def delete_project(
-    project_name: str,
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Delete a project completely (admin only).
-
-    Args:
-        project_name: Name of the project to delete
-        db: Database session
-        user: Authenticated admin user
-
-    Returns:
-        Success message
-
-    Raises:
-        HTTPException: 404 if project not found, 500 if deletion fails
-    """
-    try:
-        await git_service.delete_project(project_name, db)
-        return {"message": f"Project '{project_name}' deleted successfully"}
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    return await elan_media_service.get_project_files_with_media(db, project_id)
