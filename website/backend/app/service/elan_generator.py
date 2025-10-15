@@ -26,6 +26,19 @@ class ElanXmlGenerator:
         self.namespace = None  # EAF v3.0 uses no namespace
         self.schema_location = "http://www.mpi.nl/tools/elan/EAFv3.0.xsd"
 
+        # Load EAF v3.0 XSD schema for validation
+        schema_path = os.path.join(os.path.dirname(__file__), "..", "..", "EAFv3.0.xsd")
+        if os.path.exists(schema_path):
+            with open(schema_path, "rb") as f:
+                schema_doc = etree.parse(f)
+                self.schema = etree.XMLSchema(schema_doc)
+                logger.info("EAF v3.0 XSD schema loaded successfully for validation")
+        else:
+            logger.warning(
+                f"EAF v3.0 XSD schema not found at {schema_path}, validation disabled"
+            )
+            self.schema = None
+
     def generate_elan_xml(self, merged_data: Dict[str, Any]) -> str:
         """
         Generate ELAN XML from merged data using lxml with EAF v3.0 schema compliance.
@@ -127,6 +140,21 @@ class ElanXmlGenerator:
 
         # Generate formatted XML with ELAN-specific formatting
         xml_str = self._format_elan_xml_style(root)
+
+        # Validate against EAF v3.0 schema if available
+        if self.schema is not None:
+            try:
+                # Parse the XML string back to element for validation
+                xml_element = etree.fromstring(xml_str.encode("utf-8"))
+                self.schema.assertValid(xml_element)
+                logger.info(
+                    "Generated XML successfully validated against EAF v3.0 schema"
+                )
+            except etree.DocumentInvalid as e:
+                logger.error(f"Generated XML failed schema validation: {e}")
+                raise ValueError(f"EAF v3.0 schema validation failed: {e}")
+        else:
+            logger.warning("Schema validation skipped - EAF v3.0 XSD not available")
 
         logger.info("ELAN XML generation completed successfully")
         return xml_str

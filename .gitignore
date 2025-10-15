@@ -64,4 +64,4 @@ elanora_projects/*
 !elanora_projects/.githooks/**
 
 # Ignore tests merge_output files
-website/backend/tests/merge_outputs/
+website/backend/tests/integration/test_elan_merge_workflow_output/

@@ -134,10 +134,24 @@ class TestXmlGeneration:
     def minimal_merged_data(self):
         """Minimal data structure for XML generation."""
         return {
-            "tiers": [{"tier_name": "test_tier", "annotations": []}],
+            "tiers": [
+                {
+                    "tier_name": "test_tier",
+                    "linguistic_type_ref": "default-lt",
+                    "annotations": [],
+                }
+            ],
             "time_slots": {"ts1": 1000, "ts2": 2000},
             "metadata": {"author": "test"},
-            "linguistic_types": [],
+            "linguistic_types": [
+                {
+                    "linguistic_type_id": "default-lt",
+                    "time_alignable": "true",
+                    "constraints": None,
+                    "graphic_references": "false",
+                    "controlled_vocabulary_ref": None,
+                }
+            ],
             "constraints": [],
             "controlled_vocabularies": [],
             "languages": [],
@@ -179,17 +193,47 @@ class TestEndToEndWorkflow:
     @pytest.mark.asyncio
     async def test_complete_workflow(self):
         """Test the complete merge-to-XML workflow."""
-        # Simple test data
+        # Simple test data with proper linguistic types
         contributor_data = {
-            "tiers": [{"tier_name": "new_tier", "annotations": []}],
+            "tiers": [
+                {
+                    "tier_name": "new_tier",
+                    "linguistic_type_ref": "default-lt",
+                    "annotations": [],
+                }
+            ],
             "time_slots": {"ts1": 1000},
             "metadata": {"author": "contributor"},
+            "linguistic_types": [
+                {
+                    "linguistic_type_id": "default-lt",
+                    "time_alignable": "true",
+                    "constraints": None,
+                    "graphic_references": "false",
+                    "controlled_vocabulary_ref": None,
+                }
+            ],
         }
 
         master_data = {
-            "tiers": [{"tier_name": "master_tier", "annotations": []}],
+            "tiers": [
+                {
+                    "tier_name": "master_tier",
+                    "linguistic_type_ref": "default-lt",
+                    "annotations": [],
+                }
+            ],
             "time_slots": {"ts2": 2000},
             "metadata": {"author": "master"},
+            "linguistic_types": [
+                {
+                    "linguistic_type_id": "default-lt",
+                    "time_alignable": "true",
+                    "constraints": None,
+                    "graphic_references": "false",
+                    "controlled_vocabulary_ref": None,
+                }
+            ],
         }
 
         # Step 1: Perform merge
